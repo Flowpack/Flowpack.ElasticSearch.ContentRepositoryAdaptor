@@ -1,0 +1,2 @@
+Flowpack.ElasticSearch.NeosAdaptor
+==================================
