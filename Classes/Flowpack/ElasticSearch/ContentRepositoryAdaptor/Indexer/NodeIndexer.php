@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
 
 /*                                                                                                  *
  * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
@@ -11,20 +11,26 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\NodeType;
 use TYPO3\Flow\Annotations as Flow;
+use TYPO3\TYPO3CR\Domain\Model\NodeData;
+use Flowpack\ElasticSearch\Domain\Factory\ClientFactory;
+use Flowpack\ElasticSearch\Domain\Model\Client;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\NodeType;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
-
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ElasticSearch;
 
 
 /**
- * Indexing aspect
+ * Indexer for Content Repository Nodes
  *
  * @Flow\Scope("singleton")
  */
-class IndexerService {
+class NodeIndexer {
 
+	/**
+	 * @var string
+	 */
+	protected $indexName;
 
 	/**
 	 * @Flow\Inject
@@ -33,13 +39,13 @@ class IndexerService {
 	protected $persistenceManager;
 
 	/**
-	 * @var \Flowpack\ElasticSearch\Domain\Model\Client
+	 * @var Client
 	 */
 	protected $searchClient;
 
 	/**
 	 * @Flow\Inject
-	 * @var \Flowpack\ElasticSearch\Domain\Factory\ClientFactory
+	 * @var ClientFactory
 	 */
 	protected $clientFactory;
 
@@ -55,55 +61,67 @@ class IndexerService {
 	protected $systemLogger;
 
 	/**
-	 * Initializes the searchClient and connects to the 'neos' Index
+	 * @var array
+	 */
+	protected $settings;
+
+	/**
+	 * @param array $settings
+	 */
+	public function injectSettings(array $settings) {
+		$this->indexName = $settings['indexName'];
+	}
+
+	/**
+	 * Initializes the searchClient and connects to the Index
 	 */
 	public function initializeObject() {
 		$this->searchClient = $this->clientFactory->create();
-		$index = $this->searchClient->findIndex('neos');
+		$index = $this->searchClient->findIndex($this->indexName);
 		$this->nodeType = new NodeType($index);
 	}
 
 	/**
-	 * @param \TYPO3\TYPO3CR\Domain\Model\NodeData $nodeData
+	 * @param NodeData $nodeData
 	 * @return string
 	 */
-	public function updateNodeToIndex(\TYPO3\TYPO3CR\Domain\Model\NodeData $nodeData) {
-
+	public function indexNode(NodeData $nodeData) {
 		$persistenceObjectIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
 
-		$document = new ElasticSearchDocument($this->nodeType, array(
+		if ($nodeData->isRemoved()) {
+			$this->nodeType->deleteDocumentById($persistenceObjectIdentifier);
+			$this->systemLogger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+		}
+
+		$document = new ElasticSearchDocument($this->nodeType,
+			array(
 				'persistenceObjectIdentifier' => $persistenceObjectIdentifier,
 				'workspace' => $nodeData->getWorkspace()->getName(),
 				'path' => $nodeData->getPath(),
+				'parentPath' => $nodeData->getParentPath(),
 				'identifier' => $nodeData->getIdentifier(),
 				'properties' => $nodeData->getProperties(),
 				'nodeType' => $nodeData->getNodeType()->getName(),
-				'isRemoved' => $nodeData->isRemoved(),
 				'isHidden' => $nodeData->isHidden(),
 				'accessRoles' => $nodeData->getAccessRoles(),
 				'hiddenBeforeDateTime' => $nodeData->getHiddenBeforeDateTime(),
 				'hiddenAfterDateTime' => $nodeData->getHiddenAfterDateTime(),
-				'accessRoles' => $nodeData->getAccessRoles(),
-				'parentPath' => $nodeData->getParentPath(),
-
-
 			),
 			$persistenceObjectIdentifier
 		);
 		$document->store();
 
-		//$this->systemLogger->log('updateNodeToIndex', LOG_DEBUG, $document,  'Flowpack\ElasticSearch' , 'IndexerService', 'updateNodeToIndex');
+		$this->systemLogger->log(sprintf('NodeIndexer: Added /updated node %s. Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 	}
 
 	/**
-	 * @param \TYPO3\TYPO3CR\Domain\Model\NodeData $nodeData
+	 * @param NodeData $nodeData
 	 * @return string
 	 */
-	public function removeNodeFromIndex(\TYPO3\TYPO3CR\Domain\Model\NodeData $nodeData) {
-
-		$this->systemLogger->log('removeNodeFromIndex', LOG_DEBUG, $nodeData,  'Flowpack\ElasticSearch' , 'IndexerAspect', 'removeNodeFromIndex');
+	public function removeNode(NodeData $nodeData) {
 		$persistenceObjectIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
-		$document = new ElasticSearchDocument($this->type, array(),$persistenceObjectIdentifier);
-		$document->remove();
+		$this->nodeType->deleteDocumentById($persistenceObjectIdentifier);
+
+		$this->systemLogger->log(sprintf('NodeIndexer: Removed node %s from index (node actually removed). Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 	}
 }

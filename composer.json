@@ -2,8 +2,11 @@
     "name": "flowpack/elasticsearch-contentrepositoryadaptor",
     "type": "typo3-flow-package",
     "description": "This package provides functionality for the interaction of elasticsearch engine and TYPO3CR.",
+    "homepage": "http://flowpack.org/",
+    "license": ["LGPL-3.0+"],
     "require": {
-        "typo3/flow": "*"
+        "flowpack/elasticsearch": "*",
+        "typo3/typo3cr": "*"
     },
     "autoload": {
         "psr-0": {

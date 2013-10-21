@@ -1,0 +1,14 @@
+Flowpack:
+  ElasticSearch:
+    ContentRepositoryAdaptor:
+
+      indexName: typo3cr
+
+      log:
+        backendOptions:
+          logFileURL: %FLOW_PATH_DATA%Logs/Indexer.log
+          createParentDirectories: TRUE
+          severityThreshold: %LOG_INFO%
+          maximumLogFileSize: 10485760
+          logFilesToKeep: 1
+          logMessageOrigin: FALSE

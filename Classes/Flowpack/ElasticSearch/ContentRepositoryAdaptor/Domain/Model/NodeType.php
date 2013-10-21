@@ -16,8 +16,7 @@ use Flowpack\ElasticSearch\Domain\Model\AbstractType as AbstractType;
 use TYPO3\Flow\Annotations as Flow;
 
 /**
- * Indexing NodeType
- *
+ * The "Node" mapping type for Elastic Search which represents the schema of TYPO3CR Nodes
  */
 class NodeType extends AbstractType {
 }
