@@ -1,0 +1,9 @@
+Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexerService:
+  properties:
+    client:
+      object:
+        factoryObjectName: Flowpack\ElasticSearch\Domain\Factory\ClientFactory
+        arguments:
+          1:
+            setting: Flowpack.ElasticSearch.realtimeIndexing.client
+            value: 'default'
