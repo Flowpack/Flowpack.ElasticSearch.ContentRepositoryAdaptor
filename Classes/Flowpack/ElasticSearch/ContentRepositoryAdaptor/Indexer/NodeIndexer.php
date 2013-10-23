@@ -171,7 +171,7 @@ class NodeIndexer {
 	 */
 	public function removeNode(NodeData $nodeData) {
 		$persistenceObjectIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
-		$this->nodeType->deleteDocumentById($persistenceObjectIdentifier);
+		$this->nodeIndex->request('DELETE', '/' . NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType()) . '/' . $persistenceObjectIdentifier);
 
 		$this->systemLogger->log(sprintf('NodeIndexer: Removed node %s from index (node actually removed). Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 	}
