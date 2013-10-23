@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\FlowQuery;
 
 
 /*                                                                                                  *
@@ -12,11 +12,20 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
-use Flowpack\ElasticSearch\Domain\Model\AbstractType as AbstractType;
 use TYPO3\Flow\Annotations as Flow;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\NodeSearchService;
+use TYPO3\Eel\FlowQuery\FlowQuery;
+use TYPO3\Eel\FlowQuery\Operations\AbstractOperation;
 
 /**
- * The "Node" mapping type for Elastic Search which represents the schema of TYPO3CR Nodes
+ * Abstract operation which provides all the basics for an Elastic Search based FlowQuery operation
  */
-class NodeType extends AbstractType {
+abstract class AbstractElasticSearchOperation extends AbstractOperation {
+
+	/**
+	 * @Flow\Inject
+	 * @var NodeSearchService
+	 */
+	protected $nodeSearchService;
+
 }
