@@ -4,7 +4,10 @@ WIP
 Flowpack.ElasticSearch.ContentRepositoryAdaptor
 ===============================================
 
-TYPO3 Flow Package for indexing Nodes from TYPO3 Neos to ElasticSearch
+TYPO3 Flow Package for indexing Nodes from TYPO3 Neos to ElasticSearch.
+
+WARNING: This is definitely work in progress and neither the APIs nor the code is stable yet. Don't use it in your
+applications or projects yet.
 
 Setup
 -----

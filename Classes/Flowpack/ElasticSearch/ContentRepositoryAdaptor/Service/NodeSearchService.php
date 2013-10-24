@@ -86,17 +86,18 @@ class NodeSearchService {
 	}
 
 	/**
+	 * Finds the most recent nodes matching the given criteria.
 	 *
 	 *
-	 * @param string $nodePath
-	 * @param string $dateTimeFieldName
-	 * @param integer $maximumResults
-	 * @param integer $fromResult
-	 * @param string $nodeTypeFilter
-	 * @param \TYPO3\TYPO3CR\Domain\Service\ContextInterface $contentContext
-	 * @return string
+	 * @param string $nodePath Parent node path where search starts. All nodes below that path are considered.
+	 * @param string $sortingFieldName Name of the node property which is going to be used as a sorting criteria. Its value can be string, numeric or a date
+	 * @param integer $maximumResults The number of maximum results. If "1" is specified, this function will still return an array, but with 1 element.
+	 * @param integer $fromResult For pagination: the result number to start with. Index starts a 0.
+	 * @param string $nodeTypeFilter (currently) a single node type name to filter the results
+	 * @param \TYPO3\TYPO3CR\Domain\Service\ContextInterface $contentContext The content context, for example derived from the "current node"
+	 * @return \TYPO3\TYPO3CR\Domain\Model Node
 	 */
-	public function findRecent($nodePath, $dateTimeFieldName, $maximumResults = 100, $fromResult = NULL, $nodeTypeFilter = NULL, ContextInterface $contentContext) {
+	public function findRecent($nodePath, $sortingFieldName, $maximumResults = 100, $fromResult = NULL, $nodeTypeFilter = NULL, ContextInterface $contentContext) {
 		$searchQuery = array(
 			'query' => array(
 				'prefix' => array(
@@ -104,10 +105,10 @@ class NodeSearchService {
 				)
 			),
 			'sort' => array(
-				array('properties.' . $dateTimeFieldName => 'desc')
+				array('properties.' . $sortingFieldName => 'desc')
 			),
 			'size' => $maximumResults,
-			'fields' => array('path', 'parentPath', 'properties')
+			'fields' => array('path')
 		);
 
 		if ($nodeTypeFilter !== NULL) {
@@ -118,17 +119,22 @@ class NodeSearchService {
 			);
 		}
 
-		$this->systemLogger->log('Query', LOG_DEBUG, $searchQuery);
+		if ($fromResult !== NULL) {
+			$searchQuery['from'] = $fromResult;
+		}
 
 		$response = $this->index->request('GET', '/_search', array(), json_encode($searchQuery));
 		$hits = $response->getTreatedContent()['hits'];
 
-		$this->systemLogger->log('Path', LOG_DEBUG, $nodePath);
-		$this->systemLogger->log('Response', LOG_DEBUG, $hits);
-		if ($hits['total'] !== 1) {
+		if ($hits['total'] === 0) {
 			return NULL;
 		}
 
-		$this->systemLogger->log('Response', LOG_DEBUG, $hits);
+		$nodes = array();
+		foreach ($hits['hits'] as $hit) {
+			$nodes[] = $contentContext->getNode($hit['fields']['path']);
+		}
+
+		return $nodes;
 	}
 }
