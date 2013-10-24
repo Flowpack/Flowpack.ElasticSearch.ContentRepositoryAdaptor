@@ -113,10 +113,16 @@ class NodeSearchService {
 
 		if ($nodeTypeFilter !== NULL) {
 			$searchQuery['filter'] = array(
-				'type' => array(
-					'value' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeTypeFilter)
+				'and' => array(
+					array('terms' => array('workspace' => array('live', $contentContext->getWorkspace()->getName()))),
+					array('type' => array('value' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeTypeFilter)))
 				)
 			);
+		} else {
+			$searchQuery['filter'] = array(
+				'terms' => array('workspace' => array('live', $contentContext->getWorkspace()->getName()))
+			);
+
 		}
 
 		if ($fromResult !== NULL) {
