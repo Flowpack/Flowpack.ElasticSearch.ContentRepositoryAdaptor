@@ -86,5 +86,4 @@ class NodeIndexCommandController extends CommandController {
 		$this->nodeIndexer->deleteIndex();
 		$this->logger->log(sprintf('Deleted the node index "%s". ', $this->indexName), LOG_INFO);
 	}
-
 }

@@ -11,13 +11,13 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
-use Flowpack\ElasticSearch\Domain\Model\GenericType;
-use Flowpack\ElasticSearch\Domain\Model\Mapping;
-use TYPO3\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\Domain\Factory\ClientFactory;
 use Flowpack\ElasticSearch\Domain\Model\Client;
+use Flowpack\ElasticSearch\Domain\Model\GenericType;
 use Flowpack\ElasticSearch\Domain\Model\Index;
+use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
+use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Utility\TypeHandling;
 use TYPO3\TYPO3CR\Domain\Model\NodeType;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
@@ -144,7 +144,5 @@ class NodeTypeMappingBuilder {
 		}
 		$mapping->setPropertyByPath('properties.properties.' . $propertyName, array('type' => $mappingType));
 	}
-
-
 }
-?>
+

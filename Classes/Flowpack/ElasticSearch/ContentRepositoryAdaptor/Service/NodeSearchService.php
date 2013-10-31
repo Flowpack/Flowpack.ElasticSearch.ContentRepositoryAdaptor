@@ -11,19 +11,13 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\NodeType;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
-use Flowpack\ElasticSearch\Domain\Model\GenericType;
-use Flowpack\ElasticSearch\Domain\Model\Index;
-use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Neos\Domain\Service\ContentContext;
-use TYPO3\TYPO3CR\Domain\Model\NodeData;
 use Flowpack\ElasticSearch\Domain\Factory\ClientFactory;
 use Flowpack\ElasticSearch\Domain\Model\Client;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\NodeType;
-use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ElasticSearch;
+use Flowpack\ElasticSearch\Domain\Model\Index;
+use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Service\ContextInterface;
-
 
 /**
  * Search service for TYPO3CR nodes
@@ -122,7 +116,6 @@ class NodeSearchService {
 			$searchQuery['filter'] = array(
 				'terms' => array('workspace' => array('live', $contentContext->getWorkspace()->getName()))
 			);
-
 		}
 
 		if ($fromResult !== NULL) {

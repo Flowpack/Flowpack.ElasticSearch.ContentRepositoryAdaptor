@@ -12,18 +12,16 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
  *                                                                                                  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use Flowpack\ElasticSearch\Domain\Factory\ClientFactory;
+use Flowpack\ElasticSearch\Domain\Model\Client;
+use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\GenericType;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeData;
-use Flowpack\ElasticSearch\Domain\Factory\ClientFactory;
-use Flowpack\ElasticSearch\Domain\Model\Client;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\NodeType;
-use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
-
 
 /**
  * Indexer for Content Repository Nodes
@@ -107,6 +105,7 @@ class NodeIndexer {
 
 	/**
 	 * @param NodeData $nodeData
+	 * @throws \Exception
 	 * @return string
 	 */
 	public function indexNode(NodeData $nodeData) {
@@ -142,7 +141,6 @@ class NodeIndexer {
 			} else {
 				$convertedNodeProperties[$propertyName] = $this->convertProperty($foundMapping->getPropertyByPath('properties.properties.' . $propertyName)['type'], $propertyValue);
 			}
-
 		}
 
 		$document = new ElasticSearchDocument($mappingType,
@@ -156,13 +154,13 @@ class NodeIndexer {
 				'properties' => $convertedNodeProperties,
 				'hidden' => $nodeData->isHidden(),
 				'hiddenBeforeDateTime' => $this->convertProperty('date', $nodeData->getHiddenBeforeDateTime()),
-				'hiddenAfterDateTime' =>  $this->convertProperty('date', $nodeData->getHiddenAfterDateTime()),
+				'hiddenAfterDateTime' => $this->convertProperty('date', $nodeData->getHiddenAfterDateTime()),
 			),
 			$persistenceObjectIdentifier
 		);
 		$document->store();
 
-		$this->systemLogger->log(sprintf('NodeIndexer: Added /updated node %s. Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+		$this->systemLogger->log(sprintf('NodeIndexer: Added / updated node %s. Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 	}
 
 	/**
@@ -198,15 +196,17 @@ class NodeIndexer {
 				if (!$value instanceof \DateTime) {
 					$value = new \DateTime($value);
 				}
+
 				return $value->format('c');
 			case 'boolean':
 				return ($value) ? 'T' : 'F';
-			break;
+				break;
 			case 'string':
 			default:
 				if (is_object($value)) {
 					return '<object>';
 				}
+
 				return (string)$value;
 		}
 	}

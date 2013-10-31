@@ -1,7 +1,6 @@
 <?php
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\FlowQuery;
 
-
 /*                                                                                                  *
  * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
  *                                                                                                  *

@@ -1,7 +1,6 @@
 <?php
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\FlowQuery;
 
-
 /*                                                                                                  *
  * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
  *                                                                                                  *
@@ -12,10 +11,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\FlowQuery;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
-use TYPO3\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\NodeSearchService;
-use TYPO3\Eel\FlowQuery\FlowQuery;
 use TYPO3\Eel\FlowQuery\Operations\AbstractOperation;
+use TYPO3\Flow\Annotations as Flow;
 
 /**
  * Abstract operation which provides all the basics for an Elastic Search based FlowQuery operation
@@ -27,5 +25,4 @@ abstract class AbstractElasticSearchOperation extends AbstractOperation {
 	 * @var NodeSearchService
 	 */
 	protected $nodeSearchService;
-
 }
