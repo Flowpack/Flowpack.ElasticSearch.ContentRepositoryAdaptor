@@ -1,2 +1,0 @@
-Flowpack.ElasticSearch.ContentRepositoryAdaptor
-===============================================

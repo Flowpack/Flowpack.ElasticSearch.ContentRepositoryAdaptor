@@ -13,7 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
 
 use TYPO3\Flow\Core\Booting\Step;
 use TYPO3\Flow\Core\Bootstrap;
-use \TYPO3\Flow\Package\Package as BasePackage;
+use TYPO3\Flow\Package\Package as BasePackage;
 
 /**
  * The ElasticSearch Package
@@ -51,4 +51,3 @@ class Package extends BasePackage {
 	}
 }
 
-?>

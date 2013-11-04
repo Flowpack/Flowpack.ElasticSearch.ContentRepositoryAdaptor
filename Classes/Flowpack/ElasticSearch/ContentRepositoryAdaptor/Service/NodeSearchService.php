@@ -11,19 +11,13 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\NodeType;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
-use Flowpack\ElasticSearch\Domain\Model\GenericType;
-use Flowpack\ElasticSearch\Domain\Model\Index;
-use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Neos\Domain\Service\ContentContext;
-use TYPO3\TYPO3CR\Domain\Model\NodeData;
 use Flowpack\ElasticSearch\Domain\Factory\ClientFactory;
 use Flowpack\ElasticSearch\Domain\Model\Client;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\NodeType;
-use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ElasticSearch;
+use Flowpack\ElasticSearch\Domain\Model\Index;
+use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Service\ContextInterface;
-
 
 /**
  * Search service for TYPO3CR nodes
@@ -88,16 +82,17 @@ class NodeSearchService {
 	/**
 	 * Finds the most recent nodes matching the given criteria.
 	 *
+	 * If no matching nodes are found, NULL is returned.
 	 *
 	 * @param string $nodePath Parent node path where search starts. All nodes below that path are considered.
 	 * @param string $sortingFieldName Name of the node property which is going to be used as a sorting criteria. Its value can be string, numeric or a date
+	 * @param \TYPO3\TYPO3CR\Domain\Service\ContextInterface $contentContext The content context, for example derived from the "current node"
 	 * @param integer $maximumResults The number of maximum results. If "1" is specified, this function will still return an array, but with 1 element.
 	 * @param integer $fromResult For pagination: the result number to start with. Index starts a 0.
 	 * @param string $nodeTypeFilter (currently) a single node type name to filter the results
-	 * @param \TYPO3\TYPO3CR\Domain\Service\ContextInterface $contentContext The content context, for example derived from the "current node"
-	 * @return \TYPO3\TYPO3CR\Domain\Model Node
+	 * @return array<\TYPO3\TYPO3CR\Domain\Model\Node>|NULL
 	 */
-	public function findRecent($nodePath, $sortingFieldName, $maximumResults = 100, $fromResult = NULL, $nodeTypeFilter = NULL, ContextInterface $contentContext) {
+	public function findRecent($nodePath, $sortingFieldName, ContextInterface $contentContext, $maximumResults = 100, $fromResult = NULL, $nodeTypeFilter = NULL) {
 		$searchQuery = array(
 			'query' => array(
 				'prefix' => array(
@@ -122,7 +117,6 @@ class NodeSearchService {
 			$searchQuery['filter'] = array(
 				'terms' => array('workspace' => array('live', $contentContext->getWorkspace()->getName()))
 			);
-
 		}
 
 		if ($fromResult !== NULL) {

@@ -1,7 +1,6 @@
 <?php
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\FlowQuery;
 
-
 /*                                                                                                  *
  * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
  *                                                                                                  *
@@ -72,7 +71,7 @@ class FindRecentOperation extends AbstractElasticSearchOperation {
 		$maximumResults = isset($arguments[2]) ? intval($arguments[2]) : 1;
 		$fromResult = isset($arguments[3]) ? intval($arguments[3]) : NULL;
 
-		$nodes = $this->nodeSearchService->findRecent($contextNode->getPath(), $dateTimeFieldName, $maximumResults, $fromResult, $nodeTypeFilter, $contextNode->getContext());
+		$nodes = $this->nodeSearchService->findRecent($contextNode->getPath(), $dateTimeFieldName, $contextNode->getContext(), $maximumResults, $fromResult, $nodeTypeFilter);
 		$flowQuery->setContext($nodes);
 	}
 }
