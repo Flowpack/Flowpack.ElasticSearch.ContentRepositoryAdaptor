@@ -12,3 +12,27 @@ Flowpack:
           maximumLogFileSize: 10485760
           logFilesToKeep: 1
           logMessageOrigin: FALSE
+
+      defaultConfigurationPerType:
+
+        string:
+          mapping:
+            type: string
+
+        boolean:
+          mapping:
+            type: boolean
+
+        integer:
+          mapping:
+            type: integer
+
+        date:
+          mapping:
+            type: date
+
+        'TYPO3\Media\Domain\Model\Video':
+          mapping: '' # deliberately don't map this
+
+        'TYPO3\Media\Domain\Model\ImageVariant':
+          mapping: '' # deliberately don't map this

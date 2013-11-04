@@ -1,0 +1,42 @@
+'TYPO3.Neos:Node':
+  properties:
+
+    '__persistenceObjectIdentifier':
+      elasticSearch:
+        mapping:
+          type: string
+          index: not_analyzed
+
+    '__identifier':
+      elasticSearch:
+        mapping:
+          type: string
+          index: not_analyzed
+
+    '__workspace':
+      elasticSearch:
+        mapping:
+          type: string
+          index: not_analyzed
+
+    '__path':
+      elasticSearch:
+        mapping:
+          type: string
+          index: not_analyzed
+
+    '__parentPath':
+      elasticSearch:
+        mapping:
+          type: string
+          index: not_analyzed
+
+    '__sortIndex':
+      elasticSearch:
+        mapping:
+          type: integer
+
+    '_hidden':
+      elasticSearch:
+        mapping:
+          type: boolean

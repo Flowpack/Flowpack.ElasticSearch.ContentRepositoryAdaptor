@@ -34,6 +34,19 @@ class NodeTypeMappingBuilder {
 	 */
 	protected $indexName;
 
+
+	/**
+	 * @var \TYPO3\Flow\Log\LoggerInterface
+	 */
+	protected $logger;
+
+	/**
+	 * The default configuration for a given property type in NodeTypes.yaml, if no explicit elasticSearch section defined there.
+	 *
+	 * @var array
+	 */
+	protected $defaultConfigurationPerType;
+
 	/**
 	 * @var Index
 	 */
@@ -57,10 +70,16 @@ class NodeTypeMappingBuilder {
 	protected $nodeTypeManager;
 
 	/**
+	 * @var \TYPO3\Flow\Error\Result
+	 */
+	protected $lastMappingErrors;
+
+	/**
 	 * @param array $settings
 	 */
 	public function injectSettings(array $settings) {
 		$this->indexName = $settings['indexName'];
+		$this->defaultConfigurationPerType = $settings['defaultConfigurationPerType'];
 	}
 
 	/**
@@ -87,6 +106,7 @@ class NodeTypeMappingBuilder {
 	 * @return \Flowpack\ElasticSearch\Mapping\MappingCollection<\Flowpack\ElasticSearch\Domain\Mapping>
 	 */
 	public function buildMappingInformation() {
+		$this->lastMappingErrors = new \TYPO3\Flow\Error\Result();
 		$response = $this->searchClient->request('HEAD', '/' . $this->indexName);
 		if ($response->getStatusCode() === 404) {
 			$this->searchClient->request('PUT', '/' . $this->indexName);
@@ -103,22 +123,22 @@ class NodeTypeMappingBuilder {
 			$type = new GenericType($this->nodeIndex, self::convertNodeTypeNameToMappingName($nodeTypeName));
 			$mapping = new Mapping($type);
 
-			$mapping->setPropertyByPath('persistenceObjectIdentifier', array('type' => 'string', 'index' => 'not_analyzed'));
-			$mapping->setPropertyByPath('identifier', array('type' => 'string', 'index' => 'not_analyzed'));
-			$mapping->setPropertyByPath('workspace', array('type' => 'string', 'index' => 'not_analyzed'));
-			$mapping->setPropertyByPath('path', array('type' => 'string', 'index' => 'not_analyzed'));
-			$mapping->setPropertyByPath('parentPath', array('type' => 'string', 'index' => 'not_analyzed'));
-			$mapping->setPropertyByPath('sortIndex', array('type' => 'integer'));
-			$mapping->setPropertyByPath('hidden', array('type' => 'boolean'));
+			foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {
+				if (isset($propertyConfiguration['elasticSearch']) && isset($propertyConfiguration['elasticSearch']['mapping'])) {
 
-			foreach ($nodeType->getDeclaredSuperTypes() as $superNodeType) {
-				/** @var NodeType $superNodeType */
-				foreach ($superNodeType->getProperties() as $propertyName => $propertyDefinition) {
-					$this->augmentMappingByProperty($mapping, $propertyName, $propertyDefinition);
+					if (is_array($propertyConfiguration['elasticSearch']['mapping'])) {
+						$mapping->setPropertyByPath($propertyName, $propertyConfiguration['elasticSearch']['mapping']);
+					}
+
+				} elseif (isset($propertyConfiguration['type']) && isset($this->defaultConfigurationPerType[$propertyConfiguration['type']]['mapping'])) {
+
+					if (is_array($this->defaultConfigurationPerType[$propertyConfiguration['type']]['mapping'])) {
+						$mapping->setPropertyByPath($propertyName, $this->defaultConfigurationPerType[$propertyConfiguration['type']]['mapping']);
+					}
+
+				} else {
+					$this->lastMappingErrors->addWarning(new \TYPO3\Flow\Error\Warning('Node Type "' . $nodeTypeName . '" - property "' . $propertyName . '": No ElasticSearch Mapping found.'));
 				}
-			}
-			foreach ($nodeType->getProperties() as $propertyName => $propertyDefinition) {
-				$this->augmentMappingByProperty($mapping, $propertyName, $propertyDefinition);
 			}
 
 			$mappings->add($mapping);
@@ -128,21 +148,10 @@ class NodeTypeMappingBuilder {
 	}
 
 	/**
-	 *
-	 *
-	 * @param Mapping $mapping
-	 * @param string $propertyName
-	 * @param array $propertyDefinition
-	 * @throws \Flowpack\ElasticSearch\Exception
-	 * @return void
+	 * @return \TYPO3\Flow\Error\Result
 	 */
-	protected function augmentMappingByProperty(Mapping $mapping, $propertyName, array $propertyDefinition) {
-		if (TypeHandling::isSimpleType($propertyDefinition['type']) || $propertyDefinition['type'] === 'date') {
-			$mappingType = $propertyDefinition['type'];
-		} else {
-			$mappingType = 'string';
-		}
-		$mapping->setPropertyByPath('properties.properties.' . $propertyName, array('type' => $mappingType));
+	public function getLastMappingErrors() {
+		return $this->lastMappingErrors;
 	}
 }
 
