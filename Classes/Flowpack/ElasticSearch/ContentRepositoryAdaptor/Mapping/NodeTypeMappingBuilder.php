@@ -137,7 +137,7 @@ class NodeTypeMappingBuilder {
 	 * @return void
 	 */
 	protected function augmentMappingByProperty(Mapping $mapping, $propertyName, array $propertyDefinition) {
-		if (TypeHandling::isSimpleType($propertyDefinition['type']) || $propertyDefinition['type'] === 'date') {
+		if ((TypeHandling::isSimpleType($propertyDefinition['type']) || $propertyDefinition['type'] === 'date') && $propertyDefinition['type'] !== 'array') {
 			$mappingType = $propertyDefinition['type'];
 		} else {
 			$mappingType = 'string';
