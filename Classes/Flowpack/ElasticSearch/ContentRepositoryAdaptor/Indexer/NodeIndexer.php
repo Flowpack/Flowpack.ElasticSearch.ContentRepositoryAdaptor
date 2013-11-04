@@ -200,11 +200,13 @@ class NodeIndexer {
 				return $value->format('c');
 			case 'boolean':
 				return ($value) ? 'T' : 'F';
-				break;
 			case 'string':
 			default:
 				if (is_object($value)) {
 					return '<object>';
+				}
+				if (is_array($value)) {
+					return '<array>';
 				}
 
 				return (string)$value;
