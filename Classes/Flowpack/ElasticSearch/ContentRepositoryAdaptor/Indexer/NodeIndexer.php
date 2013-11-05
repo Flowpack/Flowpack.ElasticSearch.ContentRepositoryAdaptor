@@ -11,6 +11,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Factory\ClientFactory;
 use Flowpack\ElasticSearch\Domain\Model\Client;
@@ -181,16 +182,18 @@ class NodeIndexer {
 		$this->nodeIndex->delete();
 	}
 
-
 	/**
 	 * Evaluate an Eel expression.
 	 *
-	 * TODO: REFACTOR TO Eel package (as this is copy/pasted from TypoScript Runtime
+	 * TODO: REFACTOR TO Eel package (as this is copy/pasted from TypoScript Runtime)
 	 *
 	 * @param string $expression The Eel expression to evaluate
-	 * @param \TYPO3\TypoScript\TypoScriptObjects\AbstractTypoScriptObject $contextObject An optional object for the "this" value inside the context
+	 * @param NodeData $node
+	 * @param string $propertyName
+	 * @param mixed $value
+	 * @param string $persistenceObjectIdentifier
 	 * @return mixed The result of the evaluated Eel expression
-	 * @throws \TYPO3\TypoScript\Exception
+	 * @throws Exception
 	 */
 	protected function evaluateEelExpression($expression, NodeData $node, $propertyName, $value, $persistenceObjectIdentifier) {
 		$matches = NULL;
@@ -207,7 +210,7 @@ class NodeIndexer {
 			$value = $this->eelEvaluator->evaluate($matches['exp'], $context);
 			return $value;
 		} else {
-			throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('The Indexing Eel expression "' . $expression . '" used to index property "' . $propertyName . '" of "' . $node->getNodeType()->getName() . '" was not a valid Eel expression. Perhaps you forgot to wrap it in ${...}?', 1383635796);
+			throw new Exception('The Indexing Eel expression "' . $expression . '" used to index property "' . $propertyName . '" of "' . $node->getNodeType()->getName() . '" was not a valid Eel expression. Perhaps you forgot to wrap it in ${...}?', 1383635796);
 		}
 	}
 

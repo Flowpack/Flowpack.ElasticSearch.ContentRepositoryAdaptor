@@ -11,7 +11,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\NodeType;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Factory\ClientFactory;
 use Flowpack\ElasticSearch\Domain\Model\Client;

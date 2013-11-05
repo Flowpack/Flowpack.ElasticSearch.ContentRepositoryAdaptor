@@ -11,9 +11,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
-use Flowpack\ElasticSearch\Domain\Factory\ClientFactory;
-use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
 
