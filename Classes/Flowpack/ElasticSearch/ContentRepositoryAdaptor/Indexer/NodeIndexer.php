@@ -193,18 +193,9 @@ class NodeIndexer {
 	 */
 	public function removeNode(NodeData $nodeData) {
 		$persistenceObjectIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
-		$this->nodeIndex->request('DELETE', '/' . NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType()) . '/' . $persistenceObjectIdentifier);
+		$this->getIndex()->request('DELETE', '/' . NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType()) . '/' . $persistenceObjectIdentifier);
 
 		$this->systemLogger->log(sprintf('NodeIndexer: Removed node %s from index (node actually removed). Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
-	}
-
-	/**
-	 * Removes the whole node index
-	 *
-	 * @return void
-	 */
-	public function deleteIndex() {
-		$this->nodeIndex->delete();
 	}
 
 	/**
