@@ -96,20 +96,20 @@ class NodeSearchService {
 		$searchQuery = array(
 			'query' => array(
 				'prefix' => array(
-					'parentPath' => $nodePath
+					'__parentPath' => $nodePath
 				)
 			),
 			'sort' => array(
-				array('properties.' . $sortingFieldName => 'desc')
+				array($sortingFieldName => 'desc')
 			),
 			'size' => $maximumResults,
-			'fields' => array('path')
+			'fields' => array('__path')
 		);
 
 		if ($nodeTypeFilter !== NULL) {
 			$searchQuery['filter'] = array(
 				'and' => array(
-					array('terms' => array('workspace' => array('live', $contentContext->getWorkspace()->getName()))),
+					array('terms' => array('__workspace' => array('live', $contentContext->getWorkspace()->getName()))),
 					array('type' => array('value' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeTypeFilter)))
 				)
 			);
@@ -132,7 +132,7 @@ class NodeSearchService {
 
 		$nodes = array();
 		foreach ($hits['hits'] as $hit) {
-			$nodes[] = $contentContext->getNode($hit['fields']['path']);
+			$nodes[] = $contentContext->getNode($hit['fields']['__path']);
 		}
 
 		return $nodes;
