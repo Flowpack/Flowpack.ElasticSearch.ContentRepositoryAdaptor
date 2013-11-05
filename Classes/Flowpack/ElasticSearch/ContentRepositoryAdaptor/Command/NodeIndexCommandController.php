@@ -13,6 +13,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
+use Flowpack\ElasticSearch\Domain\Factory\ClientFactory;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 
 /**
  * Provides CLI features for index handling
@@ -39,6 +41,18 @@ class NodeIndexCommandController extends CommandController {
 	protected $nodeIndexer;
 
 	/**
+	 * @Flow\Inject
+	 * @var ClientFactory
+	 */
+	protected $clientFactory;
+
+	/**
+	 * @Flow\Inject
+	 * @var NodeTypeMappingBuilder
+	 */
+	protected $nodeTypeMappingBuilder;
+
+	/**
 	 * @var \TYPO3\Flow\Log\LoggerInterface
 	 */
 	protected $logger;
@@ -55,10 +69,26 @@ class NodeIndexCommandController extends CommandController {
 	 *
 	 * This command indexes (or re-indexes) all nodes contained in the content repository.
 	 *
+	 * @param boolean $recreate if TRUE, completely removes the mapping, and reinitializes the index from scratch.
 	 * @param integer $limit Amount of nodes to index at maximum
 	 * @return void
 	 */
-	public function buildCommand($limit = NULL) {
+	public function buildCommand($recreate = FALSE, $limit = NULL) {
+		if ($recreate === TRUE) {
+			$this->deleteCommand();
+			$this->nodeTypeMappingBuilder->createIndexIfNotExists();
+			$client = $this->clientFactory->create();
+
+			$nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation();
+			foreach ($nodeTypeMappingCollection as $mapping) {
+				/** @var Mapping $mapping */
+				$mapping->getType()->getIndex()->setClient($client);
+				$mapping->apply();
+			}
+
+			$this->logger->log('Updated Mapping.', LOG_INFO);
+		}
+
 		$this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== NULL ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
 
 		$count = 0;
