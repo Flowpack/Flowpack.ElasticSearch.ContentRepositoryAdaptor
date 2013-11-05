@@ -89,6 +89,7 @@ class NodeMappingCommandController extends CommandController {
 	 * @return void
 	 */
 	public function createCommand($client = NULL) {
+		$this->nodeTypeMappingBuilder->createIndexIfNotExists();
 		$client = $this->clientFactory->create($client);
 
 		$nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation();

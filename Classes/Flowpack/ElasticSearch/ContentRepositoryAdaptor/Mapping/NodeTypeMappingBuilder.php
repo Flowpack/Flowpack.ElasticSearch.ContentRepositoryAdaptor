@@ -18,7 +18,6 @@ use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
 use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Flow\Utility\TypeHandling;
 use TYPO3\TYPO3CR\Domain\Model\NodeType;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 
@@ -101,16 +100,24 @@ class NodeTypeMappingBuilder {
 	}
 
 	/**
+	 * Create the index if it does not exist
+	 *
+	 * @return void
+	 */
+	public function createIndexIfNotExists() {
+		$response = $this->searchClient->request('HEAD', '/' . $this->indexName);
+		if ($response->getStatusCode() === 404) {
+			$this->searchClient->request('PUT', '/' . $this->indexName);
+		}
+	}
+
+	/**
 	 * Builds a Mapping Collection from the configured node types
 	 *
 	 * @return \Flowpack\ElasticSearch\Mapping\MappingCollection<\Flowpack\ElasticSearch\Domain\Mapping>
 	 */
 	public function buildMappingInformation() {
 		$this->lastMappingErrors = new \TYPO3\Flow\Error\Result();
-		$response = $this->searchClient->request('HEAD', '/' . $this->indexName);
-		if ($response->getStatusCode() === 404) {
-			$this->searchClient->request('PUT', '/' . $this->indexName);
-		}
 
 		$mappings = new MappingCollection(MappingCollection::TYPE_ENTITY);
 
