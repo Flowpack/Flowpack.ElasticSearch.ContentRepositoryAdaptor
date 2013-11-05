@@ -17,6 +17,8 @@ use TYPO3\Flow\Annotations as Flow;
 
 /**
  * Abstract operation which provides all the basics for an Elastic Search based FlowQuery operation
+ *
+ * @deprecated
  */
 abstract class AbstractElasticSearchOperation extends AbstractOperation {
 
