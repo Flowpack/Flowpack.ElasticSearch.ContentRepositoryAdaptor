@@ -17,8 +17,6 @@ use Flowpack\ElasticSearch\Domain\Model\Client;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\GenericType;
 use Flowpack\ElasticSearch\Domain\Model\Index;
-use Flowpack\ElasticSearch\Domain\Model\Mapping;
-use Flowpack\ElasticSearch\Mapping\MappingCollection;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeData;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
@@ -44,11 +42,6 @@ class NodeIndexer {
 	 * @var Client
 	 */
 	protected $searchClient;
-
-	/**
-	 * @var MappingCollection
-	 */
-	protected $mappings;
 
 	/**
 	 * @Flow\Inject
@@ -86,10 +79,32 @@ class NodeIndexer {
 	protected $settings;
 
 	/**
+	 * the default context variables available inside Eel
+	 *
+	 * @var array
+	 */
+	protected $defaultContextVariables;
+
+	/**
+	 * @var \TYPO3\Eel\CompilingEvaluator
+	 * @Flow\Inject
+	 */
+	protected $eelEvaluator;
+
+	/**
+	 * The default configuration for a given property type in NodeTypes.yaml, if no explicit elasticSearch section defined there.
+	 *
+	 * @var array
+	 */
+	protected $defaultConfigurationPerType;
+
+	/**
 	 * @param array $settings
 	 */
 	public function injectSettings(array $settings) {
 		$this->indexName = $settings['indexName'];
+		$this->defaultConfigurationPerType = $settings['defaultConfigurationPerType'];
+		$this->settings = $settings;
 	}
 
 	/**
@@ -100,7 +115,6 @@ class NodeIndexer {
 	public function initializeObject() {
 		$this->searchClient = $this->clientFactory->create();
 		$this->nodeIndex = $this->searchClient->findIndex($this->indexName);
-		$this->mappings = $this->nodeTypeMappingBuilder->buildMappingInformation();
 	}
 
 	/**
@@ -118,44 +132,28 @@ class NodeIndexer {
 			$this->systemLogger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 		}
 
-		$convertedNodeProperties = array();
-		foreach ($nodeData->getProperties() as $propertyName => $propertyValue) {
+		$nodePropertiesToBeStoredInElasticSearchIndex = array();
 
-			// FIXME: The MappingCollection of the ES package needs to be refactored / is too entity specific and needs
-			// a way to query mappings for a specific (node) type:
-			$foundMapping = NULL;
-			foreach ($this->mappings as $mapping) {
-				/** @var Mapping $mapping */
-				if ($mapping->getType()->getName() === NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType())) {
-					$foundMapping = $mapping;
-				}
-			}
+		foreach ($nodeData->getNodeType()->getProperties() as $propertyName => $propertyConfiguration) {
 
-			// FIXME: Cleanup handling of unstructured content:
-			if ($foundMapping === NULL) {
-				if (NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType()) === 'unstructured') {
-					$convertedNodeProperties[$propertyName] = $propertyValue;
-				} else {
-					throw new \Exception('Did not find Elastic Search mapping for node type ' . $nodeData->getNodeType(), 1382511542);
+			if (isset($propertyConfiguration['elasticSearch']) && isset($propertyConfiguration['elasticSearch']['indexing'])) {
+				if ($propertyConfiguration['elasticSearch']['indexing'] !== '') {
+					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($propertyConfiguration['elasticSearch']['indexing'], $nodeData, $propertyName, ($nodeData->hasProperty($propertyName) ? $nodeData->getProperty($propertyName) : NULL), $persistenceObjectIdentifier);
 				}
+
+			} elseif (isset($propertyConfiguration['type']) && isset($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'])) {
+
+				if ($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'] !== '') {
+					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'], $nodeData, $propertyName, ($nodeData->hasProperty($propertyName) ? $nodeData->getProperty($propertyName) : NULL), $persistenceObjectIdentifier);
+				}
+
 			} else {
-				$convertedNodeProperties[$propertyName] = $this->convertProperty($foundMapping->getPropertyByPath('properties.properties.' . $propertyName)['type'], $propertyValue);
+				$this->systemLogger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $persistenceObjectIdentifier, $propertyName), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 			}
 		}
 
 		$document = new ElasticSearchDocument($mappingType,
-			array(
-				'persistenceObjectIdentifier' => $persistenceObjectIdentifier,
-				'identifier' => $nodeData->getIdentifier(),
-				'workspace' => $nodeData->getWorkspace()->getName(),
-				'path' => $nodeData->getPath(),
-				'parentPath' => $nodeData->getParentPath(),
-				'sortIndex' => $nodeData->getIndex(),
-				'properties' => $convertedNodeProperties,
-				'hidden' => $nodeData->isHidden(),
-				'hiddenBeforeDateTime' => $this->convertProperty('date', $nodeData->getHiddenBeforeDateTime()),
-				'hiddenAfterDateTime' => $this->convertProperty('date', $nodeData->getHiddenAfterDateTime()),
-			),
+			$nodePropertiesToBeStoredInElasticSearchIndex,
 			$persistenceObjectIdentifier
 		);
 		$document->store();
@@ -183,33 +181,61 @@ class NodeIndexer {
 		$this->nodeIndex->delete();
 	}
 
+
 	/**
-	 * Converts the given property value into a format which is suitable for Elastic Search.
+	 * Evaluate an Eel expression.
 	 *
-	 * @param string $type The Elastic Search type to convert to
-	 * @param mixed $value The value to convert
-	 * @return string The converted value
+	 * TODO: REFACTOR TO Eel package (as this is copy/pasted from TypoScript Runtime
+	 *
+	 * @param string $expression The Eel expression to evaluate
+	 * @param \TYPO3\TypoScript\TypoScriptObjects\AbstractTypoScriptObject $contextObject An optional object for the "this" value inside the context
+	 * @return mixed The result of the evaluated Eel expression
+	 * @throws \TYPO3\TypoScript\Exception
 	 */
-	protected function convertProperty($type, $value) {
-		switch ($type) {
-			case 'date':
-				if (!$value instanceof \DateTime) {
-					$value = new \DateTime($value);
-				}
+	protected function evaluateEelExpression($expression, NodeData $node, $propertyName, $value, $persistenceObjectIdentifier) {
+		$matches = NULL;
+		if (preg_match(\TYPO3\Eel\Package::EelExpressionRecognizer, $expression, $matches)) {
+			$contextVariables = array_merge($this->getDefaultContextVariables(), array(
+				'node' => $node,
+				'propertyName' => $propertyName,
+				'value' => $value,
+				'persistenceObjectIdentifier' => $persistenceObjectIdentifier
+			));
 
-				return $value->format('c');
-			case 'boolean':
-				return ($value) ? 'T' : 'F';
-			case 'string':
-			default:
-				if (is_object($value)) {
-					return '<object>';
-				}
-				if (is_array($value)) {
-					return '<array>';
-				}
+			$context = new \TYPO3\Eel\Context($contextVariables);
 
-				return (string)$value;
+			$value = $this->eelEvaluator->evaluate($matches['exp'], $context);
+			return $value;
+		} else {
+			throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('The Indexing Eel expression "' . $expression . '" used to index property "' . $propertyName . '" of "' . $node->getNodeType()->getName() . '" was not a valid Eel expression. Perhaps you forgot to wrap it in ${...}?', 1383635796);
 		}
+	}
+
+	/**
+	 * Get variables from configuration that should be set in the context by default.
+	 * For example Eel helpers are made available by this.
+	 *
+	 * TODO: REFACTOR TO Eel package (as this is copy/pasted from TypoScript Runtime
+	 *
+	 * @return array Array with default context variable objects.
+	 */
+	protected function getDefaultContextVariables() {
+		if ($this->defaultContextVariables === NULL) {
+			$this->defaultContextVariables = array();
+			if (isset($this->settings['defaultContext']) && is_array($this->settings['defaultContext'])) {
+				foreach ($this->settings['defaultContext'] as $variableName => $objectType) {
+					$currentPathBase = &$this->defaultContextVariables;
+					$variablePathNames = explode('.', $variableName);
+					foreach ($variablePathNames as $pathName) {
+						if (!isset($currentPathBase[$pathName])) {
+							$currentPathBase[$pathName] = array();
+						}
+						$currentPathBase = &$currentPathBase[$pathName];
+					}
+					$currentPathBase = new $objectType();
+				}
+			}
+		}
+		return $this->defaultContextVariables;
 	}
 }

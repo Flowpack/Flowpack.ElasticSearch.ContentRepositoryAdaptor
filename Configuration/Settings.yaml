@@ -18,21 +18,40 @@ Flowpack:
         string:
           mapping:
             type: string
+          indexing: ${value}
 
         boolean:
           mapping:
             type: boolean
+          indexing: ${value}
 
         integer:
           mapping:
             type: integer
+          indexing: ${value}
 
         date:
           mapping:
             type: date
+          indexing: ${value.format('c')}
 
         'TYPO3\Media\Domain\Model\Video':
-          mapping: '' # deliberately don't map this
+          mapping: '' # deliberately don't map or index this
+          indexing: ''
 
         'TYPO3\Media\Domain\Model\ImageVariant':
-          mapping: '' # deliberately don't map this
+          mapping: '' # deliberately don't map or index this
+          indexing: ''
+
+
+      # Default context objects that are available in Eel expressions
+      #
+      # New variables should be added with a package key prefix. Example:
+      #
+      #   defaultContext:
+      #     'MyPackage.String': 'MyPackage\Helper\StringHelper'
+      #
+      defaultContext:
+        String: 'TYPO3\Eel\Helper\StringHelper'
+        Array: 'TYPO3\Eel\Helper\ArrayHelper'
+        Date: 'TYPO3\Eel\Helper\DateHelper'
