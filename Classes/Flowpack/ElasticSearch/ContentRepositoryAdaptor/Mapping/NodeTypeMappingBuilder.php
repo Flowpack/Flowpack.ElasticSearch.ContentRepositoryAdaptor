@@ -11,9 +11,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
-use Flowpack\ElasticSearch\Domain\Factory\ClientFactory;
-use Flowpack\ElasticSearch\Domain\Model\Client;
-use Flowpack\ElasticSearch\Domain\Model\GenericType;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
@@ -29,38 +26,11 @@ use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 class NodeTypeMappingBuilder {
 
 	/**
-	 * @var string
-	 */
-	protected $indexName;
-
-
-	/**
-	 * @var \TYPO3\Flow\Log\LoggerInterface
-	 */
-	protected $logger;
-
-	/**
 	 * The default configuration for a given property type in NodeTypes.yaml, if no explicit elasticSearch section defined there.
 	 *
 	 * @var array
 	 */
 	protected $defaultConfigurationPerType;
-
-	/**
-	 * @var Index
-	 */
-	protected $nodeIndex;
-
-	/**
-	 * @var Client
-	 */
-	protected $searchClient;
-
-	/**
-	 * @Flow\Inject
-	 * @var ClientFactory
-	 */
-	protected $clientFactory;
 
 	/**
 	 * @Flow\Inject
@@ -77,16 +47,7 @@ class NodeTypeMappingBuilder {
 	 * @param array $settings
 	 */
 	public function injectSettings(array $settings) {
-		$this->indexName = $settings['indexName'];
 		$this->defaultConfigurationPerType = $settings['defaultConfigurationPerType'];
-	}
-
-	/**
-	 * Initializes the searchClient and connects to the Index
-	 */
-	public function initializeObject() {
-		$this->searchClient = $this->clientFactory->create();
-		$this->nodeIndex = $this->searchClient->findIndex($this->indexName);
 	}
 
 	/**
@@ -100,34 +61,23 @@ class NodeTypeMappingBuilder {
 	}
 
 	/**
-	 * Create the index if it does not exist
-	 *
-	 * @return void
-	 */
-	public function createIndexIfNotExists() {
-		$response = $this->searchClient->request('HEAD', '/' . $this->indexName);
-		if ($response->getStatusCode() === 404) {
-			$this->searchClient->request('PUT', '/' . $this->indexName);
-		}
-	}
-
-	/**
 	 * Builds a Mapping Collection from the configured node types
 	 *
-	 * @return \Flowpack\ElasticSearch\Mapping\MappingCollection<\Flowpack\ElasticSearch\Domain\Mapping>
+	 * @param \Flowpack\ElasticSearch\Domain\Model\Index $index
+	 * @return \Flowpack\ElasticSearch\Mapping\MappingCollection<\Flowpack\ElasticSearch\Domain\Model\Mapping>
 	 */
-	public function buildMappingInformation() {
+	public function buildMappingInformation(Index $index) {
 		$this->lastMappingErrors = new \TYPO3\Flow\Error\Result();
 
 		$mappings = new MappingCollection(MappingCollection::TYPE_ENTITY);
 
+		/** @var NodeType $nodeType */
 		foreach ($this->nodeTypeManager->getNodeTypes() as $nodeTypeName => $nodeType) {
 			if ($nodeTypeName === 'unstructured' || $nodeType->isAbstract()) {
 				continue;
 			}
 
-			/** @var NodeType $nodeType */
-			$type = new GenericType($this->nodeIndex, self::convertNodeTypeNameToMappingName($nodeTypeName));
+			$type = $index->findType(self::convertNodeTypeNameToMappingName($nodeTypeName));
 			$mapping = new Mapping($type);
 
 			foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {

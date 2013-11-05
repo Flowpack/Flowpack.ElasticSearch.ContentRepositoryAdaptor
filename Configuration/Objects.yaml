@@ -14,3 +14,8 @@ Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandControll
           4:
             setting: Flowpack.ElasticSearch.ContentRepositoryAdaptor.log.backendOptions
 
+
+Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient:
+  scope: singleton
+  factoryObjectName: Flowpack\ElasticSearch\Domain\Factory\ClientFactory
+  factoryMethodName: create

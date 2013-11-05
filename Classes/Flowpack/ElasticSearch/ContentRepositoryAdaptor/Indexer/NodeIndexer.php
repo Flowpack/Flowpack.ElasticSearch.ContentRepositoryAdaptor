@@ -30,25 +30,27 @@ use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 class NodeIndexer {
 
 	/**
+	 * The base name of the index to be used. Taken from the "indexName" property in the settings.
+	 *
+	 * Might get the $indexNamePostfix, which can be used for e.g. appending a date. That's why in code, you should
+	 * always use $this->getIndexName().
+	 *
 	 * @var string
 	 */
 	protected $indexName;
 
 	/**
-	 * @var Index
+	 * Optional postfix for the index, e.g. to have different indexes by timestamp.
+	 *
+	 * @var string
 	 */
-	protected $nodeIndex;
-
-	/**
-	 * @var Client
-	 */
-	protected $searchClient;
+	protected $indexNamePostfix = '';
 
 	/**
 	 * @Flow\Inject
-	 * @var ClientFactory
+	 * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient
 	 */
-	protected $clientFactory;
+	protected $searchClient;
 
 	/**
 	 * @Flow\Inject
@@ -109,13 +111,36 @@ class NodeIndexer {
 	}
 
 	/**
-	 * Initialization
+	 * Returns the index name, with optional indexNamePostfix appended.
 	 *
+	 * @return string
+	 */
+	public function getIndexName() {
+		$indexName = $this->indexName;
+		if (strlen($this->indexNamePostfix) > 0) {
+			$indexName .= '-' . $this->indexNamePostfix;
+		}
+
+		return $indexName;
+	}
+
+	/**
+	 * Set the postfix for the index name
+	 *
+	 * @param $indexNamePostfix
 	 * @return void
 	 */
-	public function initializeObject() {
-		$this->searchClient = $this->clientFactory->create();
-		$this->nodeIndex = $this->searchClient->findIndex($this->indexName);
+	public function setIndexNamePostfix($indexNamePostfix) {
+		$this->indexNamePostfix = $indexNamePostfix;
+	}
+
+	/**
+	 * Return the currently active index to be used for indexing
+	 *
+	 * @return Index
+	 */
+	public function getIndex() {
+		return $this->searchClient->findIndex($this->getIndexName());
 	}
 
 	/**
@@ -126,7 +151,7 @@ class NodeIndexer {
 	public function indexNode(NodeData $nodeData) {
 		$persistenceObjectIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
 
-		$mappingType = new GenericType($this->nodeIndex, NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType()));
+		$mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType()));
 
 		if ($nodeData->isRemoved()) {
 			$mappingType->deleteDocumentById($persistenceObjectIdentifier);
@@ -240,5 +265,52 @@ class NodeIndexer {
 			}
 		}
 		return $this->defaultContextVariables;
+	}
+
+	/**
+	 *
+	 *
+	 * @return void
+	 */
+	public function updateIndexAlias() {
+		$aliasName = $this->indexName; // The alias name is the unprefixed index name
+		if ($this->getIndexName() === $aliasName) {
+			throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('UpdateIndexAlias is only allowed to be called when $this->setIndexNamePostix has been created.', 1383649061);
+		}
+
+		if (!$this->getIndex()->exists()) {
+			throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('the target index for updateIndexAlias does not exist. This shall never happen.', 1383649125);
+		}
+
+
+		$aliasActions = array();
+		try {
+			$response = $this->searchClient->request('GET', '/*/_alias/' . $aliasName);
+			if ($response->getStatusCode() !== 200) {
+				throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('the alias "' . $aliasName . '" was not found with some unexpected error... (return code: ' .  $response->getStatusCode(), 1383650137);
+			}
+
+			$indexNames = array_keys($response->getTreatedContent());
+
+			foreach ($indexNames as $indexName) {
+				$aliasActions[] = array(
+					'remove' => array(
+						'index' => $indexName,
+						'alias' => $aliasName
+					)
+				);
+			}
+		} catch(\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
+			// in case of 404, do not throw an error...
+		}
+
+		$aliasActions[] = array(
+			'add' => array(
+				'index' => $this->getIndexName(),
+				'alias' => $aliasName
+			)
+		);
+
+		$this->searchClient->request('POST', '/_aliases', array(), \json_encode(array('actions' => $aliasActions)));
 	}
 }
