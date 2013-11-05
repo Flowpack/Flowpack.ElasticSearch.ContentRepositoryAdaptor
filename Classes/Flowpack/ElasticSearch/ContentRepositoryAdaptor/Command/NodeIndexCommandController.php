@@ -64,6 +64,41 @@ class NodeIndexCommandController extends CommandController {
 		$this->indexName = $settings['indexName'];
 	}
 
+
+	/**
+	 * Show the mapping which would be sent to the ElasticSearch server
+	 *
+	 * @return void
+	 */
+	public function showMappingCommand() {
+		$nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation();
+		foreach ($nodeTypeMappingCollection as $mapping) {
+			/** @var Mapping $mapping */
+			$this->output(\Symfony\Component\Yaml\Yaml::dump($mapping->asArray(), 5, 2));
+			$this->outputLine();
+		}
+		$this->outputLine('------------');
+
+		$mappingErrors = $this->nodeTypeMappingBuilder->getLastMappingErrors();
+		if ($mappingErrors->hasErrors()) {
+			$this->outputLine('<b>Mapping Errors</b>');
+			foreach ($mappingErrors->getFlattenedErrors() as $errors) {
+				foreach ($errors as $error) {
+					$this->outputLine($error);
+				}
+			}
+		}
+
+		if ($mappingErrors->hasWarnings()) {
+			$this->outputLine('<b>Mapping Warnings</b>');
+			foreach ($mappingErrors->getFlattenedWarnings() as $warnings) {
+				foreach ($warnings as $warning) {
+					$this->outputLine($warning);
+				}
+			}
+		}
+	}
+
 	/**
 	 * (Re-)index all nodes
 	 *
