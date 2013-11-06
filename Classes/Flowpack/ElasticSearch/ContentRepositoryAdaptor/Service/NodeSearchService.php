@@ -21,6 +21,7 @@ use TYPO3\TYPO3CR\Domain\Service\ContextInterface;
 /**
  * Search service for TYPO3CR nodes
  *
+ * @deprecated
  * @Flow\Scope("singleton")
  */
 class NodeSearchService {

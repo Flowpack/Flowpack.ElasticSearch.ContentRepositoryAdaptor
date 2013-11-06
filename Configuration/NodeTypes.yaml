@@ -35,7 +35,8 @@
         mapping:
           type: string
           index: not_analyzed
-        indexing: ${node.getParentPath()}
+        # we index *all* parent paths as separate tokens to allow for efficient searching without a prefix query
+        indexing: ${ElasticSearch.buildAllPathPrefixes(node.getParentPath())}
 
     '__sortIndex':
       elasticSearch:
@@ -47,6 +48,14 @@
       elasticSearch:
         mapping: '' # deliberately don't map or index this
         indexing: ''
+
+    # we index the node type INCLUDING ALL SUPERTYPES
+    '__typeAndSupertypes':
+      elasticSearch:
+        mapping:
+          type: string
+          index: not_analyzed
+        indexing: ${ElasticSearch.extractNodeTypeNamesAndSupertypes(node.getNodeType())}
 
 'TYPO3.Neos:Hidable':
   properties:

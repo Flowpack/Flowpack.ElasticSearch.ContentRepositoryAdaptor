@@ -30,11 +30,6 @@ class NodeTypeCommandController extends CommandController {
 	protected $nodeTypeManager;
 
 	/**
-	 * @var \TYPO3\Flow\Log\LoggerInterface
-	 */
-	protected $logger;
-
-	/**
 	 * show a single node type after applying all supertypes etc
 	 *
 	 * @param string $nodeType the node type to optionally filter for

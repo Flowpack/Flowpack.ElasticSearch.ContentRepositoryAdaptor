@@ -18,6 +18,8 @@ use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 /**
  * "findRecent()" operation working on TYPO3CR nodes stored in Elastic Search documents. This operation allows for retrieval
  * of nodes specified by a path. The current context node is also used as a context for evaluating relative paths.
+ *
+ * @deprecated
  */
 class FindRecentOperation extends AbstractElasticSearchOperation {
 
