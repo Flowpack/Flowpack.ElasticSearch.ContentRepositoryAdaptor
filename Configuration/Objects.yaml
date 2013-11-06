@@ -33,5 +33,5 @@ Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface:
 
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient:
   scope: singleton
-  factoryObjectName: Flowpack\ElasticSearch\Domain\Factory\ClientFactory
+  factoryObjectName: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Client\ClientFactory
   factoryMethodName: create
