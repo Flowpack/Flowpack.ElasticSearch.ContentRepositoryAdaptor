@@ -168,6 +168,10 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 	 * @return ElasticSearchQueryBuilder
 	 */
 	public function limit($limit) {
+		if (!$limit) {
+			return $this;
+		}
+
 		$currentWorkspaceNestingLevel = 1;
 		$workspace = $this->contextNode->getContext()->getWorkspace();
 		while ($workspace->getBaseWorkspace() !== NULL) {
@@ -295,7 +299,7 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 		foreach ($hits['hits'] as $hit) {
 			$node = $this->contextNode->getNode($hit['fields']['__path']);
 			$nodes[$node->getIdentifier()] = $node;
-			if (count($nodes) >= $this->limit) {
+			if ($this->limit > 0 && count($nodes) >= $this->limit) {
 				break;
 			}
 		}
