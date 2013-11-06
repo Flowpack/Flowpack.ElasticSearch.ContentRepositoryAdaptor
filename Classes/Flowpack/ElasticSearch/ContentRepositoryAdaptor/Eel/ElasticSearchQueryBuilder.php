@@ -158,6 +158,12 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 	/**
 	 * output only $limit records
 	 *
+	 * Internally, we fetch $limit*$workspaceNestingLevel records, because we fetch the *conjunction* of all workspaces;
+	 * and then we filter after execution when we have found the right number of results.
+	 *
+	 * This algorithm can be re-checked when https://github.com/elasticsearch/elasticsearch/issues/3300 is merged.
+	 *
+	 *
 	 * @param integer $limit
 	 * @return ElasticSearchQueryBuilder
 	 */
@@ -169,8 +175,9 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 			$workspace = $workspace->getBaseWorkspace();
 		}
 
-		// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-request-from-size.html
 		$this->limit = $limit;
+
+		// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-request-from-size.html
 		$this->request['size'] = $limit * $currentWorkspaceNestingLevel;
 
 		return $this;
