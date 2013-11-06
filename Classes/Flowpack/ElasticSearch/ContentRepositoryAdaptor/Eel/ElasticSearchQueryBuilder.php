@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use TYPO3\Flow\Annotations as Flow;
+use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 
 /**
  * Query Builder for ElasticSearch Queries
@@ -29,7 +30,7 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 	/**
 	 * The node inside which searching should happen
 	 *
-	 * @var \TYPO3\TYPO3CR\Domain\Model\NodeInterface
+	 * @var NodeInterface
 	 */
 	protected $contextNode;
 
@@ -43,6 +44,11 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 	 * @var boolean
 	 */
 	protected $logThisQuery = FALSE;
+
+	/**
+	 * @var integer
+	 */
+	protected $limit;
 
 	/**
 	 * The ElasticSearch request, as it is being built up.
@@ -76,9 +82,9 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 	);
 
 	/**
-	 * @param \TYPO3\TYPO3CR\Domain\Model\NodeInterface $contextNode
+	 * @param NodeInterface $contextNode
 	 */
-	public function __construct(\TYPO3\TYPO3CR\Domain\Model\NodeInterface $contextNode) {
+	public function __construct(NodeInterface $contextNode) {
 		// on indexing, the __parentPath is tokenized to contain ALL parent path parts,
 		// e.g. /foo, /foo/bar/, /foo/bar/baz; to speed up matching.. That's why we use a simple "term" filter here.
 		// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-term-filter.html
@@ -156,10 +162,33 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 	 * @return ElasticSearchQueryBuilder
 	 */
 	public function limit($limit) {
+		$currentWorkspaceNestingLevel = 1;
+		$workspace = $this->contextNode->getContext()->getWorkspace();
+		while ($workspace->getBaseWorkspace() !== NULL) {
+			$currentWorkspaceNestingLevel ++;
+			$workspace = $workspace->getBaseWorkspace();
+		}
+
 		// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-request-from-size.html
-		$this->request['size'] = $limit;
+		$this->limit = $limit;
+		$this->request['size'] = $limit * $currentWorkspaceNestingLevel;
 
 		return $this;
+	}
+
+	/**
+	 * add an exact-match query for a given property
+	 *
+	 * @param $propertyName
+	 * @param $propertyValue
+	 * @return void
+	 */
+	public function exactMatch($propertyName, $propertyValue) {
+		if ($propertyValue instanceof NodeInterface) {
+			$propertyValue = $propertyValue->getIdentifier();
+		}
+
+		return $this->queryFilter('term', array($propertyName => $propertyValue));
 	}
 
 	/**
@@ -252,12 +281,16 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 		$hits = $response->getTreatedContent()['hits'];
 
 		if ($hits['total'] === 0) {
-			return NULL;
+			return array();
 		}
 
 		$nodes = array();
 		foreach ($hits['hits'] as $hit) {
-			$nodes[] = $this->contextNode->getNode($hit['fields']['__path']);
+			$node = $this->contextNode->getNode($hit['fields']['__path']);
+			$nodes[$node->getIdentifier()] = $node;
+			if (count($nodes) >= $this->limit) {
+				break;
+			}
 		}
 
 		return $nodes;

@@ -47,6 +47,18 @@ Flowpack:
           mapping: '' # deliberately don't map or index this
           indexing: ''
 
+        'references':
+          mapping:
+            type: string # an array of strings, to be precise
+            index: not_analyzed
+          indexing: ${ElasticSearch.convertArrayOfNodesToArrayOfNodeIdentifiers(value)}
+
+        'reference':
+          mapping:
+            type: string
+            index: not_analyzed
+          indexing: ${value.getIdentifier()}
+
 
       # Default context objects that are available in Eel expressions
       #

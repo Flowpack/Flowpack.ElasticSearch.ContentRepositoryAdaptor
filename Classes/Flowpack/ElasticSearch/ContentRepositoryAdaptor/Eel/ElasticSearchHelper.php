@@ -97,6 +97,24 @@ class ElasticSearchHelper implements ProtectedContextAwareInterface {
 	}
 
 	/**
+	 * Convert an array of nodes to an array of node identifiers
+	 *
+	 * @param array<NodeInterface> $nodes
+	 * @return array
+	 */
+	public function convertArrayOfNodesToArrayOfNodeIdentifiers($nodes) {
+		if (!is_array($nodes) && !$nodes instanceof \Traversable) {
+			return array();
+		}
+		$nodeIdentifiers = array();
+		foreach ($nodes as $node) {
+			$nodeIdentifiers[] = $node->getIdentifier();
+		}
+
+		return $nodeIdentifiers;
+	}
+
+	/**
 	 * All methods are considered safe
 	 *
 	 * @param string $methodName
