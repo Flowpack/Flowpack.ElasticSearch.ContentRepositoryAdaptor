@@ -10,10 +10,26 @@ Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandControll
           2:
             value: 'TYPO3\Flow\Log\Logger'
           3:
-            value: 'TYPO3\Flow\Log\Backend\AnsiConsoleBackend'
+            value:
+              fileBackend: 'TYPO3\Flow\Log\Backend\FileBackend'
+              ansiConsoleBackend: 'TYPO3\Flow\Log\Backend\AnsiConsoleBackend'
           4:
             setting: Flowpack.ElasticSearch.ContentRepositoryAdaptor.log.backendOptions
 
+Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface:
+  scope: singleton
+  factoryObjectName: TYPO3\Flow\Log\LoggerFactory
+  factoryMethodName: create
+  arguments:
+    1:
+      value: 'Flowpack.ElasticSearch.ContentRepositoryAdaptor'
+    2:
+      value: 'TYPO3\Flow\Log\Logger'
+    3:
+      value:
+        fileBackend: 'TYPO3\Flow\Log\Backend\FileBackend'
+    4:
+      setting: Flowpack.ElasticSearch.ContentRepositoryAdaptor.log.backendOptions
 
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient:
   scope: singleton

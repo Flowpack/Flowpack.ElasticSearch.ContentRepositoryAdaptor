@@ -42,7 +42,7 @@ class NodeIndexCommandController extends CommandController {
 	protected $nodeTypeMappingBuilder;
 
 	/**
-	 * @var \TYPO3\Flow\Log\LoggerInterface
+	 * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface
 	 */
 	protected $logger;
 

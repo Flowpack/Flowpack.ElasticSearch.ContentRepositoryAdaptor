@@ -1,5 +1,6 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
+
 
 /*                                                                                                  *
  * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
@@ -12,34 +13,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  *                                                                                                  */
 
 use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Flow\Cli\CommandController;
 
 /**
- * Provides CLI features for debugging the node types.
- *
- * TODO: move to TYPO3CR or Neos
- *
- * @Flow\Scope("singleton")
+ * ElasticSearch Logger Interface
  */
-class NodeTypeCommandController extends CommandController {
+interface LoggerInterface extends \TYPO3\Flow\Log\LoggerInterface {
 
-	/**
-	 * @Flow\Inject
-	 * @var \TYPO3\TYPO3CR\Domain\Service\NodeTypeManager
-	 */
-	protected $nodeTypeManager;
-
-	/**
-	 * show a single node type after applying all supertypes etc
-	 *
-	 * @param string $nodeType the node type to optionally filter for
-	 */
-	public function showCommand($nodeType = NULL) {
-		$configuration = $this->nodeTypeManager->getFullConfiguration();
-
-		if ($nodeType !== NULL) {
-			$configuration = $configuration[$nodeType];
-		}
-		$this->output(\Symfony\Component\Yaml\Yaml::dump($configuration, 5, 2));
-	}
 }

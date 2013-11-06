@@ -71,10 +71,10 @@ class NodeIndexer {
 	protected $nodeTypeManager;
 
 	/**
-	 * @var \TYPO3\Flow\Log\SystemLoggerInterface
 	 * @Flow\Inject
+	 * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface
 	 */
-	protected $systemLogger;
+	protected $logger;
 
 	/**
 	 * @var array
@@ -155,7 +155,7 @@ class NodeIndexer {
 
 		if ($nodeData->isRemoved()) {
 			$mappingType->deleteDocumentById($persistenceObjectIdentifier);
-			$this->systemLogger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+			$this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 		}
 
 		$nodePropertiesToBeStoredInElasticSearchIndex = array();
@@ -174,7 +174,7 @@ class NodeIndexer {
 				}
 
 			} else {
-				$this->systemLogger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $persistenceObjectIdentifier, $propertyName), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+				$this->logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $persistenceObjectIdentifier, $propertyName), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 			}
 		}
 
@@ -184,7 +184,7 @@ class NodeIndexer {
 		);
 		$document->store();
 
-		$this->systemLogger->log(sprintf('NodeIndexer: Added / updated node %s. Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+		$this->logger->log(sprintf('NodeIndexer: Added / updated node %s. Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 	}
 
 	/**
@@ -195,7 +195,7 @@ class NodeIndexer {
 		$persistenceObjectIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
 		$this->getIndex()->request('DELETE', '/' . NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType()) . '/' . $persistenceObjectIdentifier);
 
-		$this->systemLogger->log(sprintf('NodeIndexer: Removed node %s from index (node actually removed). Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+		$this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node actually removed). Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 	}
 
 	/**
