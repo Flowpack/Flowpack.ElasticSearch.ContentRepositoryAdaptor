@@ -24,17 +24,6 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuild
 class NodeIndexCommandController extends CommandController {
 
 	/**
-	 * @var string
-	 */
-	protected $indexName;
-
-	/**
-	 * @Flow\Inject
-	 * @var \TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository
-	 */
-	protected $nodeDataRepository;
-
-	/**
 	 * @Flow\Inject
 	 * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer
 	 */
@@ -42,9 +31,9 @@ class NodeIndexCommandController extends CommandController {
 
 	/**
 	 * @Flow\Inject
-	 * @var ClientFactory
+	 * @var \TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository
 	 */
-	protected $clientFactory;
+	protected $nodeDataRepository;
 
 	/**
 	 * @Flow\Inject
@@ -57,37 +46,61 @@ class NodeIndexCommandController extends CommandController {
 	 */
 	protected $logger;
 
+
+
 	/**
-	 * @param array $settings
+	 * Show the mapping which would be sent to the ElasticSearch server
+	 *
+	 * @return void
 	 */
-	public function injectSettings(array $settings) {
-		$this->indexName = $settings['indexName'];
+	public function showMappingCommand() {
+		$nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
+		foreach ($nodeTypeMappingCollection as $mapping) {
+			/** @var Mapping $mapping */
+			$this->output(\Symfony\Component\Yaml\Yaml::dump($mapping->asArray(), 5, 2));
+			$this->outputLine();
+		}
+		$this->outputLine('------------');
+
+		$mappingErrors = $this->nodeTypeMappingBuilder->getLastMappingErrors();
+		if ($mappingErrors->hasErrors()) {
+			$this->outputLine('<b>Mapping Errors</b>');
+			foreach ($mappingErrors->getFlattenedErrors() as $errors) {
+				foreach ($errors as $error) {
+					$this->outputLine($error);
+				}
+			}
+		}
+
+		if ($mappingErrors->hasWarnings()) {
+			$this->outputLine('<b>Mapping Warnings</b>');
+			foreach ($mappingErrors->getFlattenedWarnings() as $warnings) {
+				foreach ($warnings as $warning) {
+					$this->outputLine($warning);
+				}
+			}
+		}
 	}
 
 	/**
-	 * (Re-)index all nodes
+	 * Index all nodes by creating a new index and when everything was completed, switch the index alias.
 	 *
-	 * This command indexes (or re-indexes) all nodes contained in the content repository.
+	 * This command (re-)indexes all nodes contained in the content repository and sets the schema beforehand.
 	 *
-	 * @param boolean $recreate if TRUE, completely removes the mapping, and reinitializes the index from scratch.
 	 * @param integer $limit Amount of nodes to index at maximum
 	 * @return void
 	 */
-	public function buildCommand($recreate = FALSE, $limit = NULL) {
-		if ($recreate === TRUE) {
-			$this->deleteCommand();
-			$this->nodeTypeMappingBuilder->createIndexIfNotExists();
-			$client = $this->clientFactory->create();
+	public function buildCommand($limit = NULL) {
+		$this->nodeIndexer->setIndexNamePostfix(time());
+		$this->nodeIndexer->getIndex()->create();
+		$this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
 
-			$nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation();
-			foreach ($nodeTypeMappingCollection as $mapping) {
-				/** @var Mapping $mapping */
-				$mapping->getType()->getIndex()->setClient($client);
-				$mapping->apply();
-			}
-
-			$this->logger->log('Updated Mapping.', LOG_INFO);
+		$nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
+		foreach ($nodeTypeMappingCollection as $mapping) {
+			/** @var Mapping $mapping */
+			$mapping->apply();
 		}
+		$this->logger->log('Updated Mapping.', LOG_INFO);
 
 		$this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== NULL ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
 
@@ -102,17 +115,9 @@ class NodeIndexCommandController extends CommandController {
 		}
 
 		$this->logger->log('Done.', LOG_INFO);
-	}
+		$this->nodeIndexer->getIndex()->refresh();
 
-	/**
-	 * Deletes the node index
-	 *
-	 * This command deletes the whole node index.
-	 *
-	 * @return void
-	 */
-	public function deleteCommand() {
-		$this->nodeIndexer->deleteIndex();
-		$this->logger->log(sprintf('Deleted the node index "%s". ', $this->indexName), LOG_INFO);
+		// TODO: smoke tests
+		$this->nodeIndexer->updateIndexAlias();
 	}
 }
