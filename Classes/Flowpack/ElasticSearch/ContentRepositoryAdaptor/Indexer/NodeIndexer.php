@@ -266,7 +266,7 @@ class NodeIndexer {
 	public function updateIndexAlias() {
 		$aliasName = $this->indexName; // The alias name is the unprefixed index name
 		if ($this->getIndexName() === $aliasName) {
-			throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('UpdateIndexAlias is only allowed to be called when $this->setIndexNamePostix has been created.', 1383649061);
+			throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('UpdateIndexAlias is only allowed to be called when $this->setIndexNamePostfix has been created.', 1383649061);
 		}
 
 		if (!$this->getIndex()->exists()) {
