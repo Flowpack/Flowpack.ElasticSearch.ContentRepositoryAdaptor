@@ -236,9 +236,9 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 	}
 
 	/**
+	 * Execute the query and return the list of nodes as result
 	 *
-	 *
-	 * @return void
+	 * @return array<\TYPO3\TYPO3CR\Domain\Model\NodeInterface>
 	 */
 	public function execute() {
 		$timeBefore = microtime(TRUE);

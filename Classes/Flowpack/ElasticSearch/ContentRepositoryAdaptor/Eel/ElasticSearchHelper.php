@@ -71,7 +71,7 @@ class ElasticSearchHelper implements ProtectedContextAwareInterface {
 	}
 
 	/**
-	 *
+	 * Returns an array of node type names including the passed $nodeType and all its supertypes, recursively
 	 *
 	 * @param NodeType $nodeType
 	 * @return array<String>
