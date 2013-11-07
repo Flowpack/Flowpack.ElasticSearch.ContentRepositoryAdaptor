@@ -303,6 +303,21 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 		}
 
 		$nodes = array();
+
+		/**
+		 * TODO: This code below is not fully correct yet:
+		 *
+		 * We always fetch $limit * (numerOfWorkspaces) records; so that we find a node:
+		 * - *once* if it is only in live workspace and matches the query
+		 * - *once* if it is only in user workspace and matches the query
+		 * - *twice* if it is in both workspaces and matches the query *both times*. In this case we filter the duplicate record.
+		 * - *once* if it is in the live workspace and has been DELETED in the user workspace (STILL WRONG)
+		 * - *once* if it is in the live workspace and has been MODIFIED to NOT MATCH THE QUERY ANYMORE in user workspace (STILL WRONG)
+		 *
+		 * If we want to fix this cleanly, we'd need to do an *additional query* in order to filter all nodes from a non-user workspace
+		 * which *do exist in the user workspace but do NOT match the current query*. This has to be done somehow "recursively"; and later
+		 * we might be able to use https://github.com/elasticsearch/elasticsearch/issues/3300 as soon as it is merged.
+		 */
 		foreach ($hits['hits'] as $hit) {
 			$node = $this->contextNode->getNode($hit['fields']['__path']);
 			$nodes[$node->getIdentifier()] = $node;
