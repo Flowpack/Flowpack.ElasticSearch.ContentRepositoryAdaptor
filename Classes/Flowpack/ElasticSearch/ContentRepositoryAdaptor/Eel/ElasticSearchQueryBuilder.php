@@ -46,6 +46,11 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 	protected $logThisQuery = FALSE;
 
 	/**
+	 * @var string
+	 */
+	protected $logMessage;
+
+	/**
 	 * @var integer
 	 */
 	protected $limit;
@@ -267,10 +272,12 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 	/**
 	 * Log the current request to the ElasticSearch log for debugging after it has been executed.
 	 *
+	 * @param string $message an optional message to identify the log entry
 	 * @return $this
 	 */
-	public function log() {
+	public function log($message = NULL) {
 		$this->logThisQuery = TRUE;
+		$this->logMessage = $message;
 
 		return $this;
 	}
@@ -285,11 +292,11 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', array(), json_encode($this->request));
 		$timeAfterwards = microtime(TRUE);
 
-		if ($this->logThisQuery === TRUE) {
-			$this->logger->log('Query Log: ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards-$timeBefore)*1000) . ' ms', LOG_DEBUG);
-		}
-
 		$hits = $response->getTreatedContent()['hits'];
+
+		if ($this->logThisQuery === TRUE) {
+			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards-$timeBefore)*1000) . ' ms -- Limit: ' . $this->limit . ' -- Total Results: ' . $hits['total'], LOG_DEBUG);
+		}
 
 		if ($hits['total'] === 0) {
 			return array();
