@@ -304,7 +304,7 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 			}
 		}
 
-		return $nodes;
+		return array_values($nodes);
 
 	}
 }
