@@ -182,16 +182,57 @@ class NodeIndexer {
 			$persistenceObjectIdentifier
 		);
 
-		$this->currentBulkRequest[] = array(
-			'index' => array(
-				'_type' => $document->getType()->getName(),
-				'_id' => $document->getId()
-			)
-		);
-		$this->currentBulkRequest[] = $document->getData();
+		$isFulltextRoot = FALSE;
+		$elasticSearchSettingsForNode = array();
+		if ($nodeType->hasElasticSearch()) {
+			$elasticSearchSettingsForNode = $nodeType->getElasticSearch();
+			if (isset($elasticSearchSettingsForNode['isFulltextRoot']) && $elasticSearchSettingsForNode['isFulltextRoot'] === TRUE) {
+				$isFulltextRoot = TRUE;
+			}
+		}
+
+		$documentData = $document->getData();
+
+		if ($isFulltextRoot === TRUE) {
+			$documentData['__fulltext'] = array();
+
+			// for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
+			// "update" API instead of the "index" API, with a custom script internally; as we
+			// shall not delete the "__fulltext" part of the document if it has any.
+			$this->currentBulkRequest[] = array(
+				'update' => array(
+					'_type' => $document->getType()->getName(),
+					'_id' => $document->getId()
+				)
+			);
+
+			// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
+			$this->currentBulkRequest[] = array(
+				'script' => 'fulltext = ctx._source.__fulltext; ctx._source = newData; ctx._source.__fulltext = fulltext',
+				'params' => array(
+					'newData' => $documentData
+				),
+				'upsert' => $documentData
+			);
+		} else {
+			// non-fulltext-root documents can be indexed as-they-are
+			$this->currentBulkRequest[] = array(
+				'insert' => array(
+					'_type' => $document->getType()->getName(),
+					'_id' => $document->getId()
+				)
+			);
+
+			$this->currentBulkRequest[] = $documentData;
+		}
+
+		// TODO: fulltext extraction here
+
 
 		$this->logger->log(sprintf('NodeIndexer: Added / updated node %s. Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 	}
+
+
 
 	/**
 	 * schedule node removal into the current bulk request.
