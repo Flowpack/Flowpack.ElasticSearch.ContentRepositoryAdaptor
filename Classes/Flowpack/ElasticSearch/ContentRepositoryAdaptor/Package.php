@@ -43,11 +43,10 @@ class Package extends BasePackage {
 	 * @param Bootstrap $bootstrap
 	 */
 	public function registerIndexingSlots(Bootstrap $bootstrap) {
-		$this->configurationManager = $bootstrap->getObjectManager()->get('TYPO3\Flow\Configuration\ConfigurationManager');
-
-		$bootstrap->getSignalSlotDispatcher()->connect('TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository', 'nodeAdded', 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer', 'indexNode');
-		$bootstrap->getSignalSlotDispatcher()->connect('TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository', 'nodeUpdated', 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer', 'indexNode');
-		$bootstrap->getSignalSlotDispatcher()->connect('TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository', 'nodeRemoved', 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer', 'removeNode');
+		$bootstrap->getSignalSlotDispatcher()->connect('TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository', 'nodeAdded', 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexingManager', 'indexNode');
+		$bootstrap->getSignalSlotDispatcher()->connect('TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository', 'nodeUpdated', 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexingManager', 'indexNode');
+		$bootstrap->getSignalSlotDispatcher()->connect('TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository', 'nodeRemoved', 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexingManager', 'removeNode');
+		$bootstrap->getSignalSlotDispatcher()->connect('TYPO3\Flow\Persistence\Doctrine\PersistenceManager', 'allObjectsPersisted', 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexingManager', 'flushQueues');
 	}
 }
 

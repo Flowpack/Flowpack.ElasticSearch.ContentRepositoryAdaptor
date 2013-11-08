@@ -13,17 +13,17 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
-use Flowpack\ElasticSearch\Domain\Factory\ClientFactory;
 use Flowpack\ElasticSearch\Domain\Model\Client;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
-use Flowpack\ElasticSearch\Domain\Model\GenericType;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeData;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 
 /**
- * Indexer for Content Repository Nodes
+ * Indexer for Content Repository Nodes. Triggered from the NodeIndexingManager.
+ *
+ * Internally, uses a bulk request.
  *
  * @Flow\Scope("singleton")
  */
@@ -92,6 +92,13 @@ class NodeIndexer {
 	protected $defaultConfigurationPerType;
 
 	/**
+	 * The current ElasticSearch bulk request, in the format required by http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html
+	 *
+	 * @var array
+	 */
+	protected $currentBulkRequest = array();
+
+	/**
 	 * @param array $settings
 	 */
 	public function injectSettings(array $settings) {
@@ -133,6 +140,8 @@ class NodeIndexer {
 	}
 
 	/**
+	 * index this node, and add it to the current bulk request.
+	 *
 	 * @param NodeData $nodeData
 	 * @throws \Exception
 	 * @return string
@@ -171,20 +180,52 @@ class NodeIndexer {
 			$nodePropertiesToBeStoredInElasticSearchIndex,
 			$persistenceObjectIdentifier
 		);
-		$document->store();
+
+		$this->currentBulkRequest[] = array(
+			'index' => array(
+				'_type' => $document->getType()->getName(),
+				'_id' => $document->getId()
+			)
+		);
+		$this->currentBulkRequest[] = $document->getData();
 
 		$this->logger->log(sprintf('NodeIndexer: Added / updated node %s. Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 	}
 
 	/**
+	 * schedule node removal into the current bulk request.
+	 *
 	 * @param NodeData $nodeData
 	 * @return string
 	 */
 	public function removeNode(NodeData $nodeData) {
 		$persistenceObjectIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
-		$this->getIndex()->request('DELETE', '/' . NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType()) . '/' . $persistenceObjectIdentifier);
+
+		$this->currentBulkRequest[] = array(
+			'delete' => array(
+				'_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType()),
+				'_id' => $persistenceObjectIdentifier
+			)
+		);
 
 		$this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node actually removed). Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+	}
+
+	/**
+	 * perform the current bulk request
+	 *
+	 * @return void
+	 */
+	public function flush() {
+		if (count($this->currentBulkRequest) === 0) {
+			return;
+		}
+
+		$contents = '';
+		foreach ($this->currentBulkRequest as $bulkRequestLine) {
+			$contents .= json_encode($bulkRequestLine) . "\n";
+		}
+		$this->getIndex()->request('POST', '/_bulk', array(), $contents);
 	}
 
 	/**

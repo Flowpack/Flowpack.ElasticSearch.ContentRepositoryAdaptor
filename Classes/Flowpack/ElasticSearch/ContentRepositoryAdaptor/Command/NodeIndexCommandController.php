@@ -114,7 +114,9 @@ class NodeIndexCommandController extends CommandController {
 			$count ++;
 		}
 
-		$this->logger->log('Done.', LOG_INFO);
+		$this->nodeIndexer->flush();
+
+		$this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
 		$this->nodeIndexer->getIndex()->refresh();
 
 		// TODO: smoke tests

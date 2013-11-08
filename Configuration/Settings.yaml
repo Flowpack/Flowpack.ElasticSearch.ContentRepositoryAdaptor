@@ -4,6 +4,8 @@ Flowpack:
 
       indexName: typo3cr
 
+      indexingBatchSize: 100
+
       log:
         backendOptions:
           fileBackend:
