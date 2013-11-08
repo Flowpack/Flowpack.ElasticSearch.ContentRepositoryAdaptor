@@ -248,9 +248,10 @@ class NodeIndexer {
 	}
 
 	/**
-	 *
+	 * Update the index alias
 	 *
 	 * @return void
+	 * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
 	 */
 	public function updateIndexAlias() {
 		$aliasName = $this->searchClient->getIndexName(); // The alias name is the unprefixed index name
