@@ -148,8 +148,9 @@ class NodeIndexer {
 	 */
 	public function indexNode(NodeData $nodeData) {
 		$persistenceObjectIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
+		$nodeType = $nodeData->getNodeType();
 
-		$mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType()));
+		$mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
 
 		if ($nodeData->isRemoved()) {
 			$mappingType->deleteDocumentById($persistenceObjectIdentifier);
@@ -158,7 +159,7 @@ class NodeIndexer {
 
 		$nodePropertiesToBeStoredInElasticSearchIndex = array();
 
-		foreach ($nodeData->getNodeType()->getProperties() as $propertyName => $propertyConfiguration) {
+		foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {
 
 			if (isset($propertyConfiguration['elasticSearch']) && isset($propertyConfiguration['elasticSearch']['indexing'])) {
 				if ($propertyConfiguration['elasticSearch']['indexing'] !== '') {
