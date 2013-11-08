@@ -59,7 +59,7 @@ Flowpack:
           mapping:
             type: string
             index: not_analyzed
-          indexing: ${value.getIdentifier()}
+          indexing: ${value.identifier}
 
 
       # Default context objects that are available in Eel expressions
