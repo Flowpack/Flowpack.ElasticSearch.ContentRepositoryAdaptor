@@ -279,7 +279,17 @@ class NodeIndexer {
 
 		// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
 		$this->currentBulkRequest[] = array(
-			'script' => 'ctx._source.__fulltextParts[identifier] = fulltext',
+
+			// first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
+			'script' => '
+				ctx._source.__fulltextParts[identifier] = fulltext;
+
+				foreach (fulltextByNode : ctx._source.__fulltextParts.entrySet()) {
+					foreach (element : fulltextByNode.value.entrySet()) {
+						ctx._source.__fulltext[element.key] += " " + element.value;
+					}
+				}
+			',
 			'params' => array(
 				'identifier' => $nodeData->getIdentifier(),
 				'fulltext' => $fulltextIndexOfNode
