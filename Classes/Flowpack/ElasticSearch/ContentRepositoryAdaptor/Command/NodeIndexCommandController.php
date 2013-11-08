@@ -13,7 +13,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
-use Flowpack\ElasticSearch\Domain\Factory\ClientFactory;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 
 /**
@@ -28,6 +27,12 @@ class NodeIndexCommandController extends CommandController {
 	 * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer
 	 */
 	protected $nodeIndexer;
+
+	/**
+	 * @Flow\Inject
+	 * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexingManager
+	 */
+	protected $nodeIndexingManager;
 
 	/**
 	 * @Flow\Inject
@@ -114,12 +119,12 @@ class NodeIndexCommandController extends CommandController {
 			if ($limit !== NULL && $count > $limit) {
 				break;
 			}
-			$this->nodeIndexer->indexNode($nodeData);
+			$this->nodeIndexingManager->indexNode($nodeData);
 			$this->logger->log(sprintf('  %s: %s', $nodeData->getWorkspace()->getName(), $nodeData->getPath()), LOG_DEBUG);
 			$count ++;
 		}
 
-		$this->nodeIndexer->flush();
+		$this->nodeIndexingManager->flushQueues();
 
 		$this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
 		$this->nodeIndexer->getIndex()->refresh();
