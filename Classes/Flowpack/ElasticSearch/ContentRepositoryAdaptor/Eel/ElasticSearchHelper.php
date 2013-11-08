@@ -23,6 +23,12 @@ use TYPO3\TYPO3CR\Domain\Model\NodeType;
 class ElasticSearchHelper implements ProtectedContextAwareInterface {
 
 	/**
+	 * @Flow\Inject
+	 * @var FulltextHelper
+	 */
+	protected $fulltextHelper;
+
+	/**
 	 * Create a new ElasticSearch query underneath the given $node
 	 *
 	 * @param NodeInterface $node
@@ -30,6 +36,15 @@ class ElasticSearchHelper implements ProtectedContextAwareInterface {
 	 */
 	public function query(NodeInterface $node) {
 		return new ElasticSearchQueryBuilder($node);
+	}
+
+	/**
+	 * Retrieve the fulltext indexing helpers
+	 *
+	 * @return FulltextHelper
+	 */
+	public function getFulltext() {
+		return $this->fulltextHelper;
 	}
 
 	/**

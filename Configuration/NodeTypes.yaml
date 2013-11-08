@@ -57,6 +57,8 @@
           index: not_analyzed
         indexing: ${ElasticSearch.extractNodeTypeNamesAndSupertypes(node.getNodeType())}
 
+'unstructured': *node
+
 'TYPO3.Neos:Hidable':
   properties:
     '_hidden':
@@ -74,4 +76,19 @@
         indexing: ${node.hiddenAfterDateTime.format('c')}
 
 
-'unstructured': *node
+'TYPO3.Neos:Document':
+  elasticSearch:
+    isFulltextRoot: true
+
+
+'TYPO3.Neos.NodeTypes:Text':
+  properties:
+    'text':
+      elasticSearch:
+        fulltextExtractor: ${ElasticSearch.fulltext.extractHtmlTags(value)}
+
+'TYPO3.Neos.NodeTypes:Headline':
+  properties:
+    'title':
+      elasticSearch:
+        fulltextExtractor: ${ElasticSearch.fulltext.extractHtmlTags(value)}
