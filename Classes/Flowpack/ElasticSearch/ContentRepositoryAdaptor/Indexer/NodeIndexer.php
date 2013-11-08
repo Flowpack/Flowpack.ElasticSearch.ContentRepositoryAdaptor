@@ -192,9 +192,9 @@ class NodeIndexer {
 
 					foreach ($fulltextIndexOfProperty as $bucket => $value) {
 						if (!isset($fulltextIndexOfNode[$bucket])) {
-							$fulltextIndexOfNode[$bucket] = array();
+							$fulltextIndexOfNode[$bucket] = '';
 						}
-						$fulltextIndexOfNode[$bucket][] = $value;
+						$fulltextIndexOfNode[$bucket] .= ' ' . $value;
 					}
 				}
 				// TODO: also allow fulltextExtractor in settings!!
