@@ -88,19 +88,24 @@ class NodeIndexCommandController extends CommandController {
 	 * This command (re-)indexes all nodes contained in the content repository and sets the schema beforehand.
 	 *
 	 * @param integer $limit Amount of nodes to index at maximum
+	 * @param bool $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
 	 * @return void
 	 */
-	public function buildCommand($limit = NULL) {
-		$this->nodeIndexer->setIndexNamePostfix(time());
-		$this->nodeIndexer->getIndex()->create();
-		$this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
+	public function buildCommand($limit = NULL, $update = FALSE) {
+		if ($update === TRUE) {
+			$this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
+		} else {
+			$this->nodeIndexer->setIndexNamePostfix(time());
+			$this->nodeIndexer->getIndex()->create();
+			$this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
 
-		$nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
-		foreach ($nodeTypeMappingCollection as $mapping) {
-			/** @var Mapping $mapping */
-			$mapping->apply();
+			$nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
+			foreach ($nodeTypeMappingCollection as $mapping) {
+				/** @var Mapping $mapping */
+				$mapping->apply();
+			}
+			$this->logger->log('Updated Mapping.', LOG_INFO);
 		}
-		$this->logger->log('Updated Mapping.', LOG_INFO);
 
 		$this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== NULL ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
 
@@ -120,7 +125,9 @@ class NodeIndexCommandController extends CommandController {
 		$this->nodeIndexer->getIndex()->refresh();
 
 		// TODO: smoke tests
-		$this->nodeIndexer->updateIndexAlias();
+		if ($update === FALSE) {
+			$this->nodeIndexer->updateIndexAlias();
+		}
 	}
 
 	/**
