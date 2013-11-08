@@ -120,4 +120,21 @@ class NodeIndexCommandController extends CommandController {
 		// TODO: smoke tests
 		$this->nodeIndexer->updateIndexAlias();
 	}
+
+	/**
+	 * Clean up old indexes (i.e. all but the current one)
+	 *
+	 * @return void
+	 */
+	public function cleanupCommand() {
+		$indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
+
+		if (count($indicesToBeRemoved) > 0) {
+			foreach ($indicesToBeRemoved as $indexToBeRemoved) {
+				$this->logger->log('Removing old index ' . $indexToBeRemoved);
+			}
+		} else {
+			$this->logger->log('Nothing to remove.');
+		}
+	}
 }

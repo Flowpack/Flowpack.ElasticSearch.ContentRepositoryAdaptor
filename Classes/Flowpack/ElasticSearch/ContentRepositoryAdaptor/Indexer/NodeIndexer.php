@@ -293,4 +293,41 @@ class NodeIndexer {
 
 		$this->searchClient->request('POST', '/_aliases', array(), \json_encode(array('actions' => $aliasActions)));
 	}
+
+	/**
+	 * Remove old indices which are not active anymore (remember, each bulk index creates a new index from scratch,
+	 * making the "old" index a stale one).
+	 *
+	 * @return array<string> a list of index names which were removed
+	 */
+	public function removeOldIndices() {
+		$aliasName = $this->searchClient->getIndexName(); // The alias name is the unprefixed index name
+
+		$currentlyLiveIndices = array_keys($this->searchClient->request('GET', '/*/_alias/' . $aliasName)->getTreatedContent());
+
+		$indexStatus = $this->searchClient->request('GET', '/_status')->getTreatedContent();
+		$allIndices = array_keys($indexStatus['indices']);
+
+		$indicesToBeRemoved = array();
+
+		foreach ($allIndices as $indexName) {
+			if (strpos($indexName, $aliasName . '-') !== 0) {
+				// filter out all indices not starting with the alias-name, as they are unrelated to our application
+				continue;
+			}
+
+			if (array_search($indexName, $currentlyLiveIndices) !== FALSE) {
+				// skip the currently live index names from deletion
+				continue;
+			}
+
+			$indicesToBeRemoved[] = $indexName;
+		}
+
+		if (count($indicesToBeRemoved) > 0) {
+			$this->searchClient->request('DELETE', '/' . implode(',', $indicesToBeRemoved) . '/');
+		}
+
+		return $indicesToBeRemoved;
+	}
 }
