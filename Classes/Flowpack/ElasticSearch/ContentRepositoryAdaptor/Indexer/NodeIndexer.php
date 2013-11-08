@@ -226,7 +226,12 @@ class NodeIndexer {
 		foreach ($this->currentBulkRequest as $bulkRequestLine) {
 			$contents .= json_encode($bulkRequestLine) . "\n";
 		}
-		$this->getIndex()->request('POST', '/_bulk', array(), $contents);
+		$responseAsLines = $this->getIndex()->request('POST', '/_bulk', array(), $contents)->getOriginalResponse()->getContent();
+		foreach (explode('\n', $responseAsLines) as $responseLine) {
+			if (strpos($responseLine, 'error') !== FALSE) {
+				$this->logger->log('Indexing Error: ' . $responseLine, LOG_ERR);
+			}
+		}
 	}
 
 	/**
