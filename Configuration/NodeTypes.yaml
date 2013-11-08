@@ -79,7 +79,47 @@
 'TYPO3.Neos:Document':
   elasticSearch:
     isFulltextRoot: true
+  properties:
+    '__fulltextParts':
+      elasticSearch:
+        mapping:
+          type: object
+          include_in_all: false
+          enabled: false
 
+    '__fulltext':
+      elasticSearch:
+        mapping:
+          type: object
+          properties:
+            'h1':
+              type: string
+              include_in_all: true
+              boost: 20
+            'h2':
+              type: string
+              include_in_all: true
+              boost: 12
+            'h3':
+              type: string
+              include_in_all: true
+              boost: 10
+            'h4':
+              type: string
+              include_in_all: true
+              boost: 5
+            'h5':
+              type: string
+              include_in_all: true
+              boost: 3
+            'h6':
+              type: string
+              include_in_all: true
+              boost: 2
+            'text':
+              type: string
+              include_in_all: true
+              boost: 1
 
 'TYPO3.Neos.NodeTypes:Text':
   properties:
