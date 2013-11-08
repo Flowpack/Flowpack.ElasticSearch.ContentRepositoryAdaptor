@@ -217,7 +217,7 @@ class NodeIndexer {
 		} else {
 			// non-fulltext-root documents can be indexed as-they-are
 			$this->currentBulkRequest[] = array(
-				'insert' => array(
+				'index' => array(
 					'_type' => $document->getType()->getName(),
 					'_id' => $document->getId()
 				)
