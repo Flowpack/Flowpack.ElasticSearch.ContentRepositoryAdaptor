@@ -320,9 +320,11 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 		 */
 		foreach ($hits['hits'] as $hit) {
 			$node = $this->contextNode->getNode($hit['fields']['__path']);
-			$nodes[$node->getIdentifier()] = $node;
-			if ($this->limit > 0 && count($nodes) >= $this->limit) {
-				break;
+			if ($node instanceof NodeInterface) {
+				$nodes[$node->getIdentifier()] = $node;
+				if ($this->limit > 0 && count($nodes) >= $this->limit) {
+					break;
+				}
 			}
 		}
 
