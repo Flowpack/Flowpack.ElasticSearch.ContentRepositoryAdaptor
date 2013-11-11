@@ -25,7 +25,7 @@ class FulltextHelper implements ProtectedContextAwareInterface {
 	/**
 	 *
 	 * @param $string
-	 * @return void
+	 * @return array
 	 */
 	public function extractHtmlTags($string) {
 		// prevents concatenated words when stripping tags afterwards
@@ -39,7 +39,7 @@ class FulltextHelper implements ProtectedContextAwareInterface {
 		while (strlen($string) > 0) {
 
 			$matches = array();
-			if (preg_match('/<(h1|h2|h3|h4|h5|h6)[^>]*>.*?<\/\1>/i', $string, $matches, PREG_OFFSET_CAPTURE)) {
+			if (preg_match('/<(h1|h2|h3|h4|h5|h6)[^>]*>.*?<\/\1>/ui', $string, $matches, PREG_OFFSET_CAPTURE)) {
 				$fullMatch = $matches[0][0];
 				$startOfMatch = $matches[0][1];
 				$tagName = $matches[1][0];
@@ -63,7 +63,7 @@ class FulltextHelper implements ProtectedContextAwareInterface {
 
 
 		foreach ($parts as &$part) {
-			$part = preg_replace('/\s+/', ' ', strip_tags($part));
+			$part = preg_replace('/\s+/u', ' ', strip_tags($part));
 		}
 
 		return $parts;
