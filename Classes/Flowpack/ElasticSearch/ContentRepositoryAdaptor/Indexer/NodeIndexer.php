@@ -20,6 +20,26 @@ use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeData;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 
+/*
+ * Yes, dirty as hell. But the function is just too helpful...
+ * json_last_error_msg() has been added in PHP 5.5
+ */
+if (!function_exists('json_last_error_msg')) {
+	function json_last_error_msg() {
+		static $errors = array(
+			JSON_ERROR_NONE => NULL,
+			JSON_ERROR_DEPTH => 'Maximum stack depth exceeded',
+			JSON_ERROR_STATE_MISMATCH => 'Underflow or the modes mismatch',
+			JSON_ERROR_CTRL_CHAR => 'Unexpected control character found',
+			JSON_ERROR_SYNTAX => 'Syntax error, malformed JSON',
+			JSON_ERROR_UTF8 => 'Malformed UTF-8 characters, possibly incorrectly encoded'
+		);
+		$error = json_last_error();
+
+		return array_key_exists($error, $errors) ? $errors[$error] : "Unknown error ({$error})";
+	}
+}
+
 /**
  * Indexer for Content Repository Nodes. Triggered from the NodeIndexingManager.
  *
@@ -215,30 +235,32 @@ class NodeIndexer {
 			// "update" API instead of the "index" API, with a custom script internally; as we
 			// shall not delete the "__fulltext" part of the document if it has any.
 			$this->currentBulkRequest[] = array(
-				'update' => array(
-					'_type' => $document->getType()->getName(),
-					'_id' => $document->getId()
-				)
-			);
-
-			// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
-			$this->currentBulkRequest[] = array(
-				'script' => 'fulltext = ctx._source.__fulltext; fulltextParts = ctx._source.__fulltextParts; ctx._source = newData; ctx._source.__fulltext = fulltext; ctx._source.__fulltextParts = fulltextParts',
-				'params' => array(
-					'newData' => $documentData
+				array(
+					'update' => array(
+						'_type' => $document->getType()->getName(),
+						'_id' => $document->getId()
+					)
 				),
-				'upsert' => $documentData
+				// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
+				array(
+					'script' => 'fulltext = ctx._source.__fulltext; fulltextParts = ctx._source.__fulltextParts; ctx._source = newData; ctx._source.__fulltext = fulltext; ctx._source.__fulltextParts = fulltextParts',
+					'params' => array(
+						'newData' => $documentData
+					),
+					'upsert' => $documentData
+				)
 			);
 		} else {
 			// non-fulltext-root documents can be indexed as-they-are
 			$this->currentBulkRequest[] = array(
-				'index' => array(
-					'_type' => $document->getType()->getName(),
-					'_id' => $document->getId()
-				)
+				array(
+					'index' => array(
+						'_type' => $document->getType()->getName(),
+						'_id' => $document->getId()
+					)
+				),
+				$documentData
 			);
-
-			$this->currentBulkRequest[] = $documentData;
 		}
 
 		$this->updateFulltext($nodeData, $fulltextIndexOfNode);
@@ -269,33 +291,34 @@ class NodeIndexer {
 		}
 
 		$this->currentBulkRequest[] = array(
-			'update' => array(
-				'_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
-				'_id' => $this->persistenceManager->getIdentifierByObject($closestFulltextNode)
-			)
-		);
-
-		// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
-		$this->currentBulkRequest[] = array(
-
-			// first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
-			'script' => '
-				ctx._source.__fulltextParts[identifier] = fulltext;
-
-				foreach (fulltextByNode : ctx._source.__fulltextParts.entrySet()) {
-					foreach (element : fulltextByNode.value.entrySet()) {
-						ctx._source.__fulltext[element.key] += " " + element.value;
-					}
-				}
-			',
-			'params' => array(
-				'identifier' => $nodeData->getIdentifier(),
-				'fulltext' => $fulltextIndexOfNode
+			array(
+				'update' => array(
+					'_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
+					'_id' => $this->persistenceManager->getIdentifierByObject($closestFulltextNode)
+				)
 			),
-			'upsert' => array(
-				'__fulltext' => $fulltextIndexOfNode,
-				'__fulltextParts' => array(
-					$nodeData->getIdentifier() => $fulltextIndexOfNode
+			// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
+			array(
+
+				// first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
+				'script' => '
+					ctx._source.__fulltextParts[identifier] = fulltext;
+
+					foreach (fulltextByNode : ctx._source.__fulltextParts.entrySet()) {
+						foreach (element : fulltextByNode.value.entrySet()) {
+							ctx._source.__fulltext[element.key] += " " + element.value;
+						}
+					}
+				',
+				'params' => array(
+					'identifier' => $nodeData->getIdentifier(),
+					'fulltext' => $fulltextIndexOfNode
+				),
+				'upsert' => array(
+					'__fulltext' => $fulltextIndexOfNode,
+					'__fulltextParts' => array(
+						$nodeData->getIdentifier() => $fulltextIndexOfNode
+					)
 				)
 			)
 		);
@@ -323,9 +346,11 @@ class NodeIndexer {
 		$persistenceObjectIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
 
 		$this->currentBulkRequest[] = array(
-			'delete' => array(
-				'_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType()),
-				'_id' => $persistenceObjectIdentifier
+			array(
+				'delete' => array(
+					'_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType()),
+					'_id' => $persistenceObjectIdentifier
+				)
 			)
 		);
 
@@ -343,14 +368,25 @@ class NodeIndexer {
 		}
 
 		$content = '';
-		foreach ($this->currentBulkRequest as $bulkRequestLine) {
-			$content .= json_encode($bulkRequestLine) . "\n";
+		foreach ($this->currentBulkRequest as $bulkRequestTuple) {
+			$tupleAsJson = '';
+			foreach ($bulkRequestTuple as $bulkRequestItem) {
+				$itemAsJson = json_encode($bulkRequestItem);
+				if ($itemAsJson === FALSE) {
+					$this->logger->log('Indexing Error: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), LOG_ERR, $bulkRequestItem);
+					continue 2;
+				}
+				$tupleAsJson .= $itemAsJson . chr(10);
+			}
+			$content .= $tupleAsJson;
 		}
 
-		$responseAsLines = $this->getIndex()->request('POST', '/_bulk', array(), $content)->getOriginalResponse()->getContent();
-		foreach (explode('\n', $responseAsLines) as $responseLine) {
-			if (strpos($responseLine, 'error') !== FALSE) {
-				$this->logger->log('Indexing Error: ' . $responseLine, LOG_ERR);
+		if ($content !== '') {
+			$responseAsLines = $this->getIndex()->request('POST', '/_bulk', array(), $content)->getOriginalResponse()->getContent();
+			foreach (explode('\n', $responseAsLines) as $responseLine) {
+				if (strpos($responseLine, 'error') !== FALSE) {
+					$this->logger->log('Indexing Error: ' . $responseLine, LOG_ERR);
+				}
 			}
 		}
 
