@@ -156,6 +156,7 @@ class NodeIndexer {
 			// TODO: handle deletion from the fulltext index as well
 			$mappingType->deleteDocumentById($persistenceObjectIdentifier);
 			$this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+
 			return;
 		}
 
@@ -169,13 +170,11 @@ class NodeIndexer {
 				if ($propertyConfiguration['elasticSearch']['indexing'] !== '') {
 					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($propertyConfiguration['elasticSearch']['indexing'], $nodeData, $propertyName, ($nodeData->hasProperty($propertyName) ? $nodeData->getProperty($propertyName) : NULL), $persistenceObjectIdentifier);
 				}
-
 			} elseif (isset($propertyConfiguration['type']) && isset($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'])) {
 
 				if ($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'] !== '') {
 					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'], $nodeData, $propertyName, ($nodeData->hasProperty($propertyName) ? $nodeData->getProperty($propertyName) : NULL), $persistenceObjectIdentifier);
 				}
-
 			} else {
 				$this->logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $persistenceObjectIdentifier, $propertyName), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 			}
@@ -244,7 +243,6 @@ class NodeIndexer {
 
 		$this->updateFulltext($nodeData, $fulltextIndexOfNode);
 
-
 		$this->logger->log(sprintf('NodeIndexer: Added / updated node %s. Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 	}
 
@@ -310,6 +308,7 @@ class NodeIndexer {
 				return TRUE;
 			}
 		}
+
 		return FALSE;
 	}
 
@@ -384,6 +383,7 @@ class NodeIndexer {
 			$context = new \TYPO3\Eel\Context($contextVariables);
 
 			$value = $this->eelEvaluator->evaluate($matches['exp'], $context);
+
 			return $value;
 		} else {
 			throw new Exception('The Indexing Eel expression "' . $expression . '" used to index property "' . $propertyName . '" of "' . $node->getNodeType()->getName() . '" was not a valid Eel expression. Perhaps you forgot to wrap it in ${...}?', 1383635796);
@@ -415,6 +415,7 @@ class NodeIndexer {
 				}
 			}
 		}
+
 		return $this->defaultContextVariables;
 	}
 
@@ -431,15 +432,14 @@ class NodeIndexer {
 		}
 
 		if (!$this->getIndex()->exists()) {
-			throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('the target index for updateIndexAlias does not exist. This shall never happen.', 1383649125);
+			throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('The target index for updateIndexAlias does not exist. This shall never happen.', 1383649125);
 		}
-
 
 		$aliasActions = array();
 		try {
 			$response = $this->searchClient->request('GET', '/*/_alias/' . $aliasName);
 			if ($response->getStatusCode() !== 200) {
-				throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('the alias "' . $aliasName . '" was not found with some unexpected error... (return code: ' .  $response->getStatusCode(), 1383650137);
+				throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('The alias "' . $aliasName . '" was not found with some unexpected error... (return code: ' . $response->getStatusCode(), 1383650137);
 			}
 
 			$indexNames = array_keys($response->getTreatedContent());
@@ -452,7 +452,7 @@ class NodeIndexer {
 					)
 				);
 			}
-		} catch(\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
+		} catch (\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
 			// in case of 404, do not throw an error...
 		}
 
