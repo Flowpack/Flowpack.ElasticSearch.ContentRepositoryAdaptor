@@ -20,6 +20,26 @@ use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeData;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 
+/*
+ * Yes, dirty as hell. But the function is just too helpful...
+ * json_last_error_msg() has been added in PHP 5.5
+ */
+if (!function_exists('json_last_error_msg')) {
+	function json_last_error_msg() {
+		static $errors = array(
+			JSON_ERROR_NONE => NULL,
+			JSON_ERROR_DEPTH => 'Maximum stack depth exceeded',
+			JSON_ERROR_STATE_MISMATCH => 'Underflow or the modes mismatch',
+			JSON_ERROR_CTRL_CHAR => 'Unexpected control character found',
+			JSON_ERROR_SYNTAX => 'Syntax error, malformed JSON',
+			JSON_ERROR_UTF8 => 'Malformed UTF-8 characters, possibly incorrectly encoded'
+		);
+		$error = json_last_error();
+
+		return array_key_exists($error, $errors) ? $errors[$error] : "Unknown error ({$error})";
+	}
+}
+
 /**
  * Indexer for Content Repository Nodes. Triggered from the NodeIndexingManager.
  *
@@ -156,6 +176,7 @@ class NodeIndexer {
 			// TODO: handle deletion from the fulltext index as well
 			$mappingType->deleteDocumentById($persistenceObjectIdentifier);
 			$this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+
 			return;
 		}
 
@@ -169,13 +190,11 @@ class NodeIndexer {
 				if ($propertyConfiguration['elasticSearch']['indexing'] !== '') {
 					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($propertyConfiguration['elasticSearch']['indexing'], $nodeData, $propertyName, ($nodeData->hasProperty($propertyName) ? $nodeData->getProperty($propertyName) : NULL), $persistenceObjectIdentifier);
 				}
-
 			} elseif (isset($propertyConfiguration['type']) && isset($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'])) {
 
 				if ($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'] !== '') {
 					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'], $nodeData, $propertyName, ($nodeData->hasProperty($propertyName) ? $nodeData->getProperty($propertyName) : NULL), $persistenceObjectIdentifier);
 				}
-
 			} else {
 				$this->logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $persistenceObjectIdentifier, $propertyName), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 			}
@@ -216,34 +235,35 @@ class NodeIndexer {
 			// "update" API instead of the "index" API, with a custom script internally; as we
 			// shall not delete the "__fulltext" part of the document if it has any.
 			$this->currentBulkRequest[] = array(
-				'update' => array(
-					'_type' => $document->getType()->getName(),
-					'_id' => $document->getId()
-				)
-			);
-
-			// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
-			$this->currentBulkRequest[] = array(
-				'script' => 'fulltext = ctx._source.__fulltext; fulltextParts = ctx._source.__fulltextParts; ctx._source = newData; ctx._source.__fulltext = fulltext; ctx._source.__fulltextParts = fulltextParts',
-				'params' => array(
-					'newData' => $documentData
+				array(
+					'update' => array(
+						'_type' => $document->getType()->getName(),
+						'_id' => $document->getId()
+					)
 				),
-				'upsert' => $documentData
+				// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
+				array(
+					'script' => 'fulltext = ctx._source.__fulltext; fulltextParts = ctx._source.__fulltextParts; ctx._source = newData; ctx._source.__fulltext = fulltext; ctx._source.__fulltextParts = fulltextParts',
+					'params' => array(
+						'newData' => $documentData
+					),
+					'upsert' => $documentData
+				)
 			);
 		} else {
 			// non-fulltext-root documents can be indexed as-they-are
 			$this->currentBulkRequest[] = array(
-				'index' => array(
-					'_type' => $document->getType()->getName(),
-					'_id' => $document->getId()
-				)
+				array(
+					'index' => array(
+						'_type' => $document->getType()->getName(),
+						'_id' => $document->getId()
+					)
+				),
+				$documentData
 			);
-
-			$this->currentBulkRequest[] = $documentData;
 		}
 
 		$this->updateFulltext($nodeData, $fulltextIndexOfNode);
-
 
 		$this->logger->log(sprintf('NodeIndexer: Added / updated node %s. Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 	}
@@ -271,33 +291,34 @@ class NodeIndexer {
 		}
 
 		$this->currentBulkRequest[] = array(
-			'update' => array(
-				'_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
-				'_id' => $this->persistenceManager->getIdentifierByObject($closestFulltextNode)
-			)
-		);
-
-		// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
-		$this->currentBulkRequest[] = array(
-
-			// first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
-			'script' => '
-				ctx._source.__fulltextParts[identifier] = fulltext;
-
-				foreach (fulltextByNode : ctx._source.__fulltextParts.entrySet()) {
-					foreach (element : fulltextByNode.value.entrySet()) {
-						ctx._source.__fulltext[element.key] += " " + element.value;
-					}
-				}
-			',
-			'params' => array(
-				'identifier' => $nodeData->getIdentifier(),
-				'fulltext' => $fulltextIndexOfNode
+			array(
+				'update' => array(
+					'_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
+					'_id' => $this->persistenceManager->getIdentifierByObject($closestFulltextNode)
+				)
 			),
-			'upsert' => array(
-				'__fulltext' => $fulltextIndexOfNode,
-				'__fulltextParts' => array(
-					$nodeData->getIdentifier() => $fulltextIndexOfNode
+			// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
+			array(
+
+				// first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
+				'script' => '
+					ctx._source.__fulltextParts[identifier] = fulltext;
+
+					foreach (fulltextByNode : ctx._source.__fulltextParts.entrySet()) {
+						foreach (element : fulltextByNode.value.entrySet()) {
+							ctx._source.__fulltext[element.key] += " " + element.value;
+						}
+					}
+				',
+				'params' => array(
+					'identifier' => $nodeData->getIdentifier(),
+					'fulltext' => $fulltextIndexOfNode
+				),
+				'upsert' => array(
+					'__fulltext' => $fulltextIndexOfNode,
+					'__fulltextParts' => array(
+						$nodeData->getIdentifier() => $fulltextIndexOfNode
+					)
 				)
 			)
 		);
@@ -310,6 +331,7 @@ class NodeIndexer {
 				return TRUE;
 			}
 		}
+
 		return FALSE;
 	}
 
@@ -324,9 +346,11 @@ class NodeIndexer {
 		$persistenceObjectIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
 
 		$this->currentBulkRequest[] = array(
-			'delete' => array(
-				'_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType()),
-				'_id' => $persistenceObjectIdentifier
+			array(
+				'delete' => array(
+					'_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType()),
+					'_id' => $persistenceObjectIdentifier
+				)
 			)
 		);
 
@@ -344,14 +368,25 @@ class NodeIndexer {
 		}
 
 		$content = '';
-		foreach ($this->currentBulkRequest as $bulkRequestLine) {
-			$content .= json_encode($bulkRequestLine) . "\n";
+		foreach ($this->currentBulkRequest as $bulkRequestTuple) {
+			$tupleAsJson = '';
+			foreach ($bulkRequestTuple as $bulkRequestItem) {
+				$itemAsJson = json_encode($bulkRequestItem);
+				if ($itemAsJson === FALSE) {
+					$this->logger->log('Indexing Error: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), LOG_ERR, $bulkRequestItem);
+					continue 2;
+				}
+				$tupleAsJson .= $itemAsJson . chr(10);
+			}
+			$content .= $tupleAsJson;
 		}
 
-		$responseAsLines = $this->getIndex()->request('POST', '/_bulk', array(), $content)->getOriginalResponse()->getContent();
-		foreach (explode('\n', $responseAsLines) as $responseLine) {
-			if (strpos($responseLine, 'error') !== FALSE) {
-				$this->logger->log('Indexing Error: ' . $responseLine, LOG_ERR);
+		if ($content !== '') {
+			$responseAsLines = $this->getIndex()->request('POST', '/_bulk', array(), $content)->getOriginalResponse()->getContent();
+			foreach (explode('\n', $responseAsLines) as $responseLine) {
+				if (strpos($responseLine, 'error') !== FALSE) {
+					$this->logger->log('Indexing Error: ' . $responseLine, LOG_ERR);
+				}
 			}
 		}
 
@@ -384,6 +419,7 @@ class NodeIndexer {
 			$context = new \TYPO3\Eel\Context($contextVariables);
 
 			$value = $this->eelEvaluator->evaluate($matches['exp'], $context);
+
 			return $value;
 		} else {
 			throw new Exception('The Indexing Eel expression "' . $expression . '" used to index property "' . $propertyName . '" of "' . $node->getNodeType()->getName() . '" was not a valid Eel expression. Perhaps you forgot to wrap it in ${...}?', 1383635796);
@@ -415,6 +451,7 @@ class NodeIndexer {
 				}
 			}
 		}
+
 		return $this->defaultContextVariables;
 	}
 
@@ -431,15 +468,14 @@ class NodeIndexer {
 		}
 
 		if (!$this->getIndex()->exists()) {
-			throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('the target index for updateIndexAlias does not exist. This shall never happen.', 1383649125);
+			throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('The target index for updateIndexAlias does not exist. This shall never happen.', 1383649125);
 		}
-
 
 		$aliasActions = array();
 		try {
 			$response = $this->searchClient->request('GET', '/*/_alias/' . $aliasName);
 			if ($response->getStatusCode() !== 200) {
-				throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('the alias "' . $aliasName . '" was not found with some unexpected error... (return code: ' .  $response->getStatusCode(), 1383650137);
+				throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('The alias "' . $aliasName . '" was not found with some unexpected error... (return code: ' . $response->getStatusCode(), 1383650137);
 			}
 
 			$indexNames = array_keys($response->getTreatedContent());
@@ -452,7 +488,7 @@ class NodeIndexer {
 					)
 				);
 			}
-		} catch(\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
+		} catch (\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
 			// in case of 404, do not throw an error...
 		}
 
