@@ -78,7 +78,24 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 					'bool' => array(
 						'must' => array(),
 						'should' => array(),
-						'must_not' => array(),
+						'must_not' => array(
+							// Filter out all hidden elements
+							array(
+								'term' => array('_hidden' => TRUE)
+							),
+							// if now < hiddenBeforeDateTime: HIDE
+							// -> hiddenBeforeDateTime > now
+							array(
+								'range' => array('_hiddenBeforeDateTime' => array(
+									'gt' => 'now'
+								))
+							),
+							array(
+								'range' => array('_hiddenAfterDateTime' => array(
+									'lt' => 'now'
+								))
+							),
+						),
 					)
 				)
 			)
