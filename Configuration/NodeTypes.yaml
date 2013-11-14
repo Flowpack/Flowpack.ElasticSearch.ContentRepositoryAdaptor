@@ -86,9 +86,11 @@
           type: object
           include_in_all: false
           enabled: false
+        indexing: ''
 
     '__fulltext':
       elasticSearch:
+        indexing: ''
         mapping:
           type: object
           properties:
