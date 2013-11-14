@@ -295,7 +295,7 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 		$hits = $response->getTreatedContent()['hits'];
 
 		if ($this->logThisQuery === TRUE) {
-			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards-$timeBefore)*1000) . ' ms -- Limit: ' . $this->limit . ' -- Total Results: ' . $hits['total'], LOG_DEBUG);
+			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards-$timeBefore)*1000) . ' ms -- Limit: ' . $this->limit . ' -- Number of results returned: ' . count($hits['hits']) . ' -- Total Results: ' . $hits['total'], LOG_DEBUG);
 		}
 
 		if ($hits['total'] === 0) {
@@ -326,6 +326,10 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 					break;
 				}
 			}
+		}
+
+		if ($this->logThisQuery === TRUE) {
+			$this->logger->log('Query Log (' . $this->logMessage . ') Number of returned results: ' . count($nodes), LOG_DEBUG);
 		}
 
 		return array_values($nodes);
