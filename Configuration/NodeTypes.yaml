@@ -69,11 +69,20 @@
   properties:
     '_hiddenBeforeDateTime':
       elasticSearch:
-        indexing: ${node.hiddenBeforeDateTime.format('c')}
+        mapping:
+          type: date
+          include_in_all: false
+          format: 'date_time_no_millis'
+        indexing: ${(node.hiddenBeforeDateTime ? node.hiddenBeforeDateTime.format('Y-m-d\TH:i:s') + 'Z' : null)}
+
 
     '_hiddenAfterDateTime':
       elasticSearch:
-        indexing: ${node.hiddenAfterDateTime.format('c')}
+        mapping:
+          type: date
+          include_in_all: false
+          format: 'date_time_no_millis'
+        indexing: ${(node.hiddenAfterDateTime ? node.hiddenAfterDateTime.format('Y-m-d\TH:i:s') + 'Z' : null)}
 
 
 'TYPO3.Neos:Document':
