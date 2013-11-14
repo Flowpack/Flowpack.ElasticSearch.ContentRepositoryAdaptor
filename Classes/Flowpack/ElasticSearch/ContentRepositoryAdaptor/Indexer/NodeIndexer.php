@@ -209,9 +209,6 @@ class NodeIndexer {
 		$documentData = $document->getData();
 
 		if ($this->isFulltextRoot($nodeData)) {
-			$documentData['__fulltext'] = array();
-			$documentData['__fulltextParts'] = array();
-
 			// for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
 			// "update" API instead of the "index" API, with a custom script internally; as we
 			// shall not delete the "__fulltext" part of the document if it has any.
@@ -224,7 +221,12 @@ class NodeIndexer {
 
 			// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
 			$this->currentBulkRequest[] = array(
-				'script' => 'fulltext = ctx._source.__fulltext; fulltextParts = ctx._source.__fulltextParts; ctx._source = newData; ctx._source.__fulltext = fulltext; ctx._source.__fulltextParts = fulltextParts',
+				'script' => '
+					fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new LinkedHashMap());
+					fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new LinkedHashMap());
+					ctx._source = newData;
+					ctx._source.__fulltext = fulltext;
+					ctx._source.__fulltextParts = fulltextParts',
 				'params' => array(
 					'newData' => $documentData
 				),
@@ -282,8 +284,12 @@ class NodeIndexer {
 
 			// first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
 			'script' => '
+				if (!ctx._source.containsKey("__fulltextParts")) {
+					ctx._source.__fulltextParts = new LinkedHashMap();
+				}
 				ctx._source.__fulltextParts[identifier] = fulltext;
 
+				ctx._source.__fulltext = new LinkedHashMap();
 				foreach (fulltextByNode : ctx._source.__fulltextParts.entrySet()) {
 					foreach (element : fulltextByNode.value.entrySet()) {
 						ctx._source.__fulltext[element.key] += " " + element.value;
