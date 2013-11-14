@@ -143,7 +143,7 @@ class NodeIndexer {
 	/**
 	 * Set the postfix for the index name
 	 *
-	 * @param $indexNamePostfix
+	 * @param string $indexNamePostfix
 	 * @return void
 	 */
 	public function setIndexNamePostfix($indexNamePostfix) {
@@ -164,7 +164,7 @@ class NodeIndexer {
 	 *
 	 * @param NodeData $nodeData
 	 * @throws \Exception
-	 * @return string
+	 * @return void
 	 */
 	public function indexNode(NodeData $nodeData) {
 		$persistenceObjectIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
