@@ -182,6 +182,7 @@ class NodeIndexer {
 
 		$nodePropertiesToBeStoredInElasticSearchIndex = array();
 		$fulltextIndexOfNode = array();
+		$fulltextIndexingEnabledForNode = $this->isFulltextEnabled($nodeData);
 
 		foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {
 
@@ -199,24 +200,26 @@ class NodeIndexer {
 				$this->logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $persistenceObjectIdentifier, $propertyName), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 			}
 
-			if (isset($propertyConfiguration['elasticSearch']) && isset($propertyConfiguration['elasticSearch']['fulltextExtractor'])) {
-				if ($propertyConfiguration['elasticSearch']['fulltextExtractor'] !== '') {
-					$fulltextExtractionExpression = $propertyConfiguration['elasticSearch']['fulltextExtractor'];
+			if ($fulltextIndexingEnabledForNode === TRUE) {
+				if (isset($propertyConfiguration['elasticSearch']) && isset($propertyConfiguration['elasticSearch']['fulltextExtractor'])) {
+					if ($propertyConfiguration['elasticSearch']['fulltextExtractor'] !== '') {
+						$fulltextExtractionExpression = $propertyConfiguration['elasticSearch']['fulltextExtractor'];
 
-					$fulltextIndexOfProperty = $this->evaluateEelExpression($fulltextExtractionExpression, $nodeData, $propertyName, ($nodeData->hasProperty($propertyName) ? $nodeData->getProperty($propertyName) : NULL), $persistenceObjectIdentifier);
+						$fulltextIndexOfProperty = $this->evaluateEelExpression($fulltextExtractionExpression, $nodeData, $propertyName, ($nodeData->hasProperty($propertyName) ? $nodeData->getProperty($propertyName) : NULL), $persistenceObjectIdentifier);
 
-					if (!is_array($fulltextIndexOfProperty)) {
-						throw new Exception\IndexingException('The fulltext index for property "' . $propertyName . '" of node "' . $nodeData->getPath() . '" could not be retrieved; the Eel expression "' . $fulltextExtractionExpression . '" is no valid fulltext extraction expression.');
-					}
-
-					foreach ($fulltextIndexOfProperty as $bucket => $value) {
-						if (!isset($fulltextIndexOfNode[$bucket])) {
-							$fulltextIndexOfNode[$bucket] = '';
+						if (!is_array($fulltextIndexOfProperty)) {
+							throw new Exception\IndexingException('The fulltext index for property "' . $propertyName . '" of node "' . $nodeData->getPath() . '" could not be retrieved; the Eel expression "' . $fulltextExtractionExpression . '" is no valid fulltext extraction expression.');
 						}
-						$fulltextIndexOfNode[$bucket] .= ' ' . $value;
+
+						foreach ($fulltextIndexOfProperty as $bucket => $value) {
+							if (!isset($fulltextIndexOfNode[$bucket])) {
+								$fulltextIndexOfNode[$bucket] = '';
+							}
+							$fulltextIndexOfNode[$bucket] .= ' ' . $value;
+						}
 					}
+					// TODO: also allow fulltextExtractor in settings!!
 				}
-				// TODO: also allow fulltextExtractor in settings!!
 			}
 		}
 
@@ -227,46 +230,48 @@ class NodeIndexer {
 
 		$documentData = $document->getData();
 
-		if ($this->isFulltextRoot($nodeData)) {
-			// for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
-			// "update" API instead of the "index" API, with a custom script internally; as we
-			// shall not delete the "__fulltext" part of the document if it has any.
-			$this->currentBulkRequest[] = array(
-				array(
-					'update' => array(
-						'_type' => $document->getType()->getName(),
-						'_id' => $document->getId()
-					)
-				),
-				// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
-				array(
-					'script' => '
-						fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new LinkedHashMap());
-						fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new LinkedHashMap());
-						ctx._source = newData;
-						ctx._source.__fulltext = fulltext;
-						ctx._source.__fulltextParts = fulltextParts
-					',
-					'params' => array(
-						'newData' => $documentData
+		if ($fulltextIndexingEnabledForNode === TRUE) {
+			if ($this->isFulltextRoot($nodeData)) {
+				// for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
+				// "update" API instead of the "index" API, with a custom script internally; as we
+				// shall not delete the "__fulltext" part of the document if it has any.
+				$this->currentBulkRequest[] = array(
+					array(
+						'update' => array(
+							'_type' => $document->getType()->getName(),
+							'_id' => $document->getId()
+						)
 					),
-					'upsert' => $documentData
-				)
-			);
-		} else {
-			// non-fulltext-root documents can be indexed as-they-are
-			$this->currentBulkRequest[] = array(
-				array(
-					'index' => array(
-						'_type' => $document->getType()->getName(),
-						'_id' => $document->getId()
+					// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
+					array(
+						'script' => '
+							fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new LinkedHashMap());
+							fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new LinkedHashMap());
+							ctx._source = newData;
+							ctx._source.__fulltext = fulltext;
+							ctx._source.__fulltextParts = fulltextParts
+						',
+						'params' => array(
+							'newData' => $documentData
+						),
+						'upsert' => $documentData
 					)
-				),
-				$documentData
-			);
-		}
+				);
+			} else {
+				// non-fulltext-root documents can be indexed as-they-are
+				$this->currentBulkRequest[] = array(
+					array(
+						'index' => array(
+							'_type' => $document->getType()->getName(),
+							'_id' => $document->getId()
+						)
+					),
+					$documentData
+				);
+			}
 
-		$this->updateFulltext($nodeData, $fulltextIndexOfNode);
+			$this->updateFulltext($nodeData, $fulltextIndexOfNode);
+		}
 
 		$this->logger->log(sprintf('NodeIndexer: Added / updated node %s. Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 	}
@@ -330,10 +335,33 @@ class NodeIndexer {
 		);
 	}
 
+	/**
+	 * Whether the node has fulltext indexing enabled.
+	 *
+	 * @param NodeData $nodeData
+	 * @return boolean
+	 */
+	protected function isFulltextEnabled(NodeData $nodeData) {
+		if ($nodeData->getNodeType()->hasElasticSearch()) {
+			$elasticSearchSettingsForNode = $nodeData->getNodeType()->getElasticSearch();
+			if (isset($elasticSearchSettingsForNode['fulltext']['enable']) && $elasticSearchSettingsForNode['fulltext']['enable'] === TRUE) {
+				return TRUE;
+			}
+		}
+
+		return FALSE;
+	}
+
+	/**
+	 * Whether the node is configured as fulltext root.
+	 *
+	 * @param NodeData $nodeData
+	 * @return boolean
+	 */
 	protected function isFulltextRoot(NodeData $nodeData) {
 		if ($nodeData->getNodeType()->hasElasticSearch()) {
 			$elasticSearchSettingsForNode = $nodeData->getNodeType()->getElasticSearch();
-			if (isset($elasticSearchSettingsForNode['isFulltextRoot']) && $elasticSearchSettingsForNode['isFulltextRoot'] === TRUE) {
+			if (isset($elasticSearchSettingsForNode['fulltext']['isRoot']) && $elasticSearchSettingsForNode['fulltext']['isRoot'] === TRUE) {
 				return TRUE;
 			}
 		}

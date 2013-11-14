@@ -87,7 +87,9 @@
 
 'TYPO3.Neos:Document':
   elasticSearch:
-    isFulltextRoot: true
+    fulltext:
+      enable: true
+      isRoot: true
   properties:
     '__fulltextParts':
       elasticSearch:
