@@ -24,6 +24,7 @@ Flowpack:
         string:
           mapping:
             type: string
+            include_in_all: false
           indexing: ${value}
 
         boolean:
