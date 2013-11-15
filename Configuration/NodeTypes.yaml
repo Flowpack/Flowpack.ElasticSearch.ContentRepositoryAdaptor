@@ -1,5 +1,9 @@
 
 'TYPO3.Neos:Node': &node
+  elasticSearch:
+    fulltext:
+      enable: true
+
   properties:
 
     '__persistenceObjectIdentifier':
@@ -7,6 +11,7 @@
         mapping:
           type: string
           index: not_analyzed
+          include_in_all: false
         indexing: ${persistenceObjectIdentifier}
 
     '__identifier':
@@ -14,6 +19,7 @@
         mapping:
           type: string
           index: not_analyzed
+          include_in_all: false
         indexing: ${node.getIdentifier()}
 
     '__workspace':
@@ -21,6 +27,7 @@
         mapping:
           type: string
           index: not_analyzed
+          include_in_all: false
         indexing: ${node.getWorkspace().getName()}
 
     '__path':
@@ -28,6 +35,7 @@
         mapping:
           type: string
           index: not_analyzed
+          include_in_all: false
         indexing: ${node.getPath()}
 
     '__parentPath':
@@ -35,6 +43,7 @@
         mapping:
           type: string
           index: not_analyzed
+          include_in_all: false
         # we index *all* parent paths as separate tokens to allow for efficient searching without a prefix query
         indexing: ${ElasticSearch.buildAllPathPrefixes(node.getParentPath())}
 
@@ -42,6 +51,7 @@
       elasticSearch:
         mapping:
           type: integer
+          include_in_all: false
         indexing: ${node.getIndex()}
 
     '_removed':
@@ -55,6 +65,7 @@
         mapping:
           type: string
           index: not_analyzed
+          include_in_all: false
         indexing: ${ElasticSearch.extractNodeTypeNamesAndSupertypes(node.getNodeType())}
 
 'unstructured': *node
@@ -88,7 +99,6 @@
 'TYPO3.Neos:Document':
   elasticSearch:
     fulltext:
-      enable: true
       isRoot: true
   properties:
     '__fulltextParts':

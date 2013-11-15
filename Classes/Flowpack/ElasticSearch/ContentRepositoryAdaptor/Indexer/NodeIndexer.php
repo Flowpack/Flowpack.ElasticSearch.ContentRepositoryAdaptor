@@ -294,6 +294,7 @@ class NodeIndexer {
 			$closestFulltextNode = $closestFulltextNode->getParent();
 			if ($closestFulltextNode === NULL) {
 				// root of hierarchy, no fulltext root found anymore, abort silently...
+				$this->logger->log('No fulltext root found for ' . $nodeData->getPath(), LOG_WARNING);
 				return;
 			}
 		}
@@ -317,7 +318,11 @@ class NodeIndexer {
 					ctx._source.__fulltext = new LinkedHashMap();
 					foreach (fulltextByNode : ctx._source.__fulltextParts.entrySet()) {
 						foreach (element : fulltextByNode.value.entrySet()) {
-							ctx._source.__fulltext[element.key] += " " + element.value;
+							if (ctx._source.__fulltext.containsKey(element.key)) {
+								ctx._source.__fulltext[element.key] += " " + element.value;
+							} else {
+								ctx._source.__fulltext[element.key] = element.value;
+							}
 						}
 					}
 				',
