@@ -39,7 +39,10 @@ Flowpack:
         date:
           mapping:
             type: date
-          indexing: ${value.format('c')}
+            format: 'date_time_no_millis'
+            include_in_all: false
+          indexing: ${(value ? value.format('Y-m-d\TH:i:s') + 'Z' : null)}
+
 
         'TYPO3\Media\Domain\Model\Video':
           mapping: '' # deliberately don't map or index this
