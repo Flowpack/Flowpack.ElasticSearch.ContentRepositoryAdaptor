@@ -214,7 +214,7 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 	 *
 	 * @param $propertyName
 	 * @param $propertyValue
-	 * @return void
+	 * @return ElasticSearchQueryBuilder
 	 */
 	public function exactMatch($propertyName, $propertyValue) {
 		if ($propertyValue instanceof NodeInterface) {
