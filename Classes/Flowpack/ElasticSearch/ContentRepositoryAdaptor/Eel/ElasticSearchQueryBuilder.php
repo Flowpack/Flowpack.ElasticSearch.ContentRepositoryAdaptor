@@ -56,6 +56,11 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 	protected $limit;
 
 	/**
+	 * @var integer
+	 */
+	protected $from;
+
+	/**
 	 * The ElasticSearch request, as it is being built up.
 	 * @var array
 	 */
@@ -205,6 +210,24 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 
 		// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-request-from-size.html
 		$this->request['size'] = $limit * $currentWorkspaceNestingLevel;
+
+		return $this;
+	}
+
+	/**
+	 * output records starting at $from
+	 *
+	 *
+	 * @param integer $from
+	 * @return ElasticSearchQueryBuilder
+	 */
+	public function from($from) {
+		if (!$from) {
+			return $this;
+		}
+
+		$this->from = $from;
+		$this->request['from'] = $from;
 
 		return $this;
 	}
