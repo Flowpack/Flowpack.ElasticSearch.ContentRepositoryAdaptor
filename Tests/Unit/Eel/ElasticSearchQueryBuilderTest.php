@@ -61,7 +61,24 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase {
 								)
 							),
 							'should' => array (),
-							'must_not' => array ()
+							'must_not' => array (
+								// Filter out all hidden elements
+								array(
+									'term' => array('_hidden' => TRUE)
+								),
+								// if now < hiddenBeforeDateTime: HIDE
+								// -> hiddenBeforeDateTime > now
+								array(
+									'range' => array('_hiddenBeforeDateTime' => array(
+										'gt' => 'now'
+									))
+								),
+								array(
+									'range' => array('_hiddenAfterDateTime' => array(
+										'lt' => 'now'
+									))
+								)
+							)
 						)
 					)
 				)
@@ -86,8 +103,8 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase {
 	public function nodeTypeFilterWorks() {
 		$this->queryBuilder->nodeType('Foo.Bar:Baz');
 		$expected = array(
-			'type' => array(
-				'value' => 'Foo-Bar:Baz'
+			'term' => array(
+				'__typeAndSupertypes' => 'Foo.Bar:Baz'
 			)
 		);
 		$actual = $this->queryBuilder->getRequest();
