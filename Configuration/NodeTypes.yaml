@@ -12,7 +12,7 @@
           type: string
           index: not_analyzed
           include_in_all: false
-        indexing: ${persistenceObjectIdentifier}
+        indexing: '${persistenceObjectIdentifier}'
 
     '__identifier':
       elasticSearch:
@@ -20,7 +20,7 @@
           type: string
           index: not_analyzed
           include_in_all: false
-        indexing: ${node.getIdentifier()}
+        indexing: '${node.getIdentifier()}'
 
     '__workspace':
       elasticSearch:
@@ -28,7 +28,7 @@
           type: string
           index: not_analyzed
           include_in_all: false
-        indexing: ${node.getWorkspace().getName()}
+        indexing: '${node.getWorkspace().getName()}'
 
     '__path':
       elasticSearch:
@@ -36,7 +36,7 @@
           type: string
           index: not_analyzed
           include_in_all: false
-        indexing: ${node.getPath()}
+        indexing: '${node.getPath()}'
 
     '__parentPath':
       elasticSearch:
@@ -45,14 +45,14 @@
           index: not_analyzed
           include_in_all: false
         # we index *all* parent paths as separate tokens to allow for efficient searching without a prefix query
-        indexing: ${ElasticSearch.buildAllPathPrefixes(node.getParentPath())}
+        indexing: '${ElasticSearch.buildAllPathPrefixes(node.getParentPath())}'
 
     '__sortIndex':
       elasticSearch:
         mapping:
           type: integer
           include_in_all: false
-        indexing: ${node.getIndex()}
+        indexing: '${node.getIndex()}'
 
     '_removed':
       elasticSearch:
@@ -66,7 +66,7 @@
           type: string
           index: not_analyzed
           include_in_all: false
-        indexing: ${ElasticSearch.extractNodeTypeNamesAndSupertypes(node.getNodeType())}
+        indexing: '${ElasticSearch.extractNodeTypeNamesAndSupertypes(node.getNodeType())}'
 
 'unstructured': *node
 
@@ -74,7 +74,7 @@
   properties:
     '_hidden':
       elasticSearch:
-        indexing: ${node.isHidden()}
+        indexing: '${node.isHidden()}'
 
 'TYPO3.Neos:Timable':
   properties:
@@ -84,7 +84,7 @@
           type: date
           include_in_all: false
           format: 'date_time_no_millis'
-        indexing: ${(node.hiddenBeforeDateTime ? node.hiddenBeforeDateTime.format('Y-m-d\TH:i:s') + 'Z' : null)}
+        indexing: '${(node.hiddenBeforeDateTime ? node.hiddenBeforeDateTime.format("Y-m-d\TH:i:s") + "Z" : null)}'
 
 
     '_hiddenAfterDateTime':
@@ -93,7 +93,7 @@
           type: date
           include_in_all: false
           format: 'date_time_no_millis'
-        indexing: ${(node.hiddenAfterDateTime ? node.hiddenAfterDateTime.format('Y-m-d\TH:i:s') + 'Z' : null)}
+        indexing: '${(node.hiddenAfterDateTime ? node.hiddenAfterDateTime.format("Y-m-d\TH:i:s") + "Z" : null)}'
 
 
 'TYPO3.Neos:Document':
@@ -148,10 +148,10 @@
   properties:
     'text':
       elasticSearch:
-        fulltextExtractor: ${ElasticSearch.fulltext.extractHtmlTags(value)}
+        fulltextExtractor: '${ElasticSearch.fulltext.extractHtmlTags(value)}'
 
 'TYPO3.Neos.NodeTypes:Headline':
   properties:
     'title':
       elasticSearch:
-        fulltextExtractor: ${ElasticSearch.fulltext.extractHtmlTags(value)}
+        fulltextExtractor: '${ElasticSearch.fulltext.extractHtmlTags(value)}'
