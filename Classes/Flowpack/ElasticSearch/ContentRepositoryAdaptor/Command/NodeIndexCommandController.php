@@ -42,6 +42,18 @@ class NodeIndexCommandController extends CommandController {
 
 	/**
 	 * @Flow\Inject
+	 * @var \TYPO3\TYPO3CR\Domain\Factory\NodeFactory
+	 */
+	protected $nodeFactory;
+
+	/**
+	 * @Flow\Inject
+	 * @var \TYPO3\TYPO3CR\Domain\Service\ContextFactory
+	 */
+	protected $contextFactory;
+
+	/**
+	 * @Flow\Inject
 	 * @var NodeTypeMappingBuilder
 	 */
 	protected $nodeTypeMappingBuilder;
@@ -51,8 +63,6 @@ class NodeIndexCommandController extends CommandController {
 	 */
 	protected $logger;
 
-
-
 	/**
 	 * Show the mapping which would be sent to the ElasticSearch server
 	 *
@@ -61,7 +71,7 @@ class NodeIndexCommandController extends CommandController {
 	public function showMappingCommand() {
 		$nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
 		foreach ($nodeTypeMappingCollection as $mapping) {
-			/** @var Mapping $mapping */
+			/** @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
 			$this->output(\Symfony\Component\Yaml\Yaml::dump($mapping->asArray(), 5, 2));
 			$this->outputLine();
 		}
@@ -106,7 +116,7 @@ class NodeIndexCommandController extends CommandController {
 
 			$nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
 			foreach ($nodeTypeMappingCollection as $mapping) {
-				/** @var Mapping $mapping */
+				/** @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
 				$mapping->apply();
 			}
 			$this->logger->log('Updated Mapping.', LOG_INFO);
@@ -116,11 +126,19 @@ class NodeIndexCommandController extends CommandController {
 
 		$count = 0;
 		foreach ($this->nodeDataRepository->findAll() as $nodeData) {
+			/** @var \TYPO3\TYPO3CR\Domain\Model\NodeData $nodeData */
+			$context = $this->contextFactory->create(array(
+				'workspaceName' => $nodeData->getWorkspace()->getName(),
+				'invisibleContentShown' => TRUE,
+				'removedContentShown' => TRUE,
+				'inaccessibleContentShown' => TRUE
+			));
+			$node = $this->nodeFactory->createFromNodeData($nodeData, $context);
 			if ($limit !== NULL && $count > $limit) {
 				break;
 			}
-			$this->nodeIndexingManager->indexNode($nodeData);
-			$this->logger->log(sprintf('  %s: %s', $nodeData->getWorkspace()->getName(), $nodeData->getPath()), LOG_DEBUG);
+			$this->nodeIndexingManager->indexNode($node);
+			$this->logger->log(sprintf('  %s', $node->getContextPath()), LOG_DEBUG);
 			$count ++;
 		}
 

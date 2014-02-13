@@ -17,7 +17,7 @@ use Flowpack\ElasticSearch\Domain\Model\Client;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use TYPO3\Flow\Annotations as Flow;
-use TYPO3\TYPO3CR\Domain\Model\NodeData;
+use TYPO3\TYPO3CR\Domain\Model\Node;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 
 /*
@@ -162,42 +162,42 @@ class NodeIndexer {
 	/**
 	 * index this node, and add it to the current bulk request.
 	 *
-	 * @param NodeData $nodeData
+	 * @param Node $node
 	 * @throws \Exception
 	 * @return void
 	 */
-	public function indexNode(NodeData $nodeData) {
-		$persistenceObjectIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
-		$nodeType = $nodeData->getNodeType();
+	public function indexNode(Node $node) {
+		$identifier = sha1($node->getContextPath());
+		$nodeType = $node->getNodeType();
 
 		$mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
 
-		if ($nodeData->isRemoved()) {
+		if ($node->isRemoved()) {
 			// TODO: handle deletion from the fulltext index as well
-			$mappingType->deleteDocumentById($persistenceObjectIdentifier);
-			$this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+			$mappingType->deleteDocumentById($identifier);
+			$this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). Persistence ID: %s', $node->getContextPath(), $identifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 
 			return;
 		}
 
 		$nodePropertiesToBeStoredInElasticSearchIndex = array();
 		$fulltextIndexOfNode = array();
-		$fulltextIndexingEnabledForNode = $this->isFulltextEnabled($nodeData);
+		$fulltextIndexingEnabledForNode = $this->isFulltextEnabled($node);
 
 		foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {
 
 			// Property Indexing
 			if (isset($propertyConfiguration['elasticSearch']) && isset($propertyConfiguration['elasticSearch']['indexing'])) {
 				if ($propertyConfiguration['elasticSearch']['indexing'] !== '') {
-					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($propertyConfiguration['elasticSearch']['indexing'], $nodeData, $propertyName, ($nodeData->hasProperty($propertyName) ? $nodeData->getProperty($propertyName) : NULL), $persistenceObjectIdentifier);
+					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($propertyConfiguration['elasticSearch']['indexing'], $node, $propertyName, ($node->hasProperty($propertyName) ? $node->getProperty($propertyName) : NULL), $identifier);
 				}
 			} elseif (isset($propertyConfiguration['type']) && isset($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'])) {
 
 				if ($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'] !== '') {
-					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'], $nodeData, $propertyName, ($nodeData->hasProperty($propertyName) ? $nodeData->getProperty($propertyName) : NULL), $persistenceObjectIdentifier);
+					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'], $node, $propertyName, ($node->hasProperty($propertyName) ? $node->getProperty($propertyName) : NULL), $identifier);
 				}
 			} else {
-				$this->logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $persistenceObjectIdentifier, $propertyName), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+				$this->logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $identifier, $propertyName), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 			}
 
 			if ($fulltextIndexingEnabledForNode === TRUE) {
@@ -205,10 +205,10 @@ class NodeIndexer {
 					if ($propertyConfiguration['elasticSearch']['fulltextExtractor'] !== '') {
 						$fulltextExtractionExpression = $propertyConfiguration['elasticSearch']['fulltextExtractor'];
 
-						$fulltextIndexOfProperty = $this->evaluateEelExpression($fulltextExtractionExpression, $nodeData, $propertyName, ($nodeData->hasProperty($propertyName) ? $nodeData->getProperty($propertyName) : NULL), $persistenceObjectIdentifier);
+						$fulltextIndexOfProperty = $this->evaluateEelExpression($fulltextExtractionExpression, $node, $propertyName, ($node->hasProperty($propertyName) ? $node->getProperty($propertyName) : NULL));
 
 						if (!is_array($fulltextIndexOfProperty)) {
-							throw new Exception\IndexingException('The fulltext index for property "' . $propertyName . '" of node "' . $nodeData->getPath() . '" could not be retrieved; the Eel expression "' . $fulltextExtractionExpression . '" is no valid fulltext extraction expression.');
+							throw new Exception\IndexingException('The fulltext index for property "' . $propertyName . '" of node "' . $node->getPath() . '" could not be retrieved; the Eel expression "' . $fulltextExtractionExpression . '" is no valid fulltext extraction expression.');
 						}
 
 						foreach ($fulltextIndexOfProperty as $bucket => $value) {
@@ -225,13 +225,13 @@ class NodeIndexer {
 
 		$document = new ElasticSearchDocument($mappingType,
 			$nodePropertiesToBeStoredInElasticSearchIndex,
-			$persistenceObjectIdentifier
+			$identifier
 		);
 
 		$documentData = $document->getData();
 
 		if ($fulltextIndexingEnabledForNode === TRUE) {
-			if ($this->isFulltextRoot($nodeData)) {
+			if ($this->isFulltextRoot($node)) {
 				// for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
 				// "update" API instead of the "index" API, with a custom script internally; as we
 				// shall not delete the "__fulltext" part of the document if it has any.
@@ -270,31 +270,31 @@ class NodeIndexer {
 				);
 			}
 
-			$this->updateFulltext($nodeData, $fulltextIndexOfNode);
+			$this->updateFulltext($node, $fulltextIndexOfNode);
 		}
 
-		$this->logger->log(sprintf('NodeIndexer: Added / updated node %s. Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+		$this->logger->log(sprintf('NodeIndexer: Added / updated node %s. Persistence ID: %s', $node->getContextPath(), $identifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 	}
 
 	/**
 	 *
 	 *
-	 * @param NodeData $nodeData
+	 * @param Node $node
 	 * @param array $fulltextIndexOfNode
 	 * @return void
 	 */
-	protected function updateFulltext(NodeData $nodeData, array $fulltextIndexOfNode) {
-		if ($nodeData->getWorkspace()->getName() !== 'live' || count($fulltextIndexOfNode) === 0) {
+	protected function updateFulltext(Node $node, array $fulltextIndexOfNode) {
+		if ($node->getWorkspace()->getName() !== 'live' || count($fulltextIndexOfNode) === 0) {
 			// fulltext indexing should only be done in live workspace, and if there's something to index
 			return;
 		}
 
-		$closestFulltextNode = $nodeData;
+		$closestFulltextNode = $node;
 		while (!$this->isFulltextRoot($closestFulltextNode)) {
 			$closestFulltextNode = $closestFulltextNode->getParent();
 			if ($closestFulltextNode === NULL) {
 				// root of hierarchy, no fulltext root found anymore, abort silently...
-				$this->logger->log('No fulltext root found for ' . $nodeData->getPath(), LOG_WARNING);
+				$this->logger->log('No fulltext root found for ' . $node->getPath(), LOG_WARNING);
 				return;
 			}
 		}
@@ -303,7 +303,7 @@ class NodeIndexer {
 			array(
 				'update' => array(
 					'_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
-					'_id' => $this->persistenceManager->getIdentifierByObject($closestFulltextNode)
+					'_id' => sha1($closestFulltextNode->getContextPath())
 				)
 			),
 			// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
@@ -327,13 +327,13 @@ class NodeIndexer {
 					}
 				',
 				'params' => array(
-					'identifier' => $nodeData->getIdentifier(),
+					'identifier' => $node->getIdentifier(),
 					'fulltext' => $fulltextIndexOfNode
 				),
 				'upsert' => array(
 					'__fulltext' => $fulltextIndexOfNode,
 					'__fulltextParts' => array(
-						$nodeData->getIdentifier() => $fulltextIndexOfNode
+						$node->getIdentifier() => $fulltextIndexOfNode
 					)
 				)
 			)
@@ -343,12 +343,12 @@ class NodeIndexer {
 	/**
 	 * Whether the node has fulltext indexing enabled.
 	 *
-	 * @param NodeData $nodeData
+	 * @param Node $node
 	 * @return boolean
 	 */
-	protected function isFulltextEnabled(NodeData $nodeData) {
-		if ($nodeData->getNodeType()->hasElasticSearch()) {
-			$elasticSearchSettingsForNode = $nodeData->getNodeType()->getElasticSearch();
+	protected function isFulltextEnabled(Node $node) {
+		if ($node->getNodeType()->hasConfiguration('elasticSearch')) {
+			$elasticSearchSettingsForNode = $node->getNodeType()->getConfiguration('elasticSearch');
 			if (isset($elasticSearchSettingsForNode['fulltext']['enable']) && $elasticSearchSettingsForNode['fulltext']['enable'] === TRUE) {
 				return TRUE;
 			}
@@ -360,12 +360,12 @@ class NodeIndexer {
 	/**
 	 * Whether the node is configured as fulltext root.
 	 *
-	 * @param NodeData $nodeData
+	 * @param Node $node
 	 * @return boolean
 	 */
-	protected function isFulltextRoot(NodeData $nodeData) {
-		if ($nodeData->getNodeType()->hasElasticSearch()) {
-			$elasticSearchSettingsForNode = $nodeData->getNodeType()->getElasticSearch();
+	protected function isFulltextRoot(Node $node) {
+		if ($node->getNodeType()->hasConfiguration('elasticSearch')) {
+			$elasticSearchSettingsForNode = $node->getNodeType()->getConfiguration('elasticSearch');
 			if (isset($elasticSearchSettingsForNode['fulltext']['isRoot']) && $elasticSearchSettingsForNode['fulltext']['isRoot'] === TRUE) {
 				return TRUE;
 			}
@@ -375,25 +375,25 @@ class NodeIndexer {
 	}
 
 	/**
-	 * schedule node removal into the current bulk request.
+	 * Schedule node removal into the current bulk request.
 	 *
-	 * @param NodeData $nodeData
+	 * @param Node $node
 	 * @return string
 	 */
-	public function removeNode(NodeData $nodeData) {
+	public function removeNode(Node $node) {
 		// TODO: handle deletion from the fulltext index as well
-		$persistenceObjectIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
+		$identifier = sha1($node->getContextPath());
 
 		$this->currentBulkRequest[] = array(
 			array(
 				'delete' => array(
-					'_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeData->getNodeType()),
-					'_id' => $persistenceObjectIdentifier
+					'_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($node->getNodeType()),
+					'_id' => $identifier
 				)
 			)
 		);
 
-		$this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node actually removed). Persistence ID: %s', $nodeData->getContextPath(), $persistenceObjectIdentifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+		$this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node actually removed). Persistence ID: %s', $node->getContextPath(), $identifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 	}
 
 	/**
@@ -438,21 +438,19 @@ class NodeIndexer {
 	 * TODO: REFACTOR TO Eel package (as this is copy/pasted from TypoScript Runtime)
 	 *
 	 * @param string $expression The Eel expression to evaluate
-	 * @param NodeData $node
+	 * @param Node $node
 	 * @param string $propertyName
 	 * @param mixed $value
-	 * @param string $persistenceObjectIdentifier
 	 * @return mixed The result of the evaluated Eel expression
 	 * @throws Exception
 	 */
-	protected function evaluateEelExpression($expression, NodeData $node, $propertyName, $value, $persistenceObjectIdentifier) {
+	protected function evaluateEelExpression($expression, Node $node, $propertyName, $value) {
 		$matches = NULL;
 		if (preg_match(\TYPO3\Eel\Package::EelExpressionRecognizer, $expression, $matches)) {
 			$contextVariables = array_merge($this->getDefaultContextVariables(), array(
 				'node' => $node,
 				'propertyName' => $propertyName,
-				'value' => $value,
-				'persistenceObjectIdentifier' => $persistenceObjectIdentifier
+				'value' => $value
 			));
 
 			$context = new \TYPO3\Eel\Context($contextVariables);
