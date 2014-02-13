@@ -9,9 +9,9 @@ Flowpack:
       log:
         backendOptions:
           fileBackend:
-            logFileURL: %FLOW_PATH_DATA%Logs/ElasticSearch.log
+            logFileURL: '%FLOW_PATH_DATA%Logs/ElasticSearch.log'
             createParentDirectories: TRUE
-            severityThreshold: %LOG_DEBUG%
+            severityThreshold: '%LOG_DEBUG%'
             maximumLogFileSize: 10485760
             logFilesToKeep: 1
             logMessageOrigin: FALSE
@@ -25,24 +25,24 @@ Flowpack:
           mapping:
             type: string
             include_in_all: false
-          indexing: ${value}
+          indexing: '${value}'
 
         boolean:
           mapping:
             type: boolean
-          indexing: ${value}
+          indexing: '${value}'
 
         integer:
           mapping:
             type: integer
-          indexing: ${value}
+          indexing: '${value}'
 
         date:
           mapping:
             type: date
             format: 'date_time_no_millis'
             include_in_all: false
-          indexing: ${(value ? value.format('Y-m-d\TH:i:s') + 'Z' : null)}
+          indexing: '${(value ? value.format("Y-m-d\TH:i:s") + "Z" : null)}'
 
 
         'TYPO3\Media\Domain\Model\Video':
@@ -57,13 +57,13 @@ Flowpack:
           mapping:
             type: string # an array of strings, to be precise
             index: not_analyzed
-          indexing: ${ElasticSearch.convertArrayOfNodesToArrayOfNodeIdentifiers(value)}
+          indexing: '${ElasticSearch.convertArrayOfNodesToArrayOfNodeIdentifiers(value)}'
 
         'reference':
           mapping:
             type: string
             index: not_analyzed
-          indexing: ${value.identifier}
+          indexing: '${value.identifier}'
 
 
       # Default context objects that are available in Eel expressions
