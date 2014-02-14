@@ -51,8 +51,6 @@ class NodeIndexCommandController extends CommandController {
 	 */
 	protected $logger;
 
-
-
 	/**
 	 * Show the mapping which would be sent to the ElasticSearch server
 	 *
@@ -93,10 +91,11 @@ class NodeIndexCommandController extends CommandController {
 	 * This command (re-)indexes all nodes contained in the content repository and sets the schema beforehand.
 	 *
 	 * @param integer $limit Amount of nodes to index at maximum
+	 * @param integer $offset
 	 * @param bool $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
 	 * @return void
 	 */
-	public function buildCommand($limit = NULL, $update = FALSE) {
+	public function buildCommand($limit = NULL, $offset = 0, $update = FALSE) {
 		if ($update === TRUE) {
 			$this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
 		} else {
@@ -114,19 +113,26 @@ class NodeIndexCommandController extends CommandController {
 
 		$this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== NULL ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
 
+		if ($limit !== NULL) {
+			$query = $this->nodeDataRepository->createQuery();
+			$query->setLimit($limit);
+			$query->setOffset($offset);
+			$nodeDataItems = $query->execute();
+		} else {
+			$nodeDataItems = $this->nodeDataRepository->findAll();
+		}
+
 		$count = 0;
-		foreach ($this->nodeDataRepository->findAll() as $nodeData) {
-			if ($limit !== NULL && $count > $limit) {
-				break;
-			}
+		foreach ($nodeDataItems as $nodeData) {
 			$this->nodeIndexingManager->indexNode($nodeData);
 			$this->logger->log(sprintf('  %s: %s', $nodeData->getWorkspace()->getName(), $nodeData->getPath()), LOG_DEBUG);
-			$count ++;
+			unset($nodeData);
+			$count++;
 		}
 
 		$this->nodeIndexingManager->flushQueues();
 
-		$this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
+		$this->logger->log(sprintf('Done. (indexed %u nodes, used %u MB of memory)', $count, memory_get_peak_usage() / 1024 / 1024), LOG_INFO);
 		$this->nodeIndexer->getIndex()->refresh();
 
 		// TODO: smoke tests
