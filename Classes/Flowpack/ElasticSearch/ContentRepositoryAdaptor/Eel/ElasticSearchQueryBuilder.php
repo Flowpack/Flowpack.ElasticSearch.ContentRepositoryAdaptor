@@ -359,7 +359,14 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 		 * we might be able to use https://github.com/elasticsearch/elasticsearch/issues/3300 as soon as it is merged.
 		 */
 		foreach ($hits['hits'] as $hit) {
-			$node = $this->contextNode->getNode($hit['fields']['__path']);
+			// with ElasticSearch 1.0 fields always returns an array,
+			// see https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/issues/17
+			if (is_array($hit['fields']['__path'])) {
+				$nodePath = current($hit['fields']['__path']);
+			} else {
+				$nodePath = $hit['fields']['__path'];
+			}
+			$node = $this->contextNode->getNode($nodePath);
 			if ($node instanceof NodeInterface) {
 				$nodes[$node->getIdentifier()] = $node;
 				if ($this->limit > 0 && count($nodes) >= $this->limit) {
