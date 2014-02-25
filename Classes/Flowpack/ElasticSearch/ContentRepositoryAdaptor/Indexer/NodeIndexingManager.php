@@ -14,7 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\Domain\Model\Client;
 use TYPO3\Flow\Annotations as Flow;
-use TYPO3\TYPO3CR\Domain\Model\NodeData;
+use TYPO3\TYPO3CR\Domain\Model\Node;
 
 /**
  * Indexer for Content Repository Nodes. Manages an indexing queue to allow for deferred indexing.
@@ -64,12 +64,12 @@ class NodeIndexingManager {
 	/**
 	 * Schedule a node for indexing
 	 *
-	 * @param NodeData $nodeData
+	 * @param Node $node
 	 * @return void
 	 */
-	public function indexNode(NodeData $nodeData) {
-		$this->nodesToBeRemoved->detach($nodeData);
-		$this->nodesToBeIndexed->attach($nodeData);
+	public function indexNode(Node $node) {
+		$this->nodesToBeRemoved->detach($node);
+		$this->nodesToBeIndexed->attach($node);
 
 		$this->flushQueuesIfNeeded();
 	}
@@ -77,18 +77,19 @@ class NodeIndexingManager {
 	/**
 	 * Schedule a node for removal of the index
 	 *
-	 * @param NodeData $nodeData
+	 * @param Node $node
 	 * @return void
 	 */
-	public function removeNode(NodeData $nodeData) {
-		$this->nodesToBeIndexed->detach($nodeData);
-		$this->nodesToBeRemoved->attach($nodeData);
+	public function removeNode(Node $node) {
+		$this->nodesToBeIndexed->detach($node);
+		$this->nodesToBeRemoved->attach($node);
 
 		$this->flushQueuesIfNeeded();
 	}
 
 	/**
-	 *
+	 * Flush the indexing/removal queues, actually processing them, if the
+	 * maximum indexing batch size has been reached.
 	 *
 	 * @return void
 	 */
