@@ -26,7 +26,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase {
 	public function setUp() {
 		$node = $this->getMock('TYPO3\TYPO3CR\Domain\Model\NodeInterface');
 		$node->expects($this->any())->method('getPath')->will($this->returnValue('/foo/bar'));
-		$mockContext = $this->getMock('TYPO3\TYPO3CR\Domain\Service\ContextInterface');
+		$mockContext = $this->getMockBuilder('TYPO3\TYPO3CR\Domain\Service\Context')->disableOriginalConstructor()->getMock();
 		$node->expects($this->any())->method('getContext')->will($this->returnValue($mockContext));
 
 		$mockWorkspace = $this->getMockBuilder('TYPO3\TYPO3CR\Domain\Model\Workspace')->disableOriginalConstructor()->getMock();
