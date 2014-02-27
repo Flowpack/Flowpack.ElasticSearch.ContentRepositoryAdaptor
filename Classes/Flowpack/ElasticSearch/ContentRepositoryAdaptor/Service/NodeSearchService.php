@@ -16,7 +16,7 @@ use Flowpack\ElasticSearch\Domain\Factory\ClientFactory;
 use Flowpack\ElasticSearch\Domain\Model\Client;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use TYPO3\Flow\Annotations as Flow;
-use TYPO3\TYPO3CR\Domain\Service\ContextInterface;
+use TYPO3\TYPO3CR\Domain\Service\Context;
 
 /**
  * Search service for TYPO3CR nodes
@@ -86,13 +86,13 @@ class NodeSearchService {
 	 *
 	 * @param string $nodePath Parent node path where search starts. All nodes below that path are considered.
 	 * @param string $sortingFieldName Name of the node property which is going to be used as a sorting criteria. Its value can be string, numeric or a date
-	 * @param \TYPO3\TYPO3CR\Domain\Service\ContextInterface $contentContext The content context, for example derived from the "current node"
+	 * @param \TYPO3\TYPO3CR\Domain\Service\Context $contentContext The content context, for example derived from the "current node"
 	 * @param integer $maximumResults The number of maximum results. If "1" is specified, this function will still return an array, but with 1 element.
 	 * @param integer $fromResult For pagination: the result number to start with. Index starts a 0.
 	 * @param string $nodeTypeFilter (currently) a single node type name to filter the results
 	 * @return array<\TYPO3\TYPO3CR\Domain\Model\Node>|NULL
 	 */
-	public function findRecent($nodePath, $sortingFieldName, ContextInterface $contentContext, $maximumResults = 100, $fromResult = NULL, $nodeTypeFilter = NULL) {
+	public function findRecent($nodePath, $sortingFieldName, Context $contentContext, $maximumResults = 100, $fromResult = NULL, $nodeTypeFilter = NULL) {
 		$searchQuery = array(
 			'query' => array(
 				'prefix' => array(
