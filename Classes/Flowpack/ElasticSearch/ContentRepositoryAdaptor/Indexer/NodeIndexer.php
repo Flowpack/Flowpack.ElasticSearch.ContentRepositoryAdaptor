@@ -167,15 +167,15 @@ class NodeIndexer {
 	 * @return void
 	 */
 	public function indexNode(Node $node) {
-		$identifier = sha1($node->getContextPath());
+		$contextPathHash = sha1($node->getContextPath());
 		$nodeType = $node->getNodeType();
 
 		$mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
 
 		if ($node->isRemoved()) {
 			// TODO: handle deletion from the fulltext index as well
-			$mappingType->deleteDocumentById($identifier);
-			$this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). Persistence ID: %s', $node->getContextPath(), $identifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+			$mappingType->deleteDocumentById($contextPathHash);
+			$this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). ID: %s', $node->getContextPath(), $contextPathHash), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 
 			return;
 		}
@@ -189,15 +189,15 @@ class NodeIndexer {
 			// Property Indexing
 			if (isset($propertyConfiguration['elasticSearch']) && isset($propertyConfiguration['elasticSearch']['indexing'])) {
 				if ($propertyConfiguration['elasticSearch']['indexing'] !== '') {
-					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($propertyConfiguration['elasticSearch']['indexing'], $node, $propertyName, ($node->hasProperty($propertyName) ? $node->getProperty($propertyName) : NULL), $identifier);
+					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($propertyConfiguration['elasticSearch']['indexing'], $node, $propertyName, ($node->hasProperty($propertyName) ? $node->getProperty($propertyName) : NULL), $contextPathHash);
 				}
 			} elseif (isset($propertyConfiguration['type']) && isset($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'])) {
 
 				if ($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'] !== '') {
-					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'], $node, $propertyName, ($node->hasProperty($propertyName) ? $node->getProperty($propertyName) : NULL), $identifier);
+					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'], $node, $propertyName, ($node->hasProperty($propertyName) ? $node->getProperty($propertyName) : NULL), $contextPathHash);
 				}
 			} else {
-				$this->logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $identifier, $propertyName), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+				$this->logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $contextPathHash, $propertyName), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 			}
 
 			if ($fulltextIndexingEnabledForNode === TRUE) {
@@ -225,7 +225,7 @@ class NodeIndexer {
 
 		$document = new ElasticSearchDocument($mappingType,
 			$nodePropertiesToBeStoredInElasticSearchIndex,
-			$identifier
+			$contextPathHash
 		);
 
 		$documentData = $document->getData();
@@ -273,7 +273,7 @@ class NodeIndexer {
 			$this->updateFulltext($node, $fulltextIndexOfNode);
 		}
 
-		$this->logger->log(sprintf('NodeIndexer: Added / updated node %s. Persistence ID: %s', $node->getContextPath(), $identifier), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+		$this->logger->log(sprintf('NodeIndexer: Added / updated node %s. ID: %s', $node->getContextPath(), $contextPathHash), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 	}
 
 	/**
@@ -423,7 +423,8 @@ class NodeIndexer {
 		if ($content !== '') {
 			$responseAsLines = $this->getIndex()->request('POST', '/_bulk', array(), $content)->getOriginalResponse()->getContent();
 			foreach (explode('\n', $responseAsLines) as $responseLine) {
-				if (strpos($responseLine, 'error') !== FALSE) {
+				$response = json_decode($responseLine);
+				if ($response->errors !== FALSE) {
 					$this->logger->log('Indexing Error: ' . $responseLine, LOG_ERR);
 				}
 			}
@@ -527,6 +528,9 @@ class NodeIndexer {
 			}
 		} catch (\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
 			// in case of 404, do not throw an error...
+			if ($exception->getResponse()->getStatusCode() !== 404) {
+				throw $exception;
+			}
 		}
 
 		$aliasActions[] = array(
