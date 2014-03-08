@@ -2,10 +2,13 @@ Flowpack:
   ElasticSearch:
     ContentRepositoryAdaptor:
 
+      # API. name of the ElasticSearch index to use
       indexName: typo3cr
 
+      # we use batch indexing, in order to reduce the number of HTTP requests while indexing
       indexingBatchSize: 100
 
+      # configuration of the ElasticSearch logfile
       log:
         backendOptions:
           fileBackend:
