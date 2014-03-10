@@ -163,11 +163,16 @@ class NodeIndexer {
 	 * index this node, and add it to the current bulk request.
 	 *
 	 * @param Node $node
-	 * @throws \Exception
+	 * @param string $targetWorkspaceName In case this is triggered during publishing, a workspace name will be passed in
 	 * @return void
+	 * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\IndexingException
 	 */
-	public function indexNode(Node $node) {
-		$contextPathHash = sha1($node->getContextPath());
+	public function indexNode(Node $node, $targetWorkspaceName = NULL) {
+		$contextPath = $node->getContextPath();
+		if ($targetWorkspaceName !== NULL) {
+			$contextPath = str_replace($node->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
+		}
+		$contextPathHash = sha1($contextPath);
 		$nodeType = $node->getNodeType();
 
 		$mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
@@ -175,7 +180,7 @@ class NodeIndexer {
 		if ($node->isRemoved()) {
 			// TODO: handle deletion from the fulltext index as well
 			$mappingType->deleteDocumentById($contextPathHash);
-			$this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). ID: %s', $node->getContextPath(), $contextPathHash), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+			$this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). ID: %s', $contextPath, $contextPathHash), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 
 			return;
 		}
@@ -229,6 +234,9 @@ class NodeIndexer {
 		);
 
 		$documentData = $document->getData();
+		if ($targetWorkspaceName !== NULL) {
+			$documentData['__workspace'] = $targetWorkspaceName;
+		}
 
 		if ($fulltextIndexingEnabledForNode === TRUE) {
 			if ($this->isFulltextRoot($node)) {
@@ -273,7 +281,7 @@ class NodeIndexer {
 			$this->updateFulltext($node, $fulltextIndexOfNode);
 		}
 
-		$this->logger->log(sprintf('NodeIndexer: Added / updated node %s. ID: %s', $node->getContextPath(), $contextPathHash), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+		$this->logger->log(sprintf('NodeIndexer: Added / updated node %s. ID: %s', $contextPath, $contextPathHash), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
 	}
 
 	/**

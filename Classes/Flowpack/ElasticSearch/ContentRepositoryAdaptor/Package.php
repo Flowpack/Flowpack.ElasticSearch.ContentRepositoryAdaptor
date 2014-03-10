@@ -46,6 +46,7 @@ class Package extends BasePackage {
 		$bootstrap->getSignalSlotDispatcher()->connect('TYPO3\TYPO3CR\Domain\Model\Node', 'nodeAdded', 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexingManager', 'indexNode');
 		$bootstrap->getSignalSlotDispatcher()->connect('TYPO3\TYPO3CR\Domain\Model\Node', 'nodeUpdated', 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexingManager', 'indexNode');
 		$bootstrap->getSignalSlotDispatcher()->connect('TYPO3\TYPO3CR\Domain\Model\Node', 'nodeRemoved', 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexingManager', 'removeNode');
+		$bootstrap->getSignalSlotDispatcher()->connect('TYPO3\Neos\Service\PublishingService', 'nodePublished', 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexingManager', 'indexNode', FALSE);
 		$bootstrap->getSignalSlotDispatcher()->connect('TYPO3\Flow\Persistence\Doctrine\PersistenceManager', 'allObjectsPersisted', 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexingManager', 'flushQueues');
 	}
 }
