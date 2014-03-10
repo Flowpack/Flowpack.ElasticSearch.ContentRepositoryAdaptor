@@ -380,6 +380,25 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 		}
 
 		return array_values($nodes);
-
 	}
+
+	/**
+	 * Return the total number of hits for the query.
+	 *
+	 * @return integer
+	 */
+	public function count() {
+		$timeBefore = microtime(TRUE);
+		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', array(), json_encode($this->request));
+		$timeAfterwards = microtime(TRUE);
+
+		$count = $response->getTreatedContent()['count'];
+
+		if ($this->logThisQuery === TRUE) {
+			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards-$timeBefore)*1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
+		}
+
+		return $count;
+	}
+
 }

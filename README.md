@@ -36,7 +36,7 @@ alternative to FlowQuery. In the long run, we might be able to integrate this AP
 but for now it works well as-is.
 
 Generally, ElasticSearch queries are done using the `ElasticSearch` Eel helper. In case you want
-to retieve a *list of nodes*, you'll generally do:
+to retrieve a *list of nodes*, you'll generally do:
 ```
 nodes = ${ElasticSearch.query(site)....execute()}
 ```
@@ -46,10 +46,15 @@ In case you just want to retrieve a *single node*, the form of a query is as fol
 nodes = ${q(ElasticSearch.query(site)....execute()).get(0)}
 ```
 
+To fetch the total number of hits a query returns, the form of a query is as follows:
+```
+nodes = ${ElasticSearch.query(site)....count()}
+```
+
 All queries search underneath a certain subnode. In case you want to search "globally", you will
 search underneath the current site node (like in the example above).
 
-Furthermore, the following operators are supported: 
+Furthermore, the following operators are supported:
 
 * `nodeType("Your.Node:Type")`
 * `exactMatch(key, value)`; supports simple types: `exactMatch('tag', 'foo')`, or node references: `exactMatch('author', authorNode)`
@@ -116,7 +121,7 @@ ElasticSearch `_all` field, and are configured with different `boost` values.
 In order to search this index, you can just search inside the `_all` field with an additional limitation
 of `__typeAndSupertypes` containing `TYPO3.Neos:Document`.
 
-**Currently, this package does not contain a plugin for searching, though we might provide one lateron.**
+**Currently, this package does not contain a plugin for searching, though we might provide one later on.**
 
 
 ## Advanced: Configuration of Indexing
@@ -125,13 +130,13 @@ of `__typeAndSupertypes` containing `TYPO3.Neos:Document`.
 
 Indexing of properties is configured at two places. The defaults per-data-type are configured
 inside `Flowpack.ElasticSearch.ContentRepositoryAdaptor.defaultConfigurationPerType` of `Settings.yaml`.
-Furthermore, this can be overridden using the `properties.[....].elasticSearch` path inside 
+Furthermore, this can be overridden using the `properties.[....].elasticSearch` path inside
 `NodeTypes.yaml`.
 
 This configuration contains two parts:
 
 * Underneath `mapping`, the ElasticSearch property mapping can be defined.
-* Underneath `indexing`, an Eel expression which preprocesses the value before indexing has to be 
+* Underneath `indexing`, an Eel expression which processes the value before indexing has to be
   specified. It has access to the current `value` and the current `node`.
 
 Example (from the default configuration):
@@ -141,7 +146,7 @@ Flowpack:
   ElasticSearch:
     ContentRepositoryAdaptor:
       defaultConfigurationPerType:
-      
+
         # strings should, by default, not be included in the _all field; and
         # indexing should just use their simple value.
         string:
@@ -167,7 +172,7 @@ Flowpack:
         indexing: '${(node.hiddenBeforeDateTime ? node.hiddenBeforeDateTime.format("Y-m-d\TH:i:s") + "Z" : null)}'
 ```
 
-There are a few indexing helpers inside the `ElasticSearch` namespace which are usable inside the 
+There are a few indexing helpers inside the `ElasticSearch` namespace which are usable inside the
 `indexing` expression. In most cases, you don't need to touch this, but they were needed to build up
 the standard indexing configuration:
 
