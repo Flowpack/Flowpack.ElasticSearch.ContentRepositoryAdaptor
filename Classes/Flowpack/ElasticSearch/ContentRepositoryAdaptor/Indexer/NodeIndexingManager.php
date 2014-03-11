@@ -73,7 +73,7 @@ class NodeIndexingManager {
 	 * @param mixed $targetWorkspace In case this is triggered during publishing, a Workspace will be passed in
 	 * @return void
 	 */
-	public function indexNode(Node $node, $targetWorkspace) {
+	public function indexNode(Node $node, $targetWorkspace = NULL) {
 		$this->nodesToBeRemoved->detach($node);
 		$this->nodesToBeIndexed->attach($node);
 		$this->targetWorkspaceNamesForNodesToBeIndexed[$node->getContextPath()] = $targetWorkspace instanceof \TYPO3\TYPO3CR\Domain\Model\Workspace ? $targetWorkspace->getName() : NULL;
