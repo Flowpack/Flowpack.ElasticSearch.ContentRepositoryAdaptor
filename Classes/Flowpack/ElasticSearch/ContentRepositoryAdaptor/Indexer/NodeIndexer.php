@@ -506,6 +506,8 @@ class NodeIndexer {
 	 *
 	 * @return void
 	 * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+	 * @throws \Flowpack\ElasticSearch\Transfer\Exception\ApiException
+	 * @throws \Exception
 	 */
 	public function updateIndexAlias() {
 		$aliasName = $this->searchClient->getIndexName(); // The alias name is the unprefixed index name
@@ -521,18 +523,29 @@ class NodeIndexer {
 		try {
 			$response = $this->searchClient->request('GET', '/*/_alias/' . $aliasName);
 			if ($response->getStatusCode() !== 200) {
-				throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('The alias "' . $aliasName . '" was not found with some unexpected error... (return code: ' . $response->getStatusCode(), 1383650137);
+				throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('The alias "' . $aliasName . '" was not found with some unexpected error... (return code: ' . $response->getStatusCode() . ')', 1383650137);
 			}
 
 			$indexNames = array_keys($response->getTreatedContent());
 
-			foreach ($indexNames as $indexName) {
-				$aliasActions[] = array(
-					'remove' => array(
-						'index' => $indexName,
-						'alias' => $aliasName
-					)
-				);
+			if ($indexNames === array()) {
+				// if there is an actual index with the name we want to use as alias, remove it now
+				$response = $this->searchClient->request('HEAD', '/' . $aliasName);
+				if ($response->getStatusCode() === 200) {
+					$response = $this->searchClient->request('DELETE', '/' . $aliasName);
+					if ($response->getStatusCode() !== 200) {
+						throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('The index "' . $aliasName . '" could not be removed to be replaced by an alias. (return code: ' . $response->getStatusCode() . ')', 1395419177);
+					}
+				}
+			} else {
+				foreach ($indexNames as $indexName) {
+					$aliasActions[] = array(
+						'remove' => array(
+							'index' => $indexName,
+							'alias' => $aliasName
+						)
+					);
+				}
 			}
 		} catch (\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
 			// in case of 404, do not throw an error...
