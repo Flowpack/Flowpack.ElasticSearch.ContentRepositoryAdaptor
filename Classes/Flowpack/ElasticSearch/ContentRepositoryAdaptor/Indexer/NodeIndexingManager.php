@@ -114,7 +114,11 @@ class NodeIndexingManager {
 	public function flushQueues() {
 		/** @var \TYPO3\TYPO3CR\Domain\Model\NodeInterface $nodeToBeIndexed  */
 		foreach ($this->nodesToBeIndexed as $nodeToBeIndexed) {
-			$this->nodeIndexer->indexNode($nodeToBeIndexed, $this->targetWorkspaceNamesForNodesToBeIndexed[$nodeToBeIndexed->getContextPath()]);
+			if (!isset($this->targetWorkspaceNamesForNodesToBeIndexed[$nodeToBeIndexed->getContextPath()])) {
+				// No target workspace for indexing found
+				continue;
+			}
+			$this->nodeIndexer->indexNode($nodeToBeIndexed, $this->targetWorkspaceNamesForNodesToBeIndexed[$nodeToBeIndexed->getWorkspace()->getName()]);
 		}
 
 		foreach ($this->nodesToBeRemoved as $nodeToBeRemoved) {
