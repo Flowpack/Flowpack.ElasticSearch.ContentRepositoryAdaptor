@@ -115,10 +115,10 @@ class NodeIndexingManager {
 		/** @var \TYPO3\TYPO3CR\Domain\Model\NodeInterface $nodeToBeIndexed  */
 		foreach ($this->nodesToBeIndexed as $nodeToBeIndexed) {
 			if (!isset($this->targetWorkspaceNamesForNodesToBeIndexed[$nodeToBeIndexed->getContextPath()])) {
-				// No target workspace for indexing found
-				continue;
+				$this->nodeIndexer->indexNode($nodeToBeIndexed);
+			} else {
+				$this->nodeIndexer->indexNode($nodeToBeIndexed, $this->targetWorkspaceNamesForNodesToBeIndexed[$nodeToBeIndexed->getWorkspace()->getName()]);
 			}
-			$this->nodeIndexer->indexNode($nodeToBeIndexed, $this->targetWorkspaceNamesForNodesToBeIndexed[$nodeToBeIndexed->getWorkspace()->getName()]);
 		}
 
 		foreach ($this->nodesToBeRemoved as $nodeToBeRemoved) {
