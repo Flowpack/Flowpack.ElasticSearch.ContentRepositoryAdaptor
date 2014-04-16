@@ -117,7 +117,7 @@ class NodeIndexingManager {
 			if (!isset($this->targetWorkspaceNamesForNodesToBeIndexed[$nodeToBeIndexed->getContextPath()])) {
 				$this->nodeIndexer->indexNode($nodeToBeIndexed);
 			} else {
-				$this->nodeIndexer->indexNode($nodeToBeIndexed, $this->targetWorkspaceNamesForNodesToBeIndexed[$nodeToBeIndexed->getWorkspace()->getName()]);
+				$this->nodeIndexer->indexNode($nodeToBeIndexed, $this->targetWorkspaceNamesForNodesToBeIndexed[$nodeToBeIndexed->getContextPath()]);
 			}
 		}
 
