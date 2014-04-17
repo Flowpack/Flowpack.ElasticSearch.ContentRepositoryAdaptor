@@ -278,7 +278,7 @@ class NodeIndexer {
 				);
 			}
 
-			$this->updateFulltext($node, $fulltextIndexOfNode);
+			$this->updateFulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
 		}
 
 		$this->logger->log(sprintf('NodeIndexer: Added / updated node %s. ID: %s', $contextPath, $contextPathHash), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
@@ -289,11 +289,11 @@ class NodeIndexer {
 	 *
 	 * @param Node $node
 	 * @param array $fulltextIndexOfNode
+	 * @param string $targetWorkspaceName
 	 * @return void
 	 */
-	protected function updateFulltext(Node $node, array $fulltextIndexOfNode) {
-		if ($node->getWorkspace()->getName() !== 'live' || count($fulltextIndexOfNode) === 0) {
-			// fulltext indexing should only be done in live workspace, and if there's something to index
+	protected function updateFulltext(Node $node, array $fulltextIndexOfNode, $targetWorkspaceName = NULL) {
+		if ((($targetWorkspaceName !== NULL && $targetWorkspaceName !== 'live') || $node->getWorkspace()->getName() !== 'live') || count($fulltextIndexOfNode) === 0) {
 			return;
 		}
 
@@ -307,11 +307,14 @@ class NodeIndexer {
 			}
 		}
 
+		$closestFulltextNodeContextPath = str_replace($closestFulltextNode->getContext()->getWorkspace()->getName(), 'live', $closestFulltextNode->getContextPath());
+		$closestFulltextNodeContextPathHash = sha1($closestFulltextNodeContextPath);
+
 		$this->currentBulkRequest[] = array(
 			array(
 				'update' => array(
 					'_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
-					'_id' => sha1($closestFulltextNode->getContextPath())
+					'_id' => $closestFulltextNodeContextPathHash
 				)
 			),
 			// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
