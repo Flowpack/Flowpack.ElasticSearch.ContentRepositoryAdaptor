@@ -13,6 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  *                                                                                                  */
 
 use TYPO3\Flow\Annotations as Flow;
+use TYPO3\Flow\Configuration\ConfigurationManager;
 
 /**
  * The elasticsearch client to be used by the content repository adapter. Singleton, can be injected.
@@ -34,10 +35,21 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client {
 	protected $indexName;
 
 	/**
-	 * @param array $settings
+	 * @Flow\Inject
+	 * @var ConfigurationManager
 	 */
-	public function injectSettings(array $settings) {
-		$this->indexName = $settings['indexName'];
+	protected $configurationManager;
+
+	/**
+	 * Called by the Flow object framework after creating the object and resolving all dependencies.
+	 *
+	 * @param integer $cause Creation cause
+	 */
+	public function initializeObject($cause) {
+		if ($cause === \TYPO3\Flow\Object\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
+			$settings = $this->configurationManager->getConfiguration(\TYPO3\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.TYPO3CR.SearchCommons');
+			$this->indexName = $settings['elasticSearch']['indexName'];
+		}
 	}
 
 	/**

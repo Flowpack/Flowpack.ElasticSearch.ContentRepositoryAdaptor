@@ -19,6 +19,7 @@ use Flowpack\ElasticSearch\Domain\Model\Index;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\Node;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
+use TYPO3\TYPO3CR\SearchCommons\Indexer\AbstractNodeIndexer;
 
 /*
  * Yes, dirty as hell. But the function is just too helpful...
@@ -47,7 +48,7 @@ if (!function_exists('json_last_error_msg')) {
  *
  * @Flow\Scope("singleton")
  */
-class NodeIndexer {
+class NodeIndexer extends AbstractNodeIndexer {
 
 	/**
 	 * Optional postfix for the index, e.g. to have different indexes by timestamp.
@@ -87,44 +88,11 @@ class NodeIndexer {
 	protected $logger;
 
 	/**
-	 * @var array
-	 */
-	protected $settings;
-
-	/**
-	 * the default context variables available inside Eel
-	 *
-	 * @var array
-	 */
-	protected $defaultContextVariables;
-
-	/**
-	 * @var \TYPO3\Eel\CompilingEvaluator
-	 * @Flow\Inject
-	 */
-	protected $eelEvaluator;
-
-	/**
-	 * The default configuration for a given property type in NodeTypes.yaml, if no explicit elasticSearch section defined there.
-	 *
-	 * @var array
-	 */
-	protected $defaultConfigurationPerType;
-
-	/**
 	 * The current ElasticSearch bulk request, in the format required by http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html
 	 *
 	 * @var array
 	 */
 	protected $currentBulkRequest = array();
-
-	/**
-	 * @param array $settings
-	 */
-	public function injectSettings(array $settings) {
-		$this->defaultConfigurationPerType = $settings['defaultConfigurationPerType'];
-		$this->settings = $settings;
-	}
 
 	/**
 	 * Returns the index name to be used for indexing, with optional indexNamePostfix appended.
@@ -185,51 +153,14 @@ class NodeIndexer {
 			return;
 		}
 
-		$nodePropertiesToBeStoredInElasticSearchIndex = array();
+		$logger = $this->logger;
 		$fulltextIndexOfNode = array();
-		$fulltextIndexingEnabledForNode = $this->isFulltextEnabled($node);
-
-		foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {
-
-			// Property Indexing
-			if (isset($propertyConfiguration['elasticSearch']) && isset($propertyConfiguration['elasticSearch']['indexing'])) {
-				if ($propertyConfiguration['elasticSearch']['indexing'] !== '') {
-					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($propertyConfiguration['elasticSearch']['indexing'], $node, $propertyName, ($node->hasProperty($propertyName) ? $node->getProperty($propertyName) : NULL), $contextPathHash);
-				}
-			} elseif (isset($propertyConfiguration['type']) && isset($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'])) {
-
-				if ($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'] !== '') {
-					$nodePropertiesToBeStoredInElasticSearchIndex[$propertyName] = $this->evaluateEelExpression($this->defaultConfigurationPerType[$propertyConfiguration['type']]['indexing'], $node, $propertyName, ($node->hasProperty($propertyName) ? $node->getProperty($propertyName) : NULL), $contextPathHash);
-				}
-			} else {
-				$this->logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $contextPathHash, $propertyName), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
-			}
-
-			if ($fulltextIndexingEnabledForNode === TRUE) {
-				if (isset($propertyConfiguration['elasticSearch']) && isset($propertyConfiguration['elasticSearch']['fulltextExtractor'])) {
-					if ($propertyConfiguration['elasticSearch']['fulltextExtractor'] !== '') {
-						$fulltextExtractionExpression = $propertyConfiguration['elasticSearch']['fulltextExtractor'];
-
-						$fulltextIndexOfProperty = $this->evaluateEelExpression($fulltextExtractionExpression, $node, $propertyName, ($node->hasProperty($propertyName) ? $node->getProperty($propertyName) : NULL));
-
-						if (!is_array($fulltextIndexOfProperty)) {
-							throw new Exception\IndexingException('The fulltext index for property "' . $propertyName . '" of node "' . $node->getPath() . '" could not be retrieved; the Eel expression "' . $fulltextExtractionExpression . '" is no valid fulltext extraction expression.');
-						}
-
-						foreach ($fulltextIndexOfProperty as $bucket => $value) {
-							if (!isset($fulltextIndexOfNode[$bucket])) {
-								$fulltextIndexOfNode[$bucket] = '';
-							}
-							$fulltextIndexOfNode[$bucket] .= ' ' . $value;
-						}
-					}
-					// TODO: also allow fulltextExtractor in settings!!
-				}
-			}
-		}
+		$nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function($propertyName) use ($logger, $contextPathHash) {
+			$logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $contextPathHash, $propertyName), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+		});
 
 		$document = new ElasticSearchDocument($mappingType,
-			$nodePropertiesToBeStoredInElasticSearchIndex,
+			$nodePropertiesToBeStoredInIndex,
 			$contextPathHash
 		);
 
@@ -238,7 +169,7 @@ class NodeIndexer {
 			$documentData['__workspace'] = $targetWorkspaceName;
 		}
 
-		if ($fulltextIndexingEnabledForNode === TRUE) {
+		if ($this->isFulltextEnabled($node)) {
 			if ($this->isFulltextRoot($node)) {
 				// for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
 				// "update" API instead of the "index" API, with a custom script internally; as we
@@ -351,22 +282,6 @@ class NodeIndexer {
 		);
 	}
 
-	/**
-	 * Whether the node has fulltext indexing enabled.
-	 *
-	 * @param Node $node
-	 * @return boolean
-	 */
-	protected function isFulltextEnabled(Node $node) {
-		if ($node->getNodeType()->hasConfiguration('elasticSearch')) {
-			$elasticSearchSettingsForNode = $node->getNodeType()->getConfiguration('elasticSearch');
-			if (isset($elasticSearchSettingsForNode['fulltext']['enable']) && $elasticSearchSettingsForNode['fulltext']['enable'] === TRUE) {
-				return TRUE;
-			}
-		}
-
-		return FALSE;
-	}
 
 	/**
 	 * Whether the node is configured as fulltext root.
@@ -375,8 +290,8 @@ class NodeIndexer {
 	 * @return boolean
 	 */
 	protected function isFulltextRoot(Node $node) {
-		if ($node->getNodeType()->hasConfiguration('elasticSearch')) {
-			$elasticSearchSettingsForNode = $node->getNodeType()->getConfiguration('elasticSearch');
+		if ($node->getNodeType()->hasConfiguration('search')) {
+			$elasticSearchSettingsForNode = $node->getNodeType()->getConfiguration('search');
 			if (isset($elasticSearchSettingsForNode['fulltext']['isRoot']) && $elasticSearchSettingsForNode['fulltext']['isRoot'] === TRUE) {
 				return TRUE;
 			}
@@ -442,66 +357,6 @@ class NodeIndexer {
 		}
 
 		$this->currentBulkRequest = array();
-	}
-
-	/**
-	 * Evaluate an Eel expression.
-	 *
-	 * TODO: REFACTOR TO Eel package (as this is copy/pasted from TypoScript Runtime)
-	 *
-	 * @param string $expression The Eel expression to evaluate
-	 * @param Node $node
-	 * @param string $propertyName
-	 * @param mixed $value
-	 * @return mixed The result of the evaluated Eel expression
-	 * @throws Exception
-	 */
-	protected function evaluateEelExpression($expression, Node $node, $propertyName, $value) {
-		$matches = NULL;
-		if (preg_match(\TYPO3\Eel\Package::EelExpressionRecognizer, $expression, $matches)) {
-			$contextVariables = array_merge($this->getDefaultContextVariables(), array(
-				'node' => $node,
-				'propertyName' => $propertyName,
-				'value' => $value
-			));
-
-			$context = new \TYPO3\Eel\Context($contextVariables);
-
-			$value = $this->eelEvaluator->evaluate($matches['exp'], $context);
-
-			return $value;
-		} else {
-			throw new Exception('The Indexing Eel expression "' . $expression . '" used to index property "' . $propertyName . '" of "' . $node->getNodeType()->getName() . '" was not a valid Eel expression. Perhaps you forgot to wrap it in ${...}?', 1383635796);
-		}
-	}
-
-	/**
-	 * Get variables from configuration that should be set in the context by default.
-	 * For example Eel helpers are made available by this.
-	 *
-	 * TODO: REFACTOR TO Eel package (as this is copy/pasted from TypoScript Runtime
-	 *
-	 * @return array Array with default context variable objects.
-	 */
-	protected function getDefaultContextVariables() {
-		if ($this->defaultContextVariables === NULL) {
-			$this->defaultContextVariables = array();
-			if (isset($this->settings['defaultContext']) && is_array($this->settings['defaultContext'])) {
-				foreach ($this->settings['defaultContext'] as $variableName => $objectType) {
-					$currentPathBase = &$this->defaultContextVariables;
-					$variablePathNames = explode('.', $variableName);
-					foreach ($variablePathNames as $pathName) {
-						if (!isset($currentPathBase[$pathName])) {
-							$currentPathBase[$pathName] = array();
-						}
-						$currentPathBase = &$currentPathBase[$pathName];
-					}
-					$currentPathBase = new $objectType();
-				}
-			}
-		}
-
-		return $this->defaultContextVariables;
 	}
 
 	/**

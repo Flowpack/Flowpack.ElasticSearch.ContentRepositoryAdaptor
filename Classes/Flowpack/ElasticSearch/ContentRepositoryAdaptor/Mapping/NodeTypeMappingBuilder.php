@@ -15,6 +15,7 @@ use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
 use TYPO3\Flow\Annotations as Flow;
+use TYPO3\Flow\Configuration\ConfigurationManager;
 use TYPO3\TYPO3CR\Domain\Model\NodeType;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 
@@ -44,10 +45,21 @@ class NodeTypeMappingBuilder {
 	protected $lastMappingErrors;
 
 	/**
-	 * @param array $settings
+	 * @Flow\Inject
+	 * @var ConfigurationManager
 	 */
-	public function injectSettings(array $settings) {
-		$this->defaultConfigurationPerType = $settings['defaultConfigurationPerType'];
+	protected $configurationManager;
+
+	/**
+	 * Called by the Flow object framework after creating the object and resolving all dependencies.
+	 *
+	 * @param integer $cause Creation cause
+	 */
+	public function initializeObject($cause) {
+		if ($cause === \TYPO3\Flow\Object\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
+			$settings = $this->configurationManager->getConfiguration(\TYPO3\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.TYPO3CR.SearchCommons');
+			$this->defaultConfigurationPerType = $settings['defaultConfigurationPerType'];
+		}
 	}
 
 	/**
@@ -81,16 +93,16 @@ class NodeTypeMappingBuilder {
 			$mapping = new Mapping($type);
 
 			foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {
-				if (isset($propertyConfiguration['elasticSearch']) && isset($propertyConfiguration['elasticSearch']['mapping'])) {
+				if (isset($propertyConfiguration['search']) && isset($propertyConfiguration['search']['elasticSearchMapping'])) {
 
-					if (is_array($propertyConfiguration['elasticSearch']['mapping'])) {
-						$mapping->setPropertyByPath($propertyName, $propertyConfiguration['elasticSearch']['mapping']);
+					if (is_array($propertyConfiguration['search']['elasticSearchMapping'])) {
+						$mapping->setPropertyByPath($propertyName, $propertyConfiguration['search']['elasticSearchMapping']);
 					}
 
-				} elseif (isset($propertyConfiguration['type']) && isset($this->defaultConfigurationPerType[$propertyConfiguration['type']]['mapping'])) {
+				} elseif (isset($propertyConfiguration['type']) && isset($this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping'])) {
 
-					if (is_array($this->defaultConfigurationPerType[$propertyConfiguration['type']]['mapping'])) {
-						$mapping->setPropertyByPath($propertyName, $this->defaultConfigurationPerType[$propertyConfiguration['type']]['mapping']);
+					if (is_array($this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping'])) {
+						$mapping->setPropertyByPath($propertyName, $this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping']);
 					}
 
 				} else {

@@ -13,13 +13,15 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  *                                                                                                  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
+use TYPO3\Eel\ProtectedContextAwareInterface;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
+use TYPO3\TYPO3CR\SearchCommons\Search\QueryBuilderInterface;
 
 /**
  * Query Builder for ElasticSearch Queries
  */
-class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInterface {
+class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedContextAwareInterface {
 
 	/**
 	 * @Flow\Inject
@@ -77,6 +79,14 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 			// Reference: http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-filtered-query.html
 			'filtered' => array(
 				'query' => array(
+					'bool' => array(
+						'must' => array(
+							array(
+								'match_all' => array()
+							)
+						)
+					)
+
 				),
 				'filter' => array(
 					// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-bool-filter.html
@@ -107,22 +117,6 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 		),
 		'fields' => array('__path')
 	);
-
-	/**
-	 * @param NodeInterface $contextNode
-	 */
-	public function __construct(NodeInterface $contextNode) {
-		// on indexing, the __parentPath is tokenized to contain ALL parent path parts,
-		// e.g. /foo, /foo/bar/, /foo/bar/baz; to speed up matching.. That's why we use a simple "term" filter here.
-		// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-term-filter.html
-		$this->queryFilter('term', array('__parentPath' => $contextNode->getPath()));
-
-		//
-		// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-terms-filter.html
-		$this->queryFilter('terms', array('__workspace' => array('live', $contextNode->getContext()->getWorkspace()->getName())));
-
-		$this->contextNode = $contextNode;
-	}
 
 	/**
 	 * HIGH-LEVEL API
@@ -300,16 +294,6 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 	}
 
 	/**
-	 * All methods are considered safe
-	 *
-	 * @param string $methodName
-	 * @return boolean
-	 */
-	public function allowsCallOfMethod($methodName) {
-		return TRUE;
-	}
-
-	/**
 	 * Log the current request to the ElasticSearch log for debugging after it has been executed.
 	 *
 	 * @param string $message an optional message to identify the log entry
@@ -401,4 +385,52 @@ class ElasticSearchQueryBuilder implements \TYPO3\Eel\ProtectedContextAwareInter
 		return $count;
 	}
 
+	/**
+	 * Match the searchword against the fulltext index
+	 *
+	 * @param string $searchWord
+	 * @return QueryBuilderInterface
+	 */
+	public function fulltext($searchWord) {
+
+		$this->appendAtPath('query.filtered.query.bool.must', array(
+			'query_string' => array(
+				'query' => $searchWord
+			)
+		));
+		return $this;
+	}
+
+	/**
+	 * Sets the starting point for this query. Search result should only contain nodes that
+	 * match the context of the given node and have it as parent node in their rootline.
+	 *
+	 * @param NodeInterface $contextNode
+	 * @return QueryBuilderInterface
+	 */
+	public function query(NodeInterface $contextNode) {
+		// on indexing, the __parentPath is tokenized to contain ALL parent path parts,
+		// e.g. /foo, /foo/bar/, /foo/bar/baz; to speed up matching.. That's why we use a simple "term" filter here.
+		// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-term-filter.html
+		$this->queryFilter('term', array('__parentPath' => $contextNode->getPath()));
+
+		//
+		// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-terms-filter.html
+		$this->queryFilter('terms', array('__workspace' => array('live', $contextNode->getContext()->getWorkspace()->getName())));
+
+		$this->contextNode = $contextNode;
+
+		return $this;
+	}
+
+
+	/**
+	 * All methods are considered safe
+	 *
+	 * @param string $methodName
+	 * @return boolean
+	 */
+	public function allowsCallOfMethod($methodName) {
+		return TRUE;
+	}
 }

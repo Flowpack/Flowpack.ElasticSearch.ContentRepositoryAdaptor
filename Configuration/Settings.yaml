@@ -1,90 +1,60 @@
-Flowpack:
-  ElasticSearch:
-    ContentRepositoryAdaptor:
+TYPO3:
+  TYPO3CR:
+    SearchCommons:
 
-      # API. name of the ElasticSearch index to use
-      indexName: typo3cr
+      elasticSearch:
 
-      # we use batch indexing, in order to reduce the number of HTTP requests while indexing
-      indexingBatchSize: 100
+        # API. name of the ElasticSearch index to use
+        indexName: typo3cr
 
-      # configuration of the ElasticSearch logfile
-      log:
-        backendOptions:
-          fileBackend:
-            logFileURL: '%FLOW_PATH_DATA%Logs/ElasticSearch.log'
-            createParentDirectories: TRUE
-            severityThreshold: '%LOG_DEBUG%'
-            maximumLogFileSize: 10485760
-            logFilesToKeep: 1
-            logMessageOrigin: FALSE
+        # configuration of the ElasticSearch logfile
+        log:
+          backendOptions:
+            fileBackend:
+              logFileURL: '%FLOW_PATH_DATA%Logs/ElasticSearch.log'
+              createParentDirectories: TRUE
+              severityThreshold: '%LOG_DEBUG%'
+              maximumLogFileSize: 10485760
+              logFilesToKeep: 1
+              logMessageOrigin: FALSE
 
-          ansiConsoleBackend:
-            disableAnsi: false
+            ansiConsoleBackend:
+              disableAnsi: false
 
       defaultConfigurationPerType:
 
         string:
-          mapping:
+          elasticSearchMapping:
             type: string
             include_in_all: false
-          indexing: '${value}'
 
         boolean:
-          mapping:
+          elasticSearchMapping:
             type: boolean
-          indexing: '${value}'
 
         integer:
-          mapping:
+          elasticSearchMapping:
             type: integer
-          indexing: '${value}'
 
         date:
-          mapping:
+          elasticSearchMapping:
             type: date
             format: 'date_time_no_millis'
             include_in_all: false
-          indexing: '${(value ? value.format("Y-m-d\TH:i:s") + "Z" : null)}'
 
 
         'TYPO3\Media\Domain\Model\Video':
-          mapping: '' # deliberately don't map or index this
-          indexing: ''
+          elasticSearchMapping: '' # deliberately don't map or index this
 
         'TYPO3\Media\Domain\Model\ImageVariant':
-          mapping: '' # deliberately don't map or index this
-          indexing: ''
+          elasticSearchMapping: '' # deliberately don't map or index this
 
         'references':
-          mapping:
+          elasticSearchMapping:
             type: string # an array of strings, to be precise
             index: not_analyzed
-          indexing: '${ElasticSearch.convertArrayOfNodesToArrayOfNodeIdentifiers(value)}'
 
         'reference':
-          mapping:
+          elasticSearchMapping:
             type: string
             index: not_analyzed
-          indexing: '${value.identifier}'
-
-
-      # Default context objects that are available in Eel expressions
-      #
-      # New variables should be added with a package key prefix. Example:
-      #
-      #   defaultContext:
-      #     'MyPackage.String': 'MyPackage\Helper\StringHelper'
-      #
-      defaultContext:
-        String: 'TYPO3\Eel\Helper\StringHelper'
-        Array: 'TYPO3\Eel\Helper\ArrayHelper'
-        Date: 'TYPO3\Eel\Helper\DateHelper'
-        ElasticSearch: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchHelper'
-
-
-TYPO3:
-  TypoScript:
-    # TODO: refactor DefaultContext to Eel
-    defaultContext:
-      ElasticSearch: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchHelper'
