@@ -138,7 +138,7 @@ class NodeIndexer extends AbstractNodeIndexer {
 	public function indexNode(Node $node, $targetWorkspaceName = NULL) {
 		$contextPath = $node->getContextPath();
 		if ($targetWorkspaceName !== NULL) {
-			$contextPath = str_replace($node->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
+			$contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
 		}
 		$contextPathHash = sha1($contextPath);
 		$nodeType = $node->getNodeType();
