@@ -14,7 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
-use TYPO3\TYPO3CR\SearchCommons\Indexer\NodeIndexingManager;
+use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
 
 /**
  * Provides CLI features for index handling

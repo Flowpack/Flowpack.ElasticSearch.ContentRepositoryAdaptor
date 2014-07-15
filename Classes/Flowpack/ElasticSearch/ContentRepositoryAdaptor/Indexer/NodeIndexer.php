@@ -19,7 +19,7 @@ use Flowpack\ElasticSearch\Domain\Model\Index;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\Node;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
-use TYPO3\TYPO3CR\SearchCommons\Indexer\AbstractNodeIndexer;
+use TYPO3\TYPO3CR\Search\Indexer\AbstractNodeIndexer;
 
 /*
  * Yes, dirty as hell. But the function is just too helpful...

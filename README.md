@@ -11,7 +11,7 @@ main functionalities:
 
 Relevant Packages:
 
-* `TYPO3.TYPO3CR.SearchCommons`: provides common functionality for searching TYPO3CR nodes,
+* `TYPO3.TYPO3CR.Search`: provides common functionality for searching TYPO3CR nodes,
   does not contain a search backend
 
 * `Flowpack.ElasticSearch.ContentRepositoryAdaptor`: this package
@@ -25,7 +25,7 @@ Relevant Packages:
 ## Version 2 vs Version 1
 
 * Version 1 is the initial, productive version of the Neos ElasticSearch adapter.
-* Version 2 has a dependency on TYPO3.TYPO3CR.SearchCommons; which contains base functionality
+* Version 2 has a dependency on TYPO3.TYPO3CR.Search; which contains base functionality
   which is also relevant for other search implementations (like the SQLite based SimpleSearch).
 
 The configuration from Version 1 to Version 2 has changed; here's what to change:
@@ -33,7 +33,7 @@ The configuration from Version 1 to Version 2 has changed; here's what to change
 **Settings.yaml**
 
 1. Change the base namespace for configuration from `Flowpack.ElasticSearch.ContentRepositoryAdaptor`
-   to `TYPO3.TYPO3CR.SearchCommons`. All further adjustments are made underneath this namespace:
+   to `TYPO3.TYPO3CR.Search`. All further adjustments are made underneath this namespace:
 
 2. (If it exists in your configuration:) Move `indexName` to `elasticSearch.indexName`
 
@@ -179,7 +179,7 @@ of `__typeAndSupertypes` containing `TYPO3.Neos:Document`.
 **Normally, this does not need to be touched, as this package supports all TYPO3 Neos data types natively.**
 
 Indexing of properties is configured at two places. The defaults per-data-type are configured
-inside `TYPO3.TYPO3CR.SearchCommons.defaultConfigurationPerType` of `Settings.yaml`.
+inside `TYPO3.TYPO3CR.Search.defaultConfigurationPerType` of `Settings.yaml`.
 Furthermore, this can be overridden using the `properties.[....].search` path inside
 `NodeTypes.yaml`.
 
@@ -194,7 +194,7 @@ Example (from the default configuration):
  # Settings.yaml
 TYPO3:
   TYPO3CR:
-    SearchCommons:
+    Search:
       defaultConfigurationPerType:
 
         # strings should, by default, not be included in the _all field; and
