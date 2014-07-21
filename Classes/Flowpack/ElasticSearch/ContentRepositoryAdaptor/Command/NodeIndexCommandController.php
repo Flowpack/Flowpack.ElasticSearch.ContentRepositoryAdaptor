@@ -60,6 +60,7 @@ class NodeIndexCommandController extends CommandController {
 	protected $nodeTypeMappingBuilder;
 
 	/**
+	 * @Flow\Inject
 	 * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface
 	 */
 	protected $logger;

@@ -29,7 +29,7 @@ Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface:
       value:
         fileBackend: 'TYPO3\Flow\Log\Backend\FileBackend'
     4:
-      setting: TYPO3.TYPO3CR.SearchCommons.elasticSearch.log.backendOptions
+      setting: TYPO3.TYPO3CR.Search.elasticSearch.log.backendOptions
 
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient:
   scope: singleton
