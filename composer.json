@@ -8,7 +8,7 @@
         "flowpack/elasticsearch": "*",
         "typo3/eel": "*",
         "typo3/typo3cr": "*",
-        "typo3/typo3cr-searchcommons": "*"
+        "typo3/typo3cr-search": "*"
     },
     "autoload": {
         "psr-0": {

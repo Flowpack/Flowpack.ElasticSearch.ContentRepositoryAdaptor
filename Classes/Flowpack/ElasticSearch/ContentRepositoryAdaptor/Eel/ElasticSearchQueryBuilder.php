@@ -16,7 +16,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingExcep
 use TYPO3\Eel\ProtectedContextAwareInterface;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
-use TYPO3\TYPO3CR\SearchCommons\Search\QueryBuilderInterface;
+use TYPO3\TYPO3CR\Search\Search\QueryBuilderInterface;
 
 /**
  * Query Builder for ElasticSearch Queries

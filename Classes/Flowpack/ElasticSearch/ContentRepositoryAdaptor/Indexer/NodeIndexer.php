@@ -19,7 +19,7 @@ use Flowpack\ElasticSearch\Domain\Model\Index;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\Node;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
-use TYPO3\TYPO3CR\SearchCommons\Indexer\AbstractNodeIndexer;
+use TYPO3\TYPO3CR\Search\Indexer\AbstractNodeIndexer;
 
 /*
  * Yes, dirty as hell. But the function is just too helpful...
@@ -138,7 +138,7 @@ class NodeIndexer extends AbstractNodeIndexer {
 	public function indexNode(Node $node, $targetWorkspaceName = NULL) {
 		$contextPath = $node->getContextPath();
 		if ($targetWorkspaceName !== NULL) {
-			$contextPath = str_replace($node->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
+			$contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
 		}
 		$contextPathHash = sha1($contextPath);
 		$nodeType = $node->getNodeType();
