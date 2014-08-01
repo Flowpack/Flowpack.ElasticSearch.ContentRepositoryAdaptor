@@ -137,9 +137,11 @@ class NodeIndexer extends AbstractNodeIndexer {
 	 */
 	public function indexNode(Node $node, $targetWorkspaceName = NULL) {
 		$contextPath = $node->getContextPath();
+
 		if ($targetWorkspaceName !== NULL) {
 			$contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
 		}
+
 		$contextPathHash = sha1($contextPath);
 		$nodeType = $node->getNodeType();
 
@@ -167,6 +169,18 @@ class NodeIndexer extends AbstractNodeIndexer {
 		$documentData = $document->getData();
 		if ($targetWorkspaceName !== NULL) {
 			$documentData['__workspace'] = $targetWorkspaceName;
+		}
+
+		$dimensionCombinations = $node->getContext()->getDimensions();
+		if (is_array($dimensionCombinations)) {
+			$documentData['__dimensionCombinations'] = $dimensionCombinations;
+		}
+
+		//@todo remove the hardcoded language part. There will be a merge of the Neos and TYPO3CR Settings
+		if (is_array($dimensionCombinations)) {
+			$documentData['__dimensions'] = array(
+				"languages" => $dimensionCombinations["languages"][0]
+			);
 		}
 
 		if ($this->isFulltextEnabled($node)) {
