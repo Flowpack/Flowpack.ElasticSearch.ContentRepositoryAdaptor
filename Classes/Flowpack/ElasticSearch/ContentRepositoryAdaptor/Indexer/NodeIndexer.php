@@ -193,7 +193,10 @@ class NodeIndexer extends AbstractNodeIndexer {
 						'params' => array(
 							'newData' => $documentData
 						),
-						'upsert' => $documentData
+						'upsert' => $documentData,
+						'lang' => 'groovy'
+
+
 					)
 				);
 			} else {
@@ -256,10 +259,15 @@ class NodeIndexer extends AbstractNodeIndexer {
 						ctx._source.__fulltextParts = new LinkedHashMap();
 					}
 					ctx._source.__fulltextParts[identifier] = fulltext;
-
 					ctx._source.__fulltext = new LinkedHashMap();
-					foreach (fulltextByNode : ctx._source.__fulltextParts.entrySet()) {
-						foreach (element : fulltextByNode.value.entrySet()) {
+
+					Iterator fulltextByNode = ctx._source.__fulltextParts.iterator();
+					for (fulltextByNode; fulltextByNode.hasNext();) {
+
+						Iterator elementIterator = fulltextByNode.next().iterator();
+						for (elementIterator; elementIterator.hasNext();) {
+
+							Map.Entry<String, String> element = elementIterator.next();
 							if (ctx._source.__fulltext.containsKey(element.key)) {
 								ctx._source.__fulltext[element.key] += " " + element.value;
 							} else {
@@ -277,7 +285,8 @@ class NodeIndexer extends AbstractNodeIndexer {
 					'__fulltextParts' => array(
 						$node->getIdentifier() => $fulltextIndexOfNode
 					)
-				)
+				),
+				'lang' => 'groovy'
 			)
 		);
 	}
