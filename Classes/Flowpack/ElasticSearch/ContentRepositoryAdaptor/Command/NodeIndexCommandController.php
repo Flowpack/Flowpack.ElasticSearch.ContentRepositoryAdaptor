@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
 
 /**
  * Provides CLI features for index handling
@@ -30,7 +31,7 @@ class NodeIndexCommandController extends CommandController {
 
 	/**
 	 * @Flow\Inject
-	 * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexingManager
+	 * @var NodeIndexingManager
 	 */
 	protected $nodeIndexingManager;
 
@@ -59,6 +60,7 @@ class NodeIndexCommandController extends CommandController {
 	protected $nodeTypeMappingBuilder;
 
 	/**
+	 * @Flow\Inject
 	 * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface
 	 */
 	protected $logger;

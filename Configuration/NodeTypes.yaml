@@ -1,78 +1,78 @@
 
 'TYPO3.Neos:Node': &node
-  elasticSearch:
+  search:
     fulltext:
       enable: true
 
   properties:
 
     '__identifier':
-      elasticSearch:
-        mapping:
+      search:
+        elasticSearchMapping:
           type: string
           index: not_analyzed
           include_in_all: false
         indexing: '${node.getIdentifier()}'
 
     '__workspace':
-      elasticSearch:
-        mapping:
+      search:
+        elasticSearchMapping:
           type: string
           index: not_analyzed
           include_in_all: false
         indexing: '${node.getWorkspace().getName()}'
 
     '__path':
-      elasticSearch:
-        mapping:
+      search:
+        elasticSearchMapping:
           type: string
           index: not_analyzed
           include_in_all: false
         indexing: '${node.getPath()}'
 
     '__parentPath':
-      elasticSearch:
-        mapping:
+      search:
+        elasticSearchMapping:
           type: string
           index: not_analyzed
           include_in_all: false
         # we index *all* parent paths as separate tokens to allow for efficient searching without a prefix query
-        indexing: '${ElasticSearch.buildAllPathPrefixes(node.getParentPath())}'
+        indexing: '${Indexing.buildAllPathPrefixes(node.getParentPath())}'
 
     '__sortIndex':
-      elasticSearch:
-        mapping:
+      search:
+        elasticSearchMapping:
           type: integer
           include_in_all: false
         indexing: '${node.getIndex()}'
 
     '_removed':
-      elasticSearch:
-        mapping: '' # deliberately don't map or index this
+      search:
+        elasticSearchMapping: '' # deliberately don't map or index this
         indexing: ''
 
     # we index the node type INCLUDING ALL SUPERTYPES
     '__typeAndSupertypes':
-      elasticSearch:
-        mapping:
+      search:
+        elasticSearchMapping:
           type: string
           index: not_analyzed
           include_in_all: false
-        indexing: '${ElasticSearch.extractNodeTypeNamesAndSupertypes(node.getNodeType())}'
+        indexing: '${Indexing.extractNodeTypeNamesAndSupertypes(node.getNodeType())}'
 
 'unstructured': *node
 
 'TYPO3.Neos:Hidable':
   properties:
     '_hidden':
-      elasticSearch:
+      search:
         indexing: '${node.isHidden()}'
 
 'TYPO3.Neos:Timable':
   properties:
     '_hiddenBeforeDateTime':
-      elasticSearch:
-        mapping:
+      search:
+        elasticSearchMapping:
           type: date
           include_in_all: false
           format: 'date_time_no_millis'
@@ -80,8 +80,8 @@
 
 
     '_hiddenAfterDateTime':
-      elasticSearch:
-        mapping:
+      search:
+        elasticSearchMapping:
           type: date
           include_in_all: false
           format: 'date_time_no_millis'
@@ -89,22 +89,22 @@
 
 
 'TYPO3.Neos:Document':
-  elasticSearch:
+  search:
     fulltext:
       isRoot: true
   properties:
     '__fulltextParts':
-      elasticSearch:
-        mapping:
+      search:
+        elasticSearchMapping:
           type: object
           include_in_all: false
           enabled: false
         indexing: ''
 
     '__fulltext':
-      elasticSearch:
+      search:
         indexing: ''
-        mapping:
+        elasticSearchMapping:
           type: object
           properties:
             'h1':
@@ -139,11 +139,11 @@
 'TYPO3.Neos.NodeTypes:Text':
   properties:
     'text':
-      elasticSearch:
-        fulltextExtractor: '${ElasticSearch.fulltext.extractHtmlTags(value)}'
+      search:
+        fulltextExtractor: '${Indexing.extractHtmlTags(value)}'
 
 'TYPO3.Neos.NodeTypes:Headline':
   properties:
     'title':
-      elasticSearch:
-        fulltextExtractor: '${ElasticSearch.fulltext.extractHtmlTags(value)}'
+      search:
+        fulltextExtractor: '${Indexing.extractHtmlTags(value)}'

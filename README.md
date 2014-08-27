@@ -9,6 +9,55 @@ main functionalities:
 * Full-Text Indexing of Pages and other Documents (of course including the full content)
 
 
+Relevant Packages:
+
+* `TYPO3.TYPO3CR.Search`: provides common functionality for searching TYPO3CR nodes,
+  does not contain a search backend
+
+* `Flowpack.ElasticSearch.ContentRepositoryAdaptor`: this package
+
+* `Flowpack.SimpleSearch.ContentRepositoryAdaptor`: an alternative search backend (to be used
+  instead of this package); storing the search index in SQLite
+
+* `Flowpack.SearchPlugin`: search plugin for Neos
+
+
+## Version 2 vs Version 1
+
+* Version 1 is the initial, productive version of the Neos ElasticSearch adapter.
+* Version 2 has a dependency on TYPO3.TYPO3CR.Search; which contains base functionality
+  which is also relevant for other search implementations (like the SQLite based SimpleSearch).
+
+The configuration from Version 1 to Version 2 has changed; here's what to change:
+
+**Settings.yaml**
+
+1. Change the base namespace for configuration from `Flowpack.ElasticSearch.ContentRepositoryAdaptor`
+   to `TYPO3.TYPO3CR.Search`. All further adjustments are made underneath this namespace:
+
+2. (If it exists in your configuration:) Move `indexName` to `elasticSearch.indexName`
+
+3. (If it exists in your configuration:) Move `log` to `elasticSearch.log`
+
+4. search for `mapping` (inside `defaultConfigurationPerType.<typeName>`) and replace it by
+   `elasticSearchMapping`.
+
+5. Inside the `indexing` expressions (at `defaultConfigurationPerType.<typeName>`), replace
+   `ElasticSearch.` by `Indexing.`.
+
+**NodeTypes.yaml**
+
+1. Replace `elasticSearch` by `search`. This replaces both `<YourNodeType>.elasticSearch`
+   and `<YourNodeType>.properties.<propertyName>.elasticSearch`.
+
+2. search for `mapping` (inside `<YourNodeType>.properties.<propertyName>.search`) and replace it by
+   `elasticSearchMapping`.
+
+3. Replace `ElasticSeach.fulltext` by `Indexing`
+
+4. Search for `ElasticSearch.` (inside the `indexing` expressions) and replace them by `Indexing.`
+
+
 ## Building up the Index
 
 The node index is updated on the fly, but during development you need to update it frequently.
@@ -35,20 +84,20 @@ We'll first show how to do arbitrary ElasticSearch Queries in TypoScript. This i
 alternative to FlowQuery. In the long run, we might be able to integrate this API back into FlowQuery,
 but for now it works well as-is.
 
-Generally, ElasticSearch queries are done using the `ElasticSearch` Eel helper. In case you want
+Generally, ElasticSearch queries are done using the `Search` Eel helper. In case you want
 to retrieve a *list of nodes*, you'll generally do:
 ```
-nodes = ${ElasticSearch.query(site)....execute()}
+nodes = ${Search.query(site)....execute()}
 ```
 
 In case you just want to retrieve a *single node*, the form of a query is as follows:
 ```
-nodes = ${q(ElasticSearch.query(site)....execute()).get(0)}
+nodes = ${q(Search.query(site)....execute()).get(0)}
 ```
 
 To fetch the total number of hits a query returns, the form of a query is as follows:
 ```
-nodes = ${ElasticSearch.query(site)....count()}
+nodes = ${Search.query(site)....count()}
 ```
 
 All queries search underneath a certain subnode. In case you want to search "globally", you will
@@ -61,6 +110,7 @@ Furthermore, the following operators are supported:
 * `sortAsc('propertyName')` and `sortDesc('propertyName')` -- can also be used multiple times, e.g. `sortAsc('tag').sortDesc(`date')` will first sort by tag ascending, and then by date descending.
 * `limit(5)` -- only return five results. If not specified, the default limit by ElasticSearch applies (which is at 10 by default)
 * `from(5)` -- return the results starting from the 6th one
+* `fulltext(...)` -- do a query_string query on the Fulltext Index
 
 Furthermore, there is a more low-level operator which can be used to add arbitrary ElasticSearch filters:
 
@@ -91,7 +141,7 @@ prototype(TYPO3.Neos:PrimaryContent).acmeBlogTag {
 
  # The "TagPage"
 prototype(Acme.Blog:TagPage) < prototype(TYPO3.TypoScript:Collection) {
-	collection = ${ElasticSearch.query(site).nodeType('Acme.Blog:Post').exactMatch('tags', node).sortDesc('creationDate').execute()}
+	collection = ${Search.query(site).nodeType('Acme.Blog:Post').exactMatch('tags', node).sortDesc('creationDate').execute()}
 	itemName = 'node'
 	itemRenderer = Acme.Blog:SingleTag
 }
@@ -121,7 +171,7 @@ ElasticSearch `_all` field, and are configured with different `boost` values.
 In order to search this index, you can just search inside the `_all` field with an additional limitation
 of `__typeAndSupertypes` containing `TYPO3.Neos:Document`.
 
-**Currently, this package does not contain a plugin for searching, though we might provide one later on.**
+**For a search user interface, checkout the Flowpack.SearchPlugin package**
 
 
 ## Advanced: Configuration of Indexing
@@ -129,28 +179,28 @@ of `__typeAndSupertypes` containing `TYPO3.Neos:Document`.
 **Normally, this does not need to be touched, as this package supports all TYPO3 Neos data types natively.**
 
 Indexing of properties is configured at two places. The defaults per-data-type are configured
-inside `Flowpack.ElasticSearch.ContentRepositoryAdaptor.defaultConfigurationPerType` of `Settings.yaml`.
-Furthermore, this can be overridden using the `properties.[....].elasticSearch` path inside
+inside `TYPO3.TYPO3CR.Search.defaultConfigurationPerType` of `Settings.yaml`.
+Furthermore, this can be overridden using the `properties.[....].search` path inside
 `NodeTypes.yaml`.
 
 This configuration contains two parts:
 
-* Underneath `mapping`, the ElasticSearch property mapping can be defined.
+* Underneath `elasticSearchMapping`, the ElasticSearch property mapping can be defined.
 * Underneath `indexing`, an Eel expression which processes the value before indexing has to be
   specified. It has access to the current `value` and the current `node`.
 
 Example (from the default configuration):
 ```
  # Settings.yaml
-Flowpack:
-  ElasticSearch:
-    ContentRepositoryAdaptor:
+TYPO3:
+  TYPO3CR:
+    Search:
       defaultConfigurationPerType:
 
         # strings should, by default, not be included in the _all field; and
         # indexing should just use their simple value.
         string:
-          mapping:
+          elasticSearchMapping:
             type: string
             include_in_all: false
           indexing: '${value}'
@@ -161,26 +211,26 @@ Flowpack:
 'TYPO3.Neos:Timable':
   properties:
     '_hiddenBeforeDateTime':
-      elasticSearch:
+      search:
 
         # a date should be mapped differently, and in this case we want to use a date format which
         # ElasticSearch understands
-        mapping:
+        elasticSearchMapping:
           type: date
           include_in_all: false
           format: 'date_time_no_millis'
         indexing: '${(node.hiddenBeforeDateTime ? node.hiddenBeforeDateTime.format("Y-m-d\TH:i:s") + "Z" : null)}'
 ```
 
-There are a few indexing helpers inside the `ElasticSearch` namespace which are usable inside the
+There are a few indexing helpers inside the `Indexing` namespace which are usable inside the
 `indexing` expression. In most cases, you don't need to touch this, but they were needed to build up
 the standard indexing configuration:
 
-* `ElasticSearch.buildAllPathPrefixes`: for a path such as `foo/bar/baz`, builds up a list of path
+* `Indexing.buildAllPathPrefixes`: for a path such as `foo/bar/baz`, builds up a list of path
   prefixes, e.g. `['foo', 'foo/bar', 'foo/bar/baz']`.
-* `ElasticSearch.extractNodeTypeNamesAndSupertypes(NodeType)`: extracts a list of node type names for
+* `Indexing.extractNodeTypeNamesAndSupertypes(NodeType)`: extracts a list of node type names for
   the passed node type and all of its supertypes
-* `ElasticSearch.convertArrayOfNodesToArrayOfNodeIdentifiers(array $nodes)`: convert the given nodes to
+* `Indexing.convertArrayOfNodesToArrayOfNodeIdentifiers(array $nodes)`: convert the given nodes to
   their node identifiers.
 
 
@@ -192,7 +242,7 @@ the following is configured in the default configuration:
 
 ```
 'TYPO3.Neos:Document':
-  elasticSearch:
+  search:
     fulltext:
       isRoot: true
 ```
@@ -201,7 +251,7 @@ A *fulltext root* contains all the *content* of its non-document children, such 
 inside these texts, the document itself is returned as result.
 
 In order to specify how the fulltext of a property in a node should be extracted, this is configured
-in `NodeTypes.yaml` at `properties.[propertyName].elasticSearch.fulltextExtractor`.
+in `NodeTypes.yaml` at `properties.[propertyName].search.fulltextExtractor`.
 
 An example:
 
@@ -209,20 +259,20 @@ An example:
 'TYPO3.Neos.NodeTypes:Text':
   properties:
     'text':
-      elasticSearch:
-        fulltextExtractor: '${ElasticSearch.fulltext.extractHtmlTags(value)}'
+      search:
+        fulltextExtractor: '${Indexing.extractHtmlTags(value)}'
 
 'My.Blog:Post':
   properties:
     title:
-      elasticSearch:
-        fulltextExtractor: ${ElasticSearch.fulltext.extractInto('h1', value)}
+      search:
+        fulltextExtractor: ${Indexing.extractInto('h1', value)}
 ```
 
 
 ## Fulltext Searching / Search Plugin
 
-There is currently no fulltext search plugin included, though we might add one lateron.
+**For a search user interface, checkout the Flowpack.SearchPlugin package**
 
 
 ## Debugging
