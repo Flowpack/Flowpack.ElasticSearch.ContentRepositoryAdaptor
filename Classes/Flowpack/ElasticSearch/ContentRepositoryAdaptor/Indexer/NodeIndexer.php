@@ -179,7 +179,7 @@ class NodeIndexer extends AbstractNodeIndexer {
 		//@todo remove the hardcoded language part. There will be a merge of the Neos and TYPO3CR Settings
 		if (is_array($dimensionCombinations)) {
 			$documentData['__dimensions'] = array(
-				"languages" => $dimensionCombinations["languages"][0]
+				"language" => $dimensionCombinations["language"][0]
 			);
 		}
 
