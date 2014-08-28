@@ -176,13 +176,6 @@ class NodeIndexer extends AbstractNodeIndexer {
 			$documentData['__dimensionCombinations'] = $dimensionCombinations;
 		}
 
-		//@todo remove the hardcoded language part. There will be a merge of the Neos and TYPO3CR Settings
-		if (is_array($dimensionCombinations)) {
-			$documentData['__dimensions'] = array(
-				"language" => $dimensionCombinations["language"][0]
-			);
-		}
-
 		if ($this->isFulltextEnabled($node)) {
 			if ($this->isFulltextRoot($node)) {
 				// for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
