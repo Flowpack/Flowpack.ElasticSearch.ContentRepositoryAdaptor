@@ -37,6 +37,12 @@ class NodeIndexCommandController extends CommandController {
 
 	/**
 	 * @Flow\Inject
+	 * @var \TYPO3\TYPO3CR\Domain\Repository\WorkspaceRepository
+	 */
+	protected $workspaceRepository;
+
+	/**
+	 * @Flow\Inject
 	 * @var \TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository
 	 */
 	protected $nodeDataRepository;
@@ -55,9 +61,30 @@ class NodeIndexCommandController extends CommandController {
 
 	/**
 	 * @Flow\Inject
+	 * @var \TYPO3\Neos\Domain\Service\ContentDimensionPresetSourceInterface
+	 */
+	protected $contentDimensionPresetSource;
+
+	/**
+	 * @Flow\Inject
 	 * @var NodeTypeMappingBuilder
 	 */
 	protected $nodeTypeMappingBuilder;
+
+	/**
+	 * @var integer
+	 */
+	protected $indexedNodes;
+
+	/**
+	 * @var integer
+	 */
+	protected $countedIndexedNodes;
+
+	/**
+	 * @var integer
+	 */
+	protected $limit;
 
 	/**
 	 * @Flow\Inject
@@ -106,9 +133,11 @@ class NodeIndexCommandController extends CommandController {
 	 *
 	 * @param integer $limit Amount of nodes to index at maximum
 	 * @param bool $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
+	 * @param string $workspace name of the workspace which should be indexed
 	 * @return void
 	 */
-	public function buildCommand($limit = NULL, $update = FALSE) {
+	public function buildCommand($limit = NULL, $update = FALSE, $workspace = NULL) {
+
 		if ($update === TRUE) {
 			$this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
 		} else {
@@ -127,21 +156,19 @@ class NodeIndexCommandController extends CommandController {
 		$this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== NULL ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
 
 		$count = 0;
-		foreach ($this->nodeDataRepository->findAll() as $nodeData) {
-			/** @var \TYPO3\TYPO3CR\Domain\Model\NodeData $nodeData */
-			$context = $this->contextFactory->create(array(
-				'workspaceName' => $nodeData->getWorkspace()->getName(),
-				'invisibleContentShown' => TRUE,
-				'removedContentShown' => TRUE,
-				'inaccessibleContentShown' => TRUE
-			));
-			$node = $this->nodeFactory->createFromNodeData($nodeData, $context);
-			if ($limit !== NULL && $count > $limit) {
-				break;
+		$this->limit = $limit;
+		$this->indexedNodes = 0;
+		$this->countedIndexedNodes = 0;
+
+		if ($workspace === NULL) {
+			foreach ($this->workspaceRepository->findAll() as $workspace) {
+				$this->indexWorkspace($workspace->getName());
+
+				$count = $count + $this->countedIndexedNodes;
 			}
-			$this->nodeIndexingManager->indexNode($node);
-			$this->logger->log(sprintf('  %s', $node->getContextPath()), LOG_DEBUG);
-			$count ++;
+		} else {
+			$this->indexWorkspace($workspace);
+			$count = $count + $this->countedIndexedNodes;
 		}
 
 		$this->nodeIndexingManager->flushQueues();
@@ -174,6 +201,75 @@ class NodeIndexCommandController extends CommandController {
 			$response = json_decode($exception->getResponse());
 			$this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s"', $response->status, $response->error));
 		}
+	}
 
+	/**
+	 * @param string $workspaceName
+	 */
+	protected function indexWorkspace($workspaceName) {
+
+		foreach ($this->calculateDimensionCombinations() as $combination) {
+			$context = $this->contextFactory->create(array('workspaceName' => $workspaceName, 'dimensions' => $combination));
+			$rootNode = $context->getRootNode();
+
+			$this->traverseNodes($rootNode);
+
+			$this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($combination) . '" done. (Indexed ' . $this->indexedNodes . ' nodes)');
+			$this->countedIndexedNodes = $this->countedIndexedNodes + $this->indexedNodes;
+			$this->indexedNodes = 0;
+		}
+	}
+
+	/**
+	 * @param \TYPO3\TYPO3CR\Domain\Model\Node $currentNode
+	 */
+	protected function traverseNodes(\TYPO3\TYPO3CR\Domain\Model\Node $currentNode) {
+
+		if ($this->limit !== NULL && $this->indexedNodes > $this->limit) {
+			return;
+		}
+
+		$this->nodeIndexingManager->indexNode($currentNode);
+		$this->indexedNodes++;
+
+		foreach ($currentNode->getChildNodes() as $childNode) {
+			$this->traverseNodes($childNode);
+		}
+	}
+
+	/**
+	 * @return array
+	 * @todo will went into TYPO3CR
+	 */
+	protected function calculateDimensionCombinations() {
+		$dimensionPresets = $this->contentDimensionPresetSource->getAllPresets();
+
+		$dimensionValueCountByDimension = array();
+		$possibleCombinationCount = 1;
+		$combinations = array();
+
+		foreach ($dimensionPresets as $dimensionName => $dimensionPreset) {
+			if (isset($dimensionPreset['presets']) && !empty($dimensionPreset['presets'])) {
+				$dimensionValueCountByDimension[$dimensionName] = count($dimensionPreset['presets']);
+				$possibleCombinationCount = $possibleCombinationCount * $dimensionValueCountByDimension[$dimensionName];
+			}
+		}
+
+		foreach ($dimensionPresets as $dimensionName => $dimensionPreset) {
+			for ($i = 0; $i < $possibleCombinationCount; $i++) {
+				if (!isset($combinations[$i]) || !is_array($combinations[$i])) {
+					$combinations[$i] = array();
+				}
+
+				$currentDimensionCurrentPreset = current($dimensionPresets[$dimensionName]['presets']);
+				$combinations[$i][$dimensionName] = $currentDimensionCurrentPreset['values'];
+
+				if (!next($dimensionPresets[$dimensionName]['presets'])) {
+					reset($dimensionPresets[$dimensionName]['presets']);
+				}
+			}
+		}
+
+		return $combinations;
 	}
 }
