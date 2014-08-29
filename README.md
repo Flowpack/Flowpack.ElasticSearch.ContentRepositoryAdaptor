@@ -1,5 +1,7 @@
 # TYPO3 Neos ElasticSearch Adapter
 
+*supporting ElasticSearch Version 1.2.x and 1.3.x*
+
 Created by Sebastian Kurfürst; contributions by Karsten Dambekalns and Robert Lemke.
 
 This project connects the TYPO3 Content Repository (TYPO3CR) to ElasticSearch; enabling two
@@ -29,6 +31,40 @@ Relevant Packages:
   which is also relevant for other search implementations (like the SQLite based SimpleSearch).
 
 The configuration from Version 1 to Version 2 has changed; here's what to change:
+
+**elasticsearch.yaml**
+
+Due to the fact that the default scripting language has changed from marvel to groovy since elasticsearch 1.3.0,
+there is a need, depending on your running installation of ElasticSearch, to add following lines of configuration to your
+ElasticSearch Configuration File `elasticsearch.yaml`.
+
+If you are using ElasticSearch version 1.2 you have also to install groovy as a plugin. To install the plugin just run
+the following command in the root folder of your elastic:
+
+```
+bin/plugin -install elasticsearch/elasticsearch-lang-groovy/2.2.0.
+```
+
+```
+script.disable_dynamic: false
+script.default_lang: groovy
+
+```
+
+For running with version > 1.3.x, what is recommended, it is sufficient to add following lines to your
+`elasticsearch.yaml`.
+
+
+```
+script.groovy.sandbox.class_whitelist: java.util.LinkedHashMap
+script.groovy.sandbox.receiver_whitelist:  java.util.Iterator, java.lang.Object, java.util.Map, java.util.Map$Entry
+```
+
+You can get further information about this topic here:
+
+http://www.elasticsearch.org/blog/elasticsearch-1-3-0-released/
+http://www.elasticsearch.org/blog/scripting-security/
+http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-scripting.html
 
 **Settings.yaml**
 
