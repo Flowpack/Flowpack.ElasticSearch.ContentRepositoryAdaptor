@@ -114,6 +114,36 @@ changes the index alias.
 ```
 
 
+### Advanced Index Settings
+If you need advanced settings you can define them in your *Settings.yaml*:
+
+Example is from the Documentation of the used *Flowpack.ElasticSearch* Package
+
+https://github.com/Flowpack/Flowpack.ElasticSearch/blob/master/Documentation/Indexer.rst
+
+```
+Flowpack:
+	ElasticSearch:
+		indexes:
+			default:
+				'twitter':
+					analysis:
+						filter:
+							elision:
+								type: 'elision'
+								articles: [ 'l', 'm', 't', 'qu', 'n', 's', 'j', 'd' ]
+					analyzer:
+						custom_french_analyzer:
+							tokenizer: 'letter'
+							filter: [ 'asciifolding', 'lowercase', 'french_stem', 'elision', 'stop' ]
+						tag_analyzer:
+							tokenizer: 'keyword'
+							filter: [ 'asciifolding', 'lowercase' ]
+```
+
+If you use multiple client configurations, please change the *default* key just below the *indexes*.
+
+
 ## Doing Arbitrary Queries
 
 We'll first show how to do arbitrary ElasticSearch Queries in TypoScript. This is a more powerful

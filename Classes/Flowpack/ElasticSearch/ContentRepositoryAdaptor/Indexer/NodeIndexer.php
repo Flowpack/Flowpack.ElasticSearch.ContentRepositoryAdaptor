@@ -124,7 +124,9 @@ class NodeIndexer extends AbstractNodeIndexer {
 	 * @return Index
 	 */
 	public function getIndex() {
-		return $this->searchClient->findIndex($this->getIndexName());
+		$index = $this->searchClient->findIndex($this->getIndexName());
+		$index->setSettingsKey($this->searchClient->getIndexName());
+		return $index;
 	}
 
 	/**
