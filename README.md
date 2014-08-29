@@ -1,5 +1,7 @@
 # TYPO3 Neos ElasticSearch Adapter
 
+*supporting ElasticSearch Version 1.2.x and 1.3.x*
+
 Created by Sebastian Kurfürst; contributions by Karsten Dambekalns and Robert Lemke.
 
 This project connects the TYPO3 Content Repository (TYPO3CR) to ElasticSearch; enabling two
