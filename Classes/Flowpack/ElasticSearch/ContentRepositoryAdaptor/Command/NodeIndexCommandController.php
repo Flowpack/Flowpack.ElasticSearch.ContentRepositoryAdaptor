@@ -205,19 +205,38 @@ class NodeIndexCommandController extends CommandController {
 
 	/**
 	 * @param string $workspaceName
+	 * @return void
 	 */
 	protected function indexWorkspace($workspaceName) {
-
-		foreach ($this->calculateDimensionCombinations() as $combination) {
-			$context = $this->contextFactory->create(array('workspaceName' => $workspaceName, 'dimensions' => $combination));
-			$rootNode = $context->getRootNode();
-
-			$this->traverseNodes($rootNode);
-
-			$this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($combination) . '" done. (Indexed ' . $this->indexedNodes . ' nodes)');
-			$this->countedIndexedNodes = $this->countedIndexedNodes + $this->indexedNodes;
-			$this->indexedNodes = 0;
+		$combinations = $this->calculateDimensionCombinations();
+		if ($combinations === array()) {
+			$this->indexWorkspaceWithDimensions($workspaceName);
+		} else {
+			foreach ($combinations as $combination) {
+				$this->indexWorkspaceWithDimensions($workspaceName, $combination);
+			}
 		}
+	}
+
+	/**
+	 * @param string $workspaceName
+	 * @param array $dimensions
+	 * @return void
+	 */
+	protected function indexWorkspaceWithDimensions($workspaceName, $dimensions = array()) {
+		$context = $this->contextFactory->create(array('workspaceName' => $workspaceName, 'dimensions' => $dimensions));
+		$rootNode = $context->getRootNode();
+
+		$this->traverseNodes($rootNode);
+
+		if ($dimensions === array()) {
+			$this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $this->indexedNodes . ' nodes)');
+		} else {
+			$this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $this->indexedNodes . ' nodes)');
+		}
+
+		$this->countedIndexedNodes = $this->countedIndexedNodes + $this->indexedNodes;
+		$this->indexedNodes = 0;
 	}
 
 	/**
