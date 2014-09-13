@@ -12,7 +12,7 @@
           type: string
           index: not_analyzed
           include_in_all: false
-        indexing: '${node.getIdentifier()}'
+        indexing: '${node.identifier}'
 
     '__workspace':
       search:
@@ -20,7 +20,7 @@
           type: string
           index: not_analyzed
           include_in_all: false
-        indexing: '${node.getWorkspace().getName()}'
+        indexing: '${node.workspace.name}'
 
     '__path':
       search:
@@ -28,7 +28,7 @@
           type: string
           index: not_analyzed
           include_in_all: false
-        indexing: '${node.getPath()}'
+        indexing: '${node.path}'
 
     '__parentPath':
       search:
@@ -37,14 +37,14 @@
           index: not_analyzed
           include_in_all: false
         # we index *all* parent paths as separate tokens to allow for efficient searching without a prefix query
-        indexing: '${Indexing.buildAllPathPrefixes(node.getParentPath())}'
+        indexing: '${Indexing.buildAllPathPrefixes(node.parentPath)}'
 
     '__sortIndex':
       search:
         elasticSearchMapping:
           type: integer
           include_in_all: false
-        indexing: '${node.getIndex()}'
+        indexing: '${node.index}'
 
     '_removed':
       search:
@@ -58,7 +58,7 @@
           type: string
           index: not_analyzed
           include_in_all: false
-        indexing: '${Indexing.extractNodeTypeNamesAndSupertypes(node.getNodeType())}'
+        indexing: '${Indexing.extractNodeTypeNamesAndSupertypes(node.nodeType)}'
 
 'unstructured': *node
 
@@ -66,7 +66,7 @@
   properties:
     '_hidden':
       search:
-        indexing: '${node.isHidden()}'
+        indexing: '${node.hidden}'
 
 'TYPO3.Neos:Timable':
   properties:
