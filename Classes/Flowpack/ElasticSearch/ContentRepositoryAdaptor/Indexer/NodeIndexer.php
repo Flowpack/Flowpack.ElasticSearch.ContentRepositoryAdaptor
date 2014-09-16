@@ -366,7 +366,7 @@ class NodeIndexer extends AbstractNodeIndexer {
 
 		if ($content !== '') {
 			$responseAsLines = $this->getIndex()->request('POST', '/_bulk', array(), $content)->getOriginalResponse()->getContent();
-			foreach (explode('\n', $responseAsLines) as $responseLine) {
+			foreach (explode("\n", $responseAsLines) as $responseLine) {
 				$response = json_decode($responseLine);
 				if (!is_object($response) || $response->errors !== FALSE) {
 					$this->logger->log('Indexing Error: ' . $responseLine, LOG_ERR);
