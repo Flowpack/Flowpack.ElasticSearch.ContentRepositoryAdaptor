@@ -316,7 +316,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', array(), json_encode($this->request));
 		$timeAfterwards = microtime(TRUE);
 
-		$hits = $response->getTreatedContent()['hits'];
+		$treatedContent = $response->getTreatedContent();
+		$hits = $treatedContent['hits'];
 
 		if ($this->logThisQuery === TRUE) {
 			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards-$timeBefore)*1000) . ' ms -- Limit: ' . $this->limit . ' -- Number of results returned: ' . count($hits['hits']) . ' -- Total Results: ' . $hits['total'], LOG_DEBUG);
@@ -376,7 +377,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', array(), json_encode($this->request));
 		$timeAfterwards = microtime(TRUE);
 
-		$count = $response->getTreatedContent()['count'];
+		$treatedContent = $response->getTreatedContent();
+		$count = $treatedContent['count'];
 
 		if ($this->logThisQuery === TRUE) {
 			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards-$timeBefore)*1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
