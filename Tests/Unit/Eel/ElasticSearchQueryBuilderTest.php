@@ -34,9 +34,9 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase {
 
 		$mockWorkspace->expects($this->any())->method('getName')->will($this->returnValue('user-foo'));
 
-		$this->queryBuilder = new ElasticSearchQueryBuilder($node);
+		$this->queryBuilder = new ElasticSearchQueryBuilder();
+		$this->queryBuilder->query($node);
 	}
-
 
 	/**
 	 * @test
@@ -45,7 +45,13 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase {
 		$expected = array(
 			'query' => array (
 				'filtered' => array (
-					'query' => array (),
+					'query' => array (
+						'bool' => array(
+							'must' => array(
+								array('match_all' => array())
+							)
+						)
+					),
 					'filter' => array (
 						'bool' => array (
 							'must' => array (
