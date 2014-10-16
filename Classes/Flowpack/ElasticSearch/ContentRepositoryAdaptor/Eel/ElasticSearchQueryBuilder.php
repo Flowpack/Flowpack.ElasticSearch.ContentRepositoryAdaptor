@@ -242,6 +242,28 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
+	 * add a range filter (gt) for the given property
+	 *
+	 * @param string $propertyName
+	 * @param mixed $propertyValue
+	 * @return ElasticSearchQueryBuilder
+	 */
+	public function greaterThan($propertyName, $propertyValue) {
+		return $this->queryFilter('range', array($propertyName => array('gt' => $propertyValue)));
+	}
+
+	/**
+	 * add a range filter (lt) for the given property
+	 *
+	 * @param string $propertyName
+	 * @param mixed $propertyValue
+	 * @return ElasticSearchQueryBuilder
+	 */
+	public function lessThan($propertyName, $propertyValue) {
+		return $this->queryFilter('range', array($propertyName => array('lt' => $propertyValue)));
+	}
+
+	/**
 	 * LOW-LEVEL API
 	 */
 
