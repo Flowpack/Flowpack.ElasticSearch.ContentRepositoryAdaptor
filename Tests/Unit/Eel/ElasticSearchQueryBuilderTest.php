@@ -160,7 +160,6 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase {
 		$this->assertSame(2, $actual['size']);
 	}
 
-
 	/**
 	 * @test
 	 */
@@ -173,6 +172,30 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase {
 		);
 		$actual = $this->queryBuilder->getRequest();
 		$this->assertSame($expected, $actual['sort']);
+	}
+
+	public function rangeConstraintExamples() {
+		return array(
+			array('greaterThan', 'gt', 10),
+			array('greaterThanOrEqual', 'gte', 20),
+			array('lessThan', 'lt', 'now'),
+			array('lessThanOrEqual', 'lte', 40)
+		);
+	}
+
+	/**
+	 * @test
+	 * @dataProvider rangeConstraintExamples
+	 */
+	public function rangeConstraintsWork($constraint, $operator, $value) {
+		$this->queryBuilder->$constraint('fieldName', $value);
+		$expected = array(
+			'range' => array(
+				'fieldName' => array($operator => $value)
+			)
+		);
+		$actual = $this->queryBuilder->getRequest();
+		$this->assertInArray($expected, $actual['query']['filtered']['filter']['bool']['must']);
 	}
 
 	/**

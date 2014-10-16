@@ -253,6 +253,17 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
+	 * add a range filter (gte) for the given property
+	 *
+	 * @param string $propertyName
+	 * @param mixed $propertyValue
+	 * @return ElasticSearchQueryBuilder
+	 */
+	public function greaterThanOrEqual($propertyName, $propertyValue) {
+		return $this->queryFilter('range', array($propertyName => array('gte' => $propertyValue)));
+	}
+
+	/**
 	 * add a range filter (lt) for the given property
 	 *
 	 * @param string $propertyName
@@ -261,6 +272,18 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 */
 	public function lessThan($propertyName, $propertyValue) {
 		return $this->queryFilter('range', array($propertyName => array('lt' => $propertyValue)));
+	}
+
+
+	/**
+	 * add a range filter (lte) for the given property
+	 *
+	 * @param string $propertyName
+	 * @param mixed $propertyValue
+	 * @return ElasticSearchQueryBuilder
+	 */
+	public function lessThanOrEqual($propertyName, $propertyValue) {
+		return $this->queryFilter('range', array($propertyName => array('lte' => $propertyValue)));
 	}
 
 	/**
