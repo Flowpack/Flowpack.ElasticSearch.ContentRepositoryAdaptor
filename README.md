@@ -172,7 +172,9 @@ search underneath the current site node (like in the example above).
 Furthermore, the following operators are supported:
 
 * `nodeType("Your.Node:Type")`
-* `exactMatch(key, value)`; supports simple types: `exactMatch('tag', 'foo')`, or node references: `exactMatch('author', authorNode)`
+* `exactMatch('propertyName', value)`; supports simple types: `exactMatch('tag', 'foo')`, or node references: `exactMatch('author', authorNode)`
+* `greaterThan('propertyName', value)` -- range filter with property values greater than the given value
+* `lessThan('propertyName', value)` -- range filter with property values less than the given value
 * `sortAsc('propertyName')` and `sortDesc('propertyName')` -- can also be used multiple times, e.g. `sortAsc('tag').sortDesc(`date')` will first sort by tag ascending, and then by date descending.
 * `limit(5)` -- only return five results. If not specified, the default limit by ElasticSearch applies (which is at 10 by default)
 * `from(5)` -- return the results starting from the 6th one
