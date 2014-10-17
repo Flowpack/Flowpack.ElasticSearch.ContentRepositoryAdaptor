@@ -270,18 +270,20 @@ class NodeIndexer extends AbstractNodeIndexer {
 					ctx._source.__fulltextParts[identifier] = fulltext;
 					ctx._source.__fulltext = new LinkedHashMap();
 
-					Iterator fulltextByNode = ctx._source.__fulltextParts.iterator();
+					Iterator<LinkedHashMap.Entry<String, LinkedHashMap>> fulltextByNode = ctx._source.__fulltextParts.entrySet().iterator();
 					for (fulltextByNode; fulltextByNode.hasNext();) {
-
-						Iterator elementIterator = fulltextByNode.next().iterator();
+						Iterator<LinkedHashMap.Entry<String, String>> elementIterator = fulltextByNode.next().getValue().entrySet().iterator();
 						for (elementIterator; elementIterator.hasNext();) {
-
 							Map.Entry<String, String> element = elementIterator.next();
+							String value;
+
 							if (ctx._source.__fulltext.containsKey(element.key)) {
-								ctx._source.__fulltext[element.key] += " " + element.value;
+								value = ctx._source.__fulltext[element.key] + " " + element.value.trim();
 							} else {
-								ctx._source.__fulltext[element.key] = element.value;
+								value = element.value.trim();
 							}
+
+							ctx._source.__fulltext[element.key] = value;
 						}
 					}
 				',
