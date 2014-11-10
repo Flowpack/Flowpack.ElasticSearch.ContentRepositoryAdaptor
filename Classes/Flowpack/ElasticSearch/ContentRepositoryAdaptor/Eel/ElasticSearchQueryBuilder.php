@@ -140,6 +140,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 *
 	 * @param string $nodeType the node type to filter for
 	 * @return ElasticSearchQueryBuilder
+	 * @api
 	 */
 	public function nodeType($nodeType) {
 		// on indexing, __typeAndSupertypes contains the typename itself and all supertypes, so that's why we can
@@ -154,6 +155,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 *
 	 * @param string $propertyName the property name to sort by
 	 * @return ElasticSearchQueryBuilder
+	 * @api
 	 */
 	public function sortDesc($propertyName) {
 		if (!isset($this->request['sort'])) {
@@ -174,6 +176,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 *
 	 * @param string $propertyName the property name to sort by
 	 * @return ElasticSearchQueryBuilder
+	 * @api
 	 */
 	public function sortAsc($propertyName) {
 		if (!isset($this->request['sort'])) {
@@ -200,6 +203,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 *
 	 * @param integer $limit
 	 * @return ElasticSearchQueryBuilder
+	 * @api
 	 */
 	public function limit($limit) {
 		if (!$limit) {
@@ -227,6 +231,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 *
 	 * @param integer $from
 	 * @return ElasticSearchQueryBuilder
+	 * @api
 	 */
 	public function from($from) {
 		if (!$from) {
@@ -245,6 +250,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @param string $propertyName Name of the property
 	 * @param mixed $value Value for comparison
 	 * @return ElasticSearchQueryBuilder
+	 * @api
 	 */
 	public function exactMatch($propertyName, $value) {
 		if ($value instanceof NodeInterface) {
@@ -260,6 +266,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @param string $propertyName Name of the property
 	 * @param mixed $value Value for comparison
 	 * @return ElasticSearchQueryBuilder
+	 * @api
 	 */
 	public function greaterThan($propertyName, $value) {
 		return $this->queryFilter('range', array($propertyName => array('gt' => $value)));
@@ -271,6 +278,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @param string $propertyName Name of the property
 	 * @param mixed $value Value for comparison
 	 * @return ElasticSearchQueryBuilder
+	 * @api
 	 */
 	public function greaterThanOrEqual($propertyName, $value) {
 		return $this->queryFilter('range', array($propertyName => array('gte' => $value)));
@@ -282,6 +290,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @param string $propertyName Name of the property
 	 * @param mixed $value Value for comparison
 	 * @return ElasticSearchQueryBuilder
+	 * @api
 	 */
 	public function lessThan($propertyName, $value) {
 		return $this->queryFilter('range', array($propertyName => array('lt' => $value)));
@@ -294,6 +303,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @param string $propertyName Name of the property
 	 * @param mixed $value Value for comparison
 	 * @return ElasticSearchQueryBuilder
+	 * @api
 	 */
 	public function lessThanOrEqual($propertyName, $value) {
 		return $this->queryFilter('range', array($propertyName => array('lte' => $value)));
@@ -311,6 +321,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @param string $clauseType one of must, should, must_not
 	 * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
 	 * @return ElasticSearchQueryBuilder
+	 * @api
 	 */
 	public function queryFilter($filterType, $filterOptions, $clauseType = 'must') {
 		if (!in_array($clauseType, array('must', 'should', 'must_not'))) {
@@ -360,6 +371,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @param array $data An associative array of keys as variable names and values as variable values
 	 * @param string $clauseType one of must, should, must_not
 	 * @return ElasticSearchQueryBuilder
+	 * @api
 	 */
 	public function queryFilterMultiple($data, $clauseType = 'must') {
 		foreach ($data as $key => $value) {
@@ -388,6 +400,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 *
 	 * @param string $message an optional message to identify the log entry
 	 * @return $this
+	 * @api
 	 */
 	public function log($message = NULL) {
 		$this->logThisQuery = TRUE;
@@ -486,6 +499,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * Get a query result object for lazy execution of the query
 	 *
 	 * @return \Traversable<\TYPO3\Flow\Persistence\QueryResultInterface>
+	 * @api
 	 */
 	public function execute() {
 		$elasticSearchQuery = new ElasticSearchQuery($this);
@@ -497,6 +511,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * Return the total number of hits for the query.
 	 *
 	 * @return integer
+	 * @api
 	 */
 	public function count() {
 		$timeBefore = microtime(TRUE);
@@ -525,6 +540,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 *
 	 * @param string $searchWord
 	 * @return QueryBuilderInterface
+	 * @api
 	 */
 	public function fulltext($searchWord) {
 
@@ -542,6 +558,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 *
 	 * @param NodeInterface $contextNode
 	 * @return QueryBuilderInterface
+	 * @api
 	 */
 	public function query(NodeInterface $contextNode) {
 		// on indexing, the __parentPath is tokenized to contain ALL parent path parts,
@@ -557,7 +574,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
 		return $this;
 	}
-
 
 	/**
 	 * All methods are considered safe
