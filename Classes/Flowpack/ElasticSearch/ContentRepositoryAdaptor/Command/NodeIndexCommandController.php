@@ -240,9 +240,9 @@ class NodeIndexCommandController extends CommandController {
 	}
 
 	/**
-	 * @param \TYPO3\TYPO3CR\Domain\Model\Node $currentNode
+	 * @param \TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode
 	 */
-	protected function traverseNodes(\TYPO3\TYPO3CR\Domain\Model\Node $currentNode) {
+	protected function traverseNodes(\TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode) {
 
 		if ($this->limit !== NULL && $this->indexedNodes > $this->limit) {
 			return;
