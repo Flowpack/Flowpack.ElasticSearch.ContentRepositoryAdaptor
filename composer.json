@@ -5,6 +5,8 @@
     "homepage": "http://flowpack.org/",
     "license": ["LGPL-3.0+"],
     "require": {
+        "php": ">=5.5.0",
+
         "flowpack/elasticsearch": "*",
         "typo3/eel": "*",
         "typo3/typo3cr": "*",
