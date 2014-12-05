@@ -135,7 +135,7 @@ class NodeIndexer extends AbstractNodeIndexer {
 	 * @param Node $node
 	 * @param string $targetWorkspaceName In case this is triggered during publishing, a workspace name will be passed in
 	 * @return void
-	 * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\IndexingException
+	 * @throws \TYPO3\TYPO3CR\Search\Exception\IndexingException
 	 */
 	public function indexNode(Node $node, $targetWorkspaceName = NULL) {
 		$contextPath = $node->getContextPath();
@@ -383,25 +383,25 @@ class NodeIndexer extends AbstractNodeIndexer {
 	 * Update the index alias
 	 *
 	 * @return void
-	 * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+	 * @throws Exception
 	 * @throws \Flowpack\ElasticSearch\Transfer\Exception\ApiException
 	 * @throws \Exception
 	 */
 	public function updateIndexAlias() {
 		$aliasName = $this->searchClient->getIndexName(); // The alias name is the unprefixed index name
 		if ($this->getIndexName() === $aliasName) {
-			throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('UpdateIndexAlias is only allowed to be called when $this->setIndexNamePostfix has been created.', 1383649061);
+			throw new Exception('UpdateIndexAlias is only allowed to be called when $this->setIndexNamePostfix has been created.', 1383649061);
 		}
 
 		if (!$this->getIndex()->exists()) {
-			throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('The target index for updateIndexAlias does not exist. This shall never happen.', 1383649125);
+			throw new Exception('The target index for updateIndexAlias does not exist. This shall never happen.', 1383649125);
 		}
 
 		$aliasActions = array();
 		try {
 			$response = $this->searchClient->request('GET', '/*/_alias/' . $aliasName);
 			if ($response->getStatusCode() !== 200) {
-				throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('The alias "' . $aliasName . '" was not found with some unexpected error... (return code: ' . $response->getStatusCode() . ')', 1383650137);
+				throw new Exception('The alias "' . $aliasName . '" was not found with some unexpected error... (return code: ' . $response->getStatusCode() . ')', 1383650137);
 			}
 
 			$indexNames = array_keys($response->getTreatedContent());
@@ -412,7 +412,7 @@ class NodeIndexer extends AbstractNodeIndexer {
 				if ($response->getStatusCode() === 200) {
 					$response = $this->searchClient->request('DELETE', '/' . $aliasName);
 					if ($response->getStatusCode() !== 200) {
-						throw new \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception('The index "' . $aliasName . '" could not be removed to be replaced by an alias. (return code: ' . $response->getStatusCode() . ')', 1395419177);
+						throw new Exception('The index "' . $aliasName . '" could not be removed to be replaced by an alias. (return code: ' . $response->getStatusCode() . ')', 1395419177);
 					}
 				}
 			} else {
