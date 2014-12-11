@@ -1,7 +1,6 @@
 <?php
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 
-
 /*                                                                                                  *
  * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
  *                                                                                                  *
@@ -68,6 +67,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @var array
 	 */
 	protected $unsupportedFieldsInCountRequest = array('fields', 'sort', 'from', 'size');
+
+	/**
+	 * Amount of total items in response without limit
+	 *
+	 * @var integer
+	 */
+	protected $totalItems;
 
 	/**
 	 * The ElasticSearch request, as it is being built up.
@@ -203,7 +209,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		$currentWorkspaceNestingLevel = 1;
 		$workspace = $this->contextNode->getContext()->getWorkspace();
 		while ($workspace->getBaseWorkspace() !== NULL) {
-			$currentWorkspaceNestingLevel ++;
+			$currentWorkspaceNestingLevel++;
 			$workspace = $workspace->getBaseWorkspace();
 		}
 
@@ -391,11 +397,34 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
-	 * Execute the query and return the list of nodes as result
+	 * @return integer
+	 */
+	public function getTotalItems() {
+		return $this->totalItems;
+	}
+
+	/**
+	 * @return integer
+	 */
+	public function getLimit() {
+		return $this->limit;
+	}
+
+	/**
+	 * @return integer
+	 */
+	public function getFrom() {
+		return $this->from;
+	}
+
+	/**
+	 * Execute the query and return the list of nodes as result.
+	 *
+	 * This method is rather internal; just to be called from the ElasticSearchQueryResult. For the public API, please use execute()
 	 *
 	 * @return array<\TYPO3\TYPO3CR\Domain\Model\NodeInterface>
 	 */
-	public function execute() {
+	public function fetch() {
 		$timeBefore = microtime(TRUE);
 		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', array(), json_encode($this->request));
 		$timeAfterwards = microtime(TRUE);
@@ -404,8 +433,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		$hits = $treatedContent['hits'];
 
 		if ($this->logThisQuery === TRUE) {
-			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards-$timeBefore)*1000) . ' ms -- Limit: ' . $this->limit . ' -- Number of results returned: ' . count($hits['hits']) . ' -- Total Results: ' . $hits['total'], LOG_DEBUG);
+			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Limit: ' . $this->limit . ' -- Number of results returned: ' . count($hits['hits']) . ' -- Total Results: ' . $hits['total'], LOG_DEBUG);
 		}
+
+		$this->totalItems = $hits['total'];
 
 		if ($hits['total'] === 0) {
 			return array();
@@ -452,6 +483,17 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
+	 * Get a query result object for lazy execution of the query
+	 *
+	 * @return \Traversable<\TYPO3\Flow\Persistence\QueryResultInterface>
+	 */
+	public function execute() {
+		$elasticSearchQuery = new ElasticSearchQuery($this);
+		$result = $elasticSearchQuery->execute();
+		return $result;
+	}
+
+	/**
 	 * Return the total number of hits for the query.
 	 *
 	 * @return integer
@@ -472,7 +514,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		$count = $treatedContent['count'];
 
 		if ($this->logThisQuery === TRUE) {
-			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards-$timeBefore)*1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
+			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
 		}
 
 		return $count;
