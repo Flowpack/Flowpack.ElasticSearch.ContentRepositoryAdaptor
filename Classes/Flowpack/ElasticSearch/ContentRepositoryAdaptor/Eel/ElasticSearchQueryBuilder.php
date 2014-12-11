@@ -63,6 +63,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	protected $from;
 
 	/**
+	 * Amount of total items in response without limit
+	 *
+	 * @var integer
+	 */
+	protected $totalItems;
+
+	/**
 	 * The ElasticSearch request, as it is being built up.
 	 * @var array
 	 */
@@ -121,6 +128,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	/**
 	 * HIGH-LEVEL API
 	 */
+
+	/**
+	 * @return \TYPO3\TYPO3CR\Domain\Model\NodeType
+	 */
+	public function getNodeType() {
+		return $this->contextNode->getNodeType();
+	}
 
 	/**
 	 * Filter by node type, taking inheritance into account.
@@ -196,7 +210,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		$currentWorkspaceNestingLevel = 1;
 		$workspace = $this->contextNode->getContext()->getWorkspace();
 		while ($workspace->getBaseWorkspace() !== NULL) {
-			$currentWorkspaceNestingLevel ++;
+			$currentWorkspaceNestingLevel++;
 			$workspace = $workspace->getBaseWorkspace();
 		}
 
@@ -307,11 +321,32 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
+	 * @return integer
+	 */
+	public function getTotalItems() {
+		return $this->totalItems;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getLimit() {
+		return $this->limit;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getFrom() {
+		return $this->from;
+	}
+
+	/**
 	 * Execute the query and return the list of nodes as result
 	 *
 	 * @return array<\TYPO3\TYPO3CR\Domain\Model\NodeInterface>
 	 */
-	public function execute() {
+	public function fetch() {
 		$timeBefore = microtime(TRUE);
 		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', array(), json_encode($this->request));
 		$timeAfterwards = microtime(TRUE);
@@ -320,8 +355,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		$hits = $treatedContent['hits'];
 
 		if ($this->logThisQuery === TRUE) {
-			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards-$timeBefore)*1000) . ' ms -- Limit: ' . $this->limit . ' -- Number of results returned: ' . count($hits['hits']) . ' -- Total Results: ' . $hits['total'], LOG_DEBUG);
+			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Limit: ' . $this->limit . ' -- Number of results returned: ' . count($hits['hits']) . ' -- Total Results: ' . $hits['total'], LOG_DEBUG);
 		}
+
+		$this->totalItems = $hits['total'];
 
 		if ($hits['total'] === 0) {
 			return array();
@@ -368,6 +405,15 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
+	 * @return array|\TYPO3\Flow\Persistence\QueryResultInterface
+	 */
+	public function execute() {
+		$elasticSerachQuery = new ElasticSearchQuery($this);
+		$result = $elasticSerachQuery->execute();
+		return $result;
+	}
+
+	/**
 	 * Return the total number of hits for the query.
 	 *
 	 * @return integer
@@ -381,7 +427,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		$count = $treatedContent['count'];
 
 		if ($this->logThisQuery === TRUE) {
-			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards-$timeBefore)*1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
+			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
 		}
 
 		return $count;
