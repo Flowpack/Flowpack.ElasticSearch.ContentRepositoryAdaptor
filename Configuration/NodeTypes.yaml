@@ -76,7 +76,7 @@
           type: date
           include_in_all: false
           format: 'date_time_no_millis'
-        indexing: '${(node.hiddenBeforeDateTime ? node.hiddenBeforeDateTime.format("Y-m-d\TH:i:s") + "Z" : null)}'
+        indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:s") + "Z" : null)}'
 
 
     '_hiddenAfterDateTime':
@@ -85,7 +85,7 @@
           type: date
           include_in_all: false
           format: 'date_time_no_millis'
-        indexing: '${(node.hiddenAfterDateTime ? node.hiddenAfterDateTime.format("Y-m-d\TH:i:s") + "Z" : null)}'
+        indexing: '${(node.hiddenAfterDateTime ? Date.format(node.hiddenAfterDateTime, "Y-m-d\TH:i:s") + "Z" : null)}'
 
 
 'TYPO3.Neos:Document':
