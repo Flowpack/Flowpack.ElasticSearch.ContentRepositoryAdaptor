@@ -289,7 +289,7 @@ TYPO3:
           type: date
           include_in_all: false
           format: 'date_time_no_millis'
-        indexing: '${(node.hiddenBeforeDateTime ? node.hiddenBeforeDateTime.format("Y-m-d\TH:i:s") + "Z" : null)}'
+        indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:s") + "Z" : null)}'
 ```
 
 There are a few indexing helpers inside the `Indexing` namespace which are usable inside the
