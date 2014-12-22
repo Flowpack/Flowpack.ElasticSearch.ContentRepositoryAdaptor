@@ -63,6 +63,18 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	protected $from;
 
 	/**
+	 * @var boolean
+	 */
+	protected $isFulltextSearch = FALSE;
+
+	/**
+	 * These fields are not accepted in a count request and must therefore be removed before doing so
+	 *
+	 * @var array
+	 */
+	protected $unsupportedFieldsInCountRequest = array('fields', 'sort', 'from', 'size');
+
+	/**
 	 * The ElasticSearch request, as it is being built up.
 	 * @var array
 	 */
@@ -339,6 +351,20 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
+	 * Get the ElasticSearch request as we need it, adding the fulltext fix
+	 *
+	 * @return array
+	 */
+	public function getPreparedRequest() {
+		$request = $this->request;
+		$fulltext = array('exists' => array('field' => '__fulltext'));
+		if ($this->isFulltextSearch === TRUE) {
+			$request['query']['filtered']['filter']['bool']['must'][] = $fulltext;
+		}
+		return $request;
+	}
+
+	/**
 	 * Log the current request to the ElasticSearch log for debugging after it has been executed.
 	 *
 	 * @param string $message an optional message to identify the log entry
@@ -358,14 +384,15 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 */
 	public function execute() {
 		$timeBefore = microtime(TRUE);
-		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', array(), json_encode($this->request));
+		$request = $this->getPreparedRequest();
+		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', array(), json_encode($request));
 		$timeAfterwards = microtime(TRUE);
 
 		$treatedContent = $response->getTreatedContent();
 		$hits = $treatedContent['hits'];
 
 		if ($this->logThisQuery === TRUE) {
-			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards-$timeBefore)*1000) . ' ms -- Limit: ' . $this->limit . ' -- Number of results returned: ' . count($hits['hits']) . ' -- Total Results: ' . $hits['total'], LOG_DEBUG);
+			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($request) . ' -- execution time: ' . (($timeAfterwards-$timeBefore)*1000) . ' ms -- Limit: ' . $this->limit . ' -- Number of results returned: ' . count($hits['hits']) . ' -- Total Results: ' . $hits['total'], LOG_DEBUG);
 		}
 
 		if ($hits['total'] === 0) {
@@ -419,14 +446,21 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 */
 	public function count() {
 		$timeBefore = microtime(TRUE);
-		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', array(), json_encode($this->request));
+		$request = $this->getPreparedRequest();
+		foreach ($this->unsupportedFieldsInCountRequest as $field) {
+			if (isset($request[$field])) {
+				unset($request[$field]);
+			}
+		}
+
+		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', array(), json_encode($request));
 		$timeAfterwards = microtime(TRUE);
 
 		$treatedContent = $response->getTreatedContent();
 		$count = $treatedContent['count'];
 
 		if ($this->logThisQuery === TRUE) {
-			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards-$timeBefore)*1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
+			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($request) . ' -- execution time: ' . (($timeAfterwards-$timeBefore)*1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
 		}
 
 		return $count;
@@ -445,6 +479,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 				'query' => $searchWord
 			)
 		));
+		$this->isFulltextSearch = TRUE;
 		return $this;
 	}
 
