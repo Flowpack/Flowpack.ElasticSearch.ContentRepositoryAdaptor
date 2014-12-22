@@ -63,6 +63,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	protected $from;
 
 	/**
+	 * These fields are not accepted in a count request and must therefore be removed before doing so
+	 *
+	 * @var array
+	 */
+	protected $unsupportedFieldsInCountRequest = array('fields', 'sort', 'from', 'size', '_source', 'highlight');
+
+	/**
 	 * The ElasticSearch request, as it is being built up.
 	 * @var array
 	 */
@@ -354,7 +361,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	/**
 	 * Execute the query and return the list of nodes as result
 	 *
-	 * @return array<\TYPO3\TYPO3CR\Domain\Model\NodeInterface>
+	 * @return array
 	 */
 	public function execute() {
 		$timeBefore = microtime(TRUE);
@@ -398,7 +405,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 			}
 			$node = $this->contextNode->getNode($nodePath);
 			if ($node instanceof NodeInterface) {
-				$nodes[$node->getIdentifier()] = $node;
+				$nodes[$node->getIdentifier()] = array(
+					'node' => $node,
+					'meta' => $hit
+				);
 				if ($this->limit > 0 && count($nodes) >= $this->limit) {
 					break;
 				}
@@ -409,7 +419,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 			$this->logger->log('Query Log (' . $this->logMessage . ') Number of returned results: ' . count($nodes), LOG_DEBUG);
 		}
 
-		return array_values($nodes);
+		return array(
+			'nodes' => array_values($nodes),
+			'response' => $response->getTreatedContent()
+		);
 	}
 
 	/**
@@ -419,7 +432,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 */
 	public function count() {
 		$timeBefore = microtime(TRUE);
-		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', array(), json_encode($this->request));
+		$request = $this->request;
+		foreach ($this->unsupportedFieldsInCountRequest as $field) {
+			if (isset($request[$field])) {
+				unset($request[$field]);
+			}
+		}
+
+		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', array(), json_encode($request));
 		$timeAfterwards = microtime(TRUE);
 
 		$treatedContent = $response->getTreatedContent();
@@ -439,12 +459,33 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @return QueryBuilderInterface
 	 */
 	public function fulltext($searchWord) {
-
 		$this->appendAtPath('query.filtered.query.bool.must', array(
 			'query_string' => array(
 				'query' => $searchWord
 			)
 		));
+		return $this;
+	}
+
+	/**
+	 * Wrap search term matches found in the result for highlighting purposes. Only available for fulltext searches.
+	 *
+	 * @param integer $fragmentSize
+	 * @param integer $fragmentCount
+	 * @return QueryBuilderInterface
+	 */
+	public function highlight($fragmentSize = 150, $fragmentCount = 2) {
+		$this->request['_source'] = array('__fulltext');
+		$this->request['highlight'] = array(
+			'fields' => array(
+				'text' => array(
+					'force_source' => TRUE,
+					'fragment_size' => $fragmentSize,
+					'no_match_size' => $fragmentSize,
+					'number_of_fragments' => $fragmentCount
+				)
+			)
+		);
 		return $this;
 	}
 
