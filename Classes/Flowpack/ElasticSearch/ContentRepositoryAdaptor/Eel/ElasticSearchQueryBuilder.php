@@ -63,6 +63,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	protected $from;
 
 	/**
+	 * These fields are not accepted in a count request and must therefore be removed before doing so
+	 *
+	 * @var array
+	 */
+	protected $unsupportedFieldsInCountRequest = array('fields', 'sort', 'from', 'size');
+
+	/**
 	 * The ElasticSearch request, as it is being built up.
 	 * @var array
 	 */
@@ -419,7 +426,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 */
 	public function count() {
 		$timeBefore = microtime(TRUE);
-		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', array(), json_encode($this->request));
+		$request = $this->request;
+		foreach ($this->unsupportedFieldsInCountRequest as $field) {
+			if (isset($request[$field])) {
+				unset($request[$field]);
+			}
+		}
+
+		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', array(), json_encode($request));
 		$timeAfterwards = microtime(TRUE);
 
 		$treatedContent = $response->getTreatedContent();
