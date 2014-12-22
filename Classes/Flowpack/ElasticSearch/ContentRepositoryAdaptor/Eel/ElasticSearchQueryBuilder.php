@@ -463,7 +463,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
 		//
 		// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-terms-filter.html
-		$this->queryFilter('terms', array('__workspace' => array('live', $contextNode->getContext()->getWorkspace()->getName())));
+		$this->queryFilter('terms', array('__workspace' => array_unique(array('live', $contextNode->getContext()->getWorkspace()->getName()))));
 
 		$this->contextNode = $contextNode;
 
