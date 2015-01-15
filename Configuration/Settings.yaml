@@ -47,13 +47,11 @@ TYPO3:
           elasticSearchMapping: '' # deliberately don't map or index this
 
         'TYPO3\Media\Domain\Model\ImageVariant':
-          #elasticSearchMapping: '' # deliberately don't map or index this
           elasticSearchMapping:
             type: nested
             index: not_analyzed
 
         'TYPO3\Media\Domain\Model\Asset':
-          #elasticSearchMapping: '' # deliberately don't map or index this
           elasticSearchMapping:
             type: nested
             index: not_analyzed

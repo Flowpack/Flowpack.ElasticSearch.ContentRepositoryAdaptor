@@ -93,14 +93,6 @@
     fulltext:
       isRoot: true
   properties:
-    '__assetParts':
-      search:
-        elasticSearchMapping:
-          type: object
-          include_in_all: false
-          enabled: false
-        indexing: ''
-
     '__fulltextParts':
       search:
         elasticSearchMapping:
