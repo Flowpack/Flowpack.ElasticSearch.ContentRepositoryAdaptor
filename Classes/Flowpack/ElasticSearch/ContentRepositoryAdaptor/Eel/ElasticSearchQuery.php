@@ -1,9 +1,15 @@
 <?php
-/***************************************************************
- *  (c) 2014 networkteam GmbH - all rights reserved
- ***************************************************************/
-
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
+
+/*                                                                                                  *
+ * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
+ *                                                                                                  *
+ * It is free software; you can redistribute it and/or modify it under                              *
+ * the terms of the GNU Lesser General Public License, either version 3                             *
+ *  of the License, or (at your option) any later version.                                          *
+ *                                                                                                  *
+ * The TYPO3 project - inspiring people to share!                                                   *
+ *                                                                                                  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use TYPO3\Flow\Persistence\QueryInterface;
@@ -20,48 +26,23 @@ class ElasticSearchQuery implements QueryInterface {
 	}
 
 	/**
-	 * @param mixed $queryBuilder
-	 */
-	public function setQueryBuilder(ElasticSearchQueryBuilder $queryBuilder) {
-		$this->queryBuilder = $queryBuilder;
-	}
-
-	/**
-	 * @return ElasticSearchQueryBuilder
-	 */
-	public function getQueryBuilder() {
-		return $this->queryBuilder;
-	}
-
-	/**
-	 * Executes the query and returns the result.
-	 *
-	 * @param bool $cacheResult If the result cache should be used
-	 * @return \TYPO3\Flow\Persistence\QueryResultInterface The query result
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function execute($cacheResult = FALSE) {
 		return new ElasticSearchQueryResult($this);
 	}
 
 	/**
-	 * Returns the query result count.
-	 *
-	 * @return integer The query result count
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function count() {
+		// FIXME Check that results are fetched!
+
 		return $this->queryBuilder->getTotalItems();
 	}
 
 	/**
-	 * Sets the maximum size of the result set to limit. Returns $this to allow
-	 * for chaining (fluid interface).
-	 *
-	 * @param integer $limit
-	 * @return \TYPO3\Flow\Persistence\QueryInterface
-	 * @throws \InvalidArgumentException
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function setLimit($limit) {
 		if ($limit < 1 || !is_int($limit)) {
@@ -72,23 +53,14 @@ class ElasticSearchQuery implements QueryInterface {
 	}
 
 	/**
-	 * Returns the maximum size of the result set to limit.
-	 *
-	 * @return integer
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function getLimit() {
 		return $this->queryBuilder->getLimit();
 	}
 
 	/**
-	 * Sets the start offset of the result set to offset. Returns $this to
-	 * allow for chaining (fluid interface).
-	 *
-	 * @param integer $offset
-	 * @return \TYPO3\Flow\Persistence\QueryInterface
-	 * @throws \InvalidArgumentException
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function setOffset($offset) {
 		if ($offset < 1 || !is_int($offset)) {
@@ -99,247 +71,136 @@ class ElasticSearchQuery implements QueryInterface {
 	}
 
 	/**
-	 * Returns the start offset of the result set.
-	 *
-	 * @return integer
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function getOffset() {
 		return $this->queryBuilder->getFrom();
 	}
 
 	/**
-	 * Returns the type this query cares for.
-	 *
-	 * @return string
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function getType() {
 		return 'TYPO3\TYPO3CR\Domain\Model\NodeInterface';
 	}
 
 	/**
-	 * Sets the property names to order the result by. Expected like this:
-	 * array(
-	 *  'foo' => \TYPO3\Flow\Persistence\QueryInterface::ORDER_ASCENDING,
-	 *  'bar' => \TYPO3\Flow\Persistence\QueryInterface::ORDER_DESCENDING
-	 * )
-	 *
-	 * @param array $orderings The property names to order by
-	 * @return \TYPO3\Flow\Persistence\QueryInterface
-	 * @throws \TYPO3\Flow\Exception
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function setOrderings(array $orderings) {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749035);
 	}
 
 	/**
-	 * Gets the property names to order the result by, like this:
-	 * array(
-	 *  'foo' => \TYPO3\Flow\Persistence\QueryInterface::ORDER_ASCENDING,
-	 *  'bar' => \TYPO3\Flow\Persistence\QueryInterface::ORDER_DESCENDING
-	 * )
-	 *
-	 * @return array
-	 * @throws \TYPO3\Flow\Exception
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function getOrderings() {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749036);
 	}
 
 	/**
-	 * The constraint used to limit the result set. Returns $this to allow
-	 * for chaining (fluid interface).
-	 *
-	 * @param object $constraint Some constraint, depending on the backend
-	 * @return \TYPO3\Flow\Persistence\QueryInterface
-	 * @throws
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function matching($constraint) {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749037);
 	}
 
 	/**
-	 * Gets the constraint for this query.
-	 *
-	 * @return mixed the constraint, or null if none
-	 * @throws \TYPO3\Flow\Exception
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function getConstraint() {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749038);
 	}
 
 	/**
-	 * Performs a logical conjunction of the two given constraints. The method
-	 * takes one or more constraints and concatenates them with a boolean AND.
-	 * It also accepts a single array of constraints to be concatenated.
-	 *
-	 * @param mixed $constraint1 The first of multiple constraints or an array of constraints.
-	 * @return object
-	 * @throws \TYPO3\Flow\Exception
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function logicalAnd($constraint1) {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749039);
 	}
 
 	/**
-	 * Performs a logical disjunction of the two given constraints. The method
-	 * takes one or more constraints and concatenates them with a boolean OR.
-	 * It also accepts a single array of constraints to be concatenated.
-	 *
-	 * @param mixed $constraint1 The first of multiple constraints or an array of constraints.
-	 * @return object
-	 * @throws \TYPO3\Flow\Exception
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function logicalOr($constraint1) {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749040);
 	}
 
 	/**
-	 * Performs a logical negation of the given constraint
-	 *
-	 * @param object $constraint Constraint to negate
-	 * @return object
-	 * @throws \TYPO3\Flow\Exception
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function logicalNot($constraint) {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749041);
 	}
 
 	/**
-	 * Returns an equals criterion used for matching objects against a query.
-	 *
-	 * It matches if the $operand equals the value of the property named
-	 * $propertyName. If $operand is NULL a strict check for NULL is done. For
-	 * strings the comparison can be done with or without case-sensitivity.
-	 *
-	 * @param string $propertyName The name of the property to compare against
-	 * @param mixed $operand The value to compare with
-	 * @param boolean $caseSensitive Whether the equality test should be done case-sensitive for strings
-	 * @return object
-	 * @todo Decide what to do about equality on multi-valued properties
-	 * @throws \TYPO3\Flow\Exception
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function equals($propertyName, $operand, $caseSensitive = TRUE) {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749042);
 	}
 
 	/**
-	 * Returns a like criterion used for matching objects against a query.
-	 * Matches if the property named $propertyName is like the $operand, using
-	 * standard SQL wildcards.
-	 *
-	 * @param string $propertyName The name of the property to compare against
-	 * @param string $operand The value to compare with
-	 * @param boolean $caseSensitive Whether the matching should be done case-sensitive
-	 * @return object
-	 * @throws \TYPO3\Flow\Exception if used on a non-string property
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function like($propertyName, $operand, $caseSensitive = TRUE) {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749043);
 	}
 
 	/**
-	 * Returns a "contains" criterion used for matching objects against a query.
-	 * It matches if the multivalued property contains the given operand.
-	 *
-	 * If NULL is given as $operand, there will never be a match!
-	 *
-	 * @param string $propertyName The name of the multivalued property to compare against
-	 * @param mixed $operand The value to compare with
-	 * @return object
-	 * @throws \TYPO3\Flow\Exception if used on a single-valued property
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function contains($propertyName, $operand) {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749044);
 	}
 
 	/**
-	 * Returns an "isEmpty" criterion used for matching objects against a query.
-	 * It matches if the multivalued property contains no values or is NULL.
-	 *
-	 * @param string $propertyName The name of the multivalued property to compare against
-	 * @return boolean
-	 * @throws \TYPO3\Flow\Exception if used on a single-valued property
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function isEmpty($propertyName) {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749045);
 	}
 
 	/**
-	 * Returns an "in" criterion used for matching objects against a query. It
-	 * matches if the property's value is contained in the multivalued operand.
-	 *
-	 * @param string $propertyName The name of the property to compare against
-	 * @param mixed $operand The value to compare with, multivalued
-	 * @return object
-	 * @throws \TYPO3\Flow\Exception if used on a multi-valued property
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function in($propertyName, $operand) {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749046);
 	}
 
 	/**
-	 * Returns a less than criterion used for matching objects against a query
-	 *
-	 * @param string $propertyName The name of the property to compare against
-	 * @param mixed $operand The value to compare with
-	 * @return object
-	 * @throws \TYPO3\Flow\Exception if used on a multi-valued property or with a non-literal/non-DateTime operand
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function lessThan($propertyName, $operand) {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749047);
 	}
 
 	/**
-	 * Returns a less or equal than criterion used for matching objects against a query
-	 *
-	 * @param string $propertyName The name of the property to compare against
-	 * @param mixed $operand The value to compare with
-	 * @return object
-	 * @throws \TYPO3\Flow\Exception if used on a multi-valued property or with a non-literal/non-DateTime operand
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function lessThanOrEqual($propertyName, $operand) {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749048);
 	}
 
 	/**
-	 * Returns a greater than criterion used for matching objects against a query
-	 *
-	 * @param string $propertyName The name of the property to compare against
-	 * @param mixed $operand The value to compare with
-	 * @return object
-	 * @throws \TYPO3\Flow\Exception if used on a multi-valued property or with a non-literal/non-DateTime operand
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function greaterThan($propertyName, $operand) {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749049);
 	}
 
 	/**
-	 * Returns a greater than or equal criterion used for matching objects against a query
-	 *
-	 * @param string $propertyName The name of the property to compare against
-	 * @param mixed $operand The value to compare with
-	 * @return object
-	 * @throws \TYPO3\Flow\Exception if used on a multi-valued property or with a non-literal/non-DateTime operand
-	 * @api
+	 * {@inheritdoc}
 	 */
 	public function greaterThanOrEqual($propertyName, $operand) {
-		throw new Exception('Not implemented: '. __FUNCTION__);
+		throw new Exception(__FUNCTION__ . ' not implemented', 1421749050);
 	}
+
+	/**
+	 * @return ElasticSearchQueryBuilder
+	 */
+	public function getQueryBuilder() {
+		return $this->queryBuilder;
+	}
+
 }

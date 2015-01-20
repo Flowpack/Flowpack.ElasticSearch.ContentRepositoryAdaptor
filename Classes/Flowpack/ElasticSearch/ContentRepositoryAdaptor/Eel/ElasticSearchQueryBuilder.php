@@ -1,7 +1,6 @@
 <?php
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 
-
 /*                                                                                                  *
  * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
  *                                                                                                  *
@@ -135,13 +134,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	/**
 	 * HIGH-LEVEL API
 	 */
-
-	/**
-	 * @return \TYPO3\TYPO3CR\Domain\Model\NodeType
-	 */
-	public function getNodeType() {
-		return $this->contextNode->getNodeType();
-	}
 
 	/**
 	 * Filter by node type, taking inheritance into account.
@@ -380,14 +372,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
-	 * @return int
+	 * @return integer
 	 */
 	public function getLimit() {
 		return $this->limit;
 	}
 
 	/**
-	 * @return int
+	 * @return integer
 	 */
 	public function getFrom() {
 		return $this->from;
@@ -457,6 +449,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
+	 * Get a query result object for lazy execution of the query
+	 *
 	 * @return array|\TYPO3\Flow\Persistence\QueryResultInterface
 	 */
 	public function execute() {
