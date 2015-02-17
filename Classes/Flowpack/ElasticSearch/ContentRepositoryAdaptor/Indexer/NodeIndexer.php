@@ -17,7 +17,7 @@ use Flowpack\ElasticSearch\Domain\Model\Client;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use TYPO3\Flow\Annotations as Flow;
-use TYPO3\TYPO3CR\Domain\Model\Node;
+use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 use TYPO3\TYPO3CR\Search\Indexer\AbstractNodeIndexer;
 
@@ -132,12 +132,12 @@ class NodeIndexer extends AbstractNodeIndexer {
 	/**
 	 * index this node, and add it to the current bulk request.
 	 *
-	 * @param Node $node
+	 * @param NodeInterface $node
 	 * @param string $targetWorkspaceName In case this is triggered during publishing, a workspace name will be passed in
 	 * @return void
 	 * @throws \TYPO3\TYPO3CR\Search\Exception\IndexingException
 	 */
-	public function indexNode(Node $node, $targetWorkspaceName = NULL) {
+	public function indexNode(NodeInterface $node, $targetWorkspaceName = NULL) {
 		$contextPath = $node->getContextPath();
 
 		if ($targetWorkspaceName !== NULL) {
@@ -230,12 +230,12 @@ class NodeIndexer extends AbstractNodeIndexer {
 	/**
 	 *
 	 *
-	 * @param Node $node
+	 * @param NodeInterface $node
 	 * @param array $fulltextIndexOfNode
 	 * @param string $targetWorkspaceName
 	 * @return void
 	 */
-	protected function updateFulltext(Node $node, array $fulltextIndexOfNode, $targetWorkspaceName = NULL) {
+	protected function updateFulltext(NodeInterface $node, array $fulltextIndexOfNode, $targetWorkspaceName = NULL) {
 		if ((($targetWorkspaceName !== NULL && $targetWorkspaceName !== 'live') || $node->getWorkspace()->getName() !== 'live') || count($fulltextIndexOfNode) === 0) {
 			return;
 		}
@@ -306,10 +306,10 @@ class NodeIndexer extends AbstractNodeIndexer {
 	/**
 	 * Whether the node is configured as fulltext root.
 	 *
-	 * @param Node $node
+	 * @param NodeInterface $node
 	 * @return boolean
 	 */
-	protected function isFulltextRoot(Node $node) {
+	protected function isFulltextRoot(NodeInterface $node) {
 		if ($node->getNodeType()->hasConfiguration('search')) {
 			$elasticSearchSettingsForNode = $node->getNodeType()->getConfiguration('search');
 			if (isset($elasticSearchSettingsForNode['fulltext']['isRoot']) && $elasticSearchSettingsForNode['fulltext']['isRoot'] === TRUE) {
@@ -323,10 +323,10 @@ class NodeIndexer extends AbstractNodeIndexer {
 	/**
 	 * Schedule node removal into the current bulk request.
 	 *
-	 * @param Node $node
+	 * @param NodeInterface $node
 	 * @return string
 	 */
-	public function removeNode(Node $node) {
+	public function removeNode(NodeInterface $node) {
 		// TODO: handle deletion from the fulltext index as well
 		$identifier = sha1($node->getContextPath());
 
