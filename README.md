@@ -172,7 +172,11 @@ search underneath the current site node (like in the example above).
 Furthermore, the following operators are supported:
 
 * `nodeType("Your.Node:Type")`
-* `exactMatch(key, value)`; supports simple types: `exactMatch('tag', 'foo')`, or node references: `exactMatch('author', authorNode)`
+* `exactMatch('propertyName', value)`; supports simple types: `exactMatch('tag', 'foo')`, or node references: `exactMatch('author', authorNode)`
+* `greaterThan('propertyName', value)` -- range filter with property values greater than the given value
+* `greaterThanOrEqual('propertyName', value)` -- range filter with property values greater than or equal to the given value
+* `lessThan('propertyName', value)` -- range filter with property values less than the given value
+* `lessThanOrEqual('propertyName', value)` -- range filter with property values less than or equal to the given value
 * `sortAsc('propertyName')` and `sortDesc('propertyName')` -- can also be used multiple times, e.g. `sortAsc('tag').sortDesc(`date')` will first sort by tag ascending, and then by date descending.
 * `limit(5)` -- only return five results. If not specified, the default limit by ElasticSearch applies (which is at 10 by default)
 * `from(5)` -- return the results starting from the 6th one
@@ -285,7 +289,7 @@ TYPO3:
           type: date
           include_in_all: false
           format: 'date_time_no_millis'
-        indexing: '${(node.hiddenBeforeDateTime ? node.hiddenBeforeDateTime.format("Y-m-d\TH:i:s") + "Z" : null)}'
+        indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:s") + "Z" : null)}'
 ```
 
 There are a few indexing helpers inside the `Indexing` namespace which are usable inside the

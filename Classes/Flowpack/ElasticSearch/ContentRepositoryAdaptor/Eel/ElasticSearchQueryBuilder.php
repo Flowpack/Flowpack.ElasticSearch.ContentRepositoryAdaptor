@@ -63,6 +63,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	protected $from;
 
 	/**
+	 * These fields are not accepted in a count request and must therefore be removed before doing so
+	 *
+	 * @var array
+	 */
+	protected $unsupportedFieldsInCountRequest = array('fields', 'sort', 'from', 'size');
+
+	/**
 	 * The ElasticSearch request, as it is being built up.
 	 * @var array
 	 */
@@ -229,16 +236,61 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	/**
 	 * add an exact-match query for a given property
 	 *
-	 * @param $propertyName
-	 * @param $propertyValue
+	 * @param string $propertyName Name of the property
+	 * @param mixed $value Value for comparison
 	 * @return ElasticSearchQueryBuilder
 	 */
-	public function exactMatch($propertyName, $propertyValue) {
-		if ($propertyValue instanceof NodeInterface) {
-			$propertyValue = $propertyValue->getIdentifier();
+	public function exactMatch($propertyName, $value) {
+		if ($value instanceof NodeInterface) {
+			$value = $value->getIdentifier();
 		}
 
-		return $this->queryFilter('term', array($propertyName => $propertyValue));
+		return $this->queryFilter('term', array($propertyName => $value));
+	}
+
+	/**
+	 * add a range filter (gt) for the given property
+	 *
+	 * @param string $propertyName Name of the property
+	 * @param mixed $value Value for comparison
+	 * @return ElasticSearchQueryBuilder
+	 */
+	public function greaterThan($propertyName, $value) {
+		return $this->queryFilter('range', array($propertyName => array('gt' => $value)));
+	}
+
+	/**
+	 * add a range filter (gte) for the given property
+	 *
+	 * @param string $propertyName Name of the property
+	 * @param mixed $value Value for comparison
+	 * @return ElasticSearchQueryBuilder
+	 */
+	public function greaterThanOrEqual($propertyName, $value) {
+		return $this->queryFilter('range', array($propertyName => array('gte' => $value)));
+	}
+
+	/**
+	 * add a range filter (lt) for the given property
+	 *
+	 * @param string $propertyName Name of the property
+	 * @param mixed $value Value for comparison
+	 * @return ElasticSearchQueryBuilder
+	 */
+	public function lessThan($propertyName, $value) {
+		return $this->queryFilter('range', array($propertyName => array('lt' => $value)));
+	}
+
+
+	/**
+	 * add a range filter (lte) for the given property
+	 *
+	 * @param string $propertyName Name of the property
+	 * @param mixed $value Value for comparison
+	 * @return ElasticSearchQueryBuilder
+	 */
+	public function lessThanOrEqual($propertyName, $value) {
+		return $this->queryFilter('range', array($propertyName => array('lte' => $value)));
 	}
 
 	/**
@@ -374,7 +426,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 */
 	public function count() {
 		$timeBefore = microtime(TRUE);
-		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', array(), json_encode($this->request));
+		$request = $this->request;
+		foreach ($this->unsupportedFieldsInCountRequest as $field) {
+			if (isset($request[$field])) {
+				unset($request[$field]);
+			}
+		}
+
+		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', array(), json_encode($request));
 		$timeAfterwards = microtime(TRUE);
 
 		$treatedContent = $response->getTreatedContent();

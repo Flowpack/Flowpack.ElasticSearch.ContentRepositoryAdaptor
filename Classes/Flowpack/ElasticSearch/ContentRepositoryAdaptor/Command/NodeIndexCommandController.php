@@ -132,7 +132,7 @@ class NodeIndexCommandController extends CommandController {
 	 * This command (re-)indexes all nodes contained in the content repository and sets the schema beforehand.
 	 *
 	 * @param integer $limit Amount of nodes to index at maximum
-	 * @param bool $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
+	 * @param boolean $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
 	 * @param string $workspace name of the workspace which should be indexed
 	 * @return void
 	 */
@@ -223,7 +223,7 @@ class NodeIndexCommandController extends CommandController {
 	 * @param array $dimensions
 	 * @return void
 	 */
-	protected function indexWorkspaceWithDimensions($workspaceName, $dimensions = array()) {
+	protected function indexWorkspaceWithDimensions($workspaceName, array $dimensions = array()) {
 		$context = $this->contextFactory->create(array('workspaceName' => $workspaceName, 'dimensions' => $dimensions));
 		$rootNode = $context->getRootNode();
 
@@ -241,6 +241,7 @@ class NodeIndexCommandController extends CommandController {
 
 	/**
 	 * @param \TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode
+	 * @return void
 	 */
 	protected function traverseNodes(\TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode) {
 
