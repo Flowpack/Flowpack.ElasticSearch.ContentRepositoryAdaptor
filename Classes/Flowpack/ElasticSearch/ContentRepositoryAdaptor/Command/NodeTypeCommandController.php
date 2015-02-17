@@ -30,15 +30,24 @@ class NodeTypeCommandController extends CommandController {
 	protected $nodeTypeManager;
 
 	/**
-	 * show a single node type after applying all supertypes etc
+	 * Show node type configuration after applying all supertypes etc
 	 *
 	 * @param string $nodeType the node type to optionally filter for
+	 * @return void
 	 */
 	public function showCommand($nodeType = NULL) {
-		$configuration = $this->nodeTypeManager->getFullConfiguration();
 
 		if ($nodeType !== NULL) {
-			$configuration = $configuration[$nodeType];
+			/** @var \TYPO3\TYPO3CR\Domain\Model\NodeType $nodeType */
+			$nodeType = $this->nodeTypeManager->getNodeType($nodeType);
+			$configuration = $nodeType->getFullConfiguration();
+		} else {
+			$nodeTypes = $this->nodeTypeManager->getNodeTypes();
+			$configuration = array();
+			/** @var \TYPO3\TYPO3CR\Domain\Model\NodeType $nodeType */
+			foreach ($nodeTypes as $nodeTypeName => $nodeType) {
+				$configuration[$nodeTypeName] = $nodeType->getFullConfiguration();
+			}
 		}
 		$this->output(\Symfony\Component\Yaml\Yaml::dump($configuration, 5, 2));
 	}
