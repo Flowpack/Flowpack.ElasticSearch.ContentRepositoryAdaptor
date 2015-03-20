@@ -156,6 +156,15 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	}
 
 	/**
+	 * @return integer the current number of results which can be iterated upon
+	 * @api
+	 */
+	public function getAccessibleCount() {
+		$this->initialize();
+		return count($this->results);
+	}
+
+	/**
 	 * Returns the ElasticSearch "hit" (e.g. the raw content being transferred back from ElasticSearch)
 	 * for the given node.
 	 *
