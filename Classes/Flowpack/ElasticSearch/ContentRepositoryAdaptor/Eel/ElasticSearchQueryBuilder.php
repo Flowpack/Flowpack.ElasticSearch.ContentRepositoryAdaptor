@@ -337,6 +337,26 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
+	 * Add multiple filters to query.filtered.filter
+	 *
+	 * @param array $data An associative array of keys as variable names and values as variable values
+	 * @param string $clauseType one of must, should, must_not
+	 * @return ElasticSearchQueryBuilder
+	 */
+	public function queryFilterMultiple($data, $clauseType = 'must') {
+		foreach ($data as $key => $value) {
+			if ($value !== NULL) {
+				if (is_array($value)) {
+					$this->queryFilter('terms', array($key => $value), $clauseType);
+				} else {
+					$this->queryFilter('term', array($key => $value), $clauseType);
+				}
+			}
+		}
+		return $this;
+	}
+
+	/**
 	 * Get the ElasticSearch request as we need it
 	 *
 	 * @return array
