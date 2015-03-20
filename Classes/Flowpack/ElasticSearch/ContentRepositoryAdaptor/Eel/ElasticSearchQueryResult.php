@@ -11,9 +11,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
+use TYPO3\Eel\ProtectedContextAwareInterface;
 use TYPO3\Flow\Persistence\QueryResultInterface;
+use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 
-class ElasticSearchQueryResult implements QueryResultInterface {
+class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContextAwareInterface {
 
 	/**
 	 * @var ElasticSearchQuery
@@ -151,5 +153,27 @@ class ElasticSearchQueryResult implements QueryResultInterface {
 		}
 
 		return $this->count;
+	}
+
+	/**
+	 * Returns the ElasticSearch "hit" (e.g. the raw content being transferred back from ElasticSearch)
+	 * for the given node.
+	 *
+	 * Can be used for example to access highlighting information.
+	 *
+	 * @param NodeInterface $node
+	 * @return array the ElasticSearch hit, or NULL if it does not exist.
+	 * @api
+	 */
+	public function searchHitForNode(NodeInterface $node) {
+		return $this->elasticSearchQuery->getQueryBuilder()->getFullElasticSearchHitForNode($node);
+	}
+
+	/**
+	 * @param string $methodName
+	 * @return boolean
+	 */
+	public function allowsCallOfMethod($methodName) {
+		return TRUE;
 	}
 }

@@ -76,6 +76,16 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	protected $totalItems;
 
 	/**
+	 * This (internal) array stores, for the last search request, a mapping from Node Identifiers
+	 * to the full ElasticSearch Hit which was returned.
+	 *
+	 * This is needed to e.g. use result highlighting.
+	 *
+	 * @var array
+	 */
+	protected $elasticSearchHitsIndexedByNodeFromLastRequest;
+
+	/**
 	 * The ElasticSearch request, as it is being built up.
 	 * @var array
 	 */
@@ -431,6 +441,19 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
+	 * This low-level method can be used to look up the full ElasticSearch hit given a certain node.
+	 *
+	 * @param NodeInterface $node
+	 * @return array the ElasticSearch hit for the node as array, or NULL if it does not exist.
+	 */
+	public function getFullElasticSearchHitForNode(NodeInterface $node) {
+		if (isset($this->elasticSearchHitsIndexedByNodeFromLastRequest[$node->getIdentifier()])) {
+			return $this->elasticSearchHitsIndexedByNodeFromLastRequest[$node->getIdentifier()];
+		}
+		return NULL;
+	}
+
+	/**
 	 * Execute the query and return the list of nodes as result.
 	 *
 	 * This method is rather internal; just to be called from the ElasticSearchQueryResult. For the public API, please use execute()
@@ -456,6 +479,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		}
 
 		$nodes = array();
+		$elasticSearchHitPerNode = array();
 
 		/**
 		 * TODO: This code below is not fully correct yet:
@@ -482,6 +506,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 			$node = $this->contextNode->getNode($nodePath);
 			if ($node instanceof NodeInterface) {
 				$nodes[$node->getIdentifier()] = $node;
+				$elasticSearchHitPerNode[$node->getIdentifier()] = $hit;
 				if ($this->limit > 0 && count($nodes) >= $this->limit) {
 					break;
 				}
@@ -491,6 +516,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		if ($this->logThisQuery === TRUE) {
 			$this->logger->log('Query Log (' . $this->logMessage . ') Number of returned results: ' . count($nodes), LOG_DEBUG);
 		}
+
+		$this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
 
 		return array_values($nodes);
 	}
