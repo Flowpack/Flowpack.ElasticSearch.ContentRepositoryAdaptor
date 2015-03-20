@@ -66,7 +66,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 *
 	 * @var array
 	 */
-	protected $unsupportedFieldsInCountRequest = array('fields', 'sort', 'from', 'size');
+	protected $unsupportedFieldsInCountRequest = array('fields', 'sort', 'from', 'size', 'highlight');
 
 	/**
 	 * Amount of total items in response without limit
@@ -570,12 +570,41 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @api
 	 */
 	public function fulltext($searchWord) {
-
 		$this->appendAtPath('query.filtered.query.bool.must', array(
 			'query_string' => array(
 				'query' => $searchWord
 			)
 		));
+
+		// We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
+		return $this->highlight(150, 2);
+	}
+
+	/**
+	 * Configure Result Highlighting. Only makes sense in combination with fulltext(). By default, highlighting is enabled.
+	 * It can be disabled by calling "highlight(FALSE)".
+	 *
+	 * @param integer|boolean $fragmentSize The result fragment size for highlight snippets. If this parameter is FALSE, highlighting will be disabled.
+	 * @param integer $fragmentCount The number of highlight fragments to show.
+	 * @return $this
+	 * @api
+	 */
+	public function highlight($fragmentSize, $fragmentCount = NULL) {
+		if ($fragmentSize === FALSE) {
+			// Highlighting is disabled.
+			unset($this->request['highlight']);
+		} else {
+			$this->request['highlight'] = array(
+				'fields' => array(
+					'__fulltext*' => array(
+						'fragment_size' => $fragmentSize,
+						'no_match_size' => $fragmentSize,
+						'number_of_fragments' => $fragmentCount
+					)
+				)
+			);
+		}
+
 		return $this;
 	}
 
