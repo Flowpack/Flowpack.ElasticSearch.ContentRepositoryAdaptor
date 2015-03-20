@@ -339,6 +339,18 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	/**
 	 * Add multiple filters to query.filtered.filter
 	 *
+	 * Example Usage::
+	 *
+	 *   searchFilter = TYPO3.TypoScript:RawArray {
+	 *      author = 'Max'
+	 *      tags = TYPO3.TypoScript:RawArray {
+	 *        0 = 'a'
+	 *        1 = 'b'
+	 *      }
+	 *   }
+	 *
+	 *   searchQuery = ${Search.queryFilterMultiple(this.searchFilter)}
+	 *
 	 * @param array $data An associative array of keys as variable names and values as variable values
 	 * @param string $clauseType one of must, should, must_not
 	 * @return ElasticSearchQueryBuilder
