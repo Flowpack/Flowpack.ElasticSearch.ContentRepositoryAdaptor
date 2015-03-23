@@ -4,7 +4,7 @@ TYPO3:
 
       elasticSearch:
 
-        # API. name of the ElasticSearch index to use
+        # API. name of the ElasticSearch index to use. Will create many indices prefixed by this indexName.
         indexName: typo3cr
 
         # configuration of the ElasticSearch logfile

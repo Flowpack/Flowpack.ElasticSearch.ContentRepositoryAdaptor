@@ -1,6 +1,6 @@
 # TYPO3 Neos ElasticSearch Adapter
 
-*supporting ElasticSearch Version 1.2.x and 1.3.x*
+*supporting ElasticSearch Version 1.2.x and 1.3.x and 1.4.x*
 
 Created by Sebastian Kurfürst; contributions by Karsten Dambekalns and Robert Lemke.
 
