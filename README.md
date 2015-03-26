@@ -32,39 +32,6 @@ Relevant Packages:
 
 The configuration from Version 1 to Version 2 has changed; here's what to change:
 
-**elasticsearch.yaml**
-
-Due to the fact that the default scripting language has changed from marvel to groovy since elasticsearch 1.3.0,
-there is a need, depending on your running installation of ElasticSearch, to add following lines of configuration to your
-ElasticSearch Configuration File `elasticsearch.yaml`.
-
-If you are using ElasticSearch version 1.2 you have also to install groovy as a plugin. To install the plugin just run
-the following command in the root folder of your elastic:
-
-```
-bin/plugin -install elasticsearch/elasticsearch-lang-groovy/2.2.0.
-```
-
-```
-script.disable_dynamic: false
-script.default_lang: groovy
-
-```
-
-For running with version > 1.3.x, what is recommended, it is sufficient to add following lines to your
-`elasticsearch.yaml`.
-
-
-```
-script.groovy.sandbox.class_whitelist: java.util.LinkedHashMap
-script.groovy.sandbox.receiver_whitelist:  java.util.Iterator, java.lang.Object, java.util.Map, java.util.Map$Entry
-```
-
-You can get further information about this topic here:
-
-http://www.elasticsearch.org/blog/elasticsearch-1-3-0-released/
-http://www.elasticsearch.org/blog/scripting-security/
-http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-scripting.html
 
 **Settings.yaml**
 
@@ -93,6 +60,71 @@ http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-sc
 
 4. Search for `ElasticSearch.` (inside the `indexing` expressions) and replace them by `Indexing.`
 
+
+
+
+
+## ElasticSearch Configuration file elasticsearch.yaml
+
+Due to the fact that the default scripting language has changed from marvel to groovy since elasticsearch 1.3.0,
+there is a need, depending on your running installation of ElasticSearch, to add following lines of configuration to your
+ElasticSearch Configuration File `elasticsearch.yaml`.
+
+### Needed Configuration in configuration.yaml for ElasticSearch 1.4.x
+
+```
+# The following settings are absolutely required for the CR adaptor to work
+script.disable_dynamic: sandbox
+script.groovy.sandbox.class_whitelist: java.util.LinkedHashMap
+script.groovy.sandbox.receiver_whitelist:  java.util.Iterator, java.lang.Object, java.util.Map, java.util.Map$Entry
+script.groovy.sandbox.enabled: true
+
+# the following settings secure your cluster
+cluster.name: [PUT_YOUR_CUSTOM_NAME_HERE]
+network.host: 127.0.0.1
+
+# the following settings are well-suited for smaller ElasticSearch instances (e.g. as long as you can stay on one host)
+index.number_of_shards: 1
+index.number_of_replicas: 0
+```
+
+### Needed Configuration in configuration.yaml for ElasticSearch 1.3.x
+
+```
+# The following settings are absolutely required for the CR adaptor to work
+script.groovy.sandbox.class_whitelist: java.util.LinkedHashMap
+script.groovy.sandbox.receiver_whitelist:  java.util.Iterator, java.lang.Object, java.util.Map, java.util.Map$Entry
+
+# the following settings secure your cluster
+cluster.name: [PUT_YOUR_CUSTOM_NAME_HERE]
+network.host: 127.0.0.1
+
+# the following settings are well-suited for smaller ElasticSearch instances (e.g. as long as you can stay on one host)
+index.number_of_shards: 1
+index.number_of_replicas: 0
+```
+
+You can get further information about this topic here:
+
+http://www.elasticsearch.org/blog/elasticsearch-1-3-0-released/
+http://www.elasticsearch.org/blog/scripting-security/
+http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-scripting.html
+
+## Needed Configuration for ElasticSearch 1.2.x
+
+
+If you are using ElasticSearch version 1.2 you have also to install groovy as a plugin. To install the plugin just run
+the following command in the root folder of your elastic:
+
+```
+bin/plugin -install elasticsearch/elasticsearch-lang-groovy/2.2.0.
+```
+
+```
+script.disable_dynamic: false
+script.default_lang: groovy
+
+```
 
 ## Building up the Index
 
