@@ -321,7 +321,7 @@ TYPO3:
           type: date
           include_in_all: false
           format: 'date_time_no_millis'
-        indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:s") + "Z" : null)}'
+        indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:sP") : null)}'
 ```
 
 There are a few indexing helpers inside the `Indexing` namespace which are usable inside the
@@ -375,6 +375,29 @@ An example:
 ## Fulltext Searching / Search Plugin
 
 **For a search user interface, checkout the Flowpack.SearchPlugin package**
+
+
+## Working with Dates
+
+As a default, ElasticSearch indexes dates in the UTC Timezone. In order to have it index using the timezone
+currently configured in PHP, the configuration for any property in a node which represents a date should look like this:
+
+```
+'My.Blog:Post':
+  properties:
+    date:
+      search:
+        elasticSearchMapping:
+          type: 'date'
+          format: 'date_time_no_millis'
+        indexing: '${(value ? Date.format(value, "Y-m-d\TH:i:sP") : null)}'
+```
+
+This is important so that Date- and Time-based searches work as expected, both when using formatted DateTime strings and
+when using relative DateTime calculations (eg.: `now`, `now+1d`).
+
+For more information on ElasticSearch's Date Formats,
+[click here](http://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html).
 
 
 ## Debugging
