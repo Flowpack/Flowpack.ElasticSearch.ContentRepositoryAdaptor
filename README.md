@@ -64,13 +64,13 @@ The configuration from Version 1 to Version 2 has changed; here's what to change
 
 
 
-## ElasticSearch Configuration file elasticsearch.yaml
+## ElasticSearch Configuration file elasticsearch.yml
 
 Due to the fact that the default scripting language has changed from marvel to groovy since elasticsearch 1.3.0,
 there is a need, depending on your running installation of ElasticSearch, to add following lines of configuration to your
-ElasticSearch Configuration File `elasticsearch.yaml`.
+ElasticSearch Configuration File `elasticsearch.yml`.
 
-### Needed Configuration in configuration.yaml for ElasticSearch 1.4.x
+### Needed Configuration in configuration.yml for ElasticSearch 1.4.x
 
 ```
 # The following settings are absolutely required for the CR adaptor to work
@@ -88,7 +88,7 @@ index.number_of_shards: 1
 index.number_of_replicas: 0
 ```
 
-### Needed Configuration in configuration.yaml for ElasticSearch 1.3.x
+### Needed Configuration in configuration.yml for ElasticSearch 1.3.x
 
 ```
 # The following settings are absolutely required for the CR adaptor to work
