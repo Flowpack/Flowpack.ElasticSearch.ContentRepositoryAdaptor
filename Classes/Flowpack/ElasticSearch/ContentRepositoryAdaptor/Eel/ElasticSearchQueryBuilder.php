@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use TYPO3\Eel\ProtectedContextAwareInterface;
 use TYPO3\Flow\Annotations as Flow;
+use TYPO3\Flow\Utility\Arrays;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Search\Search\QueryBuilderInterface;
 
@@ -66,7 +67,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 *
 	 * @var array
 	 */
-	protected $unsupportedFieldsInCountRequest = array('fields', 'sort', 'from', 'size', 'highlight');
+	protected $unsupportedFieldsInCountRequest = array('fields', 'sort', 'from', 'size', 'highlight', 'aggregations');
 
 	/**
 	 * Amount of total items in response without limit
@@ -84,6 +85,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @var array
 	 */
 	protected $elasticSearchHitsIndexedByNodeFromLastRequest;
+
+	/**
+	 * This (internal) array stores, for the last search request aggregations
+	 *
+	 * @var array
+	 */
+	protected $elasticSearchAggregationsFromLastRequest;
 
 	/**
 	 * The ElasticSearch request, as it is being built up.
@@ -320,6 +328,80 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
+	 * Add a single aggregation to the current query
+	 *
+	 * @param string $aggregationName
+	 * @param array $aggregationOptions
+	 * @return ElasticSearchQueryBuilder
+	 * @see http://www.elastic.co/guide/en/elasticsearch/reference/1.x/search-aggregations.html
+	 * @api
+	 */
+	public function aggregation($aggregationName, array $aggregationOptions) {
+		$this->elasticSearchAggregationsFromLastRequest = NULL;
+		$this->request = Arrays::setValueByPath($this->request, 'aggregations.' . $aggregationName, $aggregationOptions);
+		return $this;
+	}
+
+	/**
+	 * Add multiple aggregations to the current query
+	 *
+	 * @param array $aggregations
+	 * @return ElasticSearchQueryBuilder
+	 */
+	public function aggregationMultiple(array $aggregations) {
+		$this->elasticSearchAggregationsFromLastRequest = NULL;
+		foreach ($aggregations as $aggregationName => $aggregationOptions) {
+			$this->aggregation($aggregationName, $aggregationOptions);
+		}
+		return $this;
+	}
+
+	/**
+	 * Execute the current query
+	 *
+	 * @return void
+	 */
+	protected function initializeQuery() {
+		$result = $this->execute();
+		$result->current();
+	}
+
+	/**
+	 * Initialize Aggregation if required
+	 *
+	 * @return void
+	 */
+	protected function initializeAggregations() {
+		if ($this->elasticSearchAggregationsFromLastRequest === NULL) {
+			$this->initializeQuery();
+		}
+	}
+
+	/**
+	 * This low-level method can be used to look up the full ElasticSearch aggregation by name.
+	 *
+	 * @param string $name
+	 * @return array
+	 */
+	public function aggregationByName($name) {
+		$this->initializeAggregations();
+		if (isset($this->elasticSearchAggregationsFromLastRequest[$name])) {
+			return $this->elasticSearchAggregationsFromLastRequest[$name];
+		}
+		return NULL;
+	}
+
+	/**
+	 * This low-level method can be used to look up the full ElasticSearch aggregations.
+	 *
+	 * @return array
+	 */
+	public function aggregations() {
+		$this->initializeAggregations();
+		return $this->elasticSearchAggregationsFromLastRequest;
+	}
+
+	/**
 	 * LOW-LEVEL API
 	 */
 
@@ -518,7 +600,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		}
 
 		$this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
-
+		if (isset($treatedContent['aggregations'])) {
+			$this->elasticSearchAggregationsFromLastRequest = $treatedContent['aggregations'];
+		} else {
+			$this->elasticSearchAggregationsFromLastRequest = array();
+		}
 		return array_values($nodes);
 	}
 
@@ -556,9 +642,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		$count = $treatedContent['count'];
 
 		if ($this->logThisQuery === TRUE) {
-			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
+			$this->logger->log('Count Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
 		}
-
 		return $count;
 	}
 
