@@ -129,6 +129,24 @@ class NodeIndexer extends AbstractNodeIndexer {
 
 		$mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
 
+		// Remove document with the same contextPathHash but different NodeType, required after NodeType change
+		$this->getIndex()->request('DELETE', '/_query', array(), json_encode([
+			'query' => [
+				'bool' => [
+					'must' => [
+						'ids' => [
+							'values' => [ $contextPathHash ]
+						]
+					],
+					'must_not' => [
+						'term' => [
+							'_type' => str_replace('.', '/', $node->getNodeType()->getName())
+						]
+					],
+				]
+			]
+		]));
+
 		if ($node->isRemoved()) {
 			// TODO: handle deletion from the fulltext index as well
 			$mappingType->deleteDocumentById($contextPathHash);
