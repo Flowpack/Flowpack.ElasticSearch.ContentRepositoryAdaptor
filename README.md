@@ -24,51 +24,28 @@ Relevant Packages:
 * `Flowpack.SearchPlugin`: search plugin for Neos
 
 
-## Version 2 vs Version 1
+## Installation
 
-* Version 1 is the initial, productive version of the Neos ElasticSearch adapter.
-* Version 2 has a dependency on TYPO3.TYPO3CR.Search; which contains base functionality
-  which is also relevant for other search implementations (like the SQLite based SimpleSearch).
+```
+// for development (Master; Tested on Neos 2.0)
+composer require 'typo3/typo3cr-search:@dev'
+composer require 'flowpack/elasticsearch-contentrepositoryadaptor:@dev'
 
-The configuration from Version 1 to Version 2 has changed; here's what to change:
+composer require 'flowpack/searchplugin:@dev'
+```
 
+Now, add the routes as described in the [README of Flowpack.SearchPlugin](https://github.com/skurfuerst/Flowpack.SearchPlugin)
+as the **first route** in Configuration/Routes.yaml.
 
-**Settings.yaml**
+Then, ensure to update `<your-elasticsearch>/config/elasticsearch.yml` as explained below; then start ElasticSearch.
 
-1. Change the base namespace for configuration from `Flowpack.ElasticSearch.ContentRepositoryAdaptor`
-   to `TYPO3.TYPO3CR.Search`. All further adjustments are made underneath this namespace:
-
-2. (If it exists in your configuration:) Move `indexName` to `elasticSearch.indexName`
-
-3. (If it exists in your configuration:) Move `log` to `elasticSearch.log`
-
-4. search for `mapping` (inside `defaultConfigurationPerType.<typeName>`) and replace it by
-   `elasticSearchMapping`.
-
-5. Inside the `indexing` expressions (at `defaultConfigurationPerType.<typeName>`), replace
-   `ElasticSearch.` by `Indexing.`.
-
-**NodeTypes.yaml**
-
-1. Replace `elasticSearch` by `search`. This replaces both `<YourNodeType>.elasticSearch`
-   and `<YourNodeType>.properties.<propertyName>.elasticSearch`.
-
-2. search for `mapping` (inside `<YourNodeType>.properties.<propertyName>.search`) and replace it by
-   `elasticSearchMapping`.
-
-3. Replace `ElasticSeach.fulltext` by `Indexing`
-
-4. Search for `ElasticSearch.` (inside the `indexing` expressions) and replace them by `Indexing.`
-
-
-
-
+Finally, run `./flow nodeindex:build`, and add the search plugin to your page. It should "just work".
 
 ## ElasticSearch Configuration file elasticsearch.yml
 
 Due to the fact that the default scripting language has changed from marvel to groovy since elasticsearch 1.3.0,
 there is a need, depending on your running installation of ElasticSearch, to add following lines of configuration to your
-ElasticSearch Configuration File `elasticsearch.yml`.
+ElasticSearch Configuration File `<your-elasticsearch>/config/elasticsearch.yml`.
 
 ### Needed Configuration in configuration.yml for ElasticSearch 1.4.x
 
@@ -407,3 +384,41 @@ In order to understand what's going on, the following commands are helpful:
 * use `./flow nodeindex:showMapping` to show the currently defined ElasticSearch Mapping
 * use the `.log()` statement inside queries to dump them to the ElasticSearch Log
 * the logfile `Data/Logs/ElasticSearch.log` contains loads of helpful information.
+
+
+## Version 2 vs Version 1
+
+* Version 1 is the initial, productive version of the Neos ElasticSearch adapter.
+* Version 2 has a dependency on TYPO3.TYPO3CR.Search; which contains base functionality
+  which is also relevant for other search implementations (like the SQLite based SimpleSearch).
+
+The configuration from Version 1 to Version 2 has changed; here's what to change:
+
+
+**Settings.yaml**
+
+1. Change the base namespace for configuration from `Flowpack.ElasticSearch.ContentRepositoryAdaptor`
+   to `TYPO3.TYPO3CR.Search`. All further adjustments are made underneath this namespace:
+
+2. (If it exists in your configuration:) Move `indexName` to `elasticSearch.indexName`
+
+3. (If it exists in your configuration:) Move `log` to `elasticSearch.log`
+
+4. search for `mapping` (inside `defaultConfigurationPerType.<typeName>`) and replace it by
+   `elasticSearchMapping`.
+
+5. Inside the `indexing` expressions (at `defaultConfigurationPerType.<typeName>`), replace
+   `ElasticSearch.` by `Indexing.`.
+
+**NodeTypes.yaml**
+
+1. Replace `elasticSearch` by `search`. This replaces both `<YourNodeType>.elasticSearch`
+   and `<YourNodeType>.properties.<propertyName>.elasticSearch`.
+
+2. search for `mapping` (inside `<YourNodeType>.properties.<propertyName>.search`) and replace it by
+   `elasticSearchMapping`.
+
+3. Replace `ElasticSeach.fulltext` by `Indexing`
+
+4. Search for `ElasticSearch.` (inside the `indexing` expressions) and replace them by `Indexing.`
+
