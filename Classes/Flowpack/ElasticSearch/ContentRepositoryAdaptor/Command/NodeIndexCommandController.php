@@ -24,6 +24,11 @@ use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
 class NodeIndexCommandController extends CommandController
 {
     /**
+     * @var string NodeType filter
+     */
+    private $nodeTypeFilter = null;
+
+    /**
      * @Flow\Inject
      * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer
      */
@@ -158,13 +163,20 @@ class NodeIndexCommandController extends CommandController
      * @param integer $limit Amount of nodes to index at maximum
      * @param boolean $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
      * @param string $workspace name of the workspace which should be indexed
+     * @param string $type node type filter, e.g. TYPO3.Neos:Document
      * @return void
      */
-    public function buildCommand($limit = null, $update = false, $workspace = null)
+    public function buildCommand($limit = null, $update = false, $workspace = null, $type = null)
     {
+        $this->nodeTypeFilter = $type;
+
         if ($update === true) {
             $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
         } else {
+            if ($this->nodeTypeFilter && !$update) {
+                $this->outputLine('NodeType filter can only be used with the --update option');
+                $this->quit(1);
+            }
             $this->nodeIndexer->setIndexNamePostfix(time());
             $this->nodeIndexer->getIndex()->create();
             $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
@@ -280,8 +292,10 @@ class NodeIndexCommandController extends CommandController
             return;
         }
 
-        $this->nodeIndexingManager->indexNode($currentNode);
-        $this->indexedNodes++;
+        if (!$this->nodeTypeFilter || $currentNode->getNodeType()->isOfType($this->nodeTypeFilter)) {
+            $this->nodeIndexingManager->indexNode($currentNode);
+            $this->indexedNodes++;
+        }
 
         foreach ($currentNode->getChildNodes() as $childNode) {
             $this->traverseNodes($childNode);
