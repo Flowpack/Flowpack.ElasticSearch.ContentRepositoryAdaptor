@@ -329,11 +329,14 @@ class NodeIndexCommandController extends CommandController
      */
     private function countAllNodes($currentNode)
     {
-        $count = (!$this->nodeTypeFilter || $currentNode->getNodeType()->isOfType($this->nodeTypeFilter)) ? 1 : 0;
-        foreach ($this->childNodes($currentNode) as $childNode) {
-            $count += $this->countAllNodes($childNode);
-        }
-        return $count;
+        return count($this->nodeDataRepository->findByParentAndNodeType(
+            $currentNode->getPath(),
+            $this->nodeTypeFilter,
+            $this->context->getWorkspace(),
+            $this->context->getDimensions(),
+            false,
+            true // recursive
+            ));
     }
 
     private function reportMemoryUsage()
@@ -351,22 +354,43 @@ class NodeIndexCommandController extends CommandController
             return;
         }
 
-        if (!$this->nodeTypeFilter || $currentNode->getNodeType()->isOfType($this->nodeTypeFilter)) {
-            if (is_a($currentNode, NodeData::class)) {
-                $currentNode = $this->nodeFactory->createFromNodeData($currentNode, $this->context);
-            }
-            $this->nodeIndexingManager->indexNode($currentNode);
-            $this->indexedNodes++;
-            $this->output->progressAdvance();
-            if ($this->debugMode) {
-                if ($this->indexedNodes % 100 == 0) {
-                    $this->reportMemoryUsage();
+        if ($this->nodeTypeFilter) {
+            foreach ($this->nodeDataRepository->findByParentAndNodeType(
+                $currentNode->getPath(),
+                $this->nodeTypeFilter,
+                $this->context->getWorkspace(),
+                $this->context->getDimensions(),
+                false,
+                true // recursive
+            ) as $nodeData) {
+                $node = $this->nodeFactory->createFromNodeData($nodeData, $this->context);
+                $this->nodeIndexingManager->indexNode($node);
+                $this->indexedNodes++;
+                $this->output->progressAdvance();
+                if ($this->debugMode) {
+                    if ($this->indexedNodes % 100 == 0) {
+                        $this->reportMemoryUsage();
+                    }
                 }
             }
-        }
+        } else {
+            if (!$this->nodeTypeFilter || $currentNode->getNodeType()->isOfType($this->nodeTypeFilter)) {
+                if (is_a($currentNode, NodeData::class)) {
+                    $currentNode = $this->nodeFactory->createFromNodeData($currentNode, $this->context);
+                }
+                $this->nodeIndexingManager->indexNode($currentNode);
+                $this->indexedNodes++;
+                $this->output->progressAdvance();
+                if ($this->debugMode) {
+                    if ($this->indexedNodes % 100 == 0) {
+                        $this->reportMemoryUsage();
+                    }
+                }
+            }
 
-        foreach ($this->childNodes($currentNode) as $childNode) {
-            $this->traverseNodes($childNode);
+            foreach ($this->childNodes($currentNode) as $childNode) {
+                $this->traverseNodes($childNode);
+            }
         }
     }
 
