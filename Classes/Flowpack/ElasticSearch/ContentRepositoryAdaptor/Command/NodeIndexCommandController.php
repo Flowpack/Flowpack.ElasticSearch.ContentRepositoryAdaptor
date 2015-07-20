@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use TYPO3\TYPO3CR\Domain\Model\NodeData;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
 
@@ -21,6 +22,7 @@ use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
  * Provides CLI features for index handling
  *
  * @property bool debugMode
+ * @property \TYPO3\TYPO3CR\Domain\Service\Context context
  * @Flow\Scope("singleton")
  */
 class NodeIndexCommandController extends CommandController
@@ -278,6 +280,7 @@ class NodeIndexCommandController extends CommandController
     protected function indexWorkspaceWithDimensions($workspaceName, array $dimensions = [])
     {
         $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'dimensions' => $dimensions]);
+        $this->context = $context;
         $rootNode = $context->getRootNode();
 
         $this->outputLine('Processing workspace: "%s" ...', [$workspaceName]);
@@ -297,36 +300,39 @@ class NodeIndexCommandController extends CommandController
         $this->countedIndexedNodes = $this->countedIndexedNodes + $this->indexedNodes;
         $this->indexedNodes = 0;
 
-
         if ($this->debugMode) {
             $this->reportMemoryUsage();
         }
     }
 
     /**
-     * @param \TYPO3\TYPO3CR\Domain\Model\NodeInterface $node
-     * @return NodeInterface[]
+     * @param NodeInterface | NodeData $node
+     * @return NodeData[]
      */
-    private function childNodes(NodeInterface $node)
+    private function childNodes($node)
     {
-        return $this->nodeDataRepository->findByParentAndNodeTypeInContext($node->getPath(),
-            null, $node->getContext(), false);
+        $return = $this->nodeDataRepository->findByParentAndNodeType(
+            $node->getPath(),
+            null, // NodeType filter
+            $this->context->getWorkspace(),
+            $this->context->getDimensions()
+        );
+        return $return;
     }
 
     /**
      * Count all nodes matching the filter criteria for processing
      *
-     * @param \TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode
+     * @param NodeInterface | NodeData $currentNode
      *
      * @return int count
      */
-    private function countAllNodes(\TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode)
+    private function countAllNodes($currentNode)
     {
         $count = (!$this->nodeTypeFilter || $currentNode->getNodeType()->isOfType($this->nodeTypeFilter)) ? 1 : 0;
         foreach ($this->childNodes($currentNode) as $childNode) {
             $count += $this->countAllNodes($childNode);
         }
-
         return $count;
     }
 
@@ -336,16 +342,19 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
-     * @param \TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode
+     * @param NodeInterface | NodeData $currentNode
      * @return void
      */
-    protected function traverseNodes(\TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode)
+    protected function traverseNodes($currentNode)
     {
         if ($this->limit !== null && $this->indexedNodes >= $this->limit) {
             return;
         }
 
         if (!$this->nodeTypeFilter || $currentNode->getNodeType()->isOfType($this->nodeTypeFilter)) {
+            if (is_a($currentNode, NodeData::class)) {
+                $currentNode = $this->nodeFactory->createFromNodeData($currentNode, $this->context);
+            }
             $this->nodeIndexingManager->indexNode($currentNode);
             $this->indexedNodes++;
             $this->output->progressAdvance();
