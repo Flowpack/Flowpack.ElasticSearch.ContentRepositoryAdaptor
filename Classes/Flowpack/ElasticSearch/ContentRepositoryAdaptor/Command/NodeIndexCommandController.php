@@ -205,9 +205,14 @@ class NodeIndexCommandController extends CommandController
         }
 
         if ($workspace === null) {
-            foreach ($this->workspaceRepository->findAll() as $workspace) {
-                $this->indexWorkspace($workspace->getName());
-
+            // get all workspace names upfront so we can do a clearState() while processing them
+            $workspaceNames = array_map(
+                  function ($workspace) {
+                      return $workspace->getName();
+                  }, $this->workspaceRepository->findAll()->toArray()
+            );
+            foreach ($workspaceNames as $workspaceName) {
+                $this->indexWorkspace($workspaceName);
                 $count = $count + $this->countedIndexedNodes;
             }
         } else {
@@ -275,9 +280,12 @@ class NodeIndexCommandController extends CommandController
         $rootNode = $context->getRootNode();
 
         $this->outputLine('Processing workspace: "%s" ...', [$workspaceName]);
-        $this->output->progressStart($this->countAllNodes($rootNode));
+        $total = $this->countAllNodes($rootNode);
+        $this->output->progressStart($this->limit ? min($this->limit, $total) : $total);
 
         $this->traverseNodes($rootNode);
+
+        $this->output->progressFinish();
 
         if ($dimensions === []) {
             $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $this->indexedNodes . ' nodes)');
@@ -288,7 +296,7 @@ class NodeIndexCommandController extends CommandController
         $this->countedIndexedNodes = $this->countedIndexedNodes + $this->indexedNodes;
         $this->indexedNodes = 0;
 
-        $this->output->progressFinish();
+
         if ($this->debugMode) {
             $this->reportMemoryUsage();
         }
@@ -322,7 +330,7 @@ class NodeIndexCommandController extends CommandController
      */
     protected function traverseNodes(\TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode)
     {
-        if ($this->limit !== null && $this->indexedNodes > $this->limit) {
+        if ($this->limit !== null && $this->indexedNodes >= $this->limit) {
             return;
         }
 
