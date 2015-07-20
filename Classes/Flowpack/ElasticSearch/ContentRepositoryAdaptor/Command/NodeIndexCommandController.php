@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
 
 /**
@@ -303,6 +304,16 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
+     * @param \TYPO3\TYPO3CR\Domain\Model\NodeInterface $node
+     * @return NodeInterface[]
+     */
+    private function childNodes(NodeInterface $node)
+    {
+        return $this->nodeDataRepository->findByParentAndNodeTypeInContext($node->getPath(),
+            null, $node->getContext(), false);
+    }
+
+    /**
      * Count all nodes matching the filter criteria for processing
      *
      * @param \TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode
@@ -312,10 +323,10 @@ class NodeIndexCommandController extends CommandController
     private function countAllNodes(\TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode)
     {
         $count = (!$this->nodeTypeFilter || $currentNode->getNodeType()->isOfType($this->nodeTypeFilter)) ? 1 : 0;
-        // recurse
-        foreach ($currentNode->getChildNodes() as $childNode) {
+        foreach ($this->childNodes($currentNode) as $childNode) {
             $count += $this->countAllNodes($childNode);
         }
+
         return $count;
     }
 
@@ -345,7 +356,7 @@ class NodeIndexCommandController extends CommandController
             }
         }
 
-        foreach ($currentNode->getChildNodes() as $childNode) {
+        foreach ($this->childNodes($currentNode) as $childNode) {
             $this->traverseNodes($childNode);
         }
     }
