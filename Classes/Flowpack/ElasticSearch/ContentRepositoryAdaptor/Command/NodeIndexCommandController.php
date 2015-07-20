@@ -329,19 +329,43 @@ class NodeIndexCommandController extends CommandController
      */
     private function countAllNodes($currentNode)
     {
-        return count($this->nodeDataRepository->findByParentAndNodeType(
-            $currentNode->getPath(),
-            $this->nodeTypeFilter,
-            $this->context->getWorkspace(),
-            $this->context->getDimensions(),
-            false,
-            true // recursive
+        if ($this->nodeTypeFilter) {
+            return count($this->nodeDataRepository->findByParentAndNodeType(
+                $currentNode->getPath(),
+                $this->nodeTypeFilter,
+                $this->context->getWorkspace(),
+                $this->context->getDimensions(),
+                false,
+                true // recursive
             ));
+        } else {
+            $count = 1;
+            foreach ($this->childNodes($currentNode) as $node) {
+                $count += $this->countAllNodes($node);
+            }
+            return $count;
+        }
     }
 
     private function reportMemoryUsage()
     {
         $this->outputLine(' memory usage: %.1f MB', [memory_get_usage(true) / 1024 / 1024]);
+    }
+
+    /**
+     * Helper function to index a single node (and advance the process indicator etc.)
+     * @param NodeInterface $node
+     */
+    private function indexNode(NodeInterface $node)
+    {
+        $this->nodeIndexingManager->indexNode($node);
+        $this->indexedNodes++;
+        $this->output->progressAdvance();
+        if ($this->debugMode) {
+            if ($this->indexedNodes % 100 == 0) {
+                $this->reportMemoryUsage();
+            }
+        }
     }
 
     /**
@@ -355,6 +379,7 @@ class NodeIndexCommandController extends CommandController
         }
 
         if ($this->nodeTypeFilter) {
+            // speedup things if we need to index only a specific NodeType
             foreach ($this->nodeDataRepository->findByParentAndNodeType(
                 $currentNode->getPath(),
                 $this->nodeTypeFilter,
@@ -364,30 +389,14 @@ class NodeIndexCommandController extends CommandController
                 true // recursive
             ) as $nodeData) {
                 $node = $this->nodeFactory->createFromNodeData($nodeData, $this->context);
-                $this->nodeIndexingManager->indexNode($node);
-                $this->indexedNodes++;
-                $this->output->progressAdvance();
-                if ($this->debugMode) {
-                    if ($this->indexedNodes % 100 == 0) {
-                        $this->reportMemoryUsage();
-                    }
-                }
+                $this->indexNode($node);
             }
         } else {
-            if (!$this->nodeTypeFilter || $currentNode->getNodeType()->isOfType($this->nodeTypeFilter)) {
-                if (is_a($currentNode, NodeData::class)) {
-                    $currentNode = $this->nodeFactory->createFromNodeData($currentNode, $this->context);
-                }
-                $this->nodeIndexingManager->indexNode($currentNode);
-                $this->indexedNodes++;
-                $this->output->progressAdvance();
-                if ($this->debugMode) {
-                    if ($this->indexedNodes % 100 == 0) {
-                        $this->reportMemoryUsage();
-                    }
-                }
+            if (is_a($currentNode, NodeData::class)) {
+                $currentNode = $this->nodeFactory->createFromNodeData($currentNode, $this->context);
             }
-
+            $this->indexNode($currentNode);
+            // and recurse
             foreach ($this->childNodes($currentNode) as $childNode) {
                 $this->traverseNodes($childNode);
             }
