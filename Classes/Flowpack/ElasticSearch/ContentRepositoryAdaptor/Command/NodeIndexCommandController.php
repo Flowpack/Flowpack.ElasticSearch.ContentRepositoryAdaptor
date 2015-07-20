@@ -270,8 +270,9 @@ class NodeIndexCommandController extends CommandController
         $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'dimensions' => $dimensions]);
         $rootNode = $context->getRootNode();
 
-        $this->outputLine('processing workspace: %s', [$workspaceName]);
+        $this->outputLine('Processing workspace: "%s" ...', [$workspaceName]);
         $this->output->progressStart($this->countAllNodes($rootNode));
+
         $this->traverseNodes($rootNode);
 
         if ($dimensions === []) {
