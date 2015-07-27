@@ -377,6 +377,30 @@ For more information on ElasticSearch's Date Formats,
 [click here](http://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html).
 
 
+## Working with Assets / Attachments
+
+If you want to index attachments, you need to install the [ElasticSearch Attachment Plugin](https://github.com/elastic/elasticsearch-mapper-attachments).
+Then, you can add the following to your `Settings.yaml`:
+
+```
+TYPO3:
+  TYPO3CR:
+    Search:
+      defaultConfigurationPerType:
+        'TYPO3\Media\Domain\Model\Asset':
+          elasticSearchMapping:
+            type: attachment
+            include_in_all: true
+          indexing: ${Indexing.indexAsset(value)}
+
+        'array<TYPO3\Media\Domain\Model\Asset>':
+          elasticSearchMapping:
+            type: attachment
+            include_in_all: true
+          indexing: ${Indexing.indexAsset(value)}
+```
+
+
 ## Debugging
 
 In order to understand what's going on, the following commands are helpful:
