@@ -2,6 +2,12 @@ TYPO3:
   TYPO3CR:
     Search:
 
+      # API. If set to FALSE, only index the "live" workspace and not user workspaces.
+      # If you only index the live workspace, Search will not work for your editors in the user workspaces.
+      # Furthermore, if you heavily rely on Search for collecting content, this might be strange for editors to
+      # work with -- as unpublished changes are not indexed right away.
+      indexAllWorkspaces: true
+
       elasticSearch:
 
         # API. name of the ElasticSearch index to use. Will create many indices prefixed by this indexName.

@@ -120,6 +120,20 @@ class NodeIndexer extends AbstractNodeIndexer {
 	public function indexNode(NodeInterface $node, $targetWorkspaceName = NULL) {
 		$contextPath = $node->getContextPath();
 
+		if ($this->settings['indexAllWorkspaces'] === FALSE) {
+			// we are only supposed to index the live workspace.
+			// We need to check the workspace at two occasions; checking the
+			// $targetWorkspaceName and the workspace name of the node's context as fallback
+			if ($targetWorkspaceName !== NULL && $targetWorkspaceName !== 'live') {
+				return;
+			}
+
+			if ($targetWorkspaceName === NULL && $node->getContext()->getWorkspaceName() !== 'live') {
+				return;
+			}
+		}
+
+
 		if ($targetWorkspaceName !== NULL) {
 			$contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
 		}
@@ -325,6 +339,12 @@ class NodeIndexer extends AbstractNodeIndexer {
 	 * @return string
 	 */
 	public function removeNode(NodeInterface $node) {
+		if ($this->settings['indexAllWorkspaces'] === FALSE) {
+			if ($node->getContext()->getWorkspaceName() !== 'live') {
+				return;
+			}
+		}
+
 		// TODO: handle deletion from the fulltext index as well
 		$identifier = sha1($node->getContextPath());
 

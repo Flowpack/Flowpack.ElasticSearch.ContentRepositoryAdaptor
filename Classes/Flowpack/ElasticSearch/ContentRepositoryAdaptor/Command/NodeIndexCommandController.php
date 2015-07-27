@@ -93,6 +93,28 @@ class NodeIndexCommandController extends CommandController {
 	protected $logger;
 
 	/**
+	 * @Flow\Inject
+	 * @var \TYPO3\Flow\Configuration\ConfigurationManager
+	 */
+	protected $configurationManager;
+
+	/**
+	 * @var array
+	 */
+	protected $settings;
+
+	/**
+	 * Called by the Flow object framework after creating the object and resolving all dependencies.
+	 *
+	 * @param integer $cause Creation cause
+	 */
+	public function initializeObject($cause) {
+		if ($cause === \TYPO3\Flow\Object\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
+			$this->settings = $this->configurationManager->getConfiguration(\TYPO3\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.TYPO3CR.Search');
+		}
+	}
+
+	/**
 	 * Show the mapping which would be sent to the ElasticSearch server
 	 *
 	 * @return void
@@ -159,6 +181,10 @@ class NodeIndexCommandController extends CommandController {
 		$this->limit = $limit;
 		$this->indexedNodes = 0;
 		$this->countedIndexedNodes = 0;
+
+		if ($workspace === NULL && $this->settings['indexAllWorkspaces'] === FALSE) {
+			$workspace = 'live';
+		}
 
 		if ($workspace === NULL) {
 			foreach ($this->workspaceRepository->findAll() as $workspace) {
