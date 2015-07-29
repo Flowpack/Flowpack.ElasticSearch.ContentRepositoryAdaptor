@@ -400,6 +400,46 @@ TYPO3:
           indexing: ${Indexing.indexAsset(value)}
 ```
 
+## Configurable ElasticSearch Mapping
+
+(included in version >= 2.1)
+
+If you want to fine-tune the indexing and mapping on a more detailed level, you can do so in the following way.
+
+First, configure the index settings as you need them, e.g. configuring analyzers:
+
+```
+Flowpack:
+  ElasticSearch:
+    indexes:
+      default:
+        'typo3cr': # This index name must be the same as in the TYPO3.TYPO3CR.Search.elasticSearch.indexName setting
+          analysis:
+            filter:
+              elision:
+                type: 'elision'
+                articles: [ 'l', 'm', 't', 'qu', 'n', 's', 'j', 'd' ]
+            analyzer:
+              custom_french_analyzer:
+                tokenizer: 'letter'
+                filter: [ 'asciifolding', 'lowercase', 'french_stem', 'elision', 'stop' ]
+              tag_analyzer:
+                tokenizer: 'keyword'
+                filter: [ 'asciifolding', 'lowercase' ]
+```
+
+Then, you can change the analyzers on a per-field level; or e.g. reconfigure the _all field with the following snippet
+in the NodeTypes.yaml. Generally this works by defining the global mapping at `[nodeType].search.elasticSearchMapping`:
+
+```
+'TYPO3.Neos:Node':
+  search:
+    elasticSearchMapping:
+      _all:
+        index_analyzer: custom_french_analyzer
+        search_analyzer: custom_french_analyzer
+```
+
 
 ## Debugging
 

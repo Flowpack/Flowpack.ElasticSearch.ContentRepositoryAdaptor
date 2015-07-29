@@ -91,6 +91,10 @@ class NodeTypeMappingBuilder {
 
 			$type = $index->findType(self::convertNodeTypeNameToMappingName($nodeTypeName));
 			$mapping = new Mapping($type);
+			$fullConfiguration = $nodeType->getFullConfiguration();
+			if (isset($fullConfiguration['search']['elasticSearchMapping'])) {
+				$mapping->setFullMapping($fullConfiguration['search']['elasticSearchMapping']);
+			}
 
 			// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/mapping-root-object-type.html#_dynamic_templates
 			// 'not_analyzed' is necessary
