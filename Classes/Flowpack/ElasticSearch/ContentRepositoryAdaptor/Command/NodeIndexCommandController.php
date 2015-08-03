@@ -11,6 +11,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
+use CRON\CRLib\Utility\NodeIterator;
+use CRON\CRLib\Utility\NodeQuery;
+use Sortable\Fixture\Node;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
@@ -283,11 +286,20 @@ class NodeIndexCommandController extends CommandController
         $this->context = $context;
         $rootNode = $context->getRootNode();
 
+        $nodeQuery = new NodeQuery($this->nodeTypeFilter, $rootNode->getPath(), null, $workspaceName);
+        $total = $nodeQuery->getCount();
+
+        $query = $nodeQuery->getQuery();
+        if ($this->limit) {
+            $query->setMaxResults($this->limit);
+        }
+
         $this->outputLine('Processing workspace: "%s" ...', [$workspaceName]);
-        $total = $this->countAllNodes($rootNode);
         $this->output->progressStart($this->limit ? min($this->limit, $total) : $total);
 
-        $this->traverseNodes($rootNode);
+        foreach (new NodeIterator($query) as $node) {
+            $this->indexNode($node);
+        }
 
         $this->output->progressFinish();
 
@@ -302,48 +314,6 @@ class NodeIndexCommandController extends CommandController
 
         if ($this->debugMode) {
             $this->reportMemoryUsage();
-        }
-    }
-
-    /**
-     * @param NodeInterface | NodeData $node
-     * @return NodeData[]
-     */
-    private function childNodes($node)
-    {
-        $return = $this->nodeDataRepository->findByParentAndNodeType(
-            $node->getPath(),
-            null, // NodeType filter
-            $this->context->getWorkspace(),
-            $this->context->getDimensions()
-        );
-        return $return;
-    }
-
-    /**
-     * Count all nodes matching the filter criteria for processing
-     *
-     * @param NodeInterface | NodeData $currentNode
-     *
-     * @return int count
-     */
-    private function countAllNodes($currentNode)
-    {
-        if ($this->nodeTypeFilter) {
-            return count($this->nodeDataRepository->findByParentAndNodeType(
-                $currentNode->getPath(),
-                $this->nodeTypeFilter,
-                $this->context->getWorkspace(),
-                $this->context->getDimensions(),
-                false,
-                true // recursive
-            ));
-        } else {
-            $count = 1;
-            foreach ($this->childNodes($currentNode) as $node) {
-                $count += $this->countAllNodes($node);
-            }
-            return $count;
         }
     }
 
@@ -364,41 +334,6 @@ class NodeIndexCommandController extends CommandController
         if ($this->debugMode) {
             if ($this->indexedNodes % 100 == 0) {
                 $this->reportMemoryUsage();
-            }
-        }
-    }
-
-    /**
-     * @param NodeInterface | NodeData $currentNode
-     * @return void
-     */
-    protected function traverseNodes($currentNode)
-    {
-        if ($this->limit !== null && $this->indexedNodes >= $this->limit) {
-            return;
-        }
-
-        if ($this->nodeTypeFilter) {
-            // speedup things if we need to index only a specific NodeType
-            foreach ($this->nodeDataRepository->findByParentAndNodeType(
-                $currentNode->getPath(),
-                $this->nodeTypeFilter,
-                $this->context->getWorkspace(),
-                $this->context->getDimensions(),
-                false,
-                true // recursive
-            ) as $nodeData) {
-                $node = $this->nodeFactory->createFromNodeData($nodeData, $this->context);
-                $this->indexNode($node);
-            }
-        } else {
-            if (is_a($currentNode, NodeData::class)) {
-                $currentNode = $this->nodeFactory->createFromNodeData($currentNode, $this->context);
-            }
-            $this->indexNode($currentNode);
-            // and recurse
-            foreach ($this->childNodes($currentNode) as $childNode) {
-                $this->traverseNodes($childNode);
             }
         }
     }
