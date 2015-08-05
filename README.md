@@ -430,6 +430,21 @@ the standard indexing configuration:
   their node identifiers.
 
 
+## Advanced: Exclude some specific NodeTypes from Indexing
+
+Sometimes, especially when dealing with large sites, you want to exclude certain node types from being indexed,
+e.g. for TYPO3.Neos.NodeTypes:Text inside a ContentCollection and also for the ContentCollection node itself.
+
+Set the search configuration key to `false`:
+
+```
+'TYPO3.Neos:ContentCollection':
+  search: false
+
+'TYPO3.Neos.NodeTypes:Text':
+  search: false
+```
+
 
 ## Advanced: Fulltext Indexing
 

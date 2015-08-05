@@ -122,6 +122,10 @@ class NodeIndexer extends AbstractNodeIndexer
      */
     public function indexNode(NodeInterface $node, $targetWorkspaceName = null)
     {
+        if ($node->getNodeType()->getConfiguration('search') === false) {
+            return;
+        }
+
         $contextPath = $node->getContextPath();
 
         if ($this->settings['indexAllWorkspaces'] === false) {
@@ -240,7 +244,8 @@ class NodeIndexer extends AbstractNodeIndexer
             $this->updateFulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
         }
 
-        $this->logger->log(sprintf('NodeIndexer: Added / updated node %s. ID: %s', $contextPath, $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        $this->logger->log(sprintf('NodeIndexer: Added / updated node [%s] %s. ID: %s',
+            $nodeType->getName(), $contextPath, $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
     }
 
     /**
