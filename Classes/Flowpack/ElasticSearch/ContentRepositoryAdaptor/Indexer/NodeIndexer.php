@@ -112,6 +112,11 @@ class NodeIndexer extends AbstractNodeIndexer
         return $index;
     }
 
+    protected function shouldIndexNode(NodeInterface $node)
+    {
+        return $node->getNodeType()->getConfiguration('search') !== false;
+    }
+
     /**
      * index this node, and add it to the current bulk request.
      *
@@ -122,7 +127,7 @@ class NodeIndexer extends AbstractNodeIndexer
      */
     public function indexNode(NodeInterface $node, $targetWorkspaceName = null)
     {
-        if ($node->getNodeType()->getConfiguration('search') === false) {
+        if (!$this->shouldIndexNode($node)) {
             return;
         }
 
@@ -351,6 +356,10 @@ class NodeIndexer extends AbstractNodeIndexer
      */
     public function removeNode(NodeInterface $node)
     {
+        if (!$this->shouldIndexNode($node)) {
+            return;
+        }
+
         if ($this->settings['indexAllWorkspaces'] === false) {
             if ($node->getContext()->getWorkspaceName() !== 'live') {
                 return;

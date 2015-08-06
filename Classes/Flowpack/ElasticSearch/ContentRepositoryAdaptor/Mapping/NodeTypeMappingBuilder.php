@@ -88,7 +88,8 @@ class NodeTypeMappingBuilder
 
         /** @var NodeType $nodeType */
         foreach ($this->nodeTypeManager->getNodeTypes() as $nodeTypeName => $nodeType) {
-            if ($nodeTypeName === 'unstructured' || $nodeType->isAbstract()) {
+            if ($nodeTypeName === 'unstructured' || $nodeType->isAbstract() ||
+            $nodeType->getConfiguration('search') === false) {
                 continue;
             }
 
