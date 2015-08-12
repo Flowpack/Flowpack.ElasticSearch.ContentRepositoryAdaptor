@@ -13,6 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
 use CRON\CRLib\Utility\NodeIterator;
 use CRON\CRLib\Utility\NodeQuery;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
 use Sortable\Fixture\Node;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
@@ -298,7 +299,16 @@ class NodeIndexCommandController extends CommandController
         $this->output->progressStart($this->limit ? min($this->limit, $total) : $total);
 
         foreach (new NodeIterator($query) as $node) {
-            $this->indexNode($node);
+            if (NodeIndexer::isIndexingEnabled($node) !== false) {
+                $this->nodeIndexingManager->indexNode($node);
+                $this->indexedNodes++;
+            }
+            $this->output->progressAdvance();
+            if ($this->debugMode) {
+                if ($this->indexedNodes % 100 == 0) {
+                    $this->reportMemoryUsage();
+                }
+            }
         }
 
         $this->output->progressFinish();
@@ -322,21 +332,6 @@ class NodeIndexCommandController extends CommandController
         $this->outputLine(' memory usage: %.1f MB', [memory_get_usage(true) / 1024 / 1024]);
     }
 
-    /**
-     * Helper function to index a single node (and advance the process indicator etc.)
-     * @param NodeInterface $node
-     */
-    private function indexNode(NodeInterface $node)
-    {
-        $this->nodeIndexingManager->indexNode($node);
-        $this->indexedNodes++;
-        $this->output->progressAdvance();
-        if ($this->debugMode) {
-            if ($this->indexedNodes % 100 == 0) {
-                $this->reportMemoryUsage();
-            }
-        }
-    }
 
     /**
      * @return array
