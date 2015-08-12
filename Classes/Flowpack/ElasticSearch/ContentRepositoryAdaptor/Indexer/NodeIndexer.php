@@ -517,4 +517,22 @@ class NodeIndexer extends AbstractNodeIndexer
 
         return $indicesToBeRemoved;
     }
+
+    /**
+     * Whether the node has fulltext indexing enabled.
+     *
+     * @param NodeInterface $node
+     * @return boolean
+     */
+    protected function isFulltextEnabled(NodeInterface $node)
+    {
+        if ($node->getNodeType()->hasConfiguration('search')) {
+            $searchSettingsForNode = $node->getNodeType()->getConfiguration('search');
+            if (isset($searchSettingsForNode['fulltext']['enable']) && $searchSettingsForNode['fulltext']['enable'] === true) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
