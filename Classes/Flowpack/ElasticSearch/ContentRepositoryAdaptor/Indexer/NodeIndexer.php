@@ -247,6 +247,8 @@ class NodeIndexer extends AbstractNodeIndexer
             }
 
             $this->updateFulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
+        } elseif ($node->getNodeType()->getConfiguration('search') === true) {
+            $document->store();
         }
 
         $this->logger->log(sprintf('NodeIndexer: Added / updated node [%s] %s. ID: %s',
