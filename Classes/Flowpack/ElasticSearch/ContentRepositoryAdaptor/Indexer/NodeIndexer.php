@@ -519,20 +519,20 @@ class NodeIndexer extends AbstractNodeIndexer
     }
 
     /**
-     * Whether the node has fulltext indexing enabled.
+     * Check the indexing mode for the node
      *
      * @param NodeInterface $node
-     * @return boolean
+     *
+     * @return bool|null bool true if simple indexing is enabled, false if the node should be excluded from
+     * indexing at all, null if other configuration set
      */
-    protected function isFulltextEnabled(NodeInterface $node)
+    public static function isIndexingEnabled(NodeInterface $node)
     {
-        if ($node->getNodeType()->hasConfiguration('search')) {
-            $searchSettingsForNode = $node->getNodeType()->getConfiguration('search');
-            if (isset($searchSettingsForNode['fulltext']['enable']) && $searchSettingsForNode['fulltext']['enable'] === true) {
-                return true;
-            }
+        $conf = $node->getNodeType()->getConfiguration('search');
+        if (is_bool($conf)) {
+            return $conf;
         }
 
-        return false;
+        return null;
     }
 }
