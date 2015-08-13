@@ -295,7 +295,7 @@ class NodeIndexCommandController extends CommandController
         $this->output->progressStart($this->limit ? min($this->limit, $total) : $total);
 
         foreach (new NodeIterator($query) as $node) {
-            if (NodeIndexer::isIndexingEnabled($node) !== false) {
+            if ($node && NodeIndexer::isIndexingEnabled($node) !== false) {
                 $this->nodeIndexingManager->indexNode($node);
                 $this->indexedNodes++;
             }
