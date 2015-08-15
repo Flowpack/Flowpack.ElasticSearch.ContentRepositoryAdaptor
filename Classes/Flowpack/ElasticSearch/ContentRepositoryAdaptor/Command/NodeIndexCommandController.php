@@ -20,6 +20,8 @@ use TYPO3\Flow\Cli\CommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use TYPO3\TYPO3CR\Domain\Model\NodeData;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
+use TYPO3\TYPO3CR\Domain\Model\NodeType;
+use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
 
 /**
@@ -106,6 +108,12 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @Flow\Inject
+     * @var NodeTypeManager
+     */
+    protected $nodeTypeManager;
+
+    /**
+     * @Flow\Inject
      * @var \TYPO3\Flow\Configuration\ConfigurationManager
      */
     protected $configurationManager;
@@ -175,12 +183,21 @@ class NodeIndexCommandController extends CommandController
      */
     public function buildCommand($limit = null, $update = false, $workspace = null, $type = null)
     {
-        $this->nodeTypeFilter = $type;
+        if ($type) {
+            $this->nodeTypeFilter = $type;
+        } else {
+            // filter out all NodeTypes which aren't configured for indexing to speedup things
+            $nodeTypesToIndex = array_filter($this->nodeTypeManager->getNodeTypes(false), function ($nodeType) {
+                /** @var NodeType $nodeType */
+                return $nodeType->getConfiguration('search') !== false;
+            });
+            $this->nodeTypeFilter = array_keys($nodeTypesToIndex);
+        }
 
         if ($update === true) {
             $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
         } else {
-            if ($this->nodeTypeFilter && !$update) {
+            if ($type && !$update) {
                 $this->outputLine('NodeType filter can only be used with the --update option');
                 $this->quit(1);
             }
