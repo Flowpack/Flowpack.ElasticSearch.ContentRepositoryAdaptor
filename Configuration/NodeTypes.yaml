@@ -136,6 +136,7 @@
               include_in_all: true
               boost: 1
 
+
 'TYPO3.Neos.NodeTypes:Text':
   properties:
     'text':
@@ -145,5 +146,29 @@
 'TYPO3.Neos.NodeTypes:Headline':
   properties:
     'title':
+      search:
+        fulltextExtractor: '${Indexing.extractHtmlTags(value)}'
+
+'TYPO3.Neos.NodeTypes:AssetList':
+  properties:
+    'assets':
+      search:
+        fulltextExtractor: '${Indexing.extractAssetList(value)}'
+
+'TYPO3.Neos.NodeTypes:TextWithImage':
+  properties:
+    'image':
+      search:
+        fulltextExtractor: '${Indexing.extractAsset(value)}'
+    'alternativeText':
+      search:
+        fulltextExtractor: '${Indexing.extractInto("alt", value)}'
+    'title':
+      search:
+        fulltextExtractor: '${Indexing.extractInto("title", value)}'
+    'caption':
+      search:
+        fulltextExtractor: '${Indexing.extractHtmlTags(value, "caption")}'
+    'text':
       search:
         fulltextExtractor: '${Indexing.extractHtmlTags(value)}'
