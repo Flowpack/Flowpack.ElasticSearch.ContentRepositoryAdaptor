@@ -295,7 +295,7 @@ TYPO3:
         # a date should be mapped differently, and in this case we want to use a date format which
         # ElasticSearch understands
         elasticSearchMapping:
-          type: date
+          type: DateTime
           include_in_all: false
           format: 'date_time_no_millis'
         indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:sP") : null)}'
