@@ -42,17 +42,19 @@ TYPO3:
           elasticSearchMapping:
             type: integer
 
-        date:
+        DateTime:
           elasticSearchMapping:
             type: date
             format: 'date_time_no_millis'
             include_in_all: false
 
-
-        'TYPO3\Media\Domain\Model\Video':
+        'TYPO3\Media\Domain\Model\Asset':
           elasticSearchMapping: '' # deliberately don't map or index this
 
-        'TYPO3\Media\Domain\Model\ImageVariant':
+        'array<TYPO3\Media\Domain\Model\Asset>':
+          elasticSearchMapping: '' # deliberately don't map or index this
+
+        'TYPO3\Media\Domain\Model\ImageInterface':
           elasticSearchMapping: '' # deliberately don't map or index this
 
         'references':
