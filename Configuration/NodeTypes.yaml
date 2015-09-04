@@ -73,7 +73,7 @@
     '_hiddenBeforeDateTime':
       search:
         elasticSearchMapping:
-          type: DateTime
+          type: date
           include_in_all: false
           format: 'date_time_no_millis'
         indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:sP") : null)}'
@@ -82,7 +82,7 @@
     '_hiddenAfterDateTime':
       search:
         elasticSearchMapping:
-          type: DateTime
+          type: date
           include_in_all: false
           format: 'date_time_no_millis'
         indexing: '${(node.hiddenAfterDateTime ? Date.format(node.hiddenAfterDateTime, "Y-m-d\TH:i:sP") : null)}'
