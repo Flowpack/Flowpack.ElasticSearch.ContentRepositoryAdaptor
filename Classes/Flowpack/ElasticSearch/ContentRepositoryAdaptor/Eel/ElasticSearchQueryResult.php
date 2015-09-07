@@ -185,4 +185,12 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	public function allowsCallOfMethod($methodName) {
 		return TRUE;
 	}
+
+	/**
+	 * @return array
+	 */
+	public function getAggregations() {
+		$this->initialize();
+		return $this->elasticSearchQuery->getQueryBuilder()->getElasticSearchAggregationsFromLastRequest();
+	}
 }
