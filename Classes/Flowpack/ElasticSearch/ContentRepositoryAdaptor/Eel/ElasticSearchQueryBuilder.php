@@ -373,7 +373,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	/**
 	 * Add multiple filters to query.filtered.filter
 	 *
-	 * Example Usage::
+	 * Example Usage:
 	 *
 	 *   searchFilter = TYPO3.TypoScript:RawArray {
 	 *      author = 'Max'
@@ -407,6 +407,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * This method adds a field based aggregation configuration. This can be used for simple
 	 * aggregations like terms
 	 *
+	 * Example Usage to create a terms aggregation for a property color:
+	 * nodes = ${Search....fieldBasedAggregation("colors", "color").execute()}
+	 *
+	 * Access all aggregation data with {nodes.aggregations} in your fluid template
+	 *
 	 * @param $name
 	 * @param $field
 	 * @param string $type
@@ -425,6 +430,19 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
+	 * This method is used to create any kind of aggregation.
+	 *
+	 * Example Usage to create a terms aggregation for a property color:
+	 *
+	 * aggregationDefinition = TYPO3.TypoScript:RawArray {
+	 *   terms = TYPO3.TypoScript:RawArray {
+	 *   field = "color"
+	 * }
+	 *
+	 * nodes = ${Search....aggregation("color", this.aggregationDefinition).execute()}
+	 *
+	 * Access all aggregation data with {nodes.aggregations} in your fluid template
+	 * 
 	 * @param string $name
 	 * @param array $aggregationDefinition
 	 * @param null $parentPath
