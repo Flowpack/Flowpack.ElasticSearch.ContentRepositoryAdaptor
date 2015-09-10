@@ -86,6 +86,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	protected $elasticSearchHitsIndexedByNodeFromLastRequest;
 
 	/**
+	 * @var array
+	 */
+	protected $elasticSearchAggregationsFromLastRequest;
+
+	/**
 	 * The ElasticSearch request, as it is being built up.
 	 * @var array
 	 */
@@ -441,6 +446,24 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
+	 * Add aggregates to the result.
+	 *
+	 * @param string $field
+	 * @param string $type
+	 * @return QueryBuilderInterface
+	 */
+	public function aggregations($field, $type = 'terms') {
+		$this->request['aggregations'] = array(
+			'type' => array(
+				$type => array(
+					'field' => $field
+				)
+			)
+		);
+		return $this;
+	}
+
+	/**
 	 * This low-level method can be used to look up the full ElasticSearch hit given a certain node.
 	 *
 	 * @param NodeInterface $node
@@ -451,6 +474,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 			return $this->elasticSearchHitsIndexedByNodeFromLastRequest[$node->getIdentifier()];
 		}
 		return NULL;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getElasticSearchAggregationsFromLastRequest() {
+		return $this->elasticSearchAggregationsFromLastRequest;
 	}
 
 	/**
@@ -518,9 +548,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		}
 
 		$this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
+		$this->elasticSearchAggregationsFromLastRequest = $treatedContent['aggregations'];
 
 		return array_values($nodes);
 	}
+
+
 
 	/**
 	 * Get a query result object for lazy execution of the query
