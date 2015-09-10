@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator;
 use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
 
 /**
@@ -61,12 +62,6 @@ class NodeIndexCommandController extends CommandController {
 
 	/**
 	 * @Flow\Inject
-	 * @var \TYPO3\Neos\Domain\Service\ContentDimensionPresetSourceInterface
-	 */
-	protected $contentDimensionPresetSource;
-
-	/**
-	 * @Flow\Inject
 	 * @var NodeTypeMappingBuilder
 	 */
 	protected $nodeTypeMappingBuilder;
@@ -97,6 +92,12 @@ class NodeIndexCommandController extends CommandController {
 	 * @var \TYPO3\Flow\Configuration\ConfigurationManager
 	 */
 	protected $configurationManager;
+
+	/**
+	 * @Flow\Inject
+	 * @var ContentDimensionCombinator
+	 */
+	protected $contentDimensionCombinator;
 
 	/**
 	 * @var array
@@ -234,7 +235,7 @@ class NodeIndexCommandController extends CommandController {
 	 * @return void
 	 */
 	protected function indexWorkspace($workspaceName) {
-		$combinations = $this->calculateDimensionCombinations();
+		$combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
 		if ($combinations === array()) {
 			$this->indexWorkspaceWithDimensions($workspaceName);
 		} else {
@@ -283,39 +284,5 @@ class NodeIndexCommandController extends CommandController {
 		}
 	}
 
-	/**
-	 * @return array
-	 * @todo will went into TYPO3CR
-	 */
-	protected function calculateDimensionCombinations() {
-		$dimensionPresets = $this->contentDimensionPresetSource->getAllPresets();
 
-		$dimensionValueCountByDimension = array();
-		$possibleCombinationCount = 1;
-		$combinations = array();
-
-		foreach ($dimensionPresets as $dimensionName => $dimensionPreset) {
-			if (isset($dimensionPreset['presets']) && !empty($dimensionPreset['presets'])) {
-				$dimensionValueCountByDimension[$dimensionName] = count($dimensionPreset['presets']);
-				$possibleCombinationCount = $possibleCombinationCount * $dimensionValueCountByDimension[$dimensionName];
-			}
-		}
-
-		foreach ($dimensionPresets as $dimensionName => $dimensionPreset) {
-			for ($i = 0; $i < $possibleCombinationCount; $i++) {
-				if (!isset($combinations[$i]) || !is_array($combinations[$i])) {
-					$combinations[$i] = array();
-				}
-
-				$currentDimensionCurrentPreset = current($dimensionPresets[$dimensionName]['presets']);
-				$combinations[$i][$dimensionName] = $currentDimensionCurrentPreset['values'];
-
-				if (!next($dimensionPresets[$dimensionName]['presets'])) {
-					reset($dimensionPresets[$dimensionName]['presets']);
-				}
-			}
-		}
-
-		return $combinations;
-	}
 }
