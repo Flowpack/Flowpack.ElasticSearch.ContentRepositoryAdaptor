@@ -228,7 +228,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase {
 			)
 		);
 
-		$this->queryBuilder->addSimpleAggregation($name, $field, $type);
+		$this->queryBuilder->fieldBasedAggregation($name, $field, $type);
 		$actual = $this->queryBuilder->getRequest();
 
 		$this->assertInArray($expected, $actual);
@@ -238,9 +238,9 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase {
 	 * @test
 	 */
 	public function anAggregationCanBeSubbedUnderAPath() {
-		$this->queryBuilder->addSimpleAggregation("foo", "bar");
-		$this->queryBuilder->addSimpleAggregation("bar", "bar", "terms", "foo");
-		$this->queryBuilder->addSimpleAggregation("baz", "bar", "terms", "foo.bar");
+		$this->queryBuilder->fieldBasedAggregation("foo", "bar");
+		$this->queryBuilder->fieldBasedAggregation("bar", "bar", "terms", "foo");
+		$this->queryBuilder->fieldBasedAggregation("baz", "bar", "terms", "foo.bar");
 
 		$expected = array(
 			"foo" => array(
@@ -267,8 +267,8 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase {
 	 * @expectedException \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
 	 */
 	public function ifTheParentPathDoesNotExistAnExceptionisThrown() {
-		$this->queryBuilder->addSimpleAggregation("foo", "bar");
-		$this->queryBuilder->addSimpleAggregation("bar", "bar", "terms", "doesNotExist");
+		$this->queryBuilder->fieldBasedAggregation("foo", "bar");
+		$this->queryBuilder->fieldBasedAggregation("bar", "bar", "terms", "doesNotExist");
 	}
 
 	/**
@@ -276,8 +276,26 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase {
 	 * @expectedException \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
 	 */
 	public function ifSubbedParentPathDoesNotExistAnExceptionisThrown() {
-		$this->queryBuilder->addSimpleAggregation("foo", "bar");
-		$this->queryBuilder->addSimpleAggregation("bar", "bar", "terms", "foo.doesNotExist");
+		$this->queryBuilder->fieldBasedAggregation("foo", "bar");
+		$this->queryBuilder->fieldBasedAggregation("bar", "bar", "terms", "foo.doesNotExist");
+	}
+
+	/**
+	 * @test
+	 */
+	public function aCustomAggregationDefinitionCanBeApplied() {
+		$expected = array(
+			"foo" => array(
+				"some" => array("field" => "bar"),
+				"custom" => array("field" => "bar"),
+				"arrays" => array("field" => "bar")
+			)
+		);
+
+		$this->queryBuilder->aggregation("foo", $expected['foo']);
+		$actual = $this->queryBuilder->getRequest();
+
+		$this->assertInArray($expected, $actual);
 	}
 
 	/**

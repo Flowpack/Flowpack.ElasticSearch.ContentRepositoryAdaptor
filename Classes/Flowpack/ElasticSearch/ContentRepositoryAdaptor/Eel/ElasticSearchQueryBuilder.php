@@ -404,7 +404,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
-	 * Adds a simple aggregation with only filed set as configuration
+	 * This method adds a field based aggregation configuration. This can be used for simple
+	 * aggregations like terms
 	 *
 	 * @param $name
 	 * @param $field
@@ -412,21 +413,33 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @param null $parentPath
 	 * @return $this
 	 */
-	public function addSimpleAggregation($name, $field, $type = 'terms', $parentPath = NULL) {
-		if(!array_key_exists("aggregations", $this->request)) {
-			$this->request['aggregations'] = array();
-		}
-
-		$aggregation = array (
-			$type => array (
+	public function fieldBasedAggregation($name, $field, $type = "terms", $parentPath = NULL) {
+		$aggregationDefinition = array(
+			$type => array(
 				'field' => $field
 			)
 		);
 
+		$this->aggregation($name, $aggregationDefinition, $parentPath);
+		return $this;
+	}
+
+	/**
+	 * @param string $name
+	 * @param array $aggregationDefinition
+	 * @param null $parentPath
+	 * @return $this
+	 * @throws QueryBuildingException
+	 */
+	public function aggregation($name, array $aggregationDefinition, $parentPath = NULL) {
+		if(!array_key_exists("aggregations", $this->request)) {
+			$this->request['aggregations'] = array();
+		}
+
 		if($parentPath !== NULL) {
-			$this->addSubAggregation($parentPath, $name, $aggregation);
+			$this->addSubAggregation($parentPath, $name, $aggregationDefinition);
 		} else {
-			$this->request['aggregations'][$name] = $aggregation;
+			$this->request['aggregations'][$name] = $aggregationDefinition;
 		}
 
 		return $this;
