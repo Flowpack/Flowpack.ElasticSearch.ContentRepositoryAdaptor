@@ -66,7 +66,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 *
 	 * @var array
 	 */
-	protected $unsupportedFieldsInCountRequest = array('fields', 'sort', 'from', 'size', 'highlight');
+	protected $unsupportedFieldsInCountRequest = array('fields', 'sort', 'from', 'size', 'highlight', 'aggs', 'aggregations');
 
 	/**
 	 * Amount of total items in response without limit
@@ -84,6 +84,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @var array
 	 */
 	protected $elasticSearchHitsIndexedByNodeFromLastRequest;
+
+	/**
+	 * This (internal) array stores all aggregation results for the last search request
+	 *
+	 * @var array
+	 */
+	protected $elasticSearchAggregationsFromLastRequest;
 
 	/**
 	 * The ElasticSearch request, as it is being built up.
@@ -397,6 +404,62 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
+	 * Adds a simple aggregation with only filed set as configuration
+	 *
+	 * @param $name
+	 * @param $field
+	 * @param string $type
+	 * @param null $parentPath
+	 * @return $this
+	 */
+	public function addSimpleAggregation($name, $field, $type = 'terms', $parentPath = NULL) {
+		if(!array_key_exists("aggregations", $this->request)) {
+			$this->request['aggregations'] = array();
+		}
+
+		$aggregation = array (
+			$type => array (
+				'field' => $field
+			)
+		);
+
+		if($parentPath !== NULL) {
+			$this->addSubAggregation($parentPath, $name, $aggregation);
+		} else {
+			$this->request['aggregations'][$name] = $aggregation;
+		}
+
+		return $this;
+	}
+
+	/**
+	 * This is an low level method for internal usage.
+	 * You can add a custom $aggregationConfiguration under a given $parentPath. The $parentPath foo.bar would
+	 * insert your $aggregationConfiguration under
+	 * $this->request['aggregations']['foo']['aggregations']['bar']['aggregations'][$name]
+	 *
+	 * @param $parentPath
+	 * @param $name
+	 * @param array $aggregationConfiguration
+	 * @return $this
+	 * @throws QueryBuildingException
+	 */
+	public function addSubAggregation($parentPath, $name, $aggregationConfiguration) {
+		// Find the parentPath
+		$path =& $this->request['aggregations'];
+
+		foreach(explode(".", $parentPath) as $subPart) {
+			if($path == NULL || !array_key_exists($subPart, $path)) {
+				throw new QueryBuildingException("The parent path ".$subPart." could not be found when adding a sub aggregation");
+			}
+			$path =& $path[$subPart]['aggregations'];
+		}
+
+		$path[$name] = $aggregationConfiguration;
+		return $this;
+	}
+
+	/**
 	 * Get the ElasticSearch request as we need it
 	 *
 	 * @return array
@@ -519,6 +582,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
 		$this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
 
+		if(array_key_exists("aggregations", $treatedContent)) {
+			$this->elasticSearchAggregationsFromLastRequest = $treatedContent['aggregations'];
+		}
+
 		return array_values($nodes);
 	}
 
@@ -532,6 +599,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		$elasticSearchQuery = new ElasticSearchQuery($this);
 		$result = $elasticSearchQuery->execute();
 		return $result;
+	}
+
+	/**
+	* @return array
+	*/
+	public function getElasticSearchAggregationsFromLastRequest() {
+		return $this->elasticSearchAggregationsFromLastRequest;
 	}
 
 	/**

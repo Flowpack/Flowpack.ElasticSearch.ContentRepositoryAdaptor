@@ -165,6 +165,14 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	}
 
 	/**
+	 * @return array
+	 */
+	public function getAggregations() {
+		$this->initialize();
+		return $this->elasticSearchQuery->getQueryBuilder()->getElasticSearchAggregationsFromLastRequest();
+	}
+
+	/**
 	 * Returns the ElasticSearch "hit" (e.g. the raw content being transferred back from ElasticSearch)
 	 * for the given node.
 	 *
