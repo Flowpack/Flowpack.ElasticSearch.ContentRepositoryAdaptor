@@ -1,13 +1,12 @@
-.. image:: https://api.travis-ci.org/flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor.svg
-    :target: https://api.travis-ci.org/flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor
+[![Build Status](https://travis-ci.org/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor.svg)](https://travis-ci.org/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor)
 
-# TYPO3 Neos ElasticSearch Adapter
+# Neos ElasticSearch Adapter
 
 *supporting ElasticSearch Version 1.2.x and 1.3.x and 1.4.x*
 
 Created by Sebastian Kurfürst; contributions by Karsten Dambekalns and Robert Lemke.
 
-This project connects the TYPO3 Content Repository (TYPO3CR) to ElasticSearch; enabling two
+This project connects the Neos Content Repository (TYPO3CR) to ElasticSearch; enabling two
 main functionalities:
 
 * finding Nodes in TypoScript / Eel by arbitrary queries
@@ -258,7 +257,7 @@ of `__typeAndSupertypes` containing `TYPO3.Neos:Document`.
 
 ## Advanced: Configuration of Indexing
 
-**Normally, this does not need to be touched, as this package supports all TYPO3 Neos data types natively.**
+**Normally, this does not need to be touched, as this package supports all Neos data types natively.**
 
 Indexing of properties is configured at two places. The defaults per-data-type are configured
 inside `TYPO3.TYPO3CR.Search.defaultConfigurationPerType` of `Settings.yaml`.
