@@ -1,3 +1,6 @@
+.. image:: https://api.travis-ci.org/flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor.svg
+    :target: https://api.travis-ci.org/flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor
+
 # TYPO3 Neos ElasticSearch Adapter
 
 *supporting ElasticSearch Version 1.2.x and 1.3.x and 1.4.x*
