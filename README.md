@@ -229,6 +229,121 @@ prototype(Acme.Blog:SingleTag) < prototype(TYPO3.Neos:Template) {
 }
 ```
 
+## Aggregations
+
+Aggregation is an easy way to aggregate your node data in different ways. ElasticSearch provides a couple of different types of
+aggregations. Check `https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations.html` for more
+info about aggregations. You can use them to get some simple aggregations like min, max or average values for
+your node data. Aggregations also allows you to build a complex filter for e.g. a product search or statistics.
+
+**Aggregation methods**
+Right now there are two methods implemented. One generic `aggregation` function that allows you to add any kind of
+aggregation definition and a pre-configured `fieldBasedAggregation`. Both methods can be added to your TS search query. 
+You can nest aggregations by providing a parent name.
+
+* `aggregation($name, array $aggregationDefinition, $parentPath = NULL)` -- generic method to add a $aggregationDefinition under a path $parentPath with the name $name
+* `fieldBasedAggregation($name, $field, $type = "terms", $parentPath = NULL)` -- adds a simple filed based Aggregation of type $type with name $name under path $parentPath. Used for simple aggregations like sum, avg, min, max or terms
+
+
+### Examples
+#### Add a average aggregation
+To add an average aggregation you can use the fieldBasedAggregation. This snippet would add an average aggregation for
+a property price:
+```
+nodes = ${Search.query(site)...fieldBasedAggregation("avgprice", "price", "avg").execute()}
+```
+Now you can access your aggregations inside your fluid template with 
+```
+{nodes.aggregations}
+```
+
+#### Create a nested aggregation
+In this scenario you could have a node that represents a product with the properties price and color. If you would like
+to know the average price for all your colors you just nest an aggregation in your TypoScript:
+```
+nodes = ${Search.query(site)...fieldBasedAggregation("colors", "color").fieldBasedAggregation("avgprice", "price", "avg", "colors").execute()}
+```
+The first `fieldBasedAggregation` will add a simple terms aggregation (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-terms-aggregation.html)
+with the name colors. So all different colors of your nodetype will be listed here. 
+The second `fieldBasedAggregation` will add another sub-aggregation named avgprice below your colors-aggregation.
+
+You can nest even more aggregations like this:
+```
+fieldBasedAggregation("anotherAggregation", "field", "avg", "colors.avgprice")
+```
+
+#### Add a custom aggregation
+To add a custom aggregation you can use the `aggregation()` method. All you have to do is to provide an array with your
+aggregation definition. This example would do the same as the fieldBasedAggregation would do for you:
+```
+aggregationDefinition = TYPO3.TypoScript:RawArray {
+	terms = TYPO3.TypoScript:RawArray {
+		field = "color"
+	}
+}
+nodes = ${Search.query(site)...aggregation("color", this.aggregationDefinition).execute()}
+```
+
+#### Product filter
+This is a more complex scenario. With this snippet we will create a full product filter based on your selected Nodes. Imagine
+an NodeTye ProductList with an property `products`. This property contains a comma separated list of sku's. This could also
+be a reference on other products.
+
+```
+prototype(Vendor.Name:FilteredProductList) < prototype(TYPO3.Neos:Content)
+prototype(Vendor.Name:FilteredProductList) {
+
+	// Create SearchFilter for products
+	searchFilter = TYPO3.TypoScript:RawArray {
+		sku = ${String.split(q(node).property("products"), ",")}
+	}
+	
+	# Search for all products that matches your queryFilter and add aggregations
+	filter = ${Search.query(site).nodeType("Vendor.Name:Product").queryFilterMultiple(this.searchFilter, "must").fieldBasedAggregation("color", "color").fieldBasedAggregation("size", "size").execute()}
+
+    # Add more filter if get/post params are set
+    searchFilter.color = ${request.arguments.color}
+    searchFilter.color.@if.onlyRenderWhenFilterColorIsSet = ${request.arguments.color != ""}
+    searchFilter.size = ${request.arguments.size}
+    searchFilter.size.@if.onlyRenderWhenFilterSizeIsSet = ${request.arguments.size != ""}
+
+    # filter your products
+    products = ${Search.query(site).nodeType("Vendor.Name:Product").queryFilterMultiple(this.searchFilter, "must").execute()}
+
+    # don't cache this element
+	@cache {
+		mode = 'uncached'
+		context {
+			1 = 'node'
+			2 = 'site'
+		}
+	}
+```
+
+In the first lines we will add a new searchFilter variable and add your selected sku's as a filter. Based on this selection
+we will add two aggregations of type terms. You can access the filter in your template with `{filter.aggregation}`. With 
+this information it is easy to create a form with some select fields with all available options. If you submit the form
+just call the same page and add the get parameter color and/or size.
+The next lines will parse those parameters and add them to the searchFilter. Based on your selection all products will
+be fetched and passed to your template.
+
+
+**Important notice**
+
+If you do use the terms filter be aware of ElasticSearchs analyze functionality. You might want to disable this for all
+your filterable properties like this:
+```
+'Vendor.Name:Product'
+  properties:
+    color:
+      type: string
+      defaultValue: ''
+      search:
+        elasticSearchMapping:
+          type: "string"
+          include_in_all: false
+          index: 'not_analyzed'
+```
 
 ## Fulltext Search / Indexing
 
