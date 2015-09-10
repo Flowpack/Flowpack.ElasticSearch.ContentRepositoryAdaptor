@@ -650,13 +650,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $this->result = $response->getTreatedContent();
 
         $this->result['nodes'] = array();
-        if (array_key_exists('hits', $this->result) && is_array($this->result['hits']) && count($this->result['hits']) > 0) {
-            $this->result['nodes'] = $this->convertHitsToNodes($this->result['hits']);
-        }
-
         if ($this->logThisQuery === true) {
             $this->logger->log(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s',
                 $this->logMessage, json_encode($this->request), (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($this->result['hits']['hits']), $this->result['hits']['total']), LOG_DEBUG);
+        }
+        if (array_key_exists('hits', $this->result) && is_array($this->result['hits']) && count($this->result['hits']) > 0) {
+            $this->result['nodes'] = $this->convertHitsToNodes($this->result['hits']);
         }
 
         return $this->result;
@@ -699,7 +698,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $count = $treatedContent['count'];
 
         if ($this->logThisQuery === true) {
-            $this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
+            $this->logger->log('Count Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
         }
 
         return $count;
@@ -773,8 +772,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $this->queryFilter('terms', array('__workspace' => array_unique(array('live', $contextNode->getContext()->getWorkspace()->getName()))));
 
         // match exact dimension values for each dimension, this works because the indexing flattens the node variants for all dimension preset combinations
-        foreach ($contextNode->getContext()->getDimensions() as $dimensionName => $dimensionValues) {
-            $this->queryFilter('terms', array('__dimensionCombinations.' . $dimensionName => $dimensionValues, 'execution' => 'and'));
+        $dimensionCombinations = $contextNode->getContext()->getDimensions();
+        if (is_array($dimensionCombinations)) {
+            $this->queryFilter('term', ['__dimensionCombinationHash' => md5(json_encode($dimensionCombinations))]);
         }
 
         $this->contextNode = $contextNode;
@@ -817,15 +817,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
          * we might be able to use https://github.com/elasticsearch/elasticsearch/issues/3300 as soon as it is merged.
          */
         foreach ($hits['hits'] as $hit) {
-            // with ElasticSearch 1.0 fields always returns an array,
-            // see https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/issues/17
-            if (is_array($hit['fields']['__path'])) {
-                $nodePath = current($hit['fields']['__path']);
-            } else {
-                $nodePath = $hit['fields']['__path'];
-            }
+            $nodePath = current($hit['fields']['__path']);
             $node = $this->contextNode->getNode($nodePath);
-            if ($node instanceof NodeInterface) {
+            if ($node instanceof NodeInterface && !isset($nodes[$node->getIdentifier()])) {
                 $nodes[$node->getIdentifier()] = $node;
                 $elasticSearchHitPerNode[$node->getIdentifier()] = $hit;
                 if ($this->limit > 0 && count($nodes) >= $this->limit) {
@@ -835,7 +829,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         }
 
         if ($this->logThisQuery === true) {
-            $this->logger->log('Query Log (' . $this->logMessage . ') Number of returned results: ' . count($nodes), LOG_DEBUG);
+            $this->logger->log('Returned nodes (' . $this->logMessage . '): ' . count($nodes), LOG_DEBUG);
         }
 
         $this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;

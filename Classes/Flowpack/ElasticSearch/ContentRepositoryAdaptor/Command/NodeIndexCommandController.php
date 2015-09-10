@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator;
 use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
 
 /**
@@ -99,6 +100,12 @@ class NodeIndexCommandController extends CommandController
     protected $configurationManager;
 
     /**
+     * @Flow\Inject
+     * @var ContentDimensionCombinator
+     */
+    protected $contentDimensionCombinator;
+
+    /**
      * @var array
      */
     protected $settings;
@@ -158,14 +165,19 @@ class NodeIndexCommandController extends CommandController
      * @param integer $limit Amount of nodes to index at maximum
      * @param boolean $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
      * @param string $workspace name of the workspace which should be indexed
+     * @param string $postfix Index postfix, index with the same postifix will be deleted if exist
      * @return void
      */
-    public function buildCommand($limit = null, $update = false, $workspace = null)
+    public function buildCommand($limit = null, $update = false, $workspace = null, $postfix = null)
     {
         if ($update === true) {
             $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
         } else {
-            $this->nodeIndexer->setIndexNamePostfix(time());
+            $this->nodeIndexer->setIndexNamePostfix($postfix ?: time());
+            if ($this->nodeIndexer->getIndex()->exists() === true) {
+                $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
+                $this->nodeIndexer->getIndex()->delete();
+            }
             $this->nodeIndexer->getIndex()->create();
             $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
 
@@ -238,7 +250,7 @@ class NodeIndexCommandController extends CommandController
      */
     protected function indexWorkspace($workspaceName)
     {
-        $combinations = $this->calculateDimensionCombinations();
+        $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
         if ($combinations === array()) {
             $this->indexWorkspaceWithDimensions($workspaceName);
         } else {
@@ -286,42 +298,5 @@ class NodeIndexCommandController extends CommandController
         foreach ($currentNode->getChildNodes() as $childNode) {
             $this->traverseNodes($childNode);
         }
-    }
-
-    /**
-     * @return array
-     * @todo will went into TYPO3CR
-     */
-    protected function calculateDimensionCombinations()
-    {
-        $dimensionPresets = $this->contentDimensionPresetSource->getAllPresets();
-
-        $dimensionValueCountByDimension = array();
-        $possibleCombinationCount = 1;
-        $combinations = array();
-
-        foreach ($dimensionPresets as $dimensionName => $dimensionPreset) {
-            if (isset($dimensionPreset['presets']) && !empty($dimensionPreset['presets'])) {
-                $dimensionValueCountByDimension[$dimensionName] = count($dimensionPreset['presets']);
-                $possibleCombinationCount = $possibleCombinationCount * $dimensionValueCountByDimension[$dimensionName];
-            }
-        }
-
-        foreach ($dimensionPresets as $dimensionName => $dimensionPreset) {
-            for ($i = 0; $i < $possibleCombinationCount; $i++) {
-                if (!isset($combinations[$i]) || !is_array($combinations[$i])) {
-                    $combinations[$i] = array();
-                }
-
-                $currentDimensionCurrentPreset = current($dimensionPresets[$dimensionName]['presets']);
-                $combinations[$i][$dimensionName] = $currentDimensionCurrentPreset['values'];
-
-                if (!next($dimensionPresets[$dimensionName]['presets'])) {
-                    reset($dimensionPresets[$dimensionName]['presets']);
-                }
-            }
-        }
-
-        return $combinations;
     }
 }

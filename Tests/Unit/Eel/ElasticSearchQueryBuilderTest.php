@@ -67,6 +67,11 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                                     'terms' => array(
                                         '__workspace' => array('live', 'user-foo')
                                     )
+                                ),
+                                2 => array(
+                                    'term' => array(
+                                        '__dimensionCombinationHash' => 'd751713988987e9331980363e24189ce'
+                                    )
                                 )
                             ),
                             'should' => array(),
