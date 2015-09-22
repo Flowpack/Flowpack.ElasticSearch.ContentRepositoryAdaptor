@@ -175,6 +175,9 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase {
 		$this->assertSame($expected, $actual['sort']);
 	}
 
+	/**
+	 * @return array
+	 */
 	public function rangeConstraintExamples() {
 		return array(
 			array('greaterThan', 'gt', 10),
@@ -197,6 +200,102 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase {
 		);
 		$actual = $this->queryBuilder->getRequest();
 		$this->assertInArray($expected, $actual['query']['filtered']['filter']['bool']['must']);
+	}
+
+	/**
+	 * @return array
+	 */
+	public function simpleAggregationExamples() {
+		return array(
+			array('min', 'foo', 'bar'),
+			array('terms', 'foo', 'bar'),
+			array('sum', 'foo', 'bar'),
+			array('stats', 'foo', 'bar'),
+			array('value_count', 'foo', 'bar')
+		);
+	}
+
+	/**
+	 * @test
+	 * @dataProvider simpleAggregationExamples
+	 */
+	public function anSimpleAggregationCanBeAddedToTheRequest($type, $name, $field) {
+		$expected = array(
+			$name => array(
+				$type => array(
+					'field' => $field
+				)
+			)
+		);
+
+		$this->queryBuilder->fieldBasedAggregation($name, $field, $type);
+		$actual = $this->queryBuilder->getRequest();
+
+		$this->assertInArray($expected, $actual);
+	}
+
+	/**
+	 * @test
+	 */
+	public function anAggregationCanBeSubbedUnderAPath() {
+		$this->queryBuilder->fieldBasedAggregation("foo", "bar");
+		$this->queryBuilder->fieldBasedAggregation("bar", "bar", "terms", "foo");
+		$this->queryBuilder->fieldBasedAggregation("baz", "bar", "terms", "foo.bar");
+
+		$expected = array(
+			"foo" => array(
+				"terms" => array("field" => "bar"),
+				"aggregations" => array(
+					"bar" => array(
+						"terms" => array("field" => "bar"),
+						"aggregations" => array(
+							"baz" => array(
+								"terms" => array("field" => "bar")
+							)
+						)
+					)
+				)
+			)
+		);
+
+		$actual = $this->queryBuilder->getRequest();
+		$this->assertInArray($expected, $actual);
+	}
+
+	/**
+	 * @test
+	 * @expectedException \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
+	 */
+	public function ifTheParentPathDoesNotExistAnExceptionisThrown() {
+		$this->queryBuilder->fieldBasedAggregation("foo", "bar");
+		$this->queryBuilder->fieldBasedAggregation("bar", "bar", "terms", "doesNotExist");
+	}
+
+	/**
+	 * @test
+	 * @expectedException \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
+	 */
+	public function ifSubbedParentPathDoesNotExistAnExceptionisThrown() {
+		$this->queryBuilder->fieldBasedAggregation("foo", "bar");
+		$this->queryBuilder->fieldBasedAggregation("bar", "bar", "terms", "foo.doesNotExist");
+	}
+
+	/**
+	 * @test
+	 */
+	public function aCustomAggregationDefinitionCanBeApplied() {
+		$expected = array(
+			"foo" => array(
+				"some" => array("field" => "bar"),
+				"custom" => array("field" => "bar"),
+				"arrays" => array("field" => "bar")
+			)
+		);
+
+		$this->queryBuilder->aggregation("foo", $expected['foo']);
+		$actual = $this->queryBuilder->getRequest();
+
+		$this->assertInArray($expected, $actual);
 	}
 
 	/**

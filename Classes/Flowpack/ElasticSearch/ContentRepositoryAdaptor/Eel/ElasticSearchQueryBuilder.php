@@ -66,7 +66,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 *
 	 * @var array
 	 */
-	protected $unsupportedFieldsInCountRequest = array('fields', 'sort', 'from', 'size', 'highlight');
+	protected $unsupportedFieldsInCountRequest = array('fields', 'sort', 'from', 'size', 'highlight', 'aggs', 'aggregations');
 
 	/**
 	 * Amount of total items in response without limit
@@ -84,6 +84,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @var array
 	 */
 	protected $elasticSearchHitsIndexedByNodeFromLastRequest;
+
+	/**
+	 * This (internal) array stores all aggregation results for the last search request
+	 *
+	 * @var array
+	 */
+	protected $elasticSearchAggregationsFromLastRequest;
 
 	/**
 	 * The ElasticSearch request, as it is being built up.
@@ -366,7 +373,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	/**
 	 * Add multiple filters to query.filtered.filter
 	 *
-	 * Example Usage::
+	 * Example Usage:
 	 *
 	 *   searchFilter = TYPO3.TypoScript:RawArray {
 	 *      author = 'Max'
@@ -393,6 +400,94 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 				}
 			}
 		}
+		return $this;
+	}
+
+	/**
+	 * This method adds a field based aggregation configuration. This can be used for simple
+	 * aggregations like terms
+	 *
+	 * Example Usage to create a terms aggregation for a property color:
+	 * nodes = ${Search....fieldBasedAggregation("colors", "color").execute()}
+	 *
+	 * Access all aggregation data with {nodes.aggregations} in your fluid template
+	 *
+	 * @param $name
+	 * @param $field
+	 * @param string $type
+	 * @param null $parentPath
+	 * @return $this
+	 */
+	public function fieldBasedAggregation($name, $field, $type = "terms", $parentPath = NULL) {
+		$aggregationDefinition = array(
+			$type => array(
+				'field' => $field
+			)
+		);
+
+		$this->aggregation($name, $aggregationDefinition, $parentPath);
+		return $this;
+	}
+
+	/**
+	 * This method is used to create any kind of aggregation.
+	 *
+	 * Example Usage to create a terms aggregation for a property color:
+	 *
+	 * aggregationDefinition = TYPO3.TypoScript:RawArray {
+	 *   terms = TYPO3.TypoScript:RawArray {
+	 *     field = "color"
+	 *   }
+	 * }
+	 *
+	 * nodes = ${Search....aggregation("color", this.aggregationDefinition).execute()}
+	 *
+	 * Access all aggregation data with {nodes.aggregations} in your fluid template
+	 * 
+	 * @param string $name
+	 * @param array $aggregationDefinition
+	 * @param null $parentPath
+	 * @return $this
+	 * @throws QueryBuildingException
+	 */
+	public function aggregation($name, array $aggregationDefinition, $parentPath = NULL) {
+		if(!array_key_exists("aggregations", $this->request)) {
+			$this->request['aggregations'] = array();
+		}
+
+		if($parentPath !== NULL) {
+			$this->addSubAggregation($parentPath, $name, $aggregationDefinition);
+		} else {
+			$this->request['aggregations'][$name] = $aggregationDefinition;
+		}
+
+		return $this;
+	}
+
+	/**
+	 * This is an low level method for internal usage.
+	 * You can add a custom $aggregationConfiguration under a given $parentPath. The $parentPath foo.bar would
+	 * insert your $aggregationConfiguration under
+	 * $this->request['aggregations']['foo']['aggregations']['bar']['aggregations'][$name]
+	 *
+	 * @param $parentPath
+	 * @param $name
+	 * @param array $aggregationConfiguration
+	 * @return $this
+	 * @throws QueryBuildingException
+	 */
+	protected function addSubAggregation($parentPath, $name, $aggregationConfiguration) {
+		// Find the parentPath
+		$path =& $this->request['aggregations'];
+
+		foreach(explode(".", $parentPath) as $subPart) {
+			if($path == NULL || !array_key_exists($subPart, $path)) {
+				throw new QueryBuildingException("The parent path ".$subPart." could not be found when adding a sub aggregation");
+			}
+			$path =& $path[$subPart]['aggregations'];
+		}
+
+		$path[$name] = $aggregationConfiguration;
 		return $this;
 	}
 
@@ -519,6 +614,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
 		$this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
 
+		if(array_key_exists("aggregations", $treatedContent)) {
+			$this->elasticSearchAggregationsFromLastRequest = $treatedContent['aggregations'];
+		}
+
 		return array_values($nodes);
 	}
 
@@ -532,6 +631,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		$elasticSearchQuery = new ElasticSearchQuery($this);
 		$result = $elasticSearchQuery->execute();
 		return $result;
+	}
+
+	/**
+	* @return array
+	*/
+	public function getElasticSearchAggregationsFromLastRequest() {
+		return $this->elasticSearchAggregationsFromLastRequest;
 	}
 
 	/**
