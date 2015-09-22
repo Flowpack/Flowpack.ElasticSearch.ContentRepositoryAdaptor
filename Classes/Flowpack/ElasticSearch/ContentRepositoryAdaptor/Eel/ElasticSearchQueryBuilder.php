@@ -436,7 +436,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 *
 	 * aggregationDefinition = TYPO3.TypoScript:RawArray {
 	 *   terms = TYPO3.TypoScript:RawArray {
-	 *   field = "color"
+	 *     field = "color"
+	 *   }
 	 * }
 	 *
 	 * nodes = ${Search....aggregation("color", this.aggregationDefinition).execute()}
@@ -475,7 +476,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @return $this
 	 * @throws QueryBuildingException
 	 */
-	public function addSubAggregation($parentPath, $name, $aggregationConfiguration) {
+	protected function addSubAggregation($parentPath, $name, $aggregationConfiguration) {
 		// Find the parentPath
 		$path =& $this->request['aggregations'];
 
