@@ -69,13 +69,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	protected $unsupportedFieldsInCountRequest = array('fields', 'sort', 'from', 'size', 'highlight', 'aggs', 'aggregations');
 
 	/**
-	 * Amount of total items in response without limit
-	 *
-	 * @var integer
-	 */
-	protected $totalItems;
-
-	/**
 	 * This (internal) array stores, for the last search request, a mapping from Node Identifiers
 	 * to the full ElasticSearch Hit which was returned.
 	 *
@@ -85,12 +78,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 */
 	protected $elasticSearchHitsIndexedByNodeFromLastRequest;
 
-	/**
-	 * This (internal) array stores all aggregation results for the last search request
-	 *
-	 * @var array
-	 */
-	protected $elasticSearchAggregationsFromLastRequest;
 
 	/**
 	 * The ElasticSearch request, as it is being built up.
@@ -147,6 +134,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		),
 		'fields' => array('__path')
 	);
+
+
+	/**
+	 * @var array
+	 */
+	protected $result = array();
+
 
 	/**
 	 * HIGH-LEVEL API
@@ -342,7 +336,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 */
 	public function queryFilter($filterType, $filterOptions, $clauseType = 'must') {
 		if (!in_array($clauseType, array('must', 'should', 'must_not'))) {
-			throw new QueryBuildingException('The given clause type "' . $clauseType . '" is not supported. Must be one of "mmust", "should", "must_not".', 1383716082);
+			throw new QueryBuildingException('The given clause type "' . $clauseType . '" is not supported. Must be one of "must", "should", "must_not".', 1383716082);
 		}
 		return $this->appendAtPath('query.filtered.filter.bool.' . $clauseType, array($filterType => $filterOptions));
 	}
@@ -518,7 +512,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @return integer
 	 */
 	public function getTotalItems() {
-		return $this->totalItems;
+		return $this->result['totalItemCount'];
 	}
 
 	/**
@@ -561,64 +555,27 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		$timeAfterwards = microtime(TRUE);
 
 		$treatedContent = $response->getTreatedContent();
-		$hits = $treatedContent['hits'];
 
-		if ($this->logThisQuery === TRUE) {
-			$this->logger->log('Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Limit: ' . $this->limit . ' -- Number of results returned: ' . count($hits['hits']) . ' -- Total Results: ' . $hits['total'], LOG_DEBUG);
-		}
-
-		$this->totalItems = $hits['total'];
-
-		if ($hits['total'] === 0) {
-			return array();
-		}
-
-		$nodes = array();
-		$elasticSearchHitPerNode = array();
-
-		/**
-		 * TODO: This code below is not fully correct yet:
-		 *
-		 * We always fetch $limit * (numerOfWorkspaces) records; so that we find a node:
-		 * - *once* if it is only in live workspace and matches the query
-		 * - *once* if it is only in user workspace and matches the query
-		 * - *twice* if it is in both workspaces and matches the query *both times*. In this case we filter the duplicate record.
-		 * - *once* if it is in the live workspace and has been DELETED in the user workspace (STILL WRONG)
-		 * - *once* if it is in the live workspace and has been MODIFIED to NOT MATCH THE QUERY ANYMORE in user workspace (STILL WRONG)
-		 *
-		 * If we want to fix this cleanly, we'd need to do an *additional query* in order to filter all nodes from a non-user workspace
-		 * which *do exist in the user workspace but do NOT match the current query*. This has to be done somehow "recursively"; and later
-		 * we might be able to use https://github.com/elasticsearch/elasticsearch/issues/3300 as soon as it is merged.
-		 */
-		foreach ($hits['hits'] as $hit) {
-			// with ElasticSearch 1.0 fields always returns an array,
-			// see https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/issues/17
-			if (is_array($hit['fields']['__path'])) {
-				$nodePath = current($hit['fields']['__path']);
-			} else {
-				$nodePath = $hit['fields']['__path'];
-			}
-			$node = $this->contextNode->getNode($nodePath);
-			if ($node instanceof NodeInterface) {
-				$nodes[$node->getIdentifier()] = $node;
-				$elasticSearchHitPerNode[$node->getIdentifier()] = $hit;
-				if ($this->limit > 0 && count($nodes) >= $this->limit) {
-					break;
-				}
-			}
+		$hits = array();
+		$this->result['nodes'] = array();
+		if(array_key_exists('hits', $treatedContent) && is_array($treatedContent['hits']) && count($treatedContent['hits']) > 0) {
+			$hits = $treatedContent['hits'];
+			$this->result['nodes'] = $this->convertHitsToNodes($treatedContent['hits']);
 		}
 
 		if ($this->logThisQuery === TRUE) {
-			$this->logger->log('Query Log (' . $this->logMessage . ') Number of returned results: ' . count($nodes), LOG_DEBUG);
+			$this->logger->log(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s',
+				$this->logMessage, json_encode($this->request), (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($hits['hits']), $hits['total'])
+				, LOG_DEBUG);
 		}
 
-		$this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
+		$this->result['totalItemCount'] = $hits['total'];
 
-		if(array_key_exists("aggregations", $treatedContent)) {
-			$this->elasticSearchAggregationsFromLastRequest = $treatedContent['aggregations'];
+		if(array_key_exists('aggregations', $treatedContent)) {
+			$this->result['aggregations'] = $treatedContent['aggregations'];
 		}
 
-		return array_values($nodes);
+		return $this->result;
 	}
 
 	/**
@@ -633,12 +590,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		return $result;
 	}
 
-	/**
-	* @return array
-	*/
-	public function getElasticSearchAggregationsFromLastRequest() {
-		return $this->elasticSearchAggregationsFromLastRequest;
-	}
 
 	/**
 	 * Return the total number of hits for the query.
@@ -750,5 +701,54 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 */
 	public function allowsCallOfMethod($methodName) {
 		return TRUE;
+	}
+
+	/**
+	 * @param $hits
+	 * @return array
+	 */
+	protected function convertHitsToNodes($hits) {
+		$nodes = array();
+		$elasticSearchHitPerNode = array();
+
+		/**
+		 * TODO: This code below is not fully correct yet:
+		 *
+		 * We always fetch $limit * (numerOfWorkspaces) records; so that we find a node:
+		 * - *once* if it is only in live workspace and matches the query
+		 * - *once* if it is only in user workspace and matches the query
+		 * - *twice* if it is in both workspaces and matches the query *both times*. In this case we filter the duplicate record.
+		 * - *once* if it is in the live workspace and has been DELETED in the user workspace (STILL WRONG)
+		 * - *once* if it is in the live workspace and has been MODIFIED to NOT MATCH THE QUERY ANYMORE in user workspace (STILL WRONG)
+		 *
+		 * If we want to fix this cleanly, we'd need to do an *additional query* in order to filter all nodes from a non-user workspace
+		 * which *do exist in the user workspace but do NOT match the current query*. This has to be done somehow "recursively"; and later
+		 * we might be able to use https://github.com/elasticsearch/elasticsearch/issues/3300 as soon as it is merged.
+		 */
+		foreach ($hits['hits'] as $hit) {
+			// with ElasticSearch 1.0 fields always returns an array,
+			// see https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/issues/17
+			if (is_array($hit['fields']['__path'])) {
+				$nodePath = current($hit['fields']['__path']);
+			} else {
+				$nodePath = $hit['fields']['__path'];
+			}
+			$node = $this->contextNode->getNode($nodePath);
+			if ($node instanceof NodeInterface) {
+				$nodes[$node->getIdentifier()] = $node;
+				$elasticSearchHitPerNode[$node->getIdentifier()] = $hit;
+				if ($this->limit > 0 && count($nodes) >= $this->limit) {
+					break;
+				}
+			}
+		}
+
+		if ($this->logThisQuery === TRUE) {
+			$this->logger->log('Query Log (' . $this->logMessage . ') Number of returned results: ' . count($nodes), LOG_DEBUG);
+		}
+
+		$this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
+
+		return array_values($nodes);
 	}
 }
