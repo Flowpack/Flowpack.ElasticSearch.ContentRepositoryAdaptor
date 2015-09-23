@@ -175,7 +175,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	 */
 	public function getAggregations() {
 		$this->initialize();
-		return $this->elasticSearchQuery->getQueryBuilder()->getElasticSearchAggregationsFromLastRequest();
+		return $this->result['aggregations'];
 	}
 
 	/**
