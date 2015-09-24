@@ -18,7 +18,6 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQuery;
  */
 class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
 {
-
     /**
      * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController
      */
@@ -68,7 +67,6 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
 
         $this->nodeIndexCommandController = $this->objectManager->get('Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController');
         $this->nodeIndexCommandController->buildCommand();
-
     }
 
 
@@ -112,7 +110,8 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     }
 
 
-    protected function createNodesForNodeSearchTest() {
+    protected function createNodesForNodeSearchTest()
+    {
         $rootNode = $this->context->getRootNode();
 
         $newNode1 = $rootNode->createNode('test-node-1', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
