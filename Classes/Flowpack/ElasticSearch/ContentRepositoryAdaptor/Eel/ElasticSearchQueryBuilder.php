@@ -512,7 +512,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @return integer
 	 */
 	public function getTotalItems() {
-		return $this->result['totalItemCount'];
+		return $this->result['total'];
 	}
 
 	/**
@@ -554,25 +554,17 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', array(), json_encode($this->request));
 		$timeAfterwards = microtime(TRUE);
 
-		$treatedContent = $response->getTreatedContent();
+		$this->result =& $response->getTreatedContent();
 
-		$hits = array();
 		$this->result['nodes'] = array();
-		if(array_key_exists('hits', $treatedContent) && is_array($treatedContent['hits']) && count($treatedContent['hits']) > 0) {
-			$hits = $treatedContent['hits'];
-			$this->result['nodes'] = $this->convertHitsToNodes($treatedContent['hits']);
+		if (array_key_exists('hits', $this->result) && is_array($this->result['hits']) && count($this->result['hits']) > 0) {
+			$this->result['nodes'] = $this->convertHitsToNodes($this->result['hits']);
 		}
 
 		if ($this->logThisQuery === TRUE) {
 			$this->logger->log(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s',
-				$this->logMessage, json_encode($this->request), (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($hits['hits']), $hits['total'])
+				$this->logMessage, json_encode($this->request), (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($this->result['hits']['hits']), $this->result['hits']['total'])
 				, LOG_DEBUG);
-		}
-
-		$this->result['totalItemCount'] = $hits['total'];
-
-		if(array_key_exists('aggregations', $treatedContent)) {
-			$this->result['aggregations'] = $treatedContent['aggregations'];
 		}
 
 		return $this->result;
@@ -704,10 +696,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	}
 
 	/**
-	 * @param $hits
-	 * @return array
+	 * @param array $hits
+	 * @return array Array of Node objects
 	 */
-	protected function convertHitsToNodes($hits) {
+	protected function convertHitsToNodes(array $hits) {
 		$nodes = array();
 		$elasticSearchHitPerNode = array();
 
