@@ -103,11 +103,12 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     public function filterLimitQuery()
     {
         $resultCount = $this->queryBuilder->query($this->context->getRootNode())->limit(1)->count();
-        $this->assertEquals(6, $resultCount, 'Asserting the count query returns the total count.');
+        $this->assertEquals(3, $resultCount, 'Asserting the count query returns the total count.');
 
         $result = $this->queryBuilder->query($this->context->getRootNode())->limit(1)->execute();
-        $this->assertCount(1, $result, 'Asserting the executed query returns a valid number of items.');
+
         $this->assertEquals(1, $result->getAccessibleCount(), 'Asserting that getAccessibleCount returns the correct number');
+        $this->assertCount(1, $result->toArray(), 'Asserting the executed query returns a valid number of items.');
     }
 
 

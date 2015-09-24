@@ -512,7 +512,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	 * @return integer
 	 */
 	public function getTotalItems() {
-		return $this->result['total'];
+		if (array_key_exists('total', $this->result)) {
+            return (int) $this->result['total'];
+        }
 	}
 
 	/**
@@ -545,7 +547,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 	/**
 	 * Execute the query and return the list of nodes as result.
 	 *
-	 * This method is rather internal; just to be called from the ElasticSearchQueryResult. For the public API, please use execute()
+     * This method is rather internal; just to be called from the ElasticSearchQueryResult. For the public API, please use execute()
 	 *
 	 * @return array<\TYPO3\TYPO3CR\Domain\Model\NodeInterface>
 	 */
@@ -554,7 +556,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 		$response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', array(), json_encode($this->request));
 		$timeAfterwards = microtime(TRUE);
 
-		$this->result =& $response->getTreatedContent();
+        $this->result = $response->getTreatedContent();
 
 		$this->result['nodes'] = array();
 		if (array_key_exists('hits', $this->result) && is_array($this->result['hits']) && count($this->result['hits']) > 0) {
