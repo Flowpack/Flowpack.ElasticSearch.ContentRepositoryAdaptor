@@ -25,7 +25,12 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	/**
 	 * @var array
 	 */
-	protected $results = NULL;
+	protected $result = NULL;
+
+	/**
+	 * @var array
+	 */
+	protected $nodes = NULL;
 
 	/**
 	 * @var integer
@@ -40,9 +45,10 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	 * Initialize the results by really executing the query
 	 */
 	protected function initialize() {
-		if ($this->results === NULL) {
+		if ($this->result === NULL) {
 			$queryBuilder = $this->elasticSearchQuery->getQueryBuilder();
-			$this->results = $queryBuilder->fetch();
+			$this->result = $queryBuilder->fetch();
+			$this->nodes = $this->result['nodes'];
 			$this->count = $queryBuilder->getTotalItems();
 		}
 	}
@@ -59,7 +65,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	 */
 	public function current() {
 		$this->initialize();
-		return current($this->results);
+		return current($this->nodes);
 	}
 
 	/**
@@ -67,7 +73,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	 */
 	public function next() {
 		$this->initialize();
-		return next($this->results);
+		return next($this->nodes);
 	}
 
 	/**
@@ -75,7 +81,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	 */
 	public function key() {
 		$this->initialize();
-		return key($this->results);
+		return key($this->nodes);
 	}
 
 	/**
@@ -83,7 +89,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	 */
 	public function valid() {
 		$this->initialize();
-		return current($this->results) !== FALSE;
+		return current($this->nodes) !== FALSE;
 	}
 
 	/**
@@ -91,7 +97,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	 */
 	public function rewind() {
 		$this->initialize();
-		reset($this->results);
+		reset($this->nodes);
 	}
 
 	/**
@@ -99,7 +105,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	 */
 	public function offsetExists($offset) {
 		$this->initialize();
-		return isset($this->results[$offset]);
+		return isset($this->nodes[$offset]);
 	}
 
 	/**
@@ -107,7 +113,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	 */
 	public function offsetGet($offset) {
 		$this->initialize();
-		return $this->results[$offset];
+		return $this->nodes[$offset];
 	}
 
 	/**
@@ -115,7 +121,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	 */
 	public function offsetSet($offset, $value) {
 		$this->initialize();
-		$this->results[$offset] = $value;
+		$this->nodes[$offset] = $value;
 	}
 
 	/**
@@ -123,7 +129,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	 */
 	public function offsetUnset($offset) {
 		$this->initialize();
-		unset($this->results[$offset]);
+		unset($this->nodes[$offset]);
 	}
 
 	/**
@@ -131,8 +137,8 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	 */
 	public function getFirst() {
 		$this->initialize();
-		if (count($this->results) > 0) {
-			return array_slice($this->results, 0, 1);
+		if (count($this->nodes) > 0) {
+			return array_slice($this->nodes, 0, 1);
 		}
 	}
 
@@ -141,7 +147,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	 */
 	public function toArray() {
 		$this->initialize();
-		return $this->results;
+		return $this->nodes;
 	}
 
 	/**
@@ -161,7 +167,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	 */
 	public function getAccessibleCount() {
 		$this->initialize();
-		return count($this->results);
+		return count($this->nodes);
 	}
 
 	/**
@@ -169,7 +175,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 	 */
 	public function getAggregations() {
 		$this->initialize();
-		return $this->elasticSearchQuery->getQueryBuilder()->getElasticSearchAggregationsFromLastRequest();
+		return $this->result['aggregations'];
 	}
 
 	/**
