@@ -18,22 +18,21 @@ use TYPO3\Flow\Annotations as Flow;
  *
  * @Flow\Scope("singleton")
  */
-class ClientFactory {
+class ClientFactory
+{
+    /**
+     * @Flow\Inject
+     * @var \Flowpack\ElasticSearch\Domain\Factory\ClientFactory
+     */
+    protected $clientFactory;
 
-	/**
-	 * @Flow\Inject
-	 * @var \Flowpack\ElasticSearch\Domain\Factory\ClientFactory
-	 */
-	protected $clientFactory;
-
-	/**
-	 * Create a client
-	 *
-	 * @return \Flowpack\ElasticSearch\Domain\Model\Client
-	 */
-	public function create() {
-		return $this->clientFactory->create(NULL, 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient');
-	}
+    /**
+     * Create a client
+     *
+     * @return \Flowpack\ElasticSearch\Domain\Model\Client
+     */
+    public function create()
+    {
+        return $this->clientFactory->create(null, 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient');
+    }
 }
-
-?>

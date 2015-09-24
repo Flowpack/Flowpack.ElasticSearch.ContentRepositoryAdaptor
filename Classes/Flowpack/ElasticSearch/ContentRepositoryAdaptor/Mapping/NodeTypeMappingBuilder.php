@@ -24,114 +24,113 @@ use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
  *
  * @Flow\Scope("singleton")
  */
-class NodeTypeMappingBuilder {
+class NodeTypeMappingBuilder
+{
+    /**
+     * The default configuration for a given property type in NodeTypes.yaml, if no explicit elasticSearch section defined there.
+     *
+     * @var array
+     */
+    protected $defaultConfigurationPerType;
 
-	/**
-	 * The default configuration for a given property type in NodeTypes.yaml, if no explicit elasticSearch section defined there.
-	 *
-	 * @var array
-	 */
-	protected $defaultConfigurationPerType;
+    /**
+     * @Flow\Inject
+     * @var NodeTypeManager
+     */
+    protected $nodeTypeManager;
 
-	/**
-	 * @Flow\Inject
-	 * @var NodeTypeManager
-	 */
-	protected $nodeTypeManager;
+    /**
+     * @var \TYPO3\Flow\Error\Result
+     */
+    protected $lastMappingErrors;
 
-	/**
-	 * @var \TYPO3\Flow\Error\Result
-	 */
-	protected $lastMappingErrors;
+    /**
+     * @Flow\Inject
+     * @var ConfigurationManager
+     */
+    protected $configurationManager;
 
-	/**
-	 * @Flow\Inject
-	 * @var ConfigurationManager
-	 */
-	protected $configurationManager;
+    /**
+     * Called by the Flow object framework after creating the object and resolving all dependencies.
+     *
+     * @param integer $cause Creation cause
+     */
+    public function initializeObject($cause)
+    {
+        if ($cause === \TYPO3\Flow\Object\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
+            $settings = $this->configurationManager->getConfiguration(\TYPO3\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.TYPO3CR.Search');
+            $this->defaultConfigurationPerType = $settings['defaultConfigurationPerType'];
+        }
+    }
 
-	/**
-	 * Called by the Flow object framework after creating the object and resolving all dependencies.
-	 *
-	 * @param integer $cause Creation cause
-	 */
-	public function initializeObject($cause) {
-		if ($cause === \TYPO3\Flow\Object\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-			$settings = $this->configurationManager->getConfiguration(\TYPO3\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.TYPO3CR.Search');
-			$this->defaultConfigurationPerType = $settings['defaultConfigurationPerType'];
-		}
-	}
+    /**
+     * Converts a TYPO3CR Node Type name into a name which can be used for an Elastic Search Mapping
+     *
+     * @param string $nodeTypeName
+     * @return string
+     */
+    public static function convertNodeTypeNameToMappingName($nodeTypeName)
+    {
+        return str_replace('.', '-', $nodeTypeName);
+    }
 
-	/**
-	 * Converts a TYPO3CR Node Type name into a name which can be used for an Elastic Search Mapping
-	 *
-	 * @param string $nodeTypeName
-	 * @return string
-	 */
-	static public function convertNodeTypeNameToMappingName($nodeTypeName) {
-		return str_replace('.', '-', $nodeTypeName);
-	}
+    /**
+     * Builds a Mapping Collection from the configured node types
+     *
+     * @param \Flowpack\ElasticSearch\Domain\Model\Index $index
+     * @return \Flowpack\ElasticSearch\Mapping\MappingCollection<\Flowpack\ElasticSearch\Domain\Model\Mapping>
+     */
+    public function buildMappingInformation(Index $index)
+    {
+        $this->lastMappingErrors = new \TYPO3\Flow\Error\Result();
 
-	/**
-	 * Builds a Mapping Collection from the configured node types
-	 *
-	 * @param \Flowpack\ElasticSearch\Domain\Model\Index $index
-	 * @return \Flowpack\ElasticSearch\Mapping\MappingCollection<\Flowpack\ElasticSearch\Domain\Model\Mapping>
-	 */
-	public function buildMappingInformation(Index $index) {
-		$this->lastMappingErrors = new \TYPO3\Flow\Error\Result();
+        $mappings = new MappingCollection(MappingCollection::TYPE_ENTITY);
 
-		$mappings = new MappingCollection(MappingCollection::TYPE_ENTITY);
+        /** @var NodeType $nodeType */
+        foreach ($this->nodeTypeManager->getNodeTypes() as $nodeTypeName => $nodeType) {
+            if ($nodeTypeName === 'unstructured' || $nodeType->isAbstract()) {
+                continue;
+            }
 
-		/** @var NodeType $nodeType */
-		foreach ($this->nodeTypeManager->getNodeTypes() as $nodeTypeName => $nodeType) {
-			if ($nodeTypeName === 'unstructured' || $nodeType->isAbstract()) {
-				continue;
-			}
+            $type = $index->findType(self::convertNodeTypeNameToMappingName($nodeTypeName));
+            $mapping = new Mapping($type);
 
-			$type = $index->findType(self::convertNodeTypeNameToMappingName($nodeTypeName));
-			$mapping = new Mapping($type);
+            // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/mapping-root-object-type.html#_dynamic_templates
+            // 'not_analyzed' is necessary
+            $mapping->addDynamicTemplate('dimensions', array(
+                'path_match' => '__dimensionCombinations.*',
+                'match_mapping_type' => 'string',
+                'mapping' => array(
+                    'type' => 'string',
+                    'index' => 'not_analyzed'
+                )
+            ));
 
-			// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/mapping-root-object-type.html#_dynamic_templates
-			// 'not_analyzed' is necessary
-			$mapping->addDynamicTemplate('dimensions', array(
-				'path_match' => '__dimensionCombinations.*',
-				'match_mapping_type' => 'string',
-				'mapping' => array(
-					'type' => 'string',
-					'index' => 'not_analyzed'
-				)
-			));
+            foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {
+                if (isset($propertyConfiguration['search']) && isset($propertyConfiguration['search']['elasticSearchMapping'])) {
+                    if (is_array($propertyConfiguration['search']['elasticSearchMapping'])) {
+                        $mapping->setPropertyByPath($propertyName, $propertyConfiguration['search']['elasticSearchMapping']);
+                    }
+                } elseif (isset($propertyConfiguration['type']) && isset($this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping'])) {
+                    if (is_array($this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping'])) {
+                        $mapping->setPropertyByPath($propertyName, $this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping']);
+                    }
+                } else {
+                    $this->lastMappingErrors->addWarning(new \TYPO3\Flow\Error\Warning('Node Type "' . $nodeTypeName . '" - property "' . $propertyName . '": No ElasticSearch Mapping found.'));
+                }
+            }
 
-			foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {
-				if (isset($propertyConfiguration['search']) && isset($propertyConfiguration['search']['elasticSearchMapping'])) {
+            $mappings->add($mapping);
+        }
 
-					if (is_array($propertyConfiguration['search']['elasticSearchMapping'])) {
-						$mapping->setPropertyByPath($propertyName, $propertyConfiguration['search']['elasticSearchMapping']);
-					}
+        return $mappings;
+    }
 
-				} elseif (isset($propertyConfiguration['type']) && isset($this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping'])) {
-
-					if (is_array($this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping'])) {
-						$mapping->setPropertyByPath($propertyName, $this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping']);
-					}
-
-				} else {
-					$this->lastMappingErrors->addWarning(new \TYPO3\Flow\Error\Warning('Node Type "' . $nodeTypeName . '" - property "' . $propertyName . '": No ElasticSearch Mapping found.'));
-				}
-			}
-
-			$mappings->add($mapping);
-		}
-
-		return $mappings;
-	}
-
-	/**
-	 * @return \TYPO3\Flow\Error\Result
-	 */
-	public function getLastMappingErrors() {
-		return $this->lastMappingErrors;
-	}
+    /**
+     * @return \TYPO3\Flow\Error\Result
+     */
+    public function getLastMappingErrors()
+    {
+        return $this->lastMappingErrors;
+    }
 }
-

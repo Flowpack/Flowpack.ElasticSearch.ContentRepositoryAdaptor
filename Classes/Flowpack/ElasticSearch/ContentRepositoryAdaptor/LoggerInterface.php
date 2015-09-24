@@ -1,7 +1,6 @@
 <?php
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
 
-
 /*                                                                                                  *
  * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
  *                                                                                                  *
@@ -17,6 +16,6 @@ use TYPO3\Flow\Annotations as Flow;
 /**
  * ElasticSearch Logger Interface
  */
-interface LoggerInterface extends \TYPO3\Flow\Log\LoggerInterface {
-
+interface LoggerInterface extends \TYPO3\Flow\Log\LoggerInterface
+{
 }
