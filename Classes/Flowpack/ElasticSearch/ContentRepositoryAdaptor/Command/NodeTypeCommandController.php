@@ -21,25 +21,26 @@ use TYPO3\Flow\Cli\CommandController;
  *
  * @Flow\Scope("singleton")
  */
-class NodeTypeCommandController extends CommandController {
+class NodeTypeCommandController extends CommandController
+{
+    /**
+     * @Flow\Inject
+     * @var \TYPO3\TYPO3CR\Domain\Service\NodeTypeManager
+     */
+    protected $nodeTypeManager;
 
-	/**
-	 * @Flow\Inject
-	 * @var \TYPO3\TYPO3CR\Domain\Service\NodeTypeManager
-	 */
-	protected $nodeTypeManager;
+    /**
+     * show a single node type after applying all supertypes etc
+     *
+     * @param string $nodeType the node type to optionally filter for
+     */
+    public function showCommand($nodeType = null)
+    {
+        $configuration = $this->nodeTypeManager->getFullConfiguration();
 
-	/**
-	 * show a single node type after applying all supertypes etc
-	 *
-	 * @param string $nodeType the node type to optionally filter for
-	 */
-	public function showCommand($nodeType = NULL) {
-		$configuration = $this->nodeTypeManager->getFullConfiguration();
-
-		if ($nodeType !== NULL) {
-			$configuration = $configuration[$nodeType];
-		}
-		$this->output(\Symfony\Component\Yaml\Yaml::dump($configuration, 5, 2));
-	}
+        if ($nodeType !== null) {
+            $configuration = $configuration[$nodeType];
+        }
+        $this->output(\Symfony\Component\Yaml\Yaml::dump($configuration, 5, 2));
+    }
 }

@@ -21,275 +21,280 @@ use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
  *
  * @Flow\Scope("singleton")
  */
-class NodeIndexCommandController extends CommandController {
+class NodeIndexCommandController extends CommandController
+{
+    /**
+     * @Flow\Inject
+     * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer
+     */
+    protected $nodeIndexer;
 
-	/**
-	 * @Flow\Inject
-	 * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer
-	 */
-	protected $nodeIndexer;
+    /**
+     * @Flow\Inject
+     * @var NodeIndexingManager
+     */
+    protected $nodeIndexingManager;
 
-	/**
-	 * @Flow\Inject
-	 * @var NodeIndexingManager
-	 */
-	protected $nodeIndexingManager;
+    /**
+     * @Flow\Inject
+     * @var \TYPO3\TYPO3CR\Domain\Repository\WorkspaceRepository
+     */
+    protected $workspaceRepository;
 
-	/**
-	 * @Flow\Inject
-	 * @var \TYPO3\TYPO3CR\Domain\Repository\WorkspaceRepository
-	 */
-	protected $workspaceRepository;
+    /**
+     * @Flow\Inject
+     * @var \TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository
+     */
+    protected $nodeDataRepository;
 
-	/**
-	 * @Flow\Inject
-	 * @var \TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository
-	 */
-	protected $nodeDataRepository;
+    /**
+     * @Flow\Inject
+     * @var \TYPO3\TYPO3CR\Domain\Factory\NodeFactory
+     */
+    protected $nodeFactory;
 
-	/**
-	 * @Flow\Inject
-	 * @var \TYPO3\TYPO3CR\Domain\Factory\NodeFactory
-	 */
-	protected $nodeFactory;
+    /**
+     * @Flow\Inject
+     * @var \TYPO3\TYPO3CR\Domain\Service\ContextFactory
+     */
+    protected $contextFactory;
 
-	/**
-	 * @Flow\Inject
-	 * @var \TYPO3\TYPO3CR\Domain\Service\ContextFactory
-	 */
-	protected $contextFactory;
+    /**
+     * @Flow\Inject
+     * @var \TYPO3\Neos\Domain\Service\ContentDimensionPresetSourceInterface
+     */
+    protected $contentDimensionPresetSource;
 
-	/**
-	 * @Flow\Inject
-	 * @var \TYPO3\Neos\Domain\Service\ContentDimensionPresetSourceInterface
-	 */
-	protected $contentDimensionPresetSource;
+    /**
+     * @Flow\Inject
+     * @var NodeTypeMappingBuilder
+     */
+    protected $nodeTypeMappingBuilder;
 
-	/**
-	 * @Flow\Inject
-	 * @var NodeTypeMappingBuilder
-	 */
-	protected $nodeTypeMappingBuilder;
+    /**
+     * @var integer
+     */
+    protected $indexedNodes;
 
-	/**
-	 * @var integer
-	 */
-	protected $indexedNodes;
+    /**
+     * @var integer
+     */
+    protected $countedIndexedNodes;
 
-	/**
-	 * @var integer
-	 */
-	protected $countedIndexedNodes;
+    /**
+     * @var integer
+     */
+    protected $limit;
 
-	/**
-	 * @var integer
-	 */
-	protected $limit;
+    /**
+     * @Flow\Inject
+     * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface
+     */
+    protected $logger;
 
-	/**
-	 * @Flow\Inject
-	 * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface
-	 */
-	protected $logger;
+    /**
+     * Show the mapping which would be sent to the ElasticSearch server
+     *
+     * @return void
+     */
+    public function showMappingCommand()
+    {
+        $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
+        foreach ($nodeTypeMappingCollection as $mapping) {
+            /** @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
+            $this->output(\Symfony\Component\Yaml\Yaml::dump($mapping->asArray(), 5, 2));
+            $this->outputLine();
+        }
+        $this->outputLine('------------');
 
-	/**
-	 * Show the mapping which would be sent to the ElasticSearch server
-	 *
-	 * @return void
-	 */
-	public function showMappingCommand() {
-		$nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
-		foreach ($nodeTypeMappingCollection as $mapping) {
-			/** @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
-			$this->output(\Symfony\Component\Yaml\Yaml::dump($mapping->asArray(), 5, 2));
-			$this->outputLine();
-		}
-		$this->outputLine('------------');
+        $mappingErrors = $this->nodeTypeMappingBuilder->getLastMappingErrors();
+        if ($mappingErrors->hasErrors()) {
+            $this->outputLine('<b>Mapping Errors</b>');
+            foreach ($mappingErrors->getFlattenedErrors() as $errors) {
+                foreach ($errors as $error) {
+                    $this->outputLine($error);
+                }
+            }
+        }
 
-		$mappingErrors = $this->nodeTypeMappingBuilder->getLastMappingErrors();
-		if ($mappingErrors->hasErrors()) {
-			$this->outputLine('<b>Mapping Errors</b>');
-			foreach ($mappingErrors->getFlattenedErrors() as $errors) {
-				foreach ($errors as $error) {
-					$this->outputLine($error);
-				}
-			}
-		}
+        if ($mappingErrors->hasWarnings()) {
+            $this->outputLine('<b>Mapping Warnings</b>');
+            foreach ($mappingErrors->getFlattenedWarnings() as $warnings) {
+                foreach ($warnings as $warning) {
+                    $this->outputLine($warning);
+                }
+            }
+        }
+    }
 
-		if ($mappingErrors->hasWarnings()) {
-			$this->outputLine('<b>Mapping Warnings</b>');
-			foreach ($mappingErrors->getFlattenedWarnings() as $warnings) {
-				foreach ($warnings as $warning) {
-					$this->outputLine($warning);
-				}
-			}
-		}
-	}
+    /**
+     * Index all nodes by creating a new index and when everything was completed, switch the index alias.
+     *
+     * This command (re-)indexes all nodes contained in the content repository and sets the schema beforehand.
+     *
+     * @param integer $limit Amount of nodes to index at maximum
+     * @param boolean $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
+     * @param string $workspace name of the workspace which should be indexed
+     * @return void
+     */
+    public function buildCommand($limit = null, $update = false, $workspace = null)
+    {
+        if ($update === true) {
+            $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
+        } else {
+            $this->nodeIndexer->setIndexNamePostfix(time());
+            $this->nodeIndexer->getIndex()->create();
+            $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
 
-	/**
-	 * Index all nodes by creating a new index and when everything was completed, switch the index alias.
-	 *
-	 * This command (re-)indexes all nodes contained in the content repository and sets the schema beforehand.
-	 *
-	 * @param integer $limit Amount of nodes to index at maximum
-	 * @param boolean $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
-	 * @param string $workspace name of the workspace which should be indexed
-	 * @return void
-	 */
-	public function buildCommand($limit = NULL, $update = FALSE, $workspace = NULL) {
+            $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
+            foreach ($nodeTypeMappingCollection as $mapping) {
+                /** @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
+                $mapping->apply();
+            }
+            $this->logger->log('Updated Mapping.', LOG_INFO);
+        }
 
-		if ($update === TRUE) {
-			$this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
-		} else {
-			$this->nodeIndexer->setIndexNamePostfix(time());
-			$this->nodeIndexer->getIndex()->create();
-			$this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
+        $this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
 
-			$nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
-			foreach ($nodeTypeMappingCollection as $mapping) {
-				/** @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
-				$mapping->apply();
-			}
-			$this->logger->log('Updated Mapping.', LOG_INFO);
-		}
+        $count = 0;
+        $this->limit = $limit;
+        $this->indexedNodes = 0;
+        $this->countedIndexedNodes = 0;
 
-		$this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== NULL ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
+        if ($workspace === null) {
+            foreach ($this->workspaceRepository->findAll() as $workspace) {
+                $this->indexWorkspace($workspace->getName());
 
-		$count = 0;
-		$this->limit = $limit;
-		$this->indexedNodes = 0;
-		$this->countedIndexedNodes = 0;
+                $count = $count + $this->countedIndexedNodes;
+            }
+        } else {
+            $this->indexWorkspace($workspace);
+            $count = $count + $this->countedIndexedNodes;
+        }
 
-		if ($workspace === NULL) {
-			foreach ($this->workspaceRepository->findAll() as $workspace) {
-				$this->indexWorkspace($workspace->getName());
+        $this->nodeIndexingManager->flushQueues();
 
-				$count = $count + $this->countedIndexedNodes;
-			}
-		} else {
-			$this->indexWorkspace($workspace);
-			$count = $count + $this->countedIndexedNodes;
-		}
+        $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
+        $this->nodeIndexer->getIndex()->refresh();
 
-		$this->nodeIndexingManager->flushQueues();
+        // TODO: smoke tests
+        if ($update === false) {
+            $this->nodeIndexer->updateIndexAlias();
+        }
+    }
 
-		$this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
-		$this->nodeIndexer->getIndex()->refresh();
+    /**
+     * Clean up old indexes (i.e. all but the current one)
+     *
+     * @return void
+     */
+    public function cleanupCommand()
+    {
+        try {
+            $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
+            if (count($indicesToBeRemoved) > 0) {
+                foreach ($indicesToBeRemoved as $indexToBeRemoved) {
+                    $this->logger->log('Removing old index ' . $indexToBeRemoved);
+                }
+            } else {
+                $this->logger->log('Nothing to remove.');
+            }
+        } catch (\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
+            $response = json_decode($exception->getResponse());
+            $this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s"', $response->status, $response->error));
+        }
+    }
 
-		// TODO: smoke tests
-		if ($update === FALSE) {
-			$this->nodeIndexer->updateIndexAlias();
-		}
-	}
+    /**
+     * @param string $workspaceName
+     * @return void
+     */
+    protected function indexWorkspace($workspaceName)
+    {
+        $combinations = $this->calculateDimensionCombinations();
+        if ($combinations === array()) {
+            $this->indexWorkspaceWithDimensions($workspaceName);
+        } else {
+            foreach ($combinations as $combination) {
+                $this->indexWorkspaceWithDimensions($workspaceName, $combination);
+            }
+        }
+    }
 
-	/**
-	 * Clean up old indexes (i.e. all but the current one)
-	 *
-	 * @return void
-	 */
-	public function cleanupCommand() {
-		try {
-			$indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
-			if (count($indicesToBeRemoved) > 0) {
-				foreach ($indicesToBeRemoved as $indexToBeRemoved) {
-					$this->logger->log('Removing old index ' . $indexToBeRemoved);
-				}
-			} else {
-				$this->logger->log('Nothing to remove.');
-			}
-		} catch (\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
-			$response = json_decode($exception->getResponse());
-			$this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s"', $response->status, $response->error));
-		}
-	}
+    /**
+     * @param string $workspaceName
+     * @param array $dimensions
+     * @return void
+     */
+    protected function indexWorkspaceWithDimensions($workspaceName, array $dimensions = array())
+    {
+        $context = $this->contextFactory->create(array('workspaceName' => $workspaceName, 'dimensions' => $dimensions));
+        $rootNode = $context->getRootNode();
 
-	/**
-	 * @param string $workspaceName
-	 * @return void
-	 */
-	protected function indexWorkspace($workspaceName) {
-		$combinations = $this->calculateDimensionCombinations();
-		if ($combinations === array()) {
-			$this->indexWorkspaceWithDimensions($workspaceName);
-		} else {
-			foreach ($combinations as $combination) {
-				$this->indexWorkspaceWithDimensions($workspaceName, $combination);
-			}
-		}
-	}
+        $this->traverseNodes($rootNode);
 
-	/**
-	 * @param string $workspaceName
-	 * @param array $dimensions
-	 * @return void
-	 */
-	protected function indexWorkspaceWithDimensions($workspaceName, array $dimensions = array()) {
-		$context = $this->contextFactory->create(array('workspaceName' => $workspaceName, 'dimensions' => $dimensions));
-		$rootNode = $context->getRootNode();
+        if ($dimensions === array()) {
+            $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $this->indexedNodes . ' nodes)');
+        } else {
+            $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $this->indexedNodes . ' nodes)');
+        }
 
-		$this->traverseNodes($rootNode);
+        $this->countedIndexedNodes = $this->countedIndexedNodes + $this->indexedNodes;
+        $this->indexedNodes = 0;
+    }
 
-		if ($dimensions === array()) {
-			$this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $this->indexedNodes . ' nodes)');
-		} else {
-			$this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $this->indexedNodes . ' nodes)');
-		}
+    /**
+     * @param \TYPO3\TYPO3CR\Domain\Model\Node $currentNode
+     * @return void
+     */
+    protected function traverseNodes(\TYPO3\TYPO3CR\Domain\Model\Node $currentNode)
+    {
+        if ($this->limit !== null && $this->indexedNodes > $this->limit) {
+            return;
+        }
 
-		$this->countedIndexedNodes = $this->countedIndexedNodes + $this->indexedNodes;
-		$this->indexedNodes = 0;
-	}
+        $this->nodeIndexingManager->indexNode($currentNode);
+        $this->indexedNodes++;
 
-	/**
-	 * @param \TYPO3\TYPO3CR\Domain\Model\Node $currentNode
-	 * @return void
-	 */
-	protected function traverseNodes(\TYPO3\TYPO3CR\Domain\Model\Node $currentNode) {
+        foreach ($currentNode->getChildNodes() as $childNode) {
+            $this->traverseNodes($childNode);
+        }
+    }
 
-		if ($this->limit !== NULL && $this->indexedNodes > $this->limit) {
-			return;
-		}
+    /**
+     * @return array
+     * @todo will went into TYPO3CR
+     */
+    protected function calculateDimensionCombinations()
+    {
+        $dimensionPresets = $this->contentDimensionPresetSource->getAllPresets();
 
-		$this->nodeIndexingManager->indexNode($currentNode);
-		$this->indexedNodes++;
+        $dimensionValueCountByDimension = array();
+        $possibleCombinationCount = 1;
+        $combinations = array();
 
-		foreach ($currentNode->getChildNodes() as $childNode) {
-			$this->traverseNodes($childNode);
-		}
-	}
+        foreach ($dimensionPresets as $dimensionName => $dimensionPreset) {
+            if (isset($dimensionPreset['presets']) && !empty($dimensionPreset['presets'])) {
+                $dimensionValueCountByDimension[$dimensionName] = count($dimensionPreset['presets']);
+                $possibleCombinationCount = $possibleCombinationCount * $dimensionValueCountByDimension[$dimensionName];
+            }
+        }
 
-	/**
-	 * @return array
-	 * @todo will went into TYPO3CR
-	 */
-	protected function calculateDimensionCombinations() {
-		$dimensionPresets = $this->contentDimensionPresetSource->getAllPresets();
+        foreach ($dimensionPresets as $dimensionName => $dimensionPreset) {
+            for ($i = 0; $i < $possibleCombinationCount; $i++) {
+                if (!isset($combinations[$i]) || !is_array($combinations[$i])) {
+                    $combinations[$i] = array();
+                }
 
-		$dimensionValueCountByDimension = array();
-		$possibleCombinationCount = 1;
-		$combinations = array();
+                $currentDimensionCurrentPreset = current($dimensionPresets[$dimensionName]['presets']);
+                $combinations[$i][$dimensionName] = $currentDimensionCurrentPreset['values'];
 
-		foreach ($dimensionPresets as $dimensionName => $dimensionPreset) {
-			if (isset($dimensionPreset['presets']) && !empty($dimensionPreset['presets'])) {
-				$dimensionValueCountByDimension[$dimensionName] = count($dimensionPreset['presets']);
-				$possibleCombinationCount = $possibleCombinationCount * $dimensionValueCountByDimension[$dimensionName];
-			}
-		}
+                if (!next($dimensionPresets[$dimensionName]['presets'])) {
+                    reset($dimensionPresets[$dimensionName]['presets']);
+                }
+            }
+        }
 
-		foreach ($dimensionPresets as $dimensionName => $dimensionPreset) {
-			for ($i = 0; $i < $possibleCombinationCount; $i++) {
-				if (!isset($combinations[$i]) || !is_array($combinations[$i])) {
-					$combinations[$i] = array();
-				}
-
-				$currentDimensionCurrentPreset = current($dimensionPresets[$dimensionName]['presets']);
-				$combinations[$i][$dimensionName] = $currentDimensionCurrentPreset['values'];
-
-				if (!next($dimensionPresets[$dimensionName]['presets'])) {
-					reset($dimensionPresets[$dimensionName]['presets']);
-				}
-			}
-		}
-
-		return $combinations;
-	}
+        return $combinations;
+    }
 }

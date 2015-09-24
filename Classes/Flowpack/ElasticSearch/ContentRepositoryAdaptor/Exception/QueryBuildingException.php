@@ -1,7 +1,6 @@
 <?php
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 
-
 /*                                                                                                  *
  * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
  *                                                                                                  *
@@ -17,8 +16,6 @@ use TYPO3\Flow\Annotations as Flow;
 /**
  * A Query Building Exception
  */
-class QueryBuildingException extends \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception {
-
+class QueryBuildingException extends \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+{
 }
-
-?>
