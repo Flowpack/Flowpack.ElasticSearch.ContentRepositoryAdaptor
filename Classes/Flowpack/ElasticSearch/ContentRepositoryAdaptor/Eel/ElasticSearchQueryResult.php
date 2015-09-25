@@ -15,188 +15,207 @@ use TYPO3\Eel\ProtectedContextAwareInterface;
 use TYPO3\Flow\Persistence\QueryResultInterface;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 
-class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContextAwareInterface {
+class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContextAwareInterface
+{
+    /**
+     * @var ElasticSearchQuery
+     */
+    protected $elasticSearchQuery;
 
-	/**
-	 * @var ElasticSearchQuery
-	 */
-	protected $elasticSearchQuery;
+    /**
+     * @var array
+     */
+    protected $result = null;
 
-	/**
-	 * @var array
-	 */
-	protected $result = NULL;
+    /**
+     * @var array
+     */
+    protected $nodes = null;
 
-	/**
-	 * @var array
-	 */
-	protected $nodes = NULL;
+    /**
+     * @var integer
+     */
+    protected $count = null;
 
-	/**
-	 * @var integer
-	 */
-	protected $count = NULL;
+    public function __construct(ElasticSearchQuery $elasticSearchQuery)
+    {
+        $this->elasticSearchQuery = $elasticSearchQuery;
+    }
 
-	public function __construct(ElasticSearchQuery $elasticSearchQuery) {
-		$this->elasticSearchQuery = $elasticSearchQuery;
-	}
+    /**
+     * Initialize the results by really executing the query
+     */
+    protected function initialize()
+    {
+        if ($this->result === null) {
+            $queryBuilder = $this->elasticSearchQuery->getQueryBuilder();
+            $this->result = $queryBuilder->fetch();
+            $this->nodes = $this->result['nodes'];
+            $this->count = $queryBuilder->getTotalItems();
+        }
+    }
 
-	/**
-	 * Initialize the results by really executing the query
-	 */
-	protected function initialize() {
-		if ($this->result === NULL) {
-			$queryBuilder = $this->elasticSearchQuery->getQueryBuilder();
-			$this->result = $queryBuilder->fetch();
-			$this->nodes = $this->result['nodes'];
-			$this->count = $queryBuilder->getTotalItems();
-		}
-	}
+    /**
+     * @return \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQuery
+     */
+    public function getQuery()
+    {
+        return clone $this->elasticSearchQuery;
+    }
 
-	/**
-	 * @return \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQuery
-	 */
-	public function getQuery() {
-		return clone $this->elasticSearchQuery;
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function current()
+    {
+        $this->initialize();
+        return current($this->nodes);
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function current() {
-		$this->initialize();
-		return current($this->nodes);
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function next()
+    {
+        $this->initialize();
+        return next($this->nodes);
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function next() {
-		$this->initialize();
-		return next($this->nodes);
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function key()
+    {
+        $this->initialize();
+        return key($this->nodes);
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function key() {
-		$this->initialize();
-		return key($this->nodes);
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function valid()
+    {
+        $this->initialize();
+        return current($this->nodes) !== false;
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function valid() {
-		$this->initialize();
-		return current($this->nodes) !== FALSE;
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function rewind()
+    {
+        $this->initialize();
+        reset($this->nodes);
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function rewind() {
-		$this->initialize();
-		reset($this->nodes);
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function offsetExists($offset)
+    {
+        $this->initialize();
+        return isset($this->nodes[$offset]);
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function offsetExists($offset) {
-		$this->initialize();
-		return isset($this->nodes[$offset]);
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function offsetGet($offset)
+    {
+        $this->initialize();
+        return $this->nodes[$offset];
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function offsetGet($offset) {
-		$this->initialize();
-		return $this->nodes[$offset];
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function offsetSet($offset, $value)
+    {
+        $this->initialize();
+        $this->nodes[$offset] = $value;
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function offsetSet($offset, $value) {
-		$this->initialize();
-		$this->nodes[$offset] = $value;
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function offsetUnset($offset)
+    {
+        $this->initialize();
+        unset($this->nodes[$offset]);
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function offsetUnset($offset) {
-		$this->initialize();
-		unset($this->nodes[$offset]);
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function getFirst()
+    {
+        $this->initialize();
+        if (count($this->nodes) > 0) {
+            return array_slice($this->nodes, 0, 1);
+        }
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function getFirst() {
-		$this->initialize();
-		if (count($this->nodes) > 0) {
-			return array_slice($this->nodes, 0, 1);
-		}
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function toArray()
+    {
+        $this->initialize();
+        return $this->nodes;
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function toArray() {
-		$this->initialize();
-		return $this->nodes;
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function count()
+    {
+        if ($this->count === null) {
+            $this->count = $this->elasticSearchQuery->getQueryBuilder()->count();
+        }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function count() {
-		if ($this->count === NULL) {
-			$this->count = $this->elasticSearchQuery->getQueryBuilder()->count();
-		}
+        return $this->count;
+    }
 
-		return $this->count;
-	}
+    /**
+     * @return integer the current number of results which can be iterated upon
+     * @api
+     */
+    public function getAccessibleCount()
+    {
+        $this->initialize();
+        return count($this->nodes);
+    }
 
-	/**
-	 * @return integer the current number of results which can be iterated upon
-	 * @api
-	 */
-	public function getAccessibleCount() {
-		$this->initialize();
-		return count($this->nodes);
-	}
+    /**
+     * @return array
+     */
+    public function getAggregations()
+    {
+        $this->initialize();
+        return $this->result['aggregations'];
+    }
 
-	/**
-	 * @return array
-	 */
-	public function getAggregations() {
-		$this->initialize();
-		return $this->result['aggregations'];
-	}
+    /**
+     * Returns the ElasticSearch "hit" (e.g. the raw content being transferred back from ElasticSearch)
+     * for the given node.
+     *
+     * Can be used for example to access highlighting information.
+     *
+     * @param NodeInterface $node
+     * @return array the ElasticSearch hit, or NULL if it does not exist.
+     * @api
+     */
+    public function searchHitForNode(NodeInterface $node)
+    {
+        return $this->elasticSearchQuery->getQueryBuilder()->getFullElasticSearchHitForNode($node);
+    }
 
-	/**
-	 * Returns the ElasticSearch "hit" (e.g. the raw content being transferred back from ElasticSearch)
-	 * for the given node.
-	 *
-	 * Can be used for example to access highlighting information.
-	 *
-	 * @param NodeInterface $node
-	 * @return array the ElasticSearch hit, or NULL if it does not exist.
-	 * @api
-	 */
-	public function searchHitForNode(NodeInterface $node) {
-		return $this->elasticSearchQuery->getQueryBuilder()->getFullElasticSearchHitForNode($node);
-	}
-
-	/**
-	 * @param string $methodName
-	 * @return boolean
-	 */
-	public function allowsCallOfMethod($methodName) {
-		return TRUE;
-	}
+    /**
+     * @param string $methodName
+     * @return boolean
+     */
+    public function allowsCallOfMethod($methodName)
+    {
+        return true;
+    }
 }

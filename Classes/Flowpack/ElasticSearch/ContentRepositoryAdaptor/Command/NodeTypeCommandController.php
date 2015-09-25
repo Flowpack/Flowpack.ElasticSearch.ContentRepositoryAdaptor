@@ -21,34 +21,34 @@ use TYPO3\Flow\Cli\CommandController;
  *
  * @Flow\Scope("singleton")
  */
-class NodeTypeCommandController extends CommandController {
+class NodeTypeCommandController extends CommandController
+{
+    /**
+     * @Flow\Inject
+     * @var \TYPO3\TYPO3CR\Domain\Service\NodeTypeManager
+     */
+    protected $nodeTypeManager;
 
-	/**
-	 * @Flow\Inject
-	 * @var \TYPO3\TYPO3CR\Domain\Service\NodeTypeManager
-	 */
-	protected $nodeTypeManager;
-
-	/**
-	 * Show node type configuration after applying all supertypes etc
-	 *
-	 * @param string $nodeType the node type to optionally filter for
-	 * @return void
-	 */
-	public function showCommand($nodeType = NULL) {
-
-		if ($nodeType !== NULL) {
-			/** @var \TYPO3\TYPO3CR\Domain\Model\NodeType $nodeType */
-			$nodeType = $this->nodeTypeManager->getNodeType($nodeType);
-			$configuration = $nodeType->getFullConfiguration();
-		} else {
-			$nodeTypes = $this->nodeTypeManager->getNodeTypes();
-			$configuration = array();
-			/** @var \TYPO3\TYPO3CR\Domain\Model\NodeType $nodeType */
-			foreach ($nodeTypes as $nodeTypeName => $nodeType) {
-				$configuration[$nodeTypeName] = $nodeType->getFullConfiguration();
-			}
-		}
-		$this->output(\Symfony\Component\Yaml\Yaml::dump($configuration, 5, 2));
-	}
+    /**
+     * Show node type configuration after applying all supertypes etc
+     *
+     * @param string $nodeType the node type to optionally filter for
+     * @return void
+     */
+    public function showCommand($nodeType = null)
+    {
+        if ($nodeType !== null) {
+            /** @var \TYPO3\TYPO3CR\Domain\Model\NodeType $nodeType */
+            $nodeType = $this->nodeTypeManager->getNodeType($nodeType);
+            $configuration = $nodeType->getFullConfiguration();
+        } else {
+            $nodeTypes = $this->nodeTypeManager->getNodeTypes();
+            $configuration = array();
+            /** @var \TYPO3\TYPO3CR\Domain\Model\NodeType $nodeType */
+            foreach ($nodeTypes as $nodeTypeName => $nodeType) {
+                $configuration[$nodeTypeName] = $nodeType->getFullConfiguration();
+            }
+        }
+        $this->output(\Symfony\Component\Yaml\Yaml::dump($configuration, 5, 2));
+    }
 }

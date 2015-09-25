@@ -1,7 +1,6 @@
 <?php
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
 
-
 /*                                                                                                  *
  * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
  *                                                                                                  *
@@ -25,49 +24,52 @@ use TYPO3\Flow\Configuration\ConfigurationManager;
  *
  * @Flow\Scope("singleton")
  */
-class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client {
+class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
+{
+    /**
+     * The index name to be used for querying (by default "typo3cr")
+     *
+     * @var string
+     */
+    protected $indexName;
 
-	/**
-	 * The index name to be used for querying (by default "typo3cr")
-	 *
-	 * @var string
-	 */
-	protected $indexName;
+    /**
+     * @Flow\Inject
+     * @var ConfigurationManager
+     */
+    protected $configurationManager;
 
-	/**
-	 * @Flow\Inject
-	 * @var ConfigurationManager
-	 */
-	protected $configurationManager;
+    /**
+     * Called by the Flow object framework after creating the object and resolving all dependencies.
+     *
+     * @param integer $cause Creation cause
+     */
+    public function initializeObject($cause)
+    {
+        if ($cause === \TYPO3\Flow\Object\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
+            $settings = $this->configurationManager->getConfiguration(\TYPO3\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.TYPO3CR.Search');
+            $this->indexName = $settings['elasticSearch']['indexName'];
+        }
+    }
 
-	/**
-	 * Called by the Flow object framework after creating the object and resolving all dependencies.
-	 *
-	 * @param integer $cause Creation cause
-	 */
-	public function initializeObject($cause) {
-		if ($cause === \TYPO3\Flow\Object\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-			$settings = $this->configurationManager->getConfiguration(\TYPO3\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.TYPO3CR.Search');
-			$this->indexName = $settings['elasticSearch']['indexName'];
-		}
-	}
+    /**
+     * Get the index name to be used
+     *
+     * @return string
+     */
+    public function getIndexName()
+    {
+        return $this->indexName;
+    }
 
-	/**
-	 * Get the index name to be used
-	 *
-	 * @return string
-	 */
-	public function getIndexName() {
-		return $this->indexName;
-	}
-
-	/**
-	 * Retrieve the index to be used for querying or on-the-fly indexing.
-	 * In ElasticSearch, this index is an *alias* to the currently used index.
-	 *
-	 * @return \Flowpack\ElasticSearch\Domain\Model\Index
-	 */
-	public function getIndex() {
-		return $this->findIndex($this->indexName);
-	}
+    /**
+     * Retrieve the index to be used for querying or on-the-fly indexing.
+     * In ElasticSearch, this index is an *alias* to the currently used index.
+     *
+     * @return \Flowpack\ElasticSearch\Domain\Model\Index
+     */
+    public function getIndex()
+    {
+        return $this->findIndex($this->indexName);
+    }
 }
