@@ -192,7 +192,10 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function getAggregations()
     {
         $this->initialize();
-        return $this->result['aggregations'];
+        if (array_key_exists("aggregations", $this->result)) {
+            return $this->result['aggregations'];
+        }
+        return array();
     }
 
     /**
