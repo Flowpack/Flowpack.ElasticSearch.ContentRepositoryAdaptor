@@ -389,12 +389,41 @@ class NodeIndexer extends AbstractNodeIndexer {
 			foreach (explode("\n", $responseAsLines) as $responseLine) {
 				$response = json_decode($responseLine);
 				if (!is_object($response) || (isset($response->errors) && $response->errors !== FALSE)) {
-					$this->logger->log('Indexing Error: ' . $responseLine, LOG_ERR);
+					$this->logIndexingErrors($this->currentBulkRequest, $responseLine);
 				}
 			}
 		}
 
 		$this->currentBulkRequest = array();
+	}
+
+	/**
+	 * @param string $bulkRequest
+	 * @param string $errors
+	 */
+	protected function logIndexingErrors($bulkRequest, $errors) {
+		if (!file_exists(FLOW_PATH_DATA . 'Logs/ElasticSearch')) {
+			mkdir(FLOW_PATH_DATA . 'Logs/ElasticSearch');
+		}
+		if (file_exists(FLOW_PATH_DATA . 'Logs/ElasticSearch') && is_dir(FLOW_PATH_DATA . 'Logs/ElasticSearch') && is_writable(FLOW_PATH_DATA . 'Logs/ElasticSearch')) {
+			$referenceCode = date('YmdHis', $_SERVER['REQUEST_TIME']) . substr(md5(rand()), 0, 6);
+			$dumpPathAndFilename = FLOW_PATH_DATA . 'Logs/ElasticSearch/' . $referenceCode . '.txt';
+			file_put_contents($dumpPathAndFilename, $this->renderIndexingErrors($bulkRequest, $errors));
+			$this->logger->log(sprintf('Indexing errors detected - See also: Data/Logs/ElasticSearch/%s', basename($dumpPathAndFilename)), LOG_ERR, array(), 'Flowpack.ElasticSearch.ContentRepositoryAdaptor', __CLASS__, __FUNCTION__);
+		} else {
+			$this->logger->log(sprintf('Could not write indexing errors backtrace into %s because the directory could not be created or is not writable.', FLOW_PATH_DATA . 'Logs/ElasticSearch/'), LOG_WARNING, array(), 'Flowpack.ElasticSearch.ContentRepositoryAdaptor', __CLASS__, __FUNCTION__);
+		}
+	}
+
+	/**
+	 * @param array $bulkRequest
+	 * @param string $errors
+	 * @return string
+	 */
+	protected function renderIndexingErrors(array $bulkRequest, $errors) {
+		$bulkRequest = json_encode($bulkRequest, JSON_PRETTY_PRINT);
+		$errors = json_encode(json_decode($errors, TRUE), JSON_PRETTY_PRINT);
+		return sprintf("Payload:\n========\n\n%s\n\nErrors:\n=======\n\n%s\n\n", $bulkRequest, $errors);
 	}
 
 	/**
