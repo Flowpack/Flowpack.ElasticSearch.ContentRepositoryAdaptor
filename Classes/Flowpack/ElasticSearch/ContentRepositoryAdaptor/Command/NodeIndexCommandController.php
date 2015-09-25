@@ -11,9 +11,13 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
+use Doctrine\Common\Persistence\ObjectManager;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use TYPO3\Flow\Configuration\ConfigurationManager;
+use TYPO3\Flow\Core\Booting\Scripts;
+use TYPO3\Flow\Exception;
 use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
 
 /**
@@ -22,6 +26,12 @@ use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
  * @Flow\Scope("singleton")
  */
 class NodeIndexCommandController extends CommandController {
+
+	/**
+	 * @Flow\Inject
+	 * @var ConfigurationManager
+	 */
+	protected $configurationManager;
 
 	/**
 	 * @Flow\Inject
@@ -52,6 +62,12 @@ class NodeIndexCommandController extends CommandController {
 	 * @var \TYPO3\TYPO3CR\Domain\Factory\NodeFactory
 	 */
 	protected $nodeFactory;
+
+	/**
+	 * @Flow\Inject
+	 * @var ObjectManager
+	 */
+	protected $entityManager;
 
 	/**
 	 * @Flow\Inject
@@ -235,21 +251,33 @@ class NodeIndexCommandController extends CommandController {
 	 */
 	protected function indexWorkspace($workspaceName) {
 		$combinations = $this->calculateDimensionCombinations();
+		$executeCommand = function($workspaceName, $combination = NULL) {
+			$arguments = [
+				'workspaceName' => $workspaceName,
+				'dimensions' => $combination ? json_encode($combination) : NULL
+			];
+			$status = Scripts::executeCommand('flowpack.elasticsearch.contentrepositoryadaptor:nodeindex:indexworkspacewithdimensions', $this->getFlowSettings(), TRUE, $arguments);
+			if ($status !== TRUE) {
+				throw new Exception('Unable to index workspace with dimensions', 1427569159);
+			}
+		};
 		if ($combinations === array()) {
-			$this->indexWorkspaceWithDimensions($workspaceName);
+			$executeCommand($workspaceName);
 		} else {
 			foreach ($combinations as $combination) {
-				$this->indexWorkspaceWithDimensions($workspaceName, $combination);
+				$executeCommand($workspaceName, $combination);
 			}
 		}
 	}
 
 	/**
 	 * @param string $workspaceName
-	 * @param array $dimensions
+	 * @param string $dimensions json representation of the content dimensions
 	 * @return void
+	 * @Flow\Internal
 	 */
-	protected function indexWorkspaceWithDimensions($workspaceName, array $dimensions = array()) {
+	public function indexWorkspaceWithDimensionsCommand($workspaceName, $dimensions = NULL) {
+		$dimensions = $dimensions ? json_decode($dimensions, TRUE) : array();
 		$context = $this->contextFactory->create(array('workspaceName' => $workspaceName, 'dimensions' => $dimensions));
 		$rootNode = $context->getRootNode();
 
@@ -317,5 +345,12 @@ class NodeIndexCommandController extends CommandController {
 		}
 
 		return $combinations;
+	}
+
+	/**
+	 * @return array
+	 */
+	protected function getFlowSettings() {
+		return $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.Flow');
 	}
 }
