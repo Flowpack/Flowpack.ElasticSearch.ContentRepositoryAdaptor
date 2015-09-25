@@ -11,13 +11,18 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Eel;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQuery;
+use TYPO3\TYPO3CR\Domain\Repository\WorkspaceRepository;
 
 /**
  * Testcase for ElasticSearchQuery
  */
 class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
 {
+    /**
+     * @var WorkspaceRepository
+     */
+    protected $workspaceRepository;
+
     /**
      * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController
      */
@@ -56,19 +61,28 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     public function setUp()
     {
         parent::setUp();
+        $this->workspaceRepository = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Repository\WorkspaceRepository');
+        $liveWorkspace = new \TYPO3\TYPO3CR\Domain\Model\Workspace("live");
+        $this->workspaceRepository->add($liveWorkspace);
+
         $this->nodeTypeManager = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Service\NodeTypeManager');
         $this->contextFactory = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Service\ContextFactoryInterface');
         $this->context = $this->contextFactory->create(array('workspaceName' => 'live', 'dimensions' => array('language' => array('de'))));
+
         $this->nodeDataRepository = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository');
         $this->queryBuilder = $this->objectManager->get('Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder');
 
         $this->queryBuilder->log();
-        $this->createNodesForNodeSearchTest();
+
+        // we need to make sure that the index will be prefixed with an unique name. so we add a sleet as it is not
+        // possible right now to set the index name
+        sleep(4);
 
         $this->nodeIndexCommandController = $this->objectManager->get('Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController');
         $this->nodeIndexCommandController->buildCommand();
-    }
 
+        $this->createNodesForNodeSearchTest();
+    }
 
     public function tearDown()
     {
@@ -109,7 +123,23 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
         $this->assertCount(1, $result->toArray(), 'Asserting the executed query returns a valid number of items.');
     }
 
+    /**
+     * @test
+     */
+    public function aggregationsCanAdded()
+    {
+        $aggregationTitle = "titleagg";
+        $result = $this->queryBuilder->query($this->context->getRootNode())->fieldBasedAggregation($aggregationTitle, "title")->execute()->getAggregations();
 
+        $this->assertArrayHasKey($aggregationTitle, $result);
+
+        // assume three results because there are three nodes created with an title set
+        $this->assertCount(3, $result[$aggregationTitle]);
+    }
+
+    /**
+     * Creates some sample nodes to run tests against
+     */
     protected function createNodesForNodeSearchTest()
     {
         $rootNode = $this->context->getRootNode();
@@ -124,5 +154,6 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
         $newNode2->setProperty('title', 'egg');
 
         $this->persistenceManager->persistAll();
+        $this->nodeIndexCommandController->buildCommand();
     }
 }
