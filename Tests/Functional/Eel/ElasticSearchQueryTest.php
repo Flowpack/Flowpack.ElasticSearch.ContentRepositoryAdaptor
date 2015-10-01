@@ -11,6 +11,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Eel;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
+use TYPO3\TYPO3CR\Domain\Model\Workspace;
 use TYPO3\TYPO3CR\Domain\Repository\WorkspaceRepository;
 
 /**
@@ -58,11 +59,15 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
      */
     protected $queryBuilder;
 
+
+    protected static $indexInitialized = false;
+
+
     public function setUp()
     {
         parent::setUp();
         $this->workspaceRepository = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Repository\WorkspaceRepository');
-        $liveWorkspace = new \TYPO3\TYPO3CR\Domain\Model\Workspace("live");
+        $liveWorkspace = new Workspace("live");
         $this->workspaceRepository->add($liveWorkspace);
 
         $this->nodeTypeManager = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Service\NodeTypeManager');
@@ -72,15 +77,10 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
         $this->nodeDataRepository = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository');
         $this->queryBuilder = $this->objectManager->get('Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder');
 
-        $this->queryBuilder->log();
-
-        // we need to make sure that the index will be prefixed with an unique name. so we add a sleet as it is not
-        // possible right now to set the index name
-        sleep(4);
-
         $this->nodeIndexCommandController = $this->objectManager->get('Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController');
-        $this->nodeIndexCommandController->buildCommand();
 
+        $this->queryBuilder->log();
+        $this->initializeIndex();
         $this->createNodesForNodeSearchTest();
     }
 
@@ -88,7 +88,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     {
         parent::tearDown();
         $this->inject($this->contextFactory, 'contextInstances', array());
-        $this->nodeIndexCommandController->cleanupCommand();
+        // $this->nodeIndexCommandController->cleanupCommand();
     }
 
     /**
@@ -105,7 +105,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
      */
     public function filterNodeByProperty()
     {
-        $resultCount = $this->queryBuilder->query($this->context->getRootNode())->exactMatch('title', 'egg')->count();
+        $resultCount = $this->queryBuilder->query($this->context->getRootNode())->exactMatch('title', 'ei')->count();
         $this->assertEquals(1, $resultCount);
     }
 
@@ -126,15 +126,21 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     /**
      * @test
      */
-    public function aggregationsCanAdded()
+    public function fieldBasedAggregations()
     {
         $aggregationTitle = "titleagg";
         $result = $this->queryBuilder->query($this->context->getRootNode())->fieldBasedAggregation($aggregationTitle, "title")->execute()->getAggregations();
 
         $this->assertArrayHasKey($aggregationTitle, $result);
 
-        // assume three results because there are three nodes created with an title set
-        $this->assertCount(3, $result[$aggregationTitle]);
+        $this->assertCount(2, $result[$aggregationTitle]['buckets']);
+
+        $expectedChickenBucket = array(
+            'key' => 'chicken',
+            'doc_count' => 2
+        );
+
+        $this->assertEquals($expectedChickenBucket, $result[$aggregationTitle]['buckets'][0]);
     }
 
     /**
@@ -171,9 +177,27 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
         $newNode2->setProperty('title', 'chicken');
 
         $newNode3 = $rootNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
+
         $newNode3->setProperty('title', 'egg');
+
+        $dimensionContext = $this->contextFactory->create(array('workspaceName' => 'live', 'dimensions' => array('language' => array('en_us'))));
+        $translatedNode3 = $dimensionContext->adoptNode($newNode3, TRUE);
+        $translatedNode3->setProperty('title', 'egg');
+
 
         $this->persistenceManager->persistAll();
         $this->nodeIndexCommandController->buildCommand();
+    }
+
+    protected function initializeIndex()
+    {
+        if (self::$indexInitialized === false) {
+            // we need to make sure that the index will be prefixed with an unique name. so we add a sleep as it is not
+            // possible right now to set the index name
+            sleep(2);
+            $this->nodeIndexCommandController->buildCommand();
+
+            self::$indexInitialized = true;
+        }
     }
 }
