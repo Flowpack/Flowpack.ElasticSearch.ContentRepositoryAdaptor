@@ -149,7 +149,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * Filter by node type, taking inheritance into account.
      *
-     * @param string $nodeType the node type to filter for
+     * @param string[]|string $nodeType the node type to filter for
      * @return ElasticSearchQueryBuilder
      * @api
      */
@@ -157,9 +157,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     {
         // on indexing, __typeAndSupertypes contains the typename itself and all supertypes, so that's why we can
         // use a simple term filter here.
+        if (is_string($nodeType)) {
+            $nodeType = [ $nodeType ];
+        }
 
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-term-filter.html
-        return $this->queryFilter('term', array('__typeAndSupertypes' => $nodeType));
+        return $this->queryFilter('terms', array('__typeAndSupertypes' => $nodeType));
     }
 
     /**
