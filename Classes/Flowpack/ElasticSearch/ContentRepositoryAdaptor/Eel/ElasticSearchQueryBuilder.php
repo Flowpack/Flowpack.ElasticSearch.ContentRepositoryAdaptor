@@ -171,18 +171,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function sortDesc($propertyName)
     {
-        if (!isset($this->request['sort'])) {
-            $this->request['sort'] = array();
-        }
+        $configuration = [
+            $propertyName => ['order' => 'desc']
+        ];
 
-        // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-request-sort.html
-        $this->request['sort'][] = array(
-            $propertyName => array('order' => 'desc')
-        );
+        $this->sort($configuration);
 
         return $this;
     }
-
 
     /**
      * Sort ascending by $propertyName
@@ -193,18 +189,32 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function sortAsc($propertyName)
     {
-        if (!isset($this->request['sort'])) {
-            $this->request['sort'] = array();
-        }
+        $configuration = [
+            $propertyName => ['order' => 'asc']
+        ];
 
-        // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-request-sort.html
-        $this->request['sort'][] = array(
-            $propertyName => array('order' => 'asc')
-        );
+        $this->sort($configuration);
 
         return $this;
     }
 
+    /**
+     * Add a $configuration sort filter to the request
+     *
+     * @param array $configuration
+     * @return ElasticSearchQueryBuilder
+     * @api
+     */
+    public function sort($configuration)
+    {
+        if (!isset($this->request['sort'])) {
+            $this->request['sort'] = array();
+        }
+
+        $this->request['sort'][] = $configuration;
+
+        return $this;
+    }
 
     /**
      * output only $limit records
@@ -451,7 +461,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * nodes = ${Search....aggregation("color", this.aggregationDefinition).execute()}
      *
      * Access all aggregation data with {nodes.aggregations} in your fluid template
-     * 
+     *
      * @param string $name
      * @param array $aggregationDefinition
      * @param null $parentPath

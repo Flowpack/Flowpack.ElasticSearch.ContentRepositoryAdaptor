@@ -240,7 +240,7 @@ your node data. Aggregations also allows you to build a complex filter for e.g. 
 
 **Aggregation methods**
 Right now there are two methods implemented. One generic `aggregation` function that allows you to add any kind of
-aggregation definition and a pre-configured `fieldBasedAggregation`. Both methods can be added to your TS search query. 
+aggregation definition and a pre-configured `fieldBasedAggregation`. Both methods can be added to your TS search query.
 You can nest aggregations by providing a parent name.
 
 * `aggregation($name, array $aggregationDefinition, $parentPath = NULL)` -- generic method to add a $aggregationDefinition under a path $parentPath with the name $name
@@ -254,7 +254,7 @@ a property price:
 ```
 nodes = ${Search.query(site)...fieldBasedAggregation("avgprice", "price", "avg").execute()}
 ```
-Now you can access your aggregations inside your fluid template with 
+Now you can access your aggregations inside your fluid template with
 ```
 {nodes.aggregations}
 ```
@@ -266,7 +266,7 @@ to know the average price for all your colors you just nest an aggregation in yo
 nodes = ${Search.query(site)...fieldBasedAggregation("colors", "color").fieldBasedAggregation("avgprice", "price", "avg", "colors").execute()}
 ```
 The first `fieldBasedAggregation` will add a simple terms aggregation (https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-terms-aggregation.html)
-with the name colors. So all different colors of your nodetype will be listed here. 
+with the name colors. So all different colors of your nodetype will be listed here.
 The second `fieldBasedAggregation` will add another sub-aggregation named avgprice below your colors-aggregation.
 
 You can nest even more aggregations like this:
@@ -299,7 +299,7 @@ prototype(Vendor.Name:FilteredProductList) {
 	searchFilter = TYPO3.TypoScript:RawArray {
 		sku = ${String.split(q(node).property("products"), ",")}
 	}
-	
+
 	# Search for all products that matches your queryFilter and add aggregations
 	filter = ${Search.query(site).nodeType("Vendor.Name:Product").queryFilterMultiple(this.searchFilter, "must").fieldBasedAggregation("color", "color").fieldBasedAggregation("size", "size").execute()}
 
@@ -323,7 +323,7 @@ prototype(Vendor.Name:FilteredProductList) {
 ```
 
 In the first lines we will add a new searchFilter variable and add your selected sku's as a filter. Based on this selection
-we will add two aggregations of type terms. You can access the filter in your template with `{filter.aggregation}`. With 
+we will add two aggregations of type terms. You can access the filter in your template with `{filter.aggregation}`. With
 this information it is easy to create a form with some select fields with all available options. If you submit the form
 just call the same page and add the get parameter color and/or size.
 The next lines will parse those parameters and add them to the searchFilter. Based on your selection all products will
@@ -346,6 +346,95 @@ your filterable properties like this:
           include_in_all: false
           index: 'not_analyzed'
 ```
+
+## Sorting
+
+This package adapts ElasticSearchs sorting capabilities. You can add multiple sort operations to your query.
+Right now there are three methods you can use:
+
+* `sortAsc('propertyName')`
+* `sortDesc('propertyName')`
+* `sort('configuration')`
+
+Just append those method to your query like this:
+```
+# sort ascending by property title
+nodes = ${q(Search.query(site).....sortAsc("title").execute())}
+
+# sort for multiple properties
+nodes = ${q(Search.query(site).....sortAsc("title").sortDesc("name").execute())}
+
+# custom sort opertation
+geoSorting = TYPO3.TypoScript:RawArray {
+    _geo_distance = TYPO3.TypoScript:RawArray {
+        latlng = TYPO3.TypoScript:RawArray {
+            lat = 51.512711
+            lon = 7.453084
+        }
+        order = "plane"
+        unit = "km"
+        distance_type = "sloppy_arc"
+    }
+}
+nodes = ${Search.query(site).....sort(this.geoSorting).execute()}
+
+```
+Check https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html for more configuration
+options.
+
+### Example with pagination and sort by distance
+This is how a more complex example could look like. Imagine you a want to render a list of nodes and in addition to each
+node you want to display the distance to a specific point.
+
+First of all you have to define a property in your NodeTypes.yaml for your node where to store lat/lon information's:
+```
+'Vendor.Name:Retailer':
+  properties:
+    'latlng':
+      type: string
+      search:
+        elasticSearchMapping:
+          type: "geo_point"
+```
+
+Query your nodes in your TypoScript:
+```
+geoSorting = TYPO3.TypoScript:RawArray {
+    _geo_distance = TYPO3.TypoScript:RawArray {
+        latlng = TYPO3.TypoScript:RawArray {
+            lat = 51.512711
+            lon = 7.453084
+        }
+        order = "plane"
+        unit = "km"
+        distance_type = "sloppy_arc"
+    }
+}
+nodes = ${Search.query(site).nodeType('Vendor.Name:Retailer').sort(this.geoSorting)}
+```
+
+Now you can paginate that nodes in your template. To get your actually distance for each node use
+the `GetHitArrayForNodeViewHelper`:
+```
+{namespace es=Flowpack\ElasticSearch\ContentRepositoryAdaptor\ViewHelpers}
+
+<typo3cr:widget.paginate query="{nodes}" as="paginatedNodes">
+    <f:for each="{paginatedNodes}" as="singleNode">
+        {singleNode.name} - <es:getHitArrayForNode queryResultObject="{nodes}" node="{singleNode}" path="sort.0" />
+    </f:for>
+</typo3cr:widget.paginate>
+
+```
+
+The ViewHelper will use \TYPO3\Flow\Utility\Arrays::getValueByPath() to return a specified path. So you can make use
+of an array or a string. Check the documentation \TYPO3\Flow\Utility\Arrays::getValueByPath() for more informations.
+
+**Important notice**
+The ViewHelper GetHitArrayForNode will return the raw hit result array. The path poperty allows you to access some
+specific data like the the sort data. If there is only one value for your path the value will be returned.
+If there is more data the full array will be returned by GetHitArrayForNode-VH. So you might have to use the
+ForViewHelper to access your sort values.
+
 
 ## Fulltext Search / Indexing
 
