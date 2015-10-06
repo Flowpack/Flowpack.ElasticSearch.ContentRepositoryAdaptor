@@ -151,7 +151,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     {
         $this->initialize();
         if (count($this->nodes) > 0) {
-            return array_slice($this->nodes, 0, 1);
+            return array_values($this->nodes)[0];
         }
     }
 
