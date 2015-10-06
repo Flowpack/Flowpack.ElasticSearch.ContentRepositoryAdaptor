@@ -11,10 +11,7 @@ TYPO3:
             values: ['en_US']
             uriSegment: 'en'
           'en_UK': ~
-          'de':
-            label: 'German'
-            values: ['de']
-            uriSegment: 'de'
+          'de': ~
           'fr': ~
           'nl': ~
           'dk': ~

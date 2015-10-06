@@ -72,7 +72,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
 
         $this->nodeTypeManager = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Service\NodeTypeManager');
         $this->contextFactory = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Service\ContextFactoryInterface');
-        $this->context = $this->contextFactory->create(array('workspaceName' => 'live', 'dimensions' => array('language' => array('de'))));
+        $this->context = $this->contextFactory->create(array('workspaceName' => 'live', 'dimensions' => array('language' => array('en_US'))));
 
         $this->nodeDataRepository = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository');
         $this->queryBuilder = $this->objectManager->get('Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder');
@@ -88,7 +88,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     {
         parent::tearDown();
         $this->inject($this->contextFactory, 'contextInstances', array());
-        // $this->nodeIndexCommandController->cleanupCommand();
+        $this->nodeIndexCommandController->cleanupCommand();
     }
 
     /**
@@ -105,7 +105,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
      */
     public function filterNodeByProperty()
     {
-        $resultCount = $this->queryBuilder->query($this->context->getRootNode())->exactMatch('title', 'ei')->count();
+        $resultCount = $this->queryBuilder->query($this->context->getRootNode())->exactMatch('title', 'egg')->count();
         $this->assertEquals(1, $resultCount);
     }
 
@@ -177,12 +177,11 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
         $newNode2->setProperty('title', 'chicken');
 
         $newNode3 = $rootNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
-
         $newNode3->setProperty('title', 'egg');
 
-        $dimensionContext = $this->contextFactory->create(array('workspaceName' => 'live', 'dimensions' => array('language' => array('en_us'))));
+        $dimensionContext = $this->contextFactory->create(array('workspaceName' => 'live', 'dimensions' => array('language' => array('de'))));
         $translatedNode3 = $dimensionContext->adoptNode($newNode3, TRUE);
-        $translatedNode3->setProperty('title', 'egg');
+        $translatedNode3->setProperty('title', 'Ei');
 
 
         $this->persistenceManager->persistAll();
