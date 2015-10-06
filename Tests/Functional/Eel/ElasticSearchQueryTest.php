@@ -138,6 +138,26 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     }
 
     /**
+     * @test
+     */
+    public function nodesWillBeSortedDesc()
+    {
+        $descendingResult = $this->queryBuilder->query($this->context->getRootNode())->sortDesc("title")->execute();
+        $node = $descendingResult->getFirst();
+        $this->assertEquals("egg", $node->getProperty("title"), "Asserting a desc sort order by property title");
+    }
+
+    /**
+     * @test
+     */
+    public function nodesWillBeSortedAsc()
+    {
+        $ascendingResult = $this->queryBuilder->query($this->context->getRootNode())->sortAsc("title")->execute();
+        $node = $ascendingResult->getFirst();
+        $this->assertEquals("chicken", $node->getProperty("title"), "Asserting a asc sort order by property title");
+    }
+
+    /**
      * Creates some sample nodes to run tests against
      */
     protected function createNodesForNodeSearchTest()
@@ -150,8 +170,8 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
         $newNode2 = $rootNode->createNode('test-node-2', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
         $newNode2->setProperty('title', 'chicken');
 
-        $newNode2 = $rootNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
-        $newNode2->setProperty('title', 'egg');
+        $newNode3 = $rootNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
+        $newNode3->setProperty('title', 'egg');
 
         $this->persistenceManager->persistAll();
         $this->nodeIndexCommandController->buildCommand();
