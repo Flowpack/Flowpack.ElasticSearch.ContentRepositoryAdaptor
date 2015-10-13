@@ -641,17 +641,41 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     }
 
     /**
+     * Escapes a lucene query string
+     *
+     * @see http://php.net/manual/en/solrutils.escapequerychars.php
+     *
+     * @param $query
+     * @return mixed
+     */
+    protected function escapeQueryString($query)
+    {
+        // Lucene characters that need escaping with \ are + - && || ! ( ) { } [ ] ^ " ~ * ? : \
+
+        // note: we want to explicitly allow the * to be used
+        $luceneReservedCharacters = preg_quote('+-&|!(){}[]^"~?:\\');
+        $query = preg_replace_callback(
+            '/([' . $luceneReservedCharacters . '])/',
+            function ($matches) {
+                return '\\' . $matches[0];
+            },
+            $query);
+        return $query;
+    }
+
+    /**
      * Match the searchword against the fulltext index
      *
      * @param string $searchWord
+     * @param boolean $escape escape the query string
      * @return QueryBuilderInterface
      * @api
      */
-    public function fulltext($searchWord)
+    public function fulltext($searchWord, $escape=true)
     {
         $this->appendAtPath('query.filtered.query.bool.must', array(
             'query_string' => array(
-                'query' => $searchWord
+                'query' => $escape ? $this->escapeQueryString($searchWord) : $searchWord
             )
         ));
 
