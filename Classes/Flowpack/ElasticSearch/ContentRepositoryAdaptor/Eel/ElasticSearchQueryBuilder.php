@@ -653,7 +653,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         // Lucene characters that need escaping with \ are + - && || ! ( ) { } [ ] ^ " ~ * ? : \
 
         // note: we want to explicitly allow the * to be used
-        $luceneReservedCharacters = preg_quote('+-&|!(){}[]^"~?:\\');
+        $luceneReservedCharacters = preg_quote('+-&|!(){}[]^"~?:\\/', '/');
         $query = preg_replace_callback(
             '/([' . $luceneReservedCharacters . '])/',
             function ($matches) {
@@ -675,7 +675,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     {
         $this->appendAtPath('query.filtered.query.bool.must', array(
             'query_string' => array(
-                'query' => $escape ? $this->escapeQueryString($searchWord) : $searchWord
+                'query' => $escape ? $this->escapeQueryString($searchWord) : $searchWord,
             )
         ));
 
