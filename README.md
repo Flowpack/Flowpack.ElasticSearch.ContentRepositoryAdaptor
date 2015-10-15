@@ -1,12 +1,12 @@
 [![Build Status](https://travis-ci.org/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor.svg)](https://travis-ci.org/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor)
 
-# Neos ElasticSearch Adapter
+# Neos Elasticsearch Adapter
 
-*supporting ElasticSearch Version 1.2.x and 1.3.x and 1.4.x*
+*supporting Elasticsearch versions 1.2.x to 1.7.x*
 
-Created by Sebastian Kurfürst; contributions by Karsten Dambekalns and Robert Lemke.
+Created by Sebastian Kurfürst; [contributions by Karsten Dambekalns, Robert Lemke and others](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/graphs/contributors).
 
-This project connects the Neos Content Repository (TYPO3CR) to ElasticSearch; enabling two
+This project connects the Neos Content Repository (TYPO3CR) to Elasticsearch; enabling two
 main functionalities:
 
 * finding Nodes in TypoScript / Eel by arbitrary queries
@@ -39,17 +39,41 @@ composer require 'flowpack/searchplugin:@dev'
 Now, add the routes as described in the [README of Flowpack.SearchPlugin](https://github.com/skurfuerst/Flowpack.SearchPlugin)
 as the **first route** in Configuration/Routes.yaml.
 
-Then, ensure to update `<your-elasticsearch>/config/elasticsearch.yml` as explained below; then start ElasticSearch.
+Then, ensure to update `<your-elasticsearch>/config/elasticsearch.yml` as explained below; then start Elasticsearch.
 
 Finally, run `./flow nodeindex:build`, and add the search plugin to your page. It should "just work".
 
-## ElasticSearch Configuration file elasticsearch.yml
+## Elasticsearch Configuration file elasticsearch.yml
 
-Due to the fact that the default scripting language has changed from marvel to groovy since elasticsearch 1.3.0,
-there is a need, depending on your running installation of ElasticSearch, to add following lines of configuration to your
-ElasticSearch Configuration File `<your-elasticsearch>/config/elasticsearch.yml`.
+There is a need, depending on your version of Elasticsearch, to add the following lines of configuration to your
+Elasticsearch Configuration File `<your-elasticsearch>/config/elasticsearch.yml`.
 
-### Needed Configuration in configuration.yml for ElasticSearch 1.4.x
+### Needed Configuration in configuration.yml for Elasticsearch 1.6.x and 1.7.x
+
+In verson 1.6 the `script.disable_dynamic` settings and the Groovy sandbox as such [have been deprecated]
+(https://www.elastic.co/guide/en/elasticsearch/reference/1.6/modules-scripting.html#enable-dynamic-scripting).
+You may continue to use the settings for version 1.5.x, but this is what would be the correct configuration for 1.6.x and 1.7.x.
+
+```
+# The following settings are absolutely required for the CR adaptor to work
+script.file: on
+script.engine.groovy.inline: sandbox
+script.engine.groovy.indexed: sandbox
+
+script.groovy.sandbox.class_whitelist: java.util.LinkedHashMap
+script.groovy.sandbox.receiver_whitelist:  java.util.Iterator, java.lang.Object, java.util.Map, java.util.Map$Entry
+script.groovy.sandbox.enabled: true
+
+# the following settings secure your cluster
+cluster.name: [PUT_YOUR_CUSTOM_NAME_HERE]
+network.host: 127.0.0.1
+
+# the following settings are well-suited for smaller Elasticsearch instances (e.g. as long as you can stay on one host)
+index.number_of_shards: 1
+index.number_of_replicas: 0
+```
+
+### Needed Configuration in configuration.yml for Elasticsearch 1.4.x and 1.5.x
 
 ```
 # The following settings are absolutely required for the CR adaptor to work
@@ -62,12 +86,12 @@ script.groovy.sandbox.enabled: true
 cluster.name: [PUT_YOUR_CUSTOM_NAME_HERE]
 network.host: 127.0.0.1
 
-# the following settings are well-suited for smaller ElasticSearch instances (e.g. as long as you can stay on one host)
+# the following settings are well-suited for smaller Elasticsearch instances (e.g. as long as you can stay on one host)
 index.number_of_shards: 1
 index.number_of_replicas: 0
 ```
 
-### Needed Configuration in configuration.yml for ElasticSearch 1.3.x
+### Needed Configuration in configuration.yml for Elasticsearch 1.3.x
 
 ```
 # The following settings are absolutely required for the CR adaptor to work
@@ -78,7 +102,7 @@ script.groovy.sandbox.receiver_whitelist:  java.util.Iterator, java.lang.Object,
 cluster.name: [PUT_YOUR_CUSTOM_NAME_HERE]
 network.host: 127.0.0.1
 
-# the following settings are well-suited for smaller ElasticSearch instances (e.g. as long as you can stay on one host)
+# the following settings are well-suited for smaller Elasticsearch instances (e.g. as long as you can stay on one host)
 index.number_of_shards: 1
 index.number_of_replicas: 0
 ```
@@ -89,10 +113,10 @@ http://www.elasticsearch.org/blog/elasticsearch-1-3-0-released/
 http://www.elasticsearch.org/blog/scripting-security/
 http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-scripting.html
 
-## Needed Configuration for ElasticSearch 1.2.x
+## Needed Configuration for Elasticsearch 1.2.x
 
 
-If you are using ElasticSearch version 1.2 you have also to install groovy as a plugin. To install the plugin just run
+If you are using Elasticsearch version 1.2 you have also to install groovy as a plugin. To install the plugin just run
 the following command in the root folder of your elastic:
 
 ```
@@ -157,11 +181,11 @@ If you use multiple client configurations, please change the *default* key just 
 
 ## Doing Arbitrary Queries
 
-We'll first show how to do arbitrary ElasticSearch Queries in TypoScript. This is a more powerful
+We'll first show how to do arbitrary Elasticsearch Queries in TypoScript. This is a more powerful
 alternative to FlowQuery. In the long run, we might be able to integrate this API back into FlowQuery,
 but for now it works well as-is.
 
-Generally, ElasticSearch queries are done using the `Search` Eel helper. In case you want
+Generally, Elasticsearch queries are done using the `Search` Eel helper. In case you want
 to retrieve a *list of nodes*, you'll generally do:
 ```
 nodes = ${Search.query(site)....execute()}
@@ -189,17 +213,17 @@ Furthermore, the following operators are supported:
 * `lessThan('propertyName', value)` -- range filter with property values less than the given value
 * `lessThanOrEqual('propertyName', value)` -- range filter with property values less than or equal to the given value
 * `sortAsc('propertyName')` and `sortDesc('propertyName')` -- can also be used multiple times, e.g. `sortAsc('tag').sortDesc(`date')` will first sort by tag ascending, and then by date descending.
-* `limit(5)` -- only return five results. If not specified, the default limit by ElasticSearch applies (which is at 10 by default)
+* `limit(5)` -- only return five results. If not specified, the default limit by Elasticsearch applies (which is at 10 by default)
 * `from(5)` -- return the results starting from the 6th one
 * `fulltext(...)` -- do a query_string query on the Fulltext Index
 
-Furthermore, there is a more low-level operator which can be used to add arbitrary ElasticSearch filters:
+Furthermore, there is a more low-level operator which can be used to add arbitrary Elasticsearch filters:
 
 * `queryFilter("filterType", {option1: "value1"})`
 
 In order to debug the query more easily, the following operation is helpful:
 
-* `log()` log the full query on execution into the ElasticSearch log (i.e. in `Data/Logs/ElasticSearch.log`)
+* `log()` log the full query on execution into the Elasticsearch log (i.e. in `Data/Logs/ElasticSearch.log`)
 
 ### Example Queries
 
@@ -233,7 +257,7 @@ prototype(Acme.Blog:SingleTag) < prototype(TYPO3.Neos:Template) {
 
 ## Aggregations
 
-Aggregation is an easy way to aggregate your node data in different ways. ElasticSearch provides a couple of different types of
+Aggregation is an easy way to aggregate your node data in different ways. Elasticsearch provides a couple of different types of
 aggregations. Check `https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations.html` for more
 info about aggregations. You can use them to get some simple aggregations like min, max or average values for
 your node data. Aggregations also allows you to build a complex filter for e.g. a product search or statistics.
@@ -332,7 +356,7 @@ be fetched and passed to your template.
 
 **Important notice**
 
-If you do use the terms filter be aware of ElasticSearchs analyze functionality. You might want to disable this for all
+If you do use the terms filter be aware of Elasticsearchs analyze functionality. You might want to disable this for all
 your filterable properties like this:
 ```
 'Vendor.Name:Product'
@@ -362,7 +386,7 @@ a match inside the normal body text. That's why the `Document` node not only con
 all the texts, but multiple "buckets" where text is added to: One field which contains everything
 deemed as "very important" (`__fulltext.h1`), one which is "less important" (`__fulltext.h2`),
 and finally one for the plain text (`__fulltext.text`). All of these fields add themselves to the
-ElasticSearch `_all` field, and are configured with different `boost` values.
+Elasticsearch `_all` field, and are configured with different `boost` values.
 
 In order to search this index, you can just search inside the `_all` field with an additional limitation
 of `__typeAndSupertypes` containing `TYPO3.Neos:Document`.
@@ -381,7 +405,7 @@ Furthermore, this can be overridden using the `properties.[....].search` path in
 
 This configuration contains two parts:
 
-* Underneath `elasticSearchMapping`, the ElasticSearch property mapping can be defined.
+* Underneath `elasticSearchMapping`, the Elasticsearch property mapping can be defined.
 * Underneath `indexing`, an Eel expression which processes the value before indexing has to be
   specified. It has access to the current `value` and the current `node`.
 
@@ -410,7 +434,7 @@ TYPO3:
       search:
 
         # a date should be mapped differently, and in this case we want to use a date format which
-        # ElasticSearch understands
+        # Elasticsearch understands
         elasticSearchMapping:
           type: DateTime
           include_in_all: false
@@ -473,7 +497,7 @@ An example:
 
 ## Working with Dates
 
-As a default, ElasticSearch indexes dates in the UTC Timezone. In order to have it index using the timezone
+As a default, Elasticsearch indexes dates in the UTC Timezone. In order to have it index using the timezone
 currently configured in PHP, the configuration for any property in a node which represents a date should look like this:
 
 ```
@@ -490,13 +514,13 @@ currently configured in PHP, the configuration for any property in a node which 
 This is important so that Date- and Time-based searches work as expected, both when using formatted DateTime strings and
 when using relative DateTime calculations (eg.: `now`, `now+1d`).
 
-For more information on ElasticSearch's Date Formats,
+For more information on Elasticsearch's Date Formats,
 [click here](http://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html).
 
 
 ## Working with Assets / Attachments
 
-If you want to index attachments, you need to install the [ElasticSearch Attachment Plugin](https://github.com/elastic/elasticsearch-mapper-attachments).
+If you want to index attachments, you need to install the [Elasticsearch Attachment Plugin](https://github.com/elastic/elasticsearch-mapper-attachments).
 Then, you can add the following to your `Settings.yaml`:
 
 ```
@@ -517,7 +541,7 @@ TYPO3:
           indexing: ${Indexing.indexAsset(value)}
 ```
 
-## Configurable ElasticSearch Mapping
+## Configurable Elasticsearch Mapping
 
 (included in version >= 2.1)
 
@@ -562,14 +586,14 @@ in the NodeTypes.yaml. Generally this works by defining the global mapping at `[
 
 In order to understand what's going on, the following commands are helpful:
 
-* use `./flow nodeindex:showMapping` to show the currently defined ElasticSearch Mapping
-* use the `.log()` statement inside queries to dump them to the ElasticSearch Log
+* use `./flow nodeindex:showMapping` to show the currently defined Elasticsearch Mapping
+* use the `.log()` statement inside queries to dump them to the Elasticsearch Log
 * the logfile `Data/Logs/ElasticSearch.log` contains loads of helpful information.
 
 
 ## Version 2 vs Version 1
 
-* Version 1 is the initial, productive version of the Neos ElasticSearch adapter.
+* Version 1 is the initial, productive version of the Neos Elasticsearch adapter.
 * Version 2 has a dependency on TYPO3.TYPO3CR.Search; which contains base functionality
   which is also relevant for other search implementations (like the SQLite based SimpleSearch).
 
