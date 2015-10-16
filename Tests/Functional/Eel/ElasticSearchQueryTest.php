@@ -146,6 +146,28 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     /**
      * @test
      */
+    public function termSuggestion()
+    {
+        $titleSuggestionKey = "chickn";
+
+        $result = $this->queryBuilder->query($this->context->getRootNode())->termSuggestions($titleSuggestionKey, "title")->execute()->getSuggestions();
+
+        $this->assertArrayHasKey("options", $result);
+
+        $this->assertCount(1, $result['options']);
+
+        $expectedChickenBucket = array(
+            'text' => 'chicken',
+            'freq' => 2,
+            'score' => 0.8333333
+        );
+
+        $this->assertEquals($expectedChickenBucket, $result['options'][0]);
+    }
+
+    /**
+     * @test
+     */
     public function nodesWillBeSortedDesc()
     {
         $descendingResult = $this->queryBuilder->query($this->context->getRootNode())->sortDesc("title")->execute();
