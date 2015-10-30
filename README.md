@@ -393,6 +393,50 @@ of `__typeAndSupertypes` containing `TYPO3.Neos:Document`.
 
 **For a search user interface, checkout the Flowpack.SearchPlugin package**
 
+## Suggestions
+
+Elasticsearch offers an easy way to get query suggestions based on your query. Check
+`https://www.elastic.co/guide/en/elasticsearch/reference/current/search-suggesters.html` for more information about how
+you can build and use suggestion in your search.
+
+**Suggestion methods implemented**
+There are two methods implemented. `suggestions` is a generic one that allows to build the suggestion query of your 
+dreams. The other method is `termSuggestions` and is meant for basic term suggestions. They can be added to your totaly 
+awesome TS search query.
+   
+* `suggestions($name, array $suggestionDefinition)` -- generic method to be filled with your own suggestionQuery
+* `termSuggestions($term, $field = '_all', $name = 'suggestions'` -- simple term suggestion query on all fields
+
+### Examples
+#### Add a simple suggestion to a query
+Simple suggestion that returns a suggestion based on the sent term
+
+```
+suggestions = $(Search.query(site)...termSuggestions('someTerm')}
+```
+You can access your suggestions inside your fluid template with 
+```
+{nodes.suggestions}
+```
+
+### Add a custom suggestion
+Phrase query that returns query suggestions
+
+```
+suggestionsQueryDefinition = TYPO3.TypoScript:RawArray {
+    text = 'some Text'
+    simple_phrase = TYPO3.TypoScript:RawArray {
+        phrase = TYPO3.TypoScript:RawArray {
+            analyzer = 'body'
+            field = 'bigram'
+            size = 1
+            real_world_error_likelihood = 0.95
+            ...
+        }
+    }
+}
+suggestions = ${Search.query(site)...suggestions('my_suggestions', this.suggestionsQueryDefinition)}
+```
 
 ## Advanced: Configuration of Indexing
 
