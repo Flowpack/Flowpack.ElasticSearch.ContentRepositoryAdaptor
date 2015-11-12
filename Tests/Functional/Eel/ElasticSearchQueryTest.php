@@ -67,7 +67,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     {
         parent::setUp();
         $this->workspaceRepository = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Repository\WorkspaceRepository');
-        $liveWorkspace = new Workspace("live");
+        $liveWorkspace = new Workspace('live');
         $this->workspaceRepository->add($liveWorkspace);
 
         $this->nodeTypeManager = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Service\NodeTypeManager');
@@ -128,8 +128,8 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
      */
     public function fieldBasedAggregations()
     {
-        $aggregationTitle = "titleagg";
-        $result = $this->queryBuilder->query($this->context->getRootNode())->fieldBasedAggregation($aggregationTitle, "title")->execute()->getAggregations();
+        $aggregationTitle = 'titleagg';
+        $result = $this->queryBuilder->query($this->context->getRootNode())->fieldBasedAggregation($aggregationTitle, 'title')->execute()->getAggregations();
 
         $this->assertArrayHasKey($aggregationTitle, $result);
 
@@ -170,9 +170,9 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
      */
     public function nodesWillBeSortedDesc()
     {
-        $descendingResult = $this->queryBuilder->query($this->context->getRootNode())->sortDesc("title")->execute();
+        $descendingResult = $this->queryBuilder->query($this->context->getRootNode())->sortDesc('title')->execute();
         $node = $descendingResult->getFirst();
-        $this->assertEquals("egg", $node->getProperty("title"), "Asserting a desc sort order by property title");
+        $this->assertEquals('egg', $node->getProperty('title'), 'Asserting a desc sort order by property title');
     }
 
     /**
@@ -180,9 +180,21 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
      */
     public function nodesWillBeSortedAsc()
     {
-        $ascendingResult = $this->queryBuilder->query($this->context->getRootNode())->sortAsc("title")->execute();
+        $ascendingResult = $this->queryBuilder->query($this->context->getRootNode())->sortAsc('title')->execute();
         $node = $ascendingResult->getFirst();
-        $this->assertEquals("chicken", $node->getProperty("title"), "Asserting a asc sort order by property title");
+        $this->assertEquals('chicken', $node->getProperty('title'), 'Asserting a asc sort order by property title');
+    }
+
+    /**
+     * @test
+     */
+    public function sortValuesAreReturned()
+    {
+        $result = $this->queryBuilder->query($this->context->getRootNode())->sortAsc('title')->execute();
+
+        foreach ($result as $node) {
+            $this->assertEquals(array($node->getProperty('title')), $result->getSortValuesForNode($node));
+        }
     }
 
     /**
@@ -204,7 +216,6 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
         $dimensionContext = $this->contextFactory->create(array('workspaceName' => 'live', 'dimensions' => array('language' => array('de'))));
         $translatedNode3 = $dimensionContext->adoptNode($newNode3, TRUE);
         $translatedNode3->setProperty('title', 'Ei');
-
 
         $this->persistenceManager->persistAll();
         $this->nodeIndexCommandController->buildCommand();
