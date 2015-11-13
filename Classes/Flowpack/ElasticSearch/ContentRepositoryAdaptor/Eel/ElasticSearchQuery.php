@@ -25,6 +25,11 @@ class ElasticSearchQuery implements QueryInterface
      */
     protected $queryBuilder;
 
+    /**
+     * @var array
+     */
+    protected static $runtimeQueryResultCache;
+
     public function __construct(ElasticSearchQueryBuilder $elasticSearchQueryBuilder)
     {
         $this->queryBuilder = $elasticSearchQueryBuilder;
@@ -35,7 +40,13 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function execute($cacheResult = false)
     {
-        return new ElasticSearchQueryResult($this);
+        $queryHash = md5(json_encode($this->queryBuilder->getRequest()));
+        if ($cacheResult === true && isset(self::$runtimeQueryResultCache[$queryHash])) {
+            return self::$runtimeQueryResultCache[$queryHash];
+        }
+        $queryResult = new ElasticSearchQueryResult($this);
+        self::$runtimeQueryResultCache[$queryHash] = $queryResult;
+        return $queryResult;
     }
 
     /**
