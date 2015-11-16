@@ -60,6 +60,30 @@
           include_in_all: false
         indexing: '${Indexing.extractNodeTypeNamesAndSupertypes(node.nodeType)}'
 
+    '_lastModificationDateTime':
+      search:
+        elasticSearchMapping:
+          type: date
+          include_in_all: false
+          format: 'date_time_no_millis'
+        indexing: '${(node.lastModificationDateTime ? Date.format(node.lastModificationDateTime, "Y-m-d\TH:i:sP") : null)}'
+
+    '_lastPublicationDateTime':
+      search:
+        elasticSearchMapping:
+          type: date
+          include_in_all: false
+          format: 'date_time_no_millis'
+        indexing: '${(node.lastPublicationDateTime ? Date.format(node.lastPublicationDateTime, "Y-m-d\TH:i:sP") : null)}'
+
+    '_creationDateTime':
+      search:
+        elasticSearchMapping:
+          type: date
+          include_in_all: false
+          format: 'date_time_no_millis'
+        indexing: '${(node.creationDateTime ? Date.format(node.creationDateTime, "Y-m-d\TH:i:sP") : null)}'
+
 'unstructured': *node
 
 'TYPO3.Neos:Hidable':
@@ -77,7 +101,6 @@
           include_in_all: false
           format: 'date_time_no_millis'
         indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:sP") : null)}'
-
 
     '_hiddenAfterDateTime':
       search:
