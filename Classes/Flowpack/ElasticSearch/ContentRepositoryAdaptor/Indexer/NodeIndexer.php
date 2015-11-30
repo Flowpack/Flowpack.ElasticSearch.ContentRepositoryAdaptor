@@ -16,8 +16,11 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuild
 use Flowpack\ElasticSearch\Domain\Model\Client;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
+use TYPO3\Eel\FlowQuery\FlowQuery;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
+use TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator;
+use TYPO3\TYPO3CR\Domain\Service\ContextFactory;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 use TYPO3\TYPO3CR\Search\Indexer\AbstractNodeIndexer;
 
@@ -66,6 +69,18 @@ class NodeIndexer extends AbstractNodeIndexer
      * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface
      */
     protected $logger;
+
+    /**
+     * @Flow\Inject
+     * @var ContentDimensionCombinator
+     */
+    protected $contentDimensionCombinator;
+
+    /**
+     * @Flow\Inject
+     * @var ContextFactory
+     */
+    protected $contextFactory;
 
     /**
      * The current ElasticSearch bulk request, in the format required by http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html
@@ -122,125 +137,144 @@ class NodeIndexer extends AbstractNodeIndexer
      */
     public function indexNode(NodeInterface $node, $targetWorkspaceName = null)
     {
-        $contextPath = $node->getContextPath();
+        $indexer = function (NodeInterface $node, $targetWorkspaceName = null) {
 
-        if ($this->settings['indexAllWorkspaces'] === false) {
-            // we are only supposed to index the live workspace.
-            // We need to check the workspace at two occasions; checking the
-            // $targetWorkspaceName and the workspace name of the node's context as fallback
-            if ($targetWorkspaceName !== null && $targetWorkspaceName !== 'live') {
-                return;
+            $contextPath = $node->getContextPath();
+
+            if ($this->settings['indexAllWorkspaces'] === false) {
+                // we are only supposed to index the live workspace.
+                // We need to check the workspace at two occasions; checking the
+                // $targetWorkspaceName and the workspace name of the node's context as fallback
+                if ($targetWorkspaceName !== null && $targetWorkspaceName !== 'live') {
+                    return;
+                }
+
+                if ($targetWorkspaceName === null && $node->getContext()->getWorkspaceName() !== 'live') {
+                    return;
+                }
             }
 
-            if ($targetWorkspaceName === null && $node->getContext()->getWorkspaceName() !== 'live') {
-                return;
+
+            if ($targetWorkspaceName !== null) {
+                $contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
             }
-        }
 
+            $contextPathHash = sha1($contextPath);
+            $nodeType = $node->getNodeType();
 
-        if ($targetWorkspaceName !== null) {
-            $contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
-        }
+            $mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
 
-        $contextPathHash = sha1($contextPath);
-        $nodeType = $node->getNodeType();
-
-        $mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
-
-        // Remove document with the same contextPathHash but different NodeType, required after NodeType change
-        $this->getIndex()->request('DELETE', '/_query', array(), json_encode([
-            'query' => [
-                'bool' => [
-                    'must' => [
-                        'ids' => [
-                            'values' => [ $contextPathHash ]
-                        ]
-                    ],
-                    'must_not' => [
-                        'term' => [
-                            '_type' => str_replace('.', '/', $node->getNodeType()->getName())
-                        ]
-                    ],
+            // Remove document with the same contextPathHash but different NodeType, required after NodeType change
+            $this->getIndex()->request('DELETE', '/_query', array(), json_encode([
+                'query' => [
+                    'bool' => [
+                        'must' => [
+                            'ids' => [
+                                'values' => [$contextPathHash]
+                            ]
+                        ],
+                        'must_not' => [
+                            'term' => [
+                                '_type' => str_replace('.', '/', $node->getNodeType()->getName())
+                            ]
+                        ],
+                    ]
                 ]
-            ]
-        ]));
+            ]));
 
-        if ($node->isRemoved()) {
-            // TODO: handle deletion from the fulltext index as well
-            $mappingType->deleteDocumentById($contextPathHash);
-            $this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). ID: %s', $contextPath, $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            if ($node->isRemoved()) {
+                // TODO: handle deletion from the fulltext index as well
+                $mappingType->deleteDocumentById($contextPathHash);
+                $this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). ID: %s', $contextPath, $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
 
-            return;
-        }
+                return;
+            }
 
-        $logger = $this->logger;
-        $fulltextIndexOfNode = array();
-        $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($logger, $contextPathHash) {
-            $logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $contextPathHash, $propertyName), LOG_DEBUG, null, 'ElasticSearch (CR)');
-        });
+            $logger = $this->logger;
+            $fulltextIndexOfNode = array();
+            $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($logger, $contextPathHash) {
+                $logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $contextPathHash, $propertyName), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            });
 
-        $document = new ElasticSearchDocument($mappingType,
-            $nodePropertiesToBeStoredInIndex,
-            $contextPathHash
-        );
+            $document = new ElasticSearchDocument($mappingType,
+                $nodePropertiesToBeStoredInIndex,
+                $contextPathHash
+            );
 
-        $documentData = $document->getData();
-        if ($targetWorkspaceName !== null) {
-            $documentData['__workspace'] = $targetWorkspaceName;
-        }
+            $documentData = $document->getData();
+            if ($targetWorkspaceName !== null) {
+                $documentData['__workspace'] = $targetWorkspaceName;
+            }
 
-        $dimensionCombinations = $node->getContext()->getDimensions();
-        if (is_array($dimensionCombinations)) {
-            $documentData['__dimensionCombinations'] = $dimensionCombinations;
-        }
+            $dimensionCombinations = $node->getContext()->getDimensions();
+            if (is_array($dimensionCombinations)) {
+                $documentData['__dimensionCombinations'] = $dimensionCombinations;
+                $documentData['__dimensionCombinationHash'] = md5(json_encode($dimensionCombinations));
+            }
 
-        if ($this->isFulltextEnabled($node)) {
-            if ($this->isFulltextRoot($node)) {
-                // for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
-                // "update" API instead of the "index" API, with a custom script internally; as we
-                // shall not delete the "__fulltext" part of the document if it has any.
-                $this->currentBulkRequest[] = array(
-                    array(
-                        'update' => array(
-                            '_type' => $document->getType()->getName(),
-                            '_id' => $document->getId()
-                        )
-                    ),
-                    // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
-                    array(
-                        'script' => '
+            if ($this->isFulltextEnabled($node)) {
+                if ($this->isFulltextRoot($node)) {
+                    // for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
+                    // "update" API instead of the "index" API, with a custom script internally; as we
+                    // shall not delete the "__fulltext" part of the document if it has any.
+                    $this->currentBulkRequest[] = array(
+                        array(
+                            'update' => array(
+                                '_type' => $document->getType()->getName(),
+                                '_id' => $document->getId()
+                            )
+                        ),
+                        // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
+                        array(
+                            'script' => '
 							fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new LinkedHashMap());
 							fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new LinkedHashMap());
 							ctx._source = newData;
 							ctx._source.__fulltext = fulltext;
 							ctx._source.__fulltextParts = fulltextParts
 						',
-                        'params' => array(
-                            'newData' => $documentData
-                        ),
-                        'upsert' => $documentData,
-                        'lang' => 'groovy'
-
-
-                    )
-                );
-            } else {
-                // non-fulltext-root documents can be indexed as-they-are
-                $this->currentBulkRequest[] = array(
-                    array(
-                        'index' => array(
-                            '_type' => $document->getType()->getName(),
-                            '_id' => $document->getId()
+                            'params' => array(
+                                'newData' => $documentData
+                            ),
+                            'upsert' => $documentData,
+                            'lang' => 'groovy'
                         )
-                    ),
-                    $documentData
-                );
+                    );
+                } else {
+                    // non-fulltext-root documents can be indexed as-they-are
+                    $this->currentBulkRequest[] = array(
+                        array(
+                            'index' => array(
+                                '_type' => $document->getType()->getName(),
+                                '_id' => $document->getId()
+                            )
+                        ),
+                        $documentData
+                    );
+                }
+
+                $this->updateFulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
             }
 
-            $this->updateFulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
-        }
+            $this->logger->log(sprintf('NodeIndexer: Added / updated node %s. ID: %s Context: %s', $contextPath, $contextPathHash, json_encode($node->getContext()->getProperties())), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        };
 
-        $this->logger->log(sprintf('NodeIndexer: Added / updated node %s. ID: %s', $contextPath, $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+        $contextProperties = $node->getContext()->getProperties();
+        foreach ($combinations as $combination) {
+            $dimensions = array_merge($contextProperties['dimensions'], $combination);
+            $targetDimensions = array_merge($contextProperties['targetDimensions'], [ 'language' => $combination['language'][0] ]);
+            $query = new FlowQuery([$node]);
+            $query->pushOperation('context', [[
+                'dimensions' => $dimensions,
+                'targetDimensions' => $targetDimensions
+            ]]);
+            /** @var NodeInterface $indexableNode */
+            $indexableNode = $query->get(0);
+            if ($indexableNode instanceof NodeInterface) {
+                $indexer($indexableNode, $targetWorkspaceName);
+            }
+        }
     }
 
     /**

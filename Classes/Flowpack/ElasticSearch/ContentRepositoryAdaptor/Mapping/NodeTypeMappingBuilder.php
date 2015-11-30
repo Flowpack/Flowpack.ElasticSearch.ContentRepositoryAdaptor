@@ -109,6 +109,10 @@ class NodeTypeMappingBuilder
                     'index' => 'not_analyzed'
                 )
             ));
+            $mapping->setPropertyByPath('__dimensionCombinationHash', [
+                'type' => 'string',
+                'index' => 'not_analyzed'
+            ]);
 
             foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {
                 if (isset($propertyConfiguration['search']) && isset($propertyConfiguration['search']['elasticSearchMapping'])) {
