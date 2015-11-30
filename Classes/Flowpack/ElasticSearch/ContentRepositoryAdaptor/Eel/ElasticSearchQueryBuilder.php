@@ -350,16 +350,65 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $filterType
      * @param mixed $filterOptions
      * @param string $clauseType one of must, should, must_not
+     * @param string $execution The way terms filter executes, null fallback to default mode 'plain', filter exectution is allowed only for terms filter type
+     * @see https://www.elastic.co/guide/en/elasticsearch/reference/1.7/query-dsl-terms-filter.html#_execution_mode
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
      * @return ElasticSearchQueryBuilder
      * @api
      */
-    public function queryFilter($filterType, $filterOptions, $clauseType = 'must')
+    public function queryFilter($filterType, $filterOptions, $clauseType = 'must', $execution = null)
     {
-        if (!in_array($clauseType, array('must', 'should', 'must_not'))) {
+        if (!in_array($clauseType, ['must', 'should', 'must_not'])) {
             throw new QueryBuildingException('The given clause type "' . $clauseType . '" is not supported. Must be one of "must", "should", "must_not".', 1383716082);
         }
-        return $this->appendAtPath('query.filtered.filter.bool.' . $clauseType, array($filterType => $filterOptions));
+        $execution = trim($execution);
+        if ($execution !== '' && in_array($execution, [
+                'plain',
+                'fielddata',
+                'bool',
+                'and',
+                'or'
+            ]) && $filterType === 'terms'
+        ) {
+            $filterOptions['execution'] = $execution;
+        }
+        return $this->appendAtPath('query.filtered.filter.bool.' . $clauseType, [$filterType => $filterOptions]);
+    }
+
+    /**
+     * Add multiple filters to query.filtered.filter
+     *
+     * Example Usage:
+     *
+     *   searchFilter = TYPO3.TypoScript:RawArray {
+     *      author = 'Max'
+     *      tags = TYPO3.TypoScript:RawArray {
+     *        0 = 'a'
+     *        1 = 'b'
+     *      }
+     *   }
+     *
+     *   searchQuery = ${Search.queryFilterMultiple(this.searchFilter)}
+     *
+     * @param array $data An associative array of keys as variable names and values as variable values
+     * @param string $clauseType one of must, should, must_not
+     * @param string $execution The way terms filter executes, null fallback to default mode 'plain', filter exectution is allowed only for terms filter type
+     * @see https://www.elastic.co/guide/en/elasticsearch/reference/1.7/query-dsl-terms-filter.html#_execution_mode
+     * @return ElasticSearchQueryBuilder
+     * @api
+     */
+    public function queryFilterMultiple($data, $clauseType = 'must', $execution = null)
+    {
+        foreach ($data as $key => $value) {
+            if ($value !== null) {
+                if (is_array($value)) {
+                    $this->queryFilter('terms', array($key => $value), $clauseType, $execution);
+                } else {
+                    $this->queryFilter('term', array($key => $value), $clauseType);
+                }
+            }
+        }
+        return $this;
     }
 
     /**
@@ -383,40 +432,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         }
         $currentElement[] = $data;
 
-        return $this;
-    }
-
-    /**
-     * Add multiple filters to query.filtered.filter
-     *
-     * Example Usage:
-     *
-     *   searchFilter = TYPO3.TypoScript:RawArray {
-     *      author = 'Max'
-     *      tags = TYPO3.TypoScript:RawArray {
-     *        0 = 'a'
-     *        1 = 'b'
-     *      }
-     *   }
-     *
-     *   searchQuery = ${Search.queryFilterMultiple(this.searchFilter)}
-     *
-     * @param array $data An associative array of keys as variable names and values as variable values
-     * @param string $clauseType one of must, should, must_not
-     * @return ElasticSearchQueryBuilder
-     * @api
-     */
-    public function queryFilterMultiple($data, $clauseType = 'must')
-    {
-        foreach ($data as $key => $value) {
-            if ($value !== null) {
-                if (is_array($value)) {
-                    $this->queryFilter('terms', array($key => $value), $clauseType);
-                } else {
-                    $this->queryFilter('term', array($key => $value), $clauseType);
-                }
-            }
-        }
         return $this;
     }
 
