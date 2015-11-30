@@ -670,7 +670,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     public function execute()
     {
         $elasticSearchQuery = new ElasticSearchQuery($this);
-        $result = $elasticSearchQuery->execute();
+        $result = $elasticSearchQuery->execute(true);
         return $result;
     }
 
