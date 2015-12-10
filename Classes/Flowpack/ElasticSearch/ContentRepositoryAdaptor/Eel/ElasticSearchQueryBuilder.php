@@ -668,15 +668,16 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $searchWord
      * @param boolean $escape escape the query string
+     * @param array $options query_string options, e.g. ['default_operator' => 'AND]
      * @return QueryBuilderInterface
      * @api
      */
-    public function fulltext($searchWord, $escape=true)
+    public function fulltext($searchWord, $escape=true, $options=[])
     {
         $this->appendAtPath('query.filtered.query.bool.must', array(
-            'query_string' => array(
+            'query_string' => array_merge($options, array(
                 'query' => $escape ? $this->escapeQueryString($searchWord) : $searchWord,
-            )
+            ))
         ));
 
         // We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
