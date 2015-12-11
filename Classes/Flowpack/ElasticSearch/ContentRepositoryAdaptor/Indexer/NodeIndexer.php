@@ -16,7 +16,6 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuild
 use Flowpack\ElasticSearch\Domain\Model\Client;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
-use TYPO3\Eel\FlowQuery\FlowQuery;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator;
@@ -259,22 +258,25 @@ class NodeIndexer extends AbstractNodeIndexer
             $this->logger->log(sprintf('NodeIndexer: Added / updated node %s. ID: %s Context: %s', $contextPath, $contextPathHash, json_encode($node->getContext()->getProperties())), LOG_DEBUG, null, 'ElasticSearch (CR)');
         };
 
-        $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-        $contextProperties = $node->getContext()->getProperties();
-        foreach ($combinations as $combination) {
-            $dimensions = array_merge($contextProperties['dimensions'], $combination);
-            $targetDimensions = array_merge($contextProperties['targetDimensions'], [ 'language' => $combination['language'][0] ]);
-            $query = new FlowQuery([$node]);
-            $query->pushOperation('context', [[
-                'dimensions' => $dimensions,
-                'targetDimensions' => $targetDimensions
-            ]]);
-            /** @var NodeInterface $indexableNode */
-            $indexableNode = $query->get(0);
-            if ($indexableNode instanceof NodeInterface) {
-                $indexer($indexableNode, $targetWorkspaceName);
+        $dimensionCombinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+        $workspaceName = $targetWorkspaceName ?: 'live';
+        $nodeIdentifier = $node->getIdentifier();
+        if ($dimensionCombinations !== []) {
+            foreach ($dimensionCombinations as $combination) {
+                $context = $this->contextFactory->create(array('workspaceName' => $workspaceName, 'dimensions' => $combination));
+                $node = $context->getNodeByIdentifier($nodeIdentifier);
+                if ($node !== null) {
+                    $indexer($node, $targetWorkspaceName);
+                }
+            }
+        } else {
+            $context = $this->contextFactory->create(array('workspaceName' => $workspaceName));
+            $node = $context->getNodeByIdentifier($nodeIdentifier);
+            if ($node !== NULL) {
+                $indexer($node, $targetWorkspaceName);
             }
         }
+
     }
 
     /**
