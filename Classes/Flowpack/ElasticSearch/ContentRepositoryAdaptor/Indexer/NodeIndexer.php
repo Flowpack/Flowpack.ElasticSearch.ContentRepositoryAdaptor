@@ -462,7 +462,7 @@ class NodeIndexer extends AbstractNodeIndexer
 
         $aliasActions = array();
         try {
-            $response = $this->searchClient->request('GET', '/*/_alias/' . $aliasName);
+            $response = $this->searchClient->request('GET', '/_alias/' . $aliasName);
             if ($response->getStatusCode() !== 200) {
                 throw new Exception('The alias "' . $aliasName . '" was not found with some unexpected error... (return code: ' . $response->getStatusCode() . ')', 1383650137);
             }
@@ -515,7 +515,7 @@ class NodeIndexer extends AbstractNodeIndexer
     {
         $aliasName = $this->searchClient->getIndexName(); // The alias name is the unprefixed index name
 
-        $currentlyLiveIndices = array_keys($this->searchClient->request('GET', '/*/_alias/' . $aliasName)->getTreatedContent());
+        $currentlyLiveIndices = array_keys($this->searchClient->request('GET', '/_alias/' . $aliasName)->getTreatedContent());
 
         $indexStatus = $this->searchClient->request('GET', '/_status')->getTreatedContent();
         $allIndices = array_keys($indexStatus['indices']);
