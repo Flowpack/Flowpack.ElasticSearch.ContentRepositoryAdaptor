@@ -99,7 +99,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
             ),
             'fields' => array('__path')
         );
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
         $this->assertSame($expected, $actual);
     }
 
@@ -123,7 +123,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                 '__typeAndSupertypes' => 'Foo.Bar:Baz'
             )
         );
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
         $this->assertInArray($expected, $actual['query']['filtered']['filter']['bool']['must']);
     }
 
@@ -138,7 +138,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                 'fieldName' => array('order' => 'asc')
             )
         );
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
         $this->assertSame($expected, $actual['sort']);
     }
 
@@ -159,7 +159,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                 'field3' => array('order' => 'asc')
             )
         );
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
         $this->assertSame($expected, $actual['sort']);
     }
 
@@ -169,7 +169,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
     public function limitWorks()
     {
         $this->queryBuilder->limit(2);
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
         $this->assertSame(2, $actual['size']);
     }
 
@@ -184,7 +184,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                 'fieldName' => array('order' => 'desc')
             )
         );
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
         $this->assertSame($expected, $actual['sort']);
     }
 
@@ -213,7 +213,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                 'fieldName' => array($operator => $value)
             )
         );
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
         $this->assertInArray($expected, $actual['query']['filtered']['filter']['bool']['must']);
     }
 
@@ -246,7 +246,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
         );
 
         $this->queryBuilder->fieldBasedAggregation($name, $field, $type);
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
 
         $this->assertInArray($expected, $actual);
     }
@@ -276,7 +276,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
             )
         );
 
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
         $this->assertInArray($expected, $actual);
     }
 
@@ -314,7 +314,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
         );
 
         $this->queryBuilder->aggregation("foo", $expected['foo']);
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
 
         $this->assertInArray($expected, $actual);
     }
