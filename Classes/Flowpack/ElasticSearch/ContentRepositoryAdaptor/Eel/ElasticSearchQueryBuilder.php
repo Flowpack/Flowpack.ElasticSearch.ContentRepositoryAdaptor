@@ -110,24 +110,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
                     'bool' => array(
                         'must' => array(),
                         'should' => array(),
-                        'must_not' => array(
-                            // Filter out all hidden elements
-                            array(
-                                'term' => array('_hidden' => true)
-                            ),
-                            // if now < hiddenBeforeDateTime: HIDE
-                            // -> hiddenBeforeDateTime > now
-                            array(
-                                'range' => array('_hiddenBeforeDateTime' => array(
-                                    'gt' => 'now'
-                                ))
-                            ),
-                            array(
-                                'range' => array('_hiddenAfterDateTime' => array(
-                                    'lt' => 'now'
-                                ))
-                            ),
-                        ),
+                        'must_not' => array(),
                     )
                 )
             )
@@ -734,6 +717,22 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         }
 
         $this->contextNode = $contextNode;
+
+        $mustNotConstraints = [];
+
+        if (!$this->contextNode->getContext()->isInaccessibleContentShown()) {
+            // Filter out all hidden elements
+            $mustNotConstraints[] =    [ 'term' => ['_hidden' => true]];
+        }
+
+        if (!$this->contextNode->getContext()->isInvisibleContentShown()) {
+            // if now < hiddenBeforeDateTime: HIDE
+            // -> hiddenBeforeDateTime > now
+            $mustNotConstraints[] =    [ 'range' => [ '_hiddenBeforeDateTime' => [ 'gt' => 'now' ] ] ];
+            $mustNotConstraints[] = [ 'range' => [ '_hiddenAfterDateTime' => [ 'lt' => 'now' ] ] ];
+        }
+
+        $this->request['query']['filtered']['filter']['bool']['must_not'] = $mustNotConstraints;
 
         return $this;
     }
