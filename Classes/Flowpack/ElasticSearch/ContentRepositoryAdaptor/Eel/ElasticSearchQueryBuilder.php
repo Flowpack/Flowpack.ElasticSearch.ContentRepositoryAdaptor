@@ -721,7 +721,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         if (!$this->contextNode->getContext()->isInvisibleContentShown()) {
             $this->request['query']['filtered']['filter']['bool']['must_not'] = [
                 // Filter out all hidden elements
-                [ 'term' => ['_hidden' => true]],
+                [ 'term' => [ '_hidden' => true ] ],
                 // if now < hiddenBeforeDateTime: HIDE
                 // -> hiddenBeforeDateTime > now
                 [ 'range' => [ '_hiddenBeforeDateTime' => [ 'gt' => 'now' ] ] ],
