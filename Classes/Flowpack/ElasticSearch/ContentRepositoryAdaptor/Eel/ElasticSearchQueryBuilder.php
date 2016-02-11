@@ -157,12 +157,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     {
         // on indexing, __typeAndSupertypes contains the typename itself and all supertypes, so that's why we can
         // use a simple term filter here.
-        if (is_string($nodeType)) {
-            $nodeType = [ $nodeType ];
-        }
-
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-term-filter.html
-        return $this->queryFilter('terms', array('__typeAndSupertypes' => $nodeType));
+        return $this->queryFilter(is_array($nodeType) ? 'terms' : 'term', array('__typeAndSupertypes' => $nodeType));
     }
 
     /**
