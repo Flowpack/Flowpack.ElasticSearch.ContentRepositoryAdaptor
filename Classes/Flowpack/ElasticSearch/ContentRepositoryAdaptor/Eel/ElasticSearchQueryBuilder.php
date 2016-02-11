@@ -718,18 +718,16 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
         $this->contextNode = $contextNode;
 
-        $mustNotConstraints = [];
-
         if (!$this->contextNode->getContext()->isInvisibleContentShown()) {
-            // Filter out all hidden elements
-            $mustNotConstraints[] =    [ 'term' => ['_hidden' => true]];
-            // if now < hiddenBeforeDateTime: HIDE
-            // -> hiddenBeforeDateTime > now
-            $mustNotConstraints[] =    [ 'range' => [ '_hiddenBeforeDateTime' => [ 'gt' => 'now' ] ] ];
-            $mustNotConstraints[] = [ 'range' => [ '_hiddenAfterDateTime' => [ 'lt' => 'now' ] ] ];
+            $this->request['query']['filtered']['filter']['bool']['must_not'] = [
+                // Filter out all hidden elements
+                [ 'term' => ['_hidden' => true]],
+                // if now < hiddenBeforeDateTime: HIDE
+                // -> hiddenBeforeDateTime > now
+                [ 'range' => [ '_hiddenBeforeDateTime' => [ 'gt' => 'now' ] ] ],
+                [ 'range' => [ '_hiddenAfterDateTime' => [ 'lt' => 'now' ] ] ],
+            ];
         }
-
-        $this->request['query']['filtered']['filter']['bool']['must_not'] = $mustNotConstraints;
 
         return $this;
     }
