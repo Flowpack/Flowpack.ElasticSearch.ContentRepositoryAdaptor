@@ -715,7 +715,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     {
         $this->appendAtPath('query.filtered.query.bool.must', array(
             'query_string' => array(
-                'query' => $searchWord
+                'query' => str_replace('/', '\\/', $searchWord)
             )
         ));
 
