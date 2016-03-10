@@ -221,29 +221,31 @@ class NodeIndexer extends AbstractNodeIndexer
                     // for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
                     // "update" API instead of the "index" API, with a custom script internally; as we
                     // shall not delete the "__fulltext" part of the document if it has any.
-                    $this->currentBulkRequest[] = array(
-                        array(
-                            'update' => array(
+                    $this->currentBulkRequest[] = [
+                        [
+                            'update' => [
                                 '_type' => $document->getType()->getName(),
                                 '_id' => $document->getId()
-                            )
-                        ),
+                            ]
+                        ],
                         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
-                        array(
-                            'script' => '
-							fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new LinkedHashMap());
-							fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new LinkedHashMap());
-							ctx._source = newData;
-							ctx._source.__fulltext = fulltext;
-							ctx._source.__fulltextParts = fulltextParts
-						',
-                            'params' => array(
-                                'newData' => $documentData
-                            ),
+                        [
+                            'script' => [
+                                'inline' => '
+                                    fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new LinkedHashMap());
+                                    fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new LinkedHashMap());
+                                    ctx._source = newData;
+                                    ctx._source.__fulltext = fulltext;
+                                    ctx._source.__fulltextParts = fulltextParts
+                                ',
+                                'params' => [
+                                    'newData' => $documentData
+                                ]
+                            ],
                             'upsert' => $documentData,
                             'lang' => 'groovy'
-                        )
-                    );
+                        ]
+                    ];
                 } else {
                     // non-fulltext-root documents can be indexed as-they-are
                     $this->currentBulkRequest[] = array(
@@ -321,8 +323,9 @@ class NodeIndexer extends AbstractNodeIndexer
             // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
             array(
                 // first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
-                'script' => '
-					if (!ctx._source.containsKey("__fulltextParts")) {
+                'script' => [
+                    'inline' => '
+                    if (!ctx._source.containsKey("__fulltextParts")) {
 						ctx._source.__fulltextParts = new LinkedHashMap();
 					}
 					ctx._source.__fulltextParts[identifier] = fulltext;
@@ -344,17 +347,18 @@ class NodeIndexer extends AbstractNodeIndexer
 							ctx._source.__fulltext[element.key] = value;
 						}
 					}
-				',
-                'params' => array(
-                    'identifier' => $node->getIdentifier(),
-                    'fulltext' => $fulltextIndexOfNode
-                ),
-                'upsert' => array(
+                                ',
+                    'params' => [
+                        'identifier' => $node->getIdentifier(),
+                        'fulltext' => $fulltextIndexOfNode
+                    ]
+                ],
+                'upsert' => [
                     '__fulltext' => $fulltextIndexOfNode,
-                    '__fulltextParts' => array(
+                    '__fulltextParts' => [
                         $node->getIdentifier() => $fulltextIndexOfNode
-                    )
-                ),
+                    ]
+                ],
                 'lang' => 'groovy'
             )
         );
