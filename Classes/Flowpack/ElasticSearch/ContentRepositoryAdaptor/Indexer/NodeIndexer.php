@@ -140,6 +140,10 @@ class NodeIndexer extends AbstractNodeIndexer
 
             $contextPath = $node->getContextPath();
 
+            if ($node->getNodeType()->getName() === 'unstructured') {
+                return;
+            }
+
             if ($this->settings['indexAllWorkspaces'] === false) {
                 // we are only supposed to index the live workspace.
                 // We need to check the workspace at two occasions; checking the
