@@ -216,51 +216,7 @@ class NodeIndexer extends AbstractNodeIndexer
                 $documentData['__dimensionCombinationHash'] = md5(json_encode($dimensionCombinations));
             }
 
-            if ($this->isFulltextEnabled($node)) {
-                if ($this->isFulltextRoot($node)) {
-                    // for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
-                    // "update" API instead of the "index" API, with a custom script internally; as we
-                    // shall not delete the "__fulltext" part of the document if it has any.
-                    $this->currentBulkRequest[] = [
-                        [
-                            'update' => [
-                                '_type' => $document->getType()->getName(),
-                                '_id' => $document->getId()
-                            ]
-                        ],
-                        // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
-                        [
-                            'script' => [
-                                'inline' => '
-                                    fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new LinkedHashMap());
-                                    fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new LinkedHashMap());
-                                    ctx._source = newData;
-                                    ctx._source.__fulltext = fulltext;
-                                    ctx._source.__fulltextParts = fulltextParts
-                                ',
-                                'params' => [
-                                    'newData' => $documentData
-                                ]
-                            ],
-                            'upsert' => $documentData,
-                            'lang' => 'groovy'
-                        ]
-                    ];
-                } else {
-                    // non-fulltext-root documents can be indexed as-they-are
-                    $this->currentBulkRequest[] = array(
-                        array(
-                            'index' => array(
-                                '_type' => $document->getType()->getName(),
-                                '_id' => $document->getId()
-                            )
-                        ),
-                        $documentData
-                    );
-                }
-
-                $this->updateFulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
-            }
+            $this->appendToBulkRequest($node, $document, $documentData, $fulltextIndexOfNode, $targetWorkspaceName);
 
             $this->logger->log(sprintf('NodeIndexer: Added / updated node %s. ID: %s Context: %s', $contextPath, $contextPathHash, json_encode($node->getContext()->getProperties())), LOG_DEBUG, null, 'ElasticSearch (CR)');
         };
@@ -283,6 +239,61 @@ class NodeIndexer extends AbstractNodeIndexer
                 $indexer($node, $targetWorkspaceName);
             }
         }
+    /**
+     * @param NodeInterface $node
+     * @param ElasticSearchDocument $document
+     * @param array $documentData
+     * @param string $fulltextIndexOfNode
+     * @param string $targetWorkspaceName
+     */
+    protected function appendToBulkRequest(NodeInterface $node, ElasticSearchDocument $document, array $documentData, $fulltextIndexOfNode, $targetWorkspaceName)
+    {
+        if ($this->isFulltextEnabled($node)) {
+            if ($this->isFulltextRoot($node)) {
+                // for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
+                // "update" API instead of the "index" API, with a custom script internally; as we
+                // shall not delete the "__fulltext" part of the document if it has any.
+                $this->currentBulkRequest[] = [
+                    [
+                        'update' => [
+                            '_type' => $document->getType()->getName(),
+                            '_id' => $document->getId()
+                        ]
+                    ],
+                    // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
+                    [
+                        'script' => [
+                            'inline' => '
+                                    fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new LinkedHashMap());
+                                    fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new LinkedHashMap());
+                                    ctx._source = newData;
+                                    ctx._source.__fulltext = fulltext;
+                                    ctx._source.__fulltextParts = fulltextParts
+                                ',
+                            'params' => [
+                                'newData' => $documentData
+                            ]
+                        ],
+                        'upsert' => $documentData,
+                        'lang' => 'groovy'
+                    ]
+                ];
+            } else {
+                // non-fulltext-root documents can be indexed as-they-are
+                $this->currentBulkRequest[] = array(
+                    array(
+                        'index' => array(
+                            '_type' => $document->getType()->getName(),
+                            '_id' => $document->getId()
+                        )
+                    ),
+                    $documentData
+                );
+            }
+
+            $this->updateFulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
+        }
+    }
 
     }
 
