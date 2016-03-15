@@ -11,11 +11,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
-use TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator;
-use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
 
 /**
  * Provides CLI features for index handling
@@ -24,17 +23,13 @@ use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
  */
 class NodeIndexCommandController extends CommandController
 {
+    use IndexWorkspaceTrait;
+
     /**
      * @Flow\Inject
      * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer
      */
     protected $nodeIndexer;
-
-    /**
-     * @Flow\Inject
-     * @var NodeIndexingManager
-     */
-    protected $nodeIndexingManager;
 
     /**
      * @Flow\Inject
@@ -56,12 +51,6 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @Flow\Inject
-     * @var \TYPO3\TYPO3CR\Domain\Service\ContextFactory
-     */
-    protected $contextFactory;
-
-    /**
-     * @Flow\Inject
      * @var \TYPO3\Neos\Domain\Service\ContentDimensionPresetSourceInterface
      */
     protected $contentDimensionPresetSource;
@@ -71,21 +60,6 @@ class NodeIndexCommandController extends CommandController
      * @var NodeTypeMappingBuilder
      */
     protected $nodeTypeMappingBuilder;
-
-    /**
-     * @var integer
-     */
-    protected $indexedNodes;
-
-    /**
-     * @var integer
-     */
-    protected $countedIndexedNodes;
-
-    /**
-     * @var integer
-     */
-    protected $limit;
 
     /**
      * @Flow\Inject
@@ -98,12 +72,6 @@ class NodeIndexCommandController extends CommandController
      * @var \TYPO3\Flow\Configuration\ConfigurationManager
      */
     protected $configurationManager;
-
-    /**
-     * @Flow\Inject
-     * @var ContentDimensionCombinator
-     */
-    protected $contentDimensionCombinator;
 
     /**
      * @var array
@@ -192,23 +160,24 @@ class NodeIndexCommandController extends CommandController
         $this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
 
         $count = 0;
-        $this->limit = $limit;
-        $this->indexedNodes = 0;
-        $this->countedIndexedNodes = 0;
 
         if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
             $workspace = 'live';
         }
 
+        $callback = function ($workspaceName, $indexedNodes, $dimensions) {
+            if ($dimensions === array()) {
+                $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)');
+            } else {
+                $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)');
+            }
+        };
         if ($workspace === null) {
             foreach ($this->workspaceRepository->findAll() as $workspace) {
-                $this->indexWorkspace($workspace->getName());
-
-                $count = $count + $this->countedIndexedNodes;
+                $count += $this->indexWorkspace($workspace->getName(), $limit, $callback);
             }
         } else {
-            $this->indexWorkspace($workspace);
-            $count = $count + $this->countedIndexedNodes;
+            $count += $this->indexWorkspace($workspace, $limit, $callback);
         }
 
         $this->nodeIndexingManager->flushQueues();
@@ -241,62 +210,6 @@ class NodeIndexCommandController extends CommandController
         } catch (\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
             $response = json_decode($exception->getResponse());
             $this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s"', $response->status, $response->error));
-        }
-    }
-
-    /**
-     * @param string $workspaceName
-     * @return void
-     */
-    protected function indexWorkspace($workspaceName)
-    {
-        $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-        if ($combinations === array()) {
-            $this->indexWorkspaceWithDimensions($workspaceName);
-        } else {
-            foreach ($combinations as $combination) {
-                $this->indexWorkspaceWithDimensions($workspaceName, $combination);
-            }
-        }
-    }
-
-    /**
-     * @param string $workspaceName
-     * @param array $dimensions
-     * @return void
-     */
-    protected function indexWorkspaceWithDimensions($workspaceName, array $dimensions = array())
-    {
-        $context = $this->contextFactory->create(array('workspaceName' => $workspaceName, 'dimensions' => $dimensions));
-        $rootNode = $context->getRootNode();
-
-        $this->traverseNodes($rootNode);
-
-        if ($dimensions === array()) {
-            $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $this->indexedNodes . ' nodes)');
-        } else {
-            $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $this->indexedNodes . ' nodes)');
-        }
-
-        $this->countedIndexedNodes = $this->countedIndexedNodes + $this->indexedNodes;
-        $this->indexedNodes = 0;
-    }
-
-    /**
-     * @param \TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode
-     * @return void
-     */
-    protected function traverseNodes(\TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode)
-    {
-        if ($this->limit !== null && $this->indexedNodes > $this->limit) {
-            return;
-        }
-
-        $this->nodeIndexingManager->indexNode($currentNode);
-        $this->indexedNodes++;
-
-        foreach ($currentNode->getChildNodes() as $childNode) {
-            $this->traverseNodes($childNode);
         }
     }
 }
