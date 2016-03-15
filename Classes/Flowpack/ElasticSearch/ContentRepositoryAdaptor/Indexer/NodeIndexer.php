@@ -22,6 +22,7 @@ use TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator;
 use TYPO3\TYPO3CR\Domain\Service\ContextFactory;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 use TYPO3\TYPO3CR\Search\Indexer\AbstractNodeIndexer;
+use TYPO3\TYPO3CR\Search\Indexer\BulkNodeIndexerInterface;
 
 /**
  * Indexer for Content Repository Nodes. Triggered from the NodeIndexingManager.
@@ -30,7 +31,7 @@ use TYPO3\TYPO3CR\Search\Indexer\AbstractNodeIndexer;
  *
  * @Flow\Scope("singleton")
  */
-class NodeIndexer extends AbstractNodeIndexer
+class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterface
 {
     /**
      * Optional postfix for the index, e.g. to have different indexes by timestamp.
@@ -89,6 +90,11 @@ class NodeIndexer extends AbstractNodeIndexer
     protected $currentBulkRequest = array();
 
     /**
+     * @var boolean
+     */
+    protected $enableBulkProcessing = false;
+
+    /**
      * Returns the index name to be used for indexing, with optional indexNamePostfix appended.
      *
      * @return string
@@ -124,6 +130,16 @@ class NodeIndexer extends AbstractNodeIndexer
         $index = $this->searchClient->findIndex($this->getIndexName());
         $index->setSettingsKey($this->searchClient->getIndexName());
         return $index;
+    }
+
+    /**
+     * @param callable $callback
+     */
+    public function withBulkProcessing(callable $callback)
+    {
+        $this->enableBulkProcessing = true;
+        $callback();
+        $this->enableBulkProcessing = false;
     }
 
     /**
@@ -167,24 +183,9 @@ class NodeIndexer extends AbstractNodeIndexer
 
             $mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
 
-            // Remove document with the same contextPathHash but different NodeType, required after NodeType change
-            $this->logger->log(sprintf('NodeIndexer: Removing node %s from index (if node type changed from %s). ID: %s', $contextPath, $node->getNodeType()->getName(), $contextPathHash), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
-            $this->getIndex()->request('DELETE', '/_query', array(), json_encode([
-                'query' => [
-                    'bool' => [
-                        'must' => [
-                            'ids' => [
-                                'values' => [$contextPathHash]
-                            ]
-                        ],
-                        'must_not' => [
-                            'term' => [
-                                '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($node->getNodeType()->getName())
-                            ]
-                        ],
-                    ]
-                ]
-            ]));
+            if ($this->enableBulkProcessing === false) {
+                $this->removeDuplicateDocuments($contextPath, $contextPathHash, $node);
+            }
 
             if ($node->isRemoved()) {
                 // TODO: handle deletion from the fulltext index as well
@@ -295,6 +296,44 @@ class NodeIndexer extends AbstractNodeIndexer
         }
     }
 
+    /**
+     * Remove document with the same contextPathHash but different NodeType, required after NodeType change
+     *
+     * @param string $contextPath
+     * @param string $contextPathHash
+     * @param NodeInterface $node
+     */
+    protected function removeDuplicateDocuments($contextPath, $contextPathHash, NodeInterface $node)
+    {
+        $type = NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($node->getNodeType()->getName());
+        $this->logger->log(sprintf('NodeIndexer: Check duplicate nodes for %s (%s). ContentContextHash: %s', $contextPath, $type, $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        $result = $this->getIndex()->request('GET', '/_search?scroll=1m&search_type=scan', [], json_encode([
+            'query' => [
+                'bool' => [
+                    'must' => [
+                        'ids' => [
+                            'values' => [$contextPathHash]
+                        ]
+                    ],
+                    'must_not' => [
+                        'term' => [
+                            '_type' => $type
+                        ]
+                    ]
+                ]
+            ]
+        ]));
+        $treatedContent = $result->getTreatedContent();
+        $scrollId = $treatedContent['_scroll_id'];
+
+        $result = $this->getIndex()->request('GET', '/_search/scroll?scroll=1m', [], $scrollId, false);
+        $treatedContent = $result->getTreatedContent();
+        while (isset($treatedContent['hits']['hits']) && $treatedContent['hits']['hits'] !== []) {
+            $hits = $treatedContent['hits']['hits'];
+            $this->logger->log(sprintf('NodeIndexer: Check duplicate nodes for %s (%s), found %d document(s). ContentContextHash: %s', $contextPath, $type, count($hits), $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $result = $this->getIndex()->request('GET', '/_search/scroll?scroll=1m', [], $scrollId, false);
+            $treatedContent = $result->getTreatedContent();
+        }
     }
 
     /**
