@@ -643,8 +643,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function fetch()
     {
+        $request = $this->getRequest();
         $timeBefore = microtime(true);
-        $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', array(), json_encode($this->request));
+        $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', array(), json_encode($request));
         $timeAfterwards = microtime(true);
 
         $this->result = $response->getTreatedContent();
@@ -652,7 +653,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $this->result['nodes'] = array();
         if ($this->logThisQuery === true) {
             $this->logger->log(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s',
-                $this->logMessage, json_encode($this->request), (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($this->result['hits']['hits']), $this->result['hits']['total']), LOG_DEBUG);
+                $this->logMessage, json_encode($request), (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($this->result['hits']['hits']), $this->result['hits']['total']), LOG_DEBUG);
         }
         if (array_key_exists('hits', $this->result) && is_array($this->result['hits']) && count($this->result['hits']) > 0) {
             $this->result['nodes'] = $this->convertHitsToNodes($this->result['hits']);
@@ -684,7 +685,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     public function count()
     {
         $timeBefore = microtime(true);
-        $request = $this->request;
+        $request = $this->getRequest();
         foreach ($this->unsupportedFieldsInCountRequest as $field) {
             if (isset($request[$field])) {
                 unset($request[$field]);
@@ -698,7 +699,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $count = $treatedContent['count'];
 
         if ($this->logThisQuery === true) {
-            $this->logger->log('Count Query Log (' . $this->logMessage . '): ' . json_encode($this->request) . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
+            $this->logger->log('Count Query Log (' . $this->logMessage . '): ' . json_encode($request) . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
         }
 
         return $count;
