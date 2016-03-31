@@ -118,9 +118,9 @@ class NodeIndexer extends AbstractNodeIndexer
      * @param NodeInterface $node
      * @return string
      */
-    private function getContextIdentifier(NodeInterface $node)
+    protected function getContextIdentifier(NodeInterface $node)
     {
-        return $node->getIdentifier() . $node->getWorkspace()->getName();
+        return $node->getIdentifier() . '-' . $node->getWorkspace()->getName();
     }
 
     /**
@@ -157,21 +157,20 @@ class NodeIndexer extends AbstractNodeIndexer
             $contextIdentifier = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextIdentifier);
         }
 
-        $contextIdentifierHash = sha1($contextIdentifier);
         $nodeType = $node->getNodeType();
 
         $mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
 
         // Remove document with the same contextIdentifierHash but different NodeType, required after NodeType change
-        $this->logger->log(sprintf('NodeIndexer: Removing node %s from index (if node type changed from %s). ID: %s',
-            $contextIdentifier, $node->getNodeType()->getName(), $contextIdentifierHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        $this->logger->log(sprintf('NodeIndexer: Removing %s from index (if node type changed from %s). ID: %s',
+            $contextIdentifier, $node->getNodeType()->getName(), $node), LOG_DEBUG, null, 'ElasticSearch (CR)');
 
         $this->getIndex()->request('DELETE', '/_query', array(), json_encode([
             'query' => [
                 'bool' => [
                     'must' => [
                         'ids' => [
-                            'values' => [ $contextIdentifierHash ]
+                            'values' => [ $contextIdentifier ]
                         ]
                     ],
                     'must_not' => [
@@ -185,21 +184,21 @@ class NodeIndexer extends AbstractNodeIndexer
 
         if ($node->isRemoved()) {
             // TODO: handle deletion from the fulltext index as well
-            $mappingType->deleteDocumentById($contextIdentifierHash);
-            $this->logger->log(sprintf('NodeIndexer: Removed %s from index (node flagged as removed). ID: %s', $node, $contextIdentifierHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $mappingType->deleteDocumentById($contextIdentifier);
+            $this->logger->log(sprintf('NodeIndexer: Removed %s from index (node flagged as removed). ID: %s', $node, $contextIdentifier), LOG_DEBUG, null, 'ElasticSearch (CR)');
 
             return;
         }
 
         $logger = $this->logger;
         $fulltextIndexOfNode = array();
-        $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($logger, $contextIdentifierHash) {
-            $logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $contextIdentifierHash, $propertyName), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($logger, $contextIdentifier) {
+            $logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $contextIdentifier, $propertyName), LOG_DEBUG, null, 'ElasticSearch (CR)');
         });
 
         $document = new ElasticSearchDocument($mappingType,
             $nodePropertiesToBeStoredInIndex,
-            $contextIdentifierHash
+            $contextIdentifier
         );
 
         $documentData = $document->getData();
@@ -259,7 +258,7 @@ class NodeIndexer extends AbstractNodeIndexer
         }
 
         $this->logger->log(sprintf('NodeIndexer: Added / updated node [%s] %s. ID: %s',
-            $nodeType->getName(), $contextIdentifier, $contextIdentifierHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $nodeType->getName(), $contextIdentifier, $contextIdentifier), LOG_DEBUG, null, 'ElasticSearch (CR)');
     }
 
     /**
@@ -287,13 +286,12 @@ class NodeIndexer extends AbstractNodeIndexer
         }
 
         $closestFulltextNodeContextIdentifier = str_replace($closestFulltextNode->getContext()->getWorkspace()->getName(), 'live', $this->getContextIdentifier($closestFulltextNode));
-        $closestFulltextNodeContextIdentifierHash = sha1($closestFulltextNodeContextIdentifier);
 
         $this->currentBulkRequest[] = array(
             array(
                 'update' => array(
                     '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
-                    '_id' => $closestFulltextNodeContextIdentifierHash
+                    '_id' => $closestFulltextNodeContextIdentifier
                 )
             ),
             // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
@@ -376,7 +374,7 @@ class NodeIndexer extends AbstractNodeIndexer
         }
 
         // TODO: handle deletion from the fulltext index as well
-        $identifier = sha1($this->getContextIdentifier($node));
+        $identifier = $this->getContextIdentifier($node);
 
         $this->currentBulkRequest[] = array(
             array(
