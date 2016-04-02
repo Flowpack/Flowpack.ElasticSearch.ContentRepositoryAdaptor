@@ -120,7 +120,9 @@ class NodeIndexer extends AbstractNodeIndexer
      */
     protected function getContextIdentifier(NodeInterface $node)
     {
-        return $node->getIdentifier() . '-' . $node->getWorkspace()->getName();
+        $contextPath = $node->getContextPath();
+
+        return $node->getIdentifier() . substr($contextPath, strpos($contextPath, '@'));
     }
 
     /**
