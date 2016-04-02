@@ -376,18 +376,16 @@ class NodeIndexer extends AbstractNodeIndexer
         }
 
         // TODO: handle deletion from the fulltext index as well
-        $identifier = $this->getContextIdentifier($node);
-
         $this->currentBulkRequest[] = array(
             array(
                 'delete' => array(
                     '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($node->getNodeType()),
-                    '_id' => $identifier
+                    '_id' => $this->getContextIdentifier($node),
                 )
             )
         );
 
-        $this->logger->log(sprintf('NodeIndexer: Removed %s from index (node actually removed). Persistence ID: %s', $node, $identifier), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        $this->logger->log(sprintf('NodeIndexer: Removed %s from index (node actually removed).', $node), LOG_DEBUG, null, 'ElasticSearch (CR)');
     }
 
     /**
