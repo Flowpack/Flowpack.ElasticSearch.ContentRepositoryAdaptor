@@ -22,6 +22,7 @@ use TYPO3\TYPO3CR\Search\Search\QueryBuilderInterface;
  */
 class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedContextAwareInterface
 {
+
     /**
      * @Flow\Inject
      * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient
@@ -101,7 +102,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
                             array(
                                 'match_all' => array()
                             )
-                        )
+                        ),
+                        'should' => array(),
                     )
 
                 ),
@@ -433,7 +435,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * nodes = ${Search....aggregation("color", this.aggregationDefinition).execute()}
      *
      * Access all aggregation data with {nodes.aggregations} in your fluid template
-     * 
+     *
      * @param string $name
      * @param array $aggregationDefinition
      * @param null $parentPath
