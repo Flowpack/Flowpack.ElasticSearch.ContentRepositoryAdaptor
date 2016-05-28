@@ -27,6 +27,40 @@ TYPO3:
             ansiConsoleBackend:
               disableAnsi: false
 
+      # If you want to use "Fast vector highlighter" and its possibilities make sure you add term_vector in the
+      # __fulltext index.
+      # see https://www.elastic.co/guide/en/elasticsearch/reference/1.7/search-request-highlighting.html#fast-vector-highlighter
+      #
+      # i.e.:
+      # 'TYPO3.Neos:Document':
+      #    properties:
+      #      __fulltext:
+      #        search:
+      #          elasticSearchMapping:
+      #            properties:
+      #              # enable term vector for improved highlighting
+      #              text:
+      #                term_vector: 'with_positions_offsets'
+      #              h1:
+      #                term_vector: 'with_positions_offsets'
+      #              h2:
+      #                term_vector: 'with_positions_offsets'
+      #              h3:
+      #                term_vector: 'with_positions_offsets'
+      #              h4:
+      #                term_vector: 'with_positions_offsets'
+      #              h5:
+      #                term_vector: 'with_positions_offsets'
+      #              h6:
+      #                term_vector: 'with_positions_offsets'
+      defaultHightlightSettings:
+        fields:
+          # backwards compatible setup:
+          __fulltext*:
+            fragment_size: 150
+            no_match_size: 150
+            number_of_fragments: 2
+
       defaultConfigurationPerType:
 
         string:
