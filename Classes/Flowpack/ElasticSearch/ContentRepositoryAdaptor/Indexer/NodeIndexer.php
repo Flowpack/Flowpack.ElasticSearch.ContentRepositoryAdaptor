@@ -115,14 +115,30 @@ class NodeIndexer extends AbstractNodeIndexer
     /**
      * Something like getContextPath() but using the Node Identifier instead of the Path
      *
+     * Result is a string like <identifier>@<workspace>;<dimensionsList>.
+     * @see NodeInterface::getContextPath()
+     *
      * @param NodeInterface $node
      * @return string
      */
     protected function getContextIdentifier(NodeInterface $node)
     {
-        $contextPath = $node->getContextPath();
+        $contextIdentifier = $node->getIdentifier();
 
-        return $node->getIdentifier() . substr($contextPath, strpos($contextPath, '@'));
+        $context = $node->getContext();
+
+        $workspaceName = $context->getWorkspace()->getName();
+        $contextIdentifier .= '@' . $workspaceName;
+
+        if ($context->getDimensions() !== array()) {
+            $contextIdentifier .= ';';
+            foreach ($context->getDimensions() as $dimensionName => $dimensionValues) {
+                $contextIdentifier .= $dimensionName . '=' . implode(',', $dimensionValues) . '&';
+            }
+            $contextIdentifier = substr($contextIdentifier, 0, -1);
+        }
+
+        return $contextIdentifier;
     }
 
     /**
