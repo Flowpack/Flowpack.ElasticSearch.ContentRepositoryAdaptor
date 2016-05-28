@@ -110,24 +110,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
                     'bool' => array(
                         'must' => array(),
                         'should' => array(),
-                        'must_not' => array(
-                            // Filter out all hidden elements
-                            array(
-                                'term' => array('_hidden' => true)
-                            ),
-                            // if now < hiddenBeforeDateTime: HIDE
-                            // -> hiddenBeforeDateTime > now
-                            array(
-                                'range' => array('_hiddenBeforeDateTime' => array(
-                                    'gt' => 'now'
-                                ))
-                            ),
-                            array(
-                                'range' => array('_hiddenAfterDateTime' => array(
-                                    'lt' => 'now'
-                                ))
-                            ),
-                        ),
+                        'must_not' => array(),
                     )
                 )
             )
@@ -734,6 +717,17 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         }
 
         $this->contextNode = $contextNode;
+
+        if (!$this->contextNode->getContext()->isInvisibleContentShown()) {
+            $this->request['query']['filtered']['filter']['bool']['must_not'] = [
+                // Filter out all hidden elements
+                [ 'term' => [ '_hidden' => true ] ],
+                // if now < hiddenBeforeDateTime: HIDE
+                // -> hiddenBeforeDateTime > now
+                [ 'range' => [ '_hiddenBeforeDateTime' => [ 'gt' => 'now' ] ] ],
+                [ 'range' => [ '_hiddenAfterDateTime' => [ 'lt' => 'now' ] ] ],
+            ];
+        }
 
         return $this;
     }
