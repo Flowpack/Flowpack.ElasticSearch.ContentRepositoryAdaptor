@@ -126,6 +126,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     protected $result = array();
 
+    /**
+     * @Flow\InjectConfiguration(package="Flowpack.ElasticSearch.ContentRepositoryAdaptor")
+     * @var array
+     */
+    protected $settings = array();
 
     /**
      * HIGH-LEVEL API
@@ -662,11 +667,24 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         ));
 
         // We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
-        return $this->highlight(150, 2);
+        return $this->addHighlight();
     }
 
     /**
-     * Configure Result Highlighting. Only makes sense in combination with fulltext(). By default, highlighting is enabled.
+     * Adds default highlighting setup for fulltext
+     *
+     */
+    private function addHighlight()
+    {
+        $this->request['highlight'] = $this->settings['defaultHightlightSettings'];
+
+        return $this;
+    }
+
+    /**
+     * Configure Result Highlighting for __fulltext* field.
+     *
+     * By default, highlighting is enabled and uses the TYPO3.TYPO3CR.Search.defaultHightlightSettings setting.
      * It can be disabled by calling "highlight(FALSE)".
      *
      * @param integer|boolean $fragmentSize The result fragment size for highlight snippets. If this parameter is FALSE, highlighting will be disabled.
