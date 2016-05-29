@@ -127,7 +127,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     protected $result = array();
 
     /**
-     * @Flow\InjectConfiguration(package="TYPO3.TYPO3CR.Search")
+     * @Flow\InjectConfiguration(package="Flowpack.ElasticSearch.ContentRepositoryAdaptor")
      * @var array
      */
     protected $settings = array();
