@@ -209,9 +209,9 @@ class NodeIndexCommandController extends CommandController
             $removedIndices = $this->nodeIndexer->removeOldIndices();
             if (count($removedIndices) > 0) {
                 if (count($removedIndices) === 1) {
-                    $this->logger->log('Removed old index ' . $removedIndices[0]);
+                    $this->logger->log('Removed old index ' . current($removedIndices) . '.');
                 } else {
-                    $this->logger->log('Removed old indices ' . implode(', ', $removedIndices));
+                    $this->logger->log('Removed old indices ' . implode(', ', $removedIndices) . '.');
                 }
             } else {
                 $this->logger->log('Nothing to remove.');
