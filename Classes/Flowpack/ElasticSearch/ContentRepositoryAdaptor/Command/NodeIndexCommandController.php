@@ -206,17 +206,19 @@ class NodeIndexCommandController extends CommandController
     public function cleanupCommand()
     {
         try {
-            $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
-            if (count($indicesToBeRemoved) > 0) {
-                foreach ($indicesToBeRemoved as $indexToBeRemoved) {
-                    $this->logger->log('Removing old index ' . $indexToBeRemoved);
+            $removedIndices = $this->nodeIndexer->removeOldIndices();
+            if (count($removedIndices) > 0) {
+                if (count($removedIndices) === 1) {
+                    $this->logger->log('Removed old index ' . $removedIndices[0]);
+                } else {
+                    $this->logger->log('Removed old indices ' . implode(', ', $removedIndices));
                 }
             } else {
                 $this->logger->log('Nothing to remove.');
             }
         } catch (\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
             $response = json_decode($exception->getResponse());
-            $this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s"', $response->status, $response->error));
+            $this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s: %s"', $response->status, $response->error->type, $response->error->reason));
         }
     }
 

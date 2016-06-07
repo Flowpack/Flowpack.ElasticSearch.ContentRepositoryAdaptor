@@ -583,27 +583,15 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $currentlyLiveIndices = array_keys($this->searchClient->request('GET', '/_alias/' . $aliasName)->getTreatedContent());
 
-        $indexStatus = $this->searchClient->request('GET', '/_status')->getTreatedContent();
-        $allIndices = array_keys($indexStatus['indices']);
+        $indexMappings = $this->searchClient->request('GET', '/_all')->getTreatedContent();
+        $allIndices = array_keys($indexMappings);
 
-        $indicesToBeRemoved = [];
-
-        foreach ($allIndices as $indexName) {
-            if (strpos($indexName, $aliasName . '-') !== 0) {
-                // filter out all indices not starting with the alias-name, as they are unrelated to our application
-                continue;
-            }
-
-            if (array_search($indexName, $currentlyLiveIndices) !== false) {
-                // skip the currently live index names from deletion
-                continue;
-            }
-
-            $indicesToBeRemoved[] = $indexName;
-        }
+        $indicesToBeRemoved = array_filter($allIndices, function ($indexName) use ($aliasName, $currentlyLiveIndices) {
+            return strpos($indexName, $aliasName . '-') === 0 && array_search($indexName, $currentlyLiveIndices) === false;
+        });
 
         if (count($indicesToBeRemoved) > 0) {
-            $this->searchClient->request('DELETE', '/' . implode(',', $indicesToBeRemoved) . '/');
+            $this->searchClient->request('DELETE', '/' . implode(',', $indicesToBeRemoved));
         }
 
         return $indicesToBeRemoved;
