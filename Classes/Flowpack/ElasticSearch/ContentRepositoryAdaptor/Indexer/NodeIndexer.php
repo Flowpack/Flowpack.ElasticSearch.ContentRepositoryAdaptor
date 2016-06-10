@@ -213,6 +213,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $dimensionCombinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
         $workspaceName = $targetWorkspaceName ?: 'live';
         $nodeIdentifier = $node->getIdentifier();
+
+        if ($node->isRemoved()) {
+            $indexer($node, $targetWorkspaceName);
+        }
+
         if ($dimensionCombinations !== []) {
             foreach ($dimensionCombinations as $combination) {
                 $context = $this->contextFactory->create([
@@ -230,9 +235,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             if ($node !== null) {
                 $indexer($node, $targetWorkspaceName);
             }
-        }
-        if ($node->isRemoved()) {
-            $indexer($node, $targetWorkspaceName);
         }
     }
 
