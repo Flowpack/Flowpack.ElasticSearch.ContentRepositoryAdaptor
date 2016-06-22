@@ -255,6 +255,18 @@ prototype(Acme.Blog:SingleTag) < prototype(TYPO3.Neos:Template) {
 }
 ```
 
+#### Making OR queries
+
+There's no OR operator provided in this package, so we would need to use custom ElasticSearch query filter for that:
+
+```
+....queryFilter('bool', {should: [
+	{term: {tags: tagNode.identifier}},
+	{term: {places: tagNode.identifier}},
+	{term: {projects: tagNode.identifier}}
+]})
+```
+
 ## Aggregations
 
 Aggregation is an easy way to aggregate your node data in different ways. Elasticsearch provides a couple of different types of
@@ -356,8 +368,8 @@ be fetched and passed to your template.
 
 **Important notice**
 
-If you do use the terms filter be aware of Elasticsearchs analyze functionality. You might want to disable this for all
-your filterable properties like this:
+If you do use the terms filter be aware of Elasticsearchs analyze functionality for strings. You might want to disable this
+for all your filterable properties, or else filtering won't work on them properly:
 ```
 'Vendor.Name:Product'
   properties:
@@ -529,7 +541,7 @@ suggestions = ${Search.query(site)...suggestions('my_suggestions', this.suggesti
 
 ## Advanced: Configuration of Indexing
 
-**Normally, this does not need to be touched, as this package supports all Neos data types natively.**
+**The default configuration supports most usecases and often may not need to be touched, as this package comes with sane defaults for all Neos data types**
 
 Indexing of properties is configured at two places. The defaults per-data-type are configured
 inside `TYPO3.TYPO3CR.Search.defaultConfigurationPerType` of `Settings.yaml`.
@@ -574,6 +586,8 @@ TYPO3:
           format: 'date_time_no_millis'
         indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:sP") : null)}'
 ```
+
+If your nodetypes schema defines custom properties of type DateTime, you have got to provide similar configuration for them as well in your NodeTypes.yaml, or else they will not be indexed correctly.
 
 There are a few indexing helpers inside the `Indexing` namespace which are usable inside the
 `indexing` expression. In most cases, you don't need to touch this, but they were needed to build up
@@ -646,6 +660,12 @@ currently configured in PHP, the configuration for any property in a node which 
 
 This is important so that Date- and Time-based searches work as expected, both when using formatted DateTime strings and
 when using relative DateTime calculations (eg.: `now`, `now+1d`).
+
+If you want to filter items by date, e.g. to show items with date later than today, you can create a query like this:
+
+```
+${...greaterThan('date', Date.format(Date.Now(), "Y-m-d\TH:i:sP"))...}
+```
 
 For more information on Elasticsearch's Date Formats,
 [click here](http://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html).
