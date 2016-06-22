@@ -255,6 +255,18 @@ prototype(Acme.Blog:SingleTag) < prototype(TYPO3.Neos:Template) {
 }
 ```
 
+#### Making OR queries
+
+There's no OR operator provided in this package, so we would need to use custom ElasticSearch query filter for that:
+
+```
+....queryFilter('bool', {should: [
+	{term: {tags: tagNode.identifier}},
+	{term: {places: tagNode.identifier}},
+	{term: {projects: tagNode.identifier}}
+]})
+```
+
 ## Aggregations
 
 Aggregation is an easy way to aggregate your node data in different ways. Elasticsearch provides a couple of different types of
