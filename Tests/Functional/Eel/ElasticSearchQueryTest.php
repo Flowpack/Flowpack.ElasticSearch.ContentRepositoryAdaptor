@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Eel;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
+use TYPO3\Flow\Persistence\QueryResultInterface;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Model\Workspace;
 use TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository;
@@ -67,19 +68,20 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
      */
     protected $nodeDataRepository;
 
-
+    /**
+     * @var boolean
+     */
     protected static $indexInitialized = false;
-
 
     public function setUp()
     {
         parent::setUp();
-        $this->workspaceRepository = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Repository\WorkspaceRepository');
+        $this->workspaceRepository = $this->objectManager->get(WorkspaceRepository::class);
         $liveWorkspace = new Workspace('live');
         $this->workspaceRepository->add($liveWorkspace);
 
-        $this->nodeTypeManager = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Service\NodeTypeManager');
-        $this->contextFactory = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Service\ContextFactoryInterface');
+        $this->nodeTypeManager = $this->objectManager->get(NodeTypeManager::class);
+        $this->contextFactory = $this->objectManager->get(ContextFactoryInterface::class);
         $this->context = $this->contextFactory->create([
             'workspaceName' => 'live',
             'dimensions' => ['language' => ['en_US']],
@@ -90,9 +92,9 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
         $this->siteNode = $rootNode->createNode('welcome', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
         $this->siteNode->setProperty('title', 'welcome');
 
-        $this->nodeDataRepository = $this->objectManager->get('TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository');
+        $this->nodeDataRepository = $this->objectManager->get(NodeDataRepository::class);
 
-        $this->nodeIndexCommandController = $this->objectManager->get('Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController');
+        $this->nodeIndexCommandController = $this->objectManager->get(NodeIndexCommandController::class);
 
         $this->createNodesForNodeSearchTest();
     }
@@ -104,12 +106,13 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     }
 
     /**
-     * @return \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder
+     * @return ElasticSearchQueryBuilder
      */
     protected function getQueryBuilder()
     {
         /** @var ElasticSearchQueryBuilder $query */
-        $query = $this->objectManager->get('Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder');
+        $query = $this->objectManager->get(ElasticSearchQueryBuilder::class);
+
         return $query->query($this->siteNode);
     }
 
@@ -221,9 +224,9 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
             ->sortDesc('title')
             ->execute();
 
-        /** @var \TYPO3\Flow\Persistence\QueryResultInterface $result $node */
+        /** @var QueryResultInterface $result $node */
 
-        $this->assertInstanceOf(\TYPO3\Flow\Persistence\QueryResultInterface::class, $result);
+        $this->assertInstanceOf(QueryResultInterface::class, $result);
         $this->assertCount(3, $result, 'The result should have 3 items');
         $this->assertEquals(3, $result->count(), 'Count should be 3');
 
