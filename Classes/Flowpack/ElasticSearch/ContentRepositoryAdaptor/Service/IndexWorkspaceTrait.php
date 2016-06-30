@@ -54,6 +54,7 @@ trait IndexWorkspaceTrait
                 $count += $this->indexWorkspaceWithDimensions($workspaceName, $combination, $limit, $callback);
             }
         }
+
         return $count;
     }
 
@@ -76,7 +77,7 @@ trait IndexWorkspaceTrait
             }
             $this->nodeIndexingManager->indexNode($currentNode);
             $indexedNodes++;
-            array_map(function(NodeInterface $childNode) use ($traverseNodes, &$indexedNodes) {
+            array_map(function (NodeInterface $childNode) use ($traverseNodes, &$indexedNodes) {
                 $traverseNodes($childNode, $indexedNodes);
             }, $currentNode->getChildNodes());
         };
