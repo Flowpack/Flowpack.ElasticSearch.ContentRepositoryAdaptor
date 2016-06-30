@@ -18,6 +18,8 @@ Relevant Packages:
 * `TYPO3.TYPO3CR.Search`: provides common functionality for searching TYPO3CR nodes,
   does not contain a search backend
 
+* `Flowpack.ElasticSearch`: provides common code for working with Elasticsearch
+
 * `Flowpack.ElasticSearch.ContentRepositoryAdaptor`: this package
 
 * `Flowpack.SimpleSearch.ContentRepositoryAdaptor`: an alternative search backend (to be used
