@@ -137,7 +137,6 @@ class NodeIndexer extends AbstractNodeIndexer
     public function indexNode(NodeInterface $node, $targetWorkspaceName = null)
     {
         $indexer = function (NodeInterface $node, $targetWorkspaceName = null) {
-
             $contextPath = $node->getContextPath();
 
             if ($this->settings['indexAllWorkspaces'] === false) {
@@ -164,7 +163,7 @@ class NodeIndexer extends AbstractNodeIndexer
             $mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
 
             // Remove document with the same contextPathHash but different NodeType, required after NodeType change
-            $this->logger->log(sprintf('NodeIndexer: Removing node %s from index (if node type changed from %s). ID: %s', $contextPath, $node->getNodeType()->getName(), $contextPathHash), LOG_DEBUG, NULL, 'ElasticSearch (CR)');
+            $this->logger->log(sprintf('NodeIndexer: Removing node %s from index (if node type changed from %s). ID: %s', $contextPath, $node->getNodeType()->getName(), $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
             $this->getIndex()->request('DELETE', '/_query', array(), json_encode([
                 'query' => [
                     'bool' => [
@@ -273,11 +272,10 @@ class NodeIndexer extends AbstractNodeIndexer
         } else {
             $context = $this->contextFactory->create(array('workspaceName' => $workspaceName));
             $node = $context->getNodeByIdentifier($nodeIdentifier);
-            if ($node !== NULL) {
+            if ($node !== null) {
                 $indexer($node, $targetWorkspaceName);
             }
         }
-
     }
 
     /**

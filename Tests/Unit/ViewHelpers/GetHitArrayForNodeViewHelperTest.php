@@ -25,9 +25,21 @@ class GetHitArrayForNodeViewHelperTest extends \TYPO3\Flow\Tests\UnitTestCase
      */
     protected $viewHelper;
 
+    /**
+     * @var NodeInterface|\PHPUnit_Framework_MockObject_MockObject $node
+     */
+    protected $mockNode;
+
+    /**
+     * @var ElasticSearchQueryResult|\PHPUnit_Framework_MockObject_MockObject $queryResult
+     */
+    protected $mockQueryResult;
+
     public function setUp()
     {
         $this->viewHelper = new GetHitArrayForNodeViewHelper();
+        $this->mockNode = $this->createMock(NodeInterface::class);
+        $this->mockQueryResult = $this->getMockBuilder(ElasticSearchQueryResult::class)->setMethods(['searchHitForNode'])->disableOriginalConstructor()->getMock();
     }
 
     /**
@@ -41,12 +53,9 @@ class GetHitArrayForNodeViewHelperTest extends \TYPO3\Flow\Tests\UnitTestCase
             ]
         ];
 
-        $node = $this->getMock(NodeInterface::class);
+        $this->mockQueryResult->expects($this->once())->method('searchHitForNode')->willReturn($hitArray);
 
-        $queryResult = $this->getMock(ElasticSearchQueryResult::class, array('searchHitForNode'), array(), '', false);
-        $queryResult->expects($this->once())->method('searchHitForNode')->willReturn($hitArray);
-
-        $result = $this->viewHelper->render($queryResult, $node);
+        $result = $this->viewHelper->render($this->mockQueryResult, $this->mockNode);
         $this->assertEquals($hitArray, $result, 'The full hit array will be returned');
     }
 
@@ -57,19 +66,16 @@ class GetHitArrayForNodeViewHelperTest extends \TYPO3\Flow\Tests\UnitTestCase
     {
         $path = 'sort';
         $hitArray = [
-            'foo'   => 'bar',
-            $path  => [
+            'foo' => 'bar',
+            $path => [
                 0 => '14',
                 1 => '18'
             ]
         ];
 
-        $node = $this->getMock(NodeInterface::class);
+        $this->mockQueryResult->expects($this->once())->method('searchHitForNode')->willReturn($hitArray);
 
-        $queryResult = $this->getMock(ElasticSearchQueryResult::class, array('searchHitForNode'), array(), '', false);
-        $queryResult->expects($this->once())->method('searchHitForNode')->willReturn($hitArray);
-
-        $result = $this->viewHelper->render($queryResult, $node, $path);
+        $result = $this->viewHelper->render($this->mockQueryResult, $this->mockNode, $path);
         $this->assertEquals($hitArray[$path], $result, 'Just a path from the full hit array will be returned');
     }
 
@@ -80,25 +86,22 @@ class GetHitArrayForNodeViewHelperTest extends \TYPO3\Flow\Tests\UnitTestCase
     {
         $singleValue = 'bar';
         $hitArray = [
-            'foo'   => [
+            'foo' => [
                 0 => $singleValue
             ],
-            'sort'  => [
+            'sort' => [
                 0 => '14',
                 0 => '14',
                 1 => '18'
             ]
         ];
 
-        $node = $this->getMock(NodeInterface::class);
+        $this->mockQueryResult->expects($this->exactly(2))->method('searchHitForNode')->willReturn($hitArray);
 
-        $queryResult = $this->getMock(ElasticSearchQueryResult::class, array('searchHitForNode'), array(), '', false);
-        $queryResult->expects($this->exactly(2))->method('searchHitForNode')->willReturn($hitArray);
-
-        $singleResult = $this->viewHelper->render($queryResult, $node, 'foo.0');
+        $singleResult = $this->viewHelper->render($this->mockQueryResult, $this->mockNode, 'foo.0');
         $this->assertEquals($singleValue, $singleResult, 'Only a single value will be returned if path is dotted');
 
-        $fullResult = $this->viewHelper->render($queryResult, $node, 'sort');
+        $fullResult = $this->viewHelper->render($this->mockQueryResult, $this->mockNode, 'sort');
         $this->assertEquals($hitArray['sort'], $fullResult, 'Full array will be returned if there are multiple values');
     }
 }

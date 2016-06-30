@@ -255,4 +255,3 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
         return true;
     }
 }
-
