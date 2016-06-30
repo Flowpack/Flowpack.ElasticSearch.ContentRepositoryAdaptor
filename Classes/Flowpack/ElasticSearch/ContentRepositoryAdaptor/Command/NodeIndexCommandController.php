@@ -278,6 +278,9 @@ class NodeIndexCommandController extends CommandController
             $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $this->indexedNodes . ' nodes)');
         }
 
+        $this->nodeFactory->reset();
+        $context->getFirstLevelNodeCache()->flush();
+
         $this->countedIndexedNodes = $this->countedIndexedNodes + $this->indexedNodes;
         $this->indexedNodes = 0;
     }
