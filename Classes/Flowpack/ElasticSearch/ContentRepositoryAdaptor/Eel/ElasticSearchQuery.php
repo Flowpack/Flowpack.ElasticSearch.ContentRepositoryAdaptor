@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 
 /*                                                                                                  *
@@ -46,6 +47,7 @@ class ElasticSearchQuery implements QueryInterface
         }
         $queryResult = new ElasticSearchQueryResult($this);
         self::$runtimeQueryResultCache[$queryHash] = $queryResult;
+
         return $queryResult;
     }
 
@@ -112,7 +114,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function setOrderings(array $orderings)
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749035);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749035);
     }
 
     /**
@@ -120,7 +122,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function getOrderings()
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749036);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749036);
     }
 
     /**
@@ -128,7 +130,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function matching($constraint)
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749037);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749037);
     }
 
     /**
@@ -136,7 +138,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function getConstraint()
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749038);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749038);
     }
 
     /**
@@ -144,7 +146,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function logicalAnd($constraint1)
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749039);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749039);
     }
 
     /**
@@ -152,7 +154,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function logicalOr($constraint1)
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749040);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749040);
     }
 
     /**
@@ -160,7 +162,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function logicalNot($constraint)
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749041);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749041);
     }
 
     /**
@@ -168,7 +170,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function equals($propertyName, $operand, $caseSensitive = true)
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749042);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749042);
     }
 
     /**
@@ -176,7 +178,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function like($propertyName, $operand, $caseSensitive = true)
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749043);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749043);
     }
 
     /**
@@ -184,7 +186,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function contains($propertyName, $operand)
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749044);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749044);
     }
 
     /**
@@ -192,7 +194,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function isEmpty($propertyName)
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749045);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749045);
     }
 
     /**
@@ -200,7 +202,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function in($propertyName, $operand)
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749046);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749046);
     }
 
     /**
@@ -208,7 +210,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function lessThan($propertyName, $operand)
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749047);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749047);
     }
 
     /**
@@ -216,7 +218,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function lessThanOrEqual($propertyName, $operand)
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749048);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749048);
     }
 
     /**
@@ -224,7 +226,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function greaterThan($propertyName, $operand)
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749049);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749049);
     }
 
     /**
@@ -232,7 +234,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function greaterThanOrEqual($propertyName, $operand)
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749050);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749050);
     }
 
     /**
@@ -240,7 +242,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function setDistinct($distinct = true)
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749051);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749051);
     }
 
     /**
@@ -248,7 +250,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function isDistinct()
     {
-        throw new Exception(__FUNCTION__ . ' not implemented', 1421749052);
+        throw new Exception(__FUNCTION__.' not implemented', 1421749052);
     }
 
     /**

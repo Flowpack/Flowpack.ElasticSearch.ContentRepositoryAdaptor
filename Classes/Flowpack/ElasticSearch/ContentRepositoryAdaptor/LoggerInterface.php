@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
 
 /*                                                                                                  *
@@ -14,7 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
 use TYPO3\Flow\Annotations as Flow;
 
 /**
- * ElasticSearch Logger Interface
+ * ElasticSearch Logger Interface.
  */
 interface LoggerInterface extends \TYPO3\Flow\Log\LoggerInterface
 {

@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
 
 /*                                                                                                  *
@@ -16,7 +17,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ViewHelpers\GetHitArrayForNo
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 
 /**
- * Testcase for ElasticSearchQueryBuilder
+ * Testcase for ElasticSearchQueryBuilder.
  */
 class GetHitArrayForNodeViewHelperTest extends \TYPO3\Flow\Tests\UnitTestCase
 {
@@ -26,12 +27,12 @@ class GetHitArrayForNodeViewHelperTest extends \TYPO3\Flow\Tests\UnitTestCase
     protected $viewHelper;
 
     /**
-     * @var NodeInterface|\PHPUnit_Framework_MockObject_MockObject $node
+     * @var NodeInterface|\PHPUnit_Framework_MockObject_MockObject
      */
     protected $mockNode;
 
     /**
-     * @var ElasticSearchQueryResult|\PHPUnit_Framework_MockObject_MockObject $queryResult
+     * @var ElasticSearchQueryResult|\PHPUnit_Framework_MockObject_MockObject
      */
     protected $mockQueryResult;
 
@@ -49,8 +50,8 @@ class GetHitArrayForNodeViewHelperTest extends \TYPO3\Flow\Tests\UnitTestCase
     {
         $hitArray = [
             'sort' => [
-                0 => '14'
-            ]
+                0 => '14',
+            ],
         ];
 
         $this->mockQueryResult->expects($this->once())->method('searchHitForNode')->willReturn($hitArray);
@@ -69,8 +70,8 @@ class GetHitArrayForNodeViewHelperTest extends \TYPO3\Flow\Tests\UnitTestCase
             'foo' => 'bar',
             $path => [
                 0 => '14',
-                1 => '18'
-            ]
+                1 => '18',
+            ],
         ];
 
         $this->mockQueryResult->expects($this->once())->method('searchHitForNode')->willReturn($hitArray);
@@ -87,13 +88,13 @@ class GetHitArrayForNodeViewHelperTest extends \TYPO3\Flow\Tests\UnitTestCase
         $singleValue = 'bar';
         $hitArray = [
             'foo' => [
-                0 => $singleValue
+                0 => $singleValue,
             ],
             'sort' => [
                 0 => '14',
                 0 => '14',
-                1 => '18'
-            ]
+                1 => '18',
+            ],
         ];
 
         $this->mockQueryResult->expects($this->exactly(2))->method('searchHitForNode')->willReturn($hitArray);

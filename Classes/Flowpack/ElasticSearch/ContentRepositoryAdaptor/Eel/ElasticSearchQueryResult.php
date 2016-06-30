@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 
 /*                                                                                                  *
@@ -33,7 +34,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     protected $nodes = null;
 
     /**
-     * @var integer
+     * @var int
      */
     protected $count = null;
 
@@ -43,7 +44,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     }
 
     /**
-     * Initialize the results by really executing the query
+     * Initialize the results by really executing the query.
      */
     protected function initialize()
     {
@@ -69,6 +70,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function current()
     {
         $this->initialize();
+
         return current($this->nodes);
     }
 
@@ -78,6 +80,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function next()
     {
         $this->initialize();
+
         return next($this->nodes);
     }
 
@@ -87,6 +90,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function key()
     {
         $this->initialize();
+
         return key($this->nodes);
     }
 
@@ -96,6 +100,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function valid()
     {
         $this->initialize();
+
         return current($this->nodes) !== false;
     }
 
@@ -114,6 +119,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function offsetExists($offset)
     {
         $this->initialize();
+
         return isset($this->nodes[$offset]);
     }
 
@@ -123,6 +129,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function offsetGet($offset)
     {
         $this->initialize();
+
         return $this->nodes[$offset];
     }
 
@@ -161,6 +168,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function toArray()
     {
         $this->initialize();
+
         return $this->nodes;
     }
 
@@ -177,12 +185,14 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     }
 
     /**
-     * @return integer the current number of results which can be iterated upon
+     * @return int the current number of results which can be iterated upon
+     *
      * @api
      */
     public function getAccessibleCount()
     {
         $this->initialize();
+
         return count($this->nodes);
     }
 
@@ -195,7 +205,8 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
         if (array_key_exists('aggregations', $this->result)) {
             return $this->result['aggregations'];
         }
-        return array();
+
+        return [];
     }
 
     /**
@@ -211,6 +222,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
                 return current($suggestArray);
             }
         }
+
         return $this->result['suggest'];
     }
 
@@ -221,7 +233,9 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
      * Can be used for example to access highlighting information.
      *
      * @param NodeInterface $node
+     *
      * @return array the ElasticSearch hit, or NULL if it does not exist.
+     *
      * @api
      */
     public function searchHitForNode(NodeInterface $node)
@@ -231,9 +245,10 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 
     /**
      * Returns the array with all sort values for a given node. The values are fetched from the raw content
-     * ElasticSearch returns within the hit data
+     * ElasticSearch returns within the hit data.
      *
      * @param NodeInterface $node
+     *
      * @return array
      */
     public function getSortValuesForNode(NodeInterface $node)
@@ -243,16 +258,16 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
             return $hit['sort'];
         }
 
-        return array();
+        return [];
     }
 
     /**
      * @param string $methodName
-     * @return boolean
+     *
+     * @return bool
      */
     public function allowsCallOfMethod($methodName)
     {
         return true;
     }
 }
-

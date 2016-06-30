@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
 
 /*                                                                                                  *
@@ -16,22 +17,21 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilde
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
 
 /**
- * Testcase for ElasticSearchQueryBuilder
+ * Testcase for ElasticSearchQueryBuilder.
  */
 class ElasticSearchQueryBuilderResultTest extends \TYPO3\Flow\Tests\UnitTestCase
 {
-
     /**
      * @test
      */
     public function ifNoAggregationsAreSetInTheQueyBuilderResultAnEmptyArrayWillBeReturnedIfYouFetchTheAggregations()
     {
         $resultArrayWithoutAggregations = [
-            "nodes" => ["some", "nodes"]
+            'nodes' => ['some', 'nodes'],
         ];
 
-        $queryBuilder = $this->getMockBuilder(ElasticSearchQueryBuilder::class)->setMethods(["fetch"])->getMock();
-        $queryBuilder->method("fetch")->will($this->returnValue($resultArrayWithoutAggregations));
+        $queryBuilder = $this->getMockBuilder(ElasticSearchQueryBuilder::class)->setMethods(['fetch'])->getMock();
+        $queryBuilder->method('fetch')->will($this->returnValue($resultArrayWithoutAggregations));
 
         $esQuery = new ElasticSearchQuery($queryBuilder);
 

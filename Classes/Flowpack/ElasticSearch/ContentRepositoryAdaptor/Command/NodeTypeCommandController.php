@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
 /*                                                                                                  *
@@ -25,14 +26,16 @@ class NodeTypeCommandController extends CommandController
 {
     /**
      * @Flow\Inject
+     *
      * @var \TYPO3\TYPO3CR\Domain\Service\NodeTypeManager
      */
     protected $nodeTypeManager;
 
     /**
-     * Show node type configuration after applying all supertypes etc
+     * Show node type configuration after applying all supertypes etc.
      *
      * @param string $nodeType the node type to optionally filter for
+     *
      * @return void
      */
     public function showCommand($nodeType = null)
@@ -43,7 +46,7 @@ class NodeTypeCommandController extends CommandController
             $configuration = $nodeType->getFullConfiguration();
         } else {
             $nodeTypes = $this->nodeTypeManager->getNodeTypes();
-            $configuration = array();
+            $configuration = [];
             /** @var \TYPO3\TYPO3CR\Domain\Model\NodeType $nodeType */
             foreach ($nodeTypes as $nodeTypeName => $nodeType) {
                 $configuration[$nodeTypeName] = $nodeType->getFullConfiguration();
