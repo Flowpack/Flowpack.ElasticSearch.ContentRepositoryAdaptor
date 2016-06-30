@@ -1,15 +1,15 @@
 <?php
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model;
 
-/*                                                                                                  *
- * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
- *                                                                                                  *
- * It is free software; you can redistribute it and/or modify it under                              *
- * the terms of the GNU Lesser General Public License, either version 3                             *
- *  of the License, or (at your option) any later version.                                          *
- *                                                                                                  *
- * The TYPO3 project - inspiring people to share!                                                   *
- *                                                                                                  */
+/*
+ * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
+ *
+ * (c) Contributors of the Neos Project - www.neos.io
+ *
+ * This package is Open Source Software. For the full copyright and license
+ * information, please view the LICENSE file which was distributed with this
+ * source code.
+ */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use TYPO3\Eel\ProtectedContextAwareInterface;
@@ -26,7 +26,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
      *
      * @var array
      */
-    protected $request = array();
+    protected $request = [];
 
     /**
      * @var QueryBuilderInterface
@@ -38,7 +38,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
      *
      * @var array
      */
-    protected $unsupportedFieldsInCountRequest = array('fields', 'sort', 'from', 'size', 'highlight', 'aggs', 'aggregations');
+    protected $unsupportedFieldsInCountRequest = ['fields', 'sort', 'from', 'size', 'highlight', 'aggs', 'aggregations'];
 
     /**
      * @param QueryBuilderInterface $queryBuilder
@@ -77,6 +77,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
             $this->request['sort'] = [];
         }
         $this->request['sort'][] = $configuration;
+
         return $this->queryBuilder;
     }
 
@@ -124,6 +125,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
         }
 
         $path[$name] = $aggregationConfiguration;
+
         return $this->queryBuilder;
     }
 
@@ -170,6 +172,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     public function setValueByPath($path, $value)
     {
         $this->request = Arrays::setValueByPath($this->request, $path, $value);
+
         return $this->queryBuilder;
     }
 
@@ -193,14 +196,16 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * {@inheritdoc}
      */
-    public function jsonSerialize() {
+    public function jsonSerialize()
+    {
         return $this->prepareRequest();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function offsetSet($offset, $value) {
+    public function offsetSet($offset, $value)
+    {
         if (is_null($offset)) {
             $this->request[] = $value;
         } else {
@@ -211,21 +216,24 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * {@inheritdoc}
      */
-    public function offsetExists($offset) {
+    public function offsetExists($offset)
+    {
         return isset($this->request[$offset]);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function offsetUnset($offset) {
+    public function offsetUnset($offset)
+    {
         unset($this->request[$offset]);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function offsetGet($offset) {
+    public function offsetGet($offset)
+    {
         return isset($this->request[$offset]) ? $this->request[$offset] : null;
     }
 

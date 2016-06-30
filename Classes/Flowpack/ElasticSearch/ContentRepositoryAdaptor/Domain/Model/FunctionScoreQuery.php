@@ -1,15 +1,15 @@
 <?php
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model;
 
-/*                                                                                                  *
- * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
- *                                                                                                  *
- * It is free software; you can redistribute it and/or modify it under                              *
- * the terms of the GNU Lesser General Public License, either version 3                             *
- *  of the License, or (at your option) any later version.                                          *
- *                                                                                                  *
- * The TYPO3 project - inspiring people to share!                                                   *
- *                                                                                                  */
+/*
+ * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
+ *
+ * (c) Contributors of the Neos Project - www.neos.io
+ *
+ * This package is Open Source Software. For the full copyright and license
+ * information, please view the LICENSE file which was distributed with this
+ * source code.
+ */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use TYPO3\Flow\Utility\Arrays;
@@ -35,6 +35,7 @@ class FunctionScoreQuery extends FilteredQuery
         } else {
             $this->functionScoreRequest['functions'] = $functions;
         }
+
         return $this->queryBuilder;
     }
 
@@ -49,6 +50,7 @@ class FunctionScoreQuery extends FilteredQuery
             throw new Exception\QueryBuildingException('Invalid score mode', 1454016230);
         }
         $this->functionScoreRequest['score_mode'] = $scoreMode;
+
         return $this->queryBuilder;
     }
 
@@ -63,6 +65,7 @@ class FunctionScoreQuery extends FilteredQuery
             throw new Exception\QueryBuildingException('Invalid boost mode', 1454016229);
         }
         $this->functionScoreRequest['boost_mode'] = $boostMode;
+
         return $this->queryBuilder;
     }
 
@@ -77,6 +80,7 @@ class FunctionScoreQuery extends FilteredQuery
             throw new Exception\QueryBuildingException('Invalid max boost', 1454016230);
         }
         $this->functionScoreRequest['max_boost'] = $boost;
+
         return $this->queryBuilder;
     }
 
@@ -91,6 +95,7 @@ class FunctionScoreQuery extends FilteredQuery
             throw new Exception\QueryBuildingException('Invalid max boost', 1454016230);
         }
         $this->functionScoreRequest['min_score'] = $score;
+
         return $this->queryBuilder;
     }
 
@@ -114,8 +119,7 @@ class FunctionScoreQuery extends FilteredQuery
                 'function_score' => $functionScore
             ]
         ]);
+
         return $query;
     }
-
-
 }
