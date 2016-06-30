@@ -1,15 +1,15 @@
 <?php
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 
-/*                                                                                                  *
- * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
- *                                                                                                  *
- * It is free software; you can redistribute it and/or modify it under                              *
- * the terms of the GNU Lesser General Public License, either version 3                             *
- *  of the License, or (at your option) any later version.                                          *
- *                                                                                                  *
- * The TYPO3 project - inspiring people to share!                                                   *
- *                                                                                                  */
+/*
+ * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
+ *
+ * (c) Contributors of the Neos Project - www.neos.io
+ *
+ * This package is Open Source Software. For the full copyright and license
+ * information, please view the LICENSE file which was distributed with this
+ * source code.
+ */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\QueryInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
@@ -90,14 +90,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * @var array
      */
-    protected $result = array();
+    protected $result = [];
 
     /**
      * Initialize Object
      */
     public function initializeObject()
     {
-        $this->request = $this->objectManager->get('Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\QueryInterface', $this);
+        $this->request = $this->objectManager->get(QueryInterface::class, $this);
     }
 
     /**
@@ -117,7 +117,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         // use a simple term filter here.
 
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-term-filter.html
-        return $this->queryFilter('term', array('__typeAndSupertypes' => $nodeType));
+        return $this->queryFilter('term', ['__typeAndSupertypes' => $nodeType]);
     }
 
     /**
@@ -238,7 +238,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             $value = $value->getIdentifier();
         }
 
-        return $this->queryFilter('term', array($propertyName => $value));
+        return $this->queryFilter('term', [$propertyName => $value]);
     }
 
     /**
@@ -251,7 +251,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function greaterThan($propertyName, $value)
     {
-        return $this->queryFilter('range', array($propertyName => array('gt' => $value)));
+        return $this->queryFilter('range', [$propertyName => ['gt' => $value]]);
     }
 
     /**
@@ -264,7 +264,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function greaterThanOrEqual($propertyName, $value)
     {
-        return $this->queryFilter('range', array($propertyName => array('gte' => $value)));
+        return $this->queryFilter('range', [$propertyName => ['gte' => $value]]);
     }
 
     /**
@@ -277,9 +277,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function lessThan($propertyName, $value)
     {
-        return $this->queryFilter('range', array($propertyName => array('lt' => $value)));
+        return $this->queryFilter('range', [$propertyName => ['lt' => $value]]);
     }
-
 
     /**
      * add a range filter (lte) for the given property
@@ -291,7 +290,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function lessThanOrEqual($propertyName, $value)
     {
-        return $this->queryFilter('range', array($propertyName => array('lte' => $value)));
+        return $this->queryFilter('range', [$propertyName => ['lte' => $value]]);
     }
 
     /**
@@ -355,12 +354,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         foreach ($data as $key => $value) {
             if ($value !== null) {
                 if (is_array($value)) {
-                    $this->queryFilter('terms', array($key => $value), $clauseType);
+                    $this->queryFilter('terms', [$key => $value], $clauseType);
                 } else {
-                    $this->queryFilter('term', array($key => $value), $clauseType);
+                    $this->queryFilter('term', [$key => $value], $clauseType);
                 }
             }
         }
+
         return $this;
     }
 
@@ -381,13 +381,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function fieldBasedAggregation($name, $field, $type = "terms", $parentPath = null)
     {
-        $aggregationDefinition = array(
-            $type => array(
+        $aggregationDefinition = [
+            $type => [
                 'field' => $field
-            )
-        );
+            ]
+        ];
 
         $this->aggregation($name, $aggregationDefinition, $parentPath);
+
         return $this;
     }
 
@@ -442,6 +443,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         ];
 
         $this->suggestions($name, $suggestionDefinition);
+
         return $this;
     }
 
@@ -470,7 +472,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $this->request->suggestions($name, $suggestionDefinition);
         return $this;
     }
-    
+
     /**
      * Get the ElasticSearch request as we need it
      *
@@ -502,7 +504,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     public function getTotalItems()
     {
         if (array_key_exists('total', $this->result)) {
-            return (int) $this->result['total'];
+            return (int)$this->result['total'];
         }
     }
 
@@ -533,6 +535,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         if (isset($this->elasticSearchHitsIndexedByNodeFromLastRequest[$node->getIdentifier()])) {
             return $this->elasticSearchHitsIndexedByNodeFromLastRequest[$node->getIdentifier()];
         }
+
         return null;
     }
 
@@ -545,14 +548,15 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function fetch()
     {
+        $request = $this->getRequest();
         $timeBefore = microtime(true);
         $request = $this->request->getRequestAsJSON();
-        $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', array(), $request);
+        $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request);
         $timeAfterwards = microtime(true);
 
         $this->result = $response->getTreatedContent();
 
-        $this->result['nodes'] = array();
+        $this->result['nodes'] = [];
         if ($this->logThisQuery === true) {
             $this->logger->log(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s',
                 $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($this->result['hits']['hits']), $this->result['hits']['total']), LOG_DEBUG);
@@ -574,9 +578,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     {
         $elasticSearchQuery = new ElasticSearchQuery($this);
         $result = $elasticSearchQuery->execute(true);
+
         return $result;
     }
-
 
     /**
      * Return the total number of hits for the query.
@@ -589,7 +593,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $timeBefore = microtime(true);
         $request = $this->getRequest()->getCountRequestAsJSON();
 
-        $response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', array(), $request);
+        $response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', [], $request);
         $timeAfterwards = microtime(true);
 
         $treatedContent = $response->getTreatedContent();
@@ -648,11 +652,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         // on indexing, the __parentPath is tokenized to contain ALL parent path parts,
         // e.g. /foo, /foo/bar/, /foo/bar/baz; to speed up matching.. That's why we use a simple "term" filter here.
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-term-filter.html
-        $this->queryFilter('term', array('__parentPath' => $contextNode->getPath()));
+        $this->queryFilter('term', ['__parentPath' => $contextNode->getPath()]);
 
         //
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-terms-filter.html
-        $this->queryFilter('terms', array('__workspace' => array_unique(array('live', $contextNode->getContext()->getWorkspace()->getName()))));
+        $this->queryFilter('terms', ['__workspace' => array_unique(['live', $contextNode->getContext()->getWorkspace()->getName()])]);
 
         // match exact dimension values for each dimension, this works because the indexing flattens the node variants for all dimension preset combinations
         $dimensionCombinations = $contextNode->getContext()->getDimensions();
@@ -682,8 +686,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     protected function convertHitsToNodes(array $hits)
     {
-        $nodes = array();
-        $elasticSearchHitPerNode = array();
+        $nodes = [];
+        $elasticSearchHitPerNode = [];
 
         /**
          * TODO: This code below is not fully correct yet:

@@ -18,6 +18,8 @@ Relevant Packages:
 * `TYPO3.TYPO3CR.Search`: provides common functionality for searching TYPO3CR nodes,
   does not contain a search backend
 
+* `Flowpack.ElasticSearch`: provides common code for working with Elasticsearch
+
 * `Flowpack.ElasticSearch.ContentRepositoryAdaptor`: this package
 
 * `Flowpack.SimpleSearch.ContentRepositoryAdaptor`: an alternative search backend (to be used
@@ -212,7 +214,8 @@ Furthermore, the following operators are supported:
 * `greaterThanOrEqual('propertyName', value)` -- range filter with property values greater than or equal to the given value
 * `lessThan('propertyName', value)` -- range filter with property values less than the given value
 * `lessThanOrEqual('propertyName', value)` -- range filter with property values less than or equal to the given value
-* `sortAsc('propertyName')` and `sortDesc('propertyName')` -- can also be used multiple times, e.g. `sortAsc('tag').sortDesc(`date')` will first sort by tag ascending, and then by date descending.
+* `sortAsc('propertyName')` and `sortDesc('propertyName')` -- can also be used multiple times, e.g. `sortAsc('tag').sortDesc(`date')`
+   will first sort by tag ascending, and then by date descending.
 * `limit(5)` -- only return five results. If not specified, the default limit by Elasticsearch applies (which is at 10 by default)
 * `from(5)` -- return the results starting from the 6th one
 * `fulltext(...)` -- do a query_string query on the Fulltext Index
@@ -255,6 +258,18 @@ prototype(Acme.Blog:SingleTag) < prototype(TYPO3.Neos:Template) {
 }
 ```
 
+#### Making OR queries
+
+There's no OR operator provided in this package, so you need to use a custom Elasticsearch query filter for that:
+
+```
+....queryFilter('bool', {should: [
+	{term: {tags: tagNode.identifier}},
+	{term: {places: tagNode.identifier}},
+	{term: {projects: tagNode.identifier}}
+]})
+```
+
 ## Aggregations
 
 Aggregation is an easy way to aggregate your node data in different ways. Elasticsearch provides a couple of different types of
@@ -272,7 +287,9 @@ You can nest aggregations by providing a parent name.
 
 
 ### Examples
+
 #### Add a average aggregation
+
 To add an average aggregation you can use the fieldBasedAggregation. This snippet would add an average aggregation for
 a property price:
 ```
@@ -284,6 +301,7 @@ Now you can access your aggregations inside your fluid template with
 ```
 
 #### Create a nested aggregation
+
 In this scenario you could have a node that represents a product with the properties price and color. If you would like
 to know the average price for all your colors you just nest an aggregation in your TypoScript:
 ```
@@ -299,6 +317,7 @@ fieldBasedAggregation("anotherAggregation", "field", "avg", "colors.avgprice")
 ```
 
 #### Add a custom aggregation
+
 To add a custom aggregation you can use the `aggregation()` method. All you have to do is to provide an array with your
 aggregation definition. This example would do the same as the fieldBasedAggregation would do for you:
 ```
@@ -311,6 +330,7 @@ nodes = ${Search.query(site)...aggregation("color", this.aggregationDefinition).
 ```
 
 #### Product filter
+
 This is a more complex scenario. With this snippet we will create a full product filter based on your selected Nodes. Imagine
 an NodeTye ProductList with an property `products`. This property contains a comma separated list of sku's. This could also
 be a reference on other products.
@@ -356,8 +376,8 @@ be fetched and passed to your template.
 
 **Important notice**
 
-If you do use the terms filter be aware of Elasticsearchs analyze functionality. You might want to disable this for all
-your filterable properties like this:
+If you do use the terms filter be aware of Elasticsearchs analyze functionality for strings. You might want to disable this
+for all your filterable properties, or else filtering won't work on them properly:
 ```
 'Vendor.Name:Product'
   properties:
@@ -373,7 +393,7 @@ your filterable properties like this:
 
 ## Sorting
 
-This package adapts ElasticSearchs sorting capabilities. You can add multiple sort operations to your query.
+This package adapts Elasticsearchs sorting capabilities. You can add multiple sort operations to your query.
 Right now there are three methods you can use:
 
 * `sortAsc('propertyName')`
@@ -382,13 +402,16 @@ Right now there are three methods you can use:
 
 Just append those method to your query like this:
 ```
-# sort ascending by property title
+# Sort ascending by property title
+
 nodes = ${q(Search.query(site).....sortAsc("title").execute())}
 
-# sort for multiple properties
+# Sort for multiple properties
+
 nodes = ${q(Search.query(site).....sortAsc("title").sortDesc("name").execute())}
 
-# custom sort opertation
+# Custom sort operation
+
 geoSorting = TYPO3.TypoScript:RawArray {
     _geo_distance = TYPO3.TypoScript:RawArray {
         latlng = TYPO3.TypoScript:RawArray {
@@ -407,6 +430,7 @@ Check https://www.elastic.co/guide/en/elasticsearch/reference/current/search-req
 options.
 
 ### Example with pagination and sort by distance
+
 This is how a more complex example could look like. Imagine you a want to render a list of nodes and in addition to each
 node you want to display the distance to a specific point.
 
@@ -454,6 +478,7 @@ The ViewHelper will use \TYPO3\Flow\Utility\Arrays::getValueByPath() to return a
 of an array or a string. Check the documentation \TYPO3\Flow\Utility\Arrays::getValueByPath() for more informations.
 
 **Important notice**
+
 The ViewHelper GetHitArrayForNode will return the raw hit result array. The path poperty allows you to access some
 specific data like the the sort data. If there is only one value for your path the value will be returned.
 If there is more data the full array will be returned by GetHitArrayForNode-VH. So you might have to use the
@@ -489,26 +514,30 @@ Elasticsearch offers an easy way to get query suggestions based on your query. C
 you can build and use suggestion in your search.
 
 **Suggestion methods implemented**
-There are two methods implemented. `suggestions` is a generic one that allows to build the suggestion query of your 
-dreams. The other method is `termSuggestions` and is meant for basic term suggestions. They can be added to your totaly 
+
+There are two methods implemented. `suggestions` is a generic one that allows to build the suggestion query of your
+dreams. The other method is `termSuggestions` and is meant for basic term suggestions. They can be added to your totaly
 awesome TS search query.
-   
+
 * `suggestions($name, array $suggestionDefinition)` -- generic method to be filled with your own suggestionQuery
 * `termSuggestions($term, $field = '_all', $name = 'suggestions'` -- simple term suggestion query on all fields
 
 ### Examples
+
 #### Add a simple suggestion to a query
+
 Simple suggestion that returns a suggestion based on the sent term
 
 ```
 suggestions = $(Search.query(site)...termSuggestions('someTerm')}
 ```
-You can access your suggestions inside your fluid template with 
+You can access your suggestions inside your fluid template with
 ```
 {nodes.suggestions}
 ```
 
 ### Add a custom suggestion
+
 Phrase query that returns query suggestions
 
 ```
@@ -529,7 +558,8 @@ suggestions = ${Search.query(site)...suggestions('my_suggestions', this.suggesti
 
 ## Advanced: Configuration of Indexing
 
-**Normally, this does not need to be touched, as this package supports all Neos data types natively.**
+**The default configuration supports most usecases and often may not need to be touched, as this package comes
+with sane defaults for all Neos data types.**
 
 Indexing of properties is configured at two places. The defaults per-data-type are configured
 inside `TYPO3.TYPO3CR.Search.defaultConfigurationPerType` of `Settings.yaml`.
@@ -574,6 +604,9 @@ TYPO3:
           format: 'date_time_no_millis'
         indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:sP") : null)}'
 ```
+
+If your nodetypes schema defines custom properties of type DateTime, you have got to provide similar configuration for
+them as well in your `NodeTypes.yaml`, or else they will not be indexed correctly.
 
 There are a few indexing helpers inside the `Indexing` namespace which are usable inside the
 `indexing` expression. In most cases, you don't need to touch this, but they were needed to build up
@@ -646,6 +679,12 @@ currently configured in PHP, the configuration for any property in a node which 
 
 This is important so that Date- and Time-based searches work as expected, both when using formatted DateTime strings and
 when using relative DateTime calculations (eg.: `now`, `now+1d`).
+
+If you want to filter items by date, e.g. to show items with date later than today, you can create a query like this:
+
+```
+${...greaterThan('date', Date.format(Date.Now(), "Y-m-d\TH:i:sP"))...}
+```
 
 For more information on Elasticsearch's Date Formats,
 [click here](http://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html).
