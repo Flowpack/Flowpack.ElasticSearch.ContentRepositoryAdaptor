@@ -3,12 +3,11 @@
     "type": "typo3-flow-package",
     "description": "This package provides functionality for using Elasticsearch on top of TYPO3CR.Search",
     "homepage": "http://flowpack.org/",
-    "license": ["LGPL-3.0+"],
+    "license": ["LGPL-3.0"],
     "require": {
         "php": ">=5.5.0",
 
         "flowpack/elasticsearch": "*",
-        "typo3/eel": "*",
         "typo3/typo3cr-search": "*"
     },
     "autoload": {
