@@ -1,15 +1,15 @@
 <?php
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 
-/*                                                                                                  *
- * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
- *                                                                                                  *
- * It is free software; you can redistribute it and/or modify it under                              *
- * the terms of the GNU Lesser General Public License, either version 3                             *
- *  of the License, or (at your option) any later version.                                          *
- *                                                                                                  *
- * The TYPO3 project - inspiring people to share!                                                   *
- *                                                                                                  */
+/*
+ * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
+ *
+ * (c) Contributors of the Neos Project - www.neos.io
+ *
+ * This package is Open Source Software. For the full copyright and license
+ * information, please view the LICENSE file which was distributed with this
+ * source code.
+ */
 
 use TYPO3\Eel\ProtectedContextAwareInterface;
 use TYPO3\Flow\Persistence\QueryResultInterface;
@@ -56,7 +56,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     }
 
     /**
-     * @return \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQuery
+     * @return ElasticSearchQuery
      */
     public function getQuery()
     {
@@ -69,6 +69,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function current()
     {
         $this->initialize();
+
         return current($this->nodes);
     }
 
@@ -78,6 +79,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function next()
     {
         $this->initialize();
+
         return next($this->nodes);
     }
 
@@ -87,6 +89,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function key()
     {
         $this->initialize();
+
         return key($this->nodes);
     }
 
@@ -96,6 +99,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function valid()
     {
         $this->initialize();
+
         return current($this->nodes) !== false;
     }
 
@@ -114,6 +118,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function offsetExists($offset)
     {
         $this->initialize();
+
         return isset($this->nodes[$offset]);
     }
 
@@ -123,6 +128,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function offsetGet($offset)
     {
         $this->initialize();
+
         return $this->nodes[$offset];
     }
 
@@ -161,6 +167,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function toArray()
     {
         $this->initialize();
+
         return $this->nodes;
     }
 
@@ -183,6 +190,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     public function getAccessibleCount()
     {
         $this->initialize();
+
         return count($this->nodes);
     }
 
@@ -195,7 +203,8 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
         if (array_key_exists('aggregations', $this->result)) {
             return $this->result['aggregations'];
         }
-        return array();
+
+        return [];
     }
 
     /**
@@ -211,6 +220,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
                 return current($suggestArray);
             }
         }
+
         return $this->result['suggest'];
     }
 
@@ -243,7 +253,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
             return $hit['sort'];
         }
 
-        return array();
+        return [];
     }
 
     /**
