@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
 
 /**
@@ -25,49 +26,51 @@ class ElasticSearch
 
     /**
      * @param string $path
-     * @param array $http
-     * @return mixed
+     * @param array  $http
+     *
      * @throws \Exception
+     *
+     * @return mixed
      */
-    public function call($path, array $http = array())
+    public function call($path, array $http = [])
     {
         if (!$this->index) {
             throw new \Exception('$this->index needs a value');
         }
-        $params = array(
-            'http' => array(
-                'method' => 'GET',
-                'header' => "Content-Type: multipart/form-data\r\n",
-                'content' => $http
-            )
-        );
+        $params = [
+            'http' => [
+                'method'  => 'GET',
+                'header'  => "Content-Type: multipart/form-data\r\n",
+                'content' => $http,
+            ],
+        ];
 
-        return json_decode(file_get_contents($this->server . '/' . $this->index . '/' . $path, null, stream_context_create($params)));
+        return json_decode(file_get_contents($this->server.'/'.$this->index.'/'.$path, null, stream_context_create($params)));
         //return json_decode(file_get_contents($this->server . '/' . $this->index . '/' . $path, NULL, stream_context_create(array('http' => $http))));
     }
 
     /**
-     * curl -X PUT http://localhost:9200/{INDEX}/
+     * curl -X PUT http://localhost:9200/{INDEX}/.
      *
      * @return void
      */
     public function create()
     {
-        $this->call(null, array('method' => 'PUT'));
+        $this->call(null, ['method' => 'PUT']);
     }
 
     /**
-     * curl -X DELETE http://localhost:9200/{INDEX}/
+     * curl -X DELETE http://localhost:9200/{INDEX}/.
      *
      * @return void
      */
     public function drop()
     {
-        $this->call(null, array('method' => 'DELETE'));
+        $this->call(null, ['method' => 'DELETE']);
     }
 
     /**
-     * curl -X GET http://localhost:9200/{INDEX}/_status
+     * curl -X GET http://localhost:9200/{INDEX}/_status.
      *
      * @return mixed
      */
@@ -77,26 +80,28 @@ class ElasticSearch
     }
 
     /**
-     * curl -X GET http://localhost:9200/{INDEX}/{TYPE}/_count -d {matchAll:{}}
+     * curl -X GET http://localhost:9200/{INDEX}/{TYPE}/_count -d {matchAll:{}}.
      *
      * @param string $type
+     *
      * @return mixed
      */
     public function count($type)
     {
-        return $this->call($type . '/_count', array('method' => 'GET', 'content' => '{ matchAll:{} }'));
+        return $this->call($type.'/_count', ['method' => 'GET', 'content' => '{ matchAll:{} }']);
     }
 
     /**
      * curl -X PUT http://localhost:9200/{INDEX}/{TYPE}/_mapping -d ...
      *
      * @param string $type
-     * @param mixed $data
+     * @param mixed  $data
+     *
      * @return mixed
      */
     public function map($type, $data)
     {
-        return $this->call($type . '/_mapping', array('method' => 'PUT', 'content' => $data));
+        return $this->call($type.'/_mapping', ['method' => 'PUT', 'content' => $data]);
     }
 
     /**
@@ -104,12 +109,13 @@ class ElasticSearch
      *
      * @param string $type
      * @param string $id
-     * @param mixed $data
+     * @param mixed  $data
+     *
      * @return mixed
      */
     public function add($type, $id, $data)
     {
-        return $this->call($type . '/' . $id, array('method' => 'PUT', 'content' => $data));
+        return $this->call($type.'/'.$id, ['method' => 'PUT', 'content' => $data]);
     }
 
     /**
@@ -117,10 +123,11 @@ class ElasticSearch
      *
      * @param string $type
      * @param string $q
+     *
      * @return mixed
      */
     public function query($type, $q)
     {
-        return $this->call($type . '/_search?' . http_build_query(array('q' => $q)));
+        return $this->call($type.'/_search?'.http_build_query(['q' => $q]));
     }
 }

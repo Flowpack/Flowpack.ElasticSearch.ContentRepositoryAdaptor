@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
 
 /*                                                                                                  *
@@ -27,7 +28,7 @@ use TYPO3\Flow\Configuration\ConfigurationManager;
 class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
 {
     /**
-     * The index name to be used for querying (by default "typo3cr")
+     * The index name to be used for querying (by default "typo3cr").
      *
      * @var string
      */
@@ -35,6 +36,7 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
 
     /**
      * @Flow\Inject
+     *
      * @var ConfigurationManager
      */
     protected $configurationManager;
@@ -42,7 +44,7 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
     /**
      * Called by the Flow object framework after creating the object and resolving all dependencies.
      *
-     * @param integer $cause Creation cause
+     * @param int $cause Creation cause
      */
     public function initializeObject($cause)
     {
@@ -53,7 +55,7 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
     }
 
     /**
-     * Get the index name to be used
+     * Get the index name to be used.
      *
      * @return string
      */

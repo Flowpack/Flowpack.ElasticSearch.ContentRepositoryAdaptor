@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 
 /*                                                                                                  *
@@ -14,7 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use TYPO3\Flow\Annotations as Flow;
 
 /**
- * A Query Building Exception
+ * A Query Building Exception.
  */
 class QueryBuildingException extends \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
 {

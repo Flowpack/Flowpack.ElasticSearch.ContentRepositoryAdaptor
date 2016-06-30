@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Eel;
 
 /*                                                                                                  *
@@ -24,7 +25,7 @@ use TYPO3\TYPO3CR\Domain\Service\ContextFactoryInterface;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 
 /**
- * Testcase for ElasticSearchQuery
+ * Testcase for ElasticSearchQuery.
  */
 class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
 {
@@ -49,7 +50,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     protected $siteNode;
 
     /**
-     * @var boolean
+     * @var bool
      */
     protected static $testablePersistenceEnabled = true;
 
@@ -69,7 +70,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     protected $nodeDataRepository;
 
     /**
-     * @var boolean
+     * @var bool
      */
     protected static $indexInitialized = false;
 
@@ -83,9 +84,9 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
         $this->nodeTypeManager = $this->objectManager->get(NodeTypeManager::class);
         $this->contextFactory = $this->objectManager->get(ContextFactoryInterface::class);
         $this->context = $this->contextFactory->create([
-            'workspaceName' => 'live',
-            'dimensions' => ['language' => ['en_US']],
-            'targetDimensions' => ['language' => 'en_US']
+            'workspaceName'    => 'live',
+            'dimensions'       => ['language' => ['en_US']],
+            'targetDimensions' => ['language' => 'en_US'],
         ]);
         $rootNode = $this->context->getRootNode();
 
@@ -186,8 +187,8 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
         $this->assertCount(2, $result[$aggregationTitle]['buckets']);
 
         $expectedChickenBucket = [
-            'key' => 'chicken',
-            'doc_count' => 2
+            'key'       => 'chicken',
+            'doc_count' => 2,
         ];
 
         $this->assertEquals($expectedChickenBucket, $result[$aggregationTitle]['buckets'][0]);
@@ -198,15 +199,15 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
      */
     public function termSuggestion()
     {
-        $titleSuggestionKey = "chickn";
+        $titleSuggestionKey = 'chickn';
 
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->termSuggestions($titleSuggestionKey, "title")
+            ->termSuggestions($titleSuggestionKey, 'title')
             ->execute()
             ->getSuggestions();
 
-        $this->assertArrayHasKey("options", $result);
+        $this->assertArrayHasKey('options', $result);
 
         $this->assertCount(1, $result['options']);
 
@@ -224,7 +225,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
             ->sortDesc('title')
             ->execute();
 
-        /** @var QueryResultInterface $result $node */
+        /* @var QueryResultInterface $result $node */
 
         $this->assertInstanceOf(QueryResultInterface::class, $result);
         $this->assertCount(3, $result, 'The result should have 3 items');
@@ -246,7 +247,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
             ->nodeType('TYPO3.Neos.NodeTypes:Page')
             ->sortAsc('title')
             ->execute();
-        /** @var ElasticSearchQueryResult $result */
+        /* @var ElasticSearchQueryResult $result */
         $node = $result->getFirst();
 
         $this->assertInstanceOf(NodeInterface::class, $node);
@@ -278,7 +279,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     }
 
     /**
-     * Creates some sample nodes to run tests against
+     * Creates some sample nodes to run tests against.
      */
     protected function createNodesForNodeSearchTest()
     {
@@ -293,7 +294,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
 
         $dimensionContext = $this->contextFactory->create([
             'workspaceName' => 'live',
-            'dimensions' => ['language' => ['de']]
+            'dimensions'    => ['language' => ['de']],
         ]);
         $translatedNode3 = $dimensionContext->adoptNode($newNode3, true);
         $translatedNode3->setProperty('title', 'De');

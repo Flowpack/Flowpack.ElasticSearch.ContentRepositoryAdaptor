@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
 
 /*                                                                                                  *
@@ -17,7 +18,7 @@ use TYPO3\TYPO3CR\Domain\Model\Workspace;
 use TYPO3\TYPO3CR\Domain\Service\Context;
 
 /**
- * Testcase for ElasticSearchQueryBuilder
+ * Testcase for ElasticSearchQueryBuilder.
  */
 class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
 {
@@ -54,57 +55,57 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                     'query' => [
                         'bool' => [
                             'must' => [
-                                ['match_all' => []]
-                            ]
-                        ]
+                                ['match_all' => []],
+                            ],
+                        ],
                     ],
                     'filter' => [
                         'bool' => [
                             'must' => [
                                 0 => [
                                     'term' => [
-                                        '__parentPath' => '/foo/bar'
-                                    ]
+                                        '__parentPath' => '/foo/bar',
+                                    ],
                                 ],
                                 1 => [
                                     'terms' => [
-                                        '__workspace' => ['live', 'user-foo']
-                                    ]
+                                        '__workspace' => ['live', 'user-foo'],
+                                    ],
                                 ],
                                 2 => [
                                     'term' => [
-                                        '__dimensionCombinationHash' => 'd751713988987e9331980363e24189ce'
-                                    ]
-                                ]
+                                        '__dimensionCombinationHash' => 'd751713988987e9331980363e24189ce',
+                                    ],
+                                ],
                             ],
-                            'should' => [],
+                            'should'   => [],
                             'must_not' => [
                                 // Filter out all hidden elements
                                 [
-                                    'term' => ['_hidden' => true]
+                                    'term' => ['_hidden' => true],
                                 ],
                                 // if now < hiddenBeforeDateTime: HIDE
                                 // -> hiddenBeforeDateTime > now
                                 [
                                     'range' => [
                                         '_hiddenBeforeDateTime' => [
-                                            'gt' => 'now'
-                                        ]
-                                    ]
+                                            'gt' => 'now',
+                                        ],
+                                    ],
                                 ],
                                 [
                                     'range' => [
                                         '_hiddenAfterDateTime' => [
-                                            'lt' => 'now'
-                                        ]
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
+                                            'lt' => 'now',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
             ],
-            'fields' => ['__path']
+            'fields' => ['__path'],
         ];
         $actual = $this->queryBuilder->getRequest();
         $this->assertSame($expected, $actual);
@@ -127,8 +128,8 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
         $this->queryBuilder->nodeType('Foo.Bar:Baz');
         $expected = [
             'term' => [
-                '__typeAndSupertypes' => 'Foo.Bar:Baz'
-            ]
+                '__typeAndSupertypes' => 'Foo.Bar:Baz',
+            ],
         ];
         $actual = $this->queryBuilder->getRequest();
         $this->assertInArray($expected, $actual['query']['filtered']['filter']['bool']['must']);
@@ -142,8 +143,8 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
         $this->queryBuilder->sortAsc('fieldName');
         $expected = [
             [
-                'fieldName' => ['order' => 'asc']
-            ]
+                'fieldName' => ['order' => 'asc'],
+            ],
         ];
         $actual = $this->queryBuilder->getRequest();
         $this->assertSame($expected, $actual['sort']);
@@ -157,14 +158,14 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
         $this->queryBuilder->sortAsc('fieldName')->sortDesc('field2')->sortAsc('field3');
         $expected = [
             [
-                'fieldName' => ['order' => 'asc']
+                'fieldName' => ['order' => 'asc'],
             ],
             [
-                'field2' => ['order' => 'desc']
+                'field2' => ['order' => 'desc'],
             ],
             [
-                'field3' => ['order' => 'asc']
-            ]
+                'field3' => ['order' => 'asc'],
+            ],
         ];
         $actual = $this->queryBuilder->getRequest();
         $this->assertSame($expected, $actual['sort']);
@@ -188,8 +189,8 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
         $this->queryBuilder->sortDesc('fieldName');
         $expected = [
             [
-                'fieldName' => ['order' => 'desc']
-            ]
+                'fieldName' => ['order' => 'desc'],
+            ],
         ];
         $actual = $this->queryBuilder->getRequest();
         $this->assertSame($expected, $actual['sort']);
@@ -204,7 +205,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
             ['greaterThan', 'gt', 10],
             ['greaterThanOrEqual', 'gte', 20],
             ['lessThan', 'lt', 'now'],
-            ['lessThanOrEqual', 'lte', 40]
+            ['lessThanOrEqual', 'lte', 40],
         ];
     }
 
@@ -217,8 +218,8 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
         $this->queryBuilder->$constraint('fieldName', $value);
         $expected = [
             'range' => [
-                'fieldName' => [$operator => $value]
-            ]
+                'fieldName' => [$operator => $value],
+            ],
         ];
         $actual = $this->queryBuilder->getRequest();
         $this->assertInArray($expected, $actual['query']['filtered']['filter']['bool']['must']);
@@ -234,7 +235,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
             ['terms', 'foo', 'bar'],
             ['sum', 'foo', 'bar'],
             ['stats', 'foo', 'bar'],
-            ['value_count', 'foo', 'bar']
+            ['value_count', 'foo', 'bar'],
         ];
     }
 
@@ -247,9 +248,9 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
         $expected = [
             $name => [
                 $type => [
-                    'field' => $field
-                ]
-            ]
+                    'field' => $field,
+                ],
+            ],
         ];
 
         $this->queryBuilder->fieldBasedAggregation($name, $field, $type);
@@ -263,24 +264,24 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
      */
     public function anAggregationCanBeSubbedUnderAPath()
     {
-        $this->queryBuilder->fieldBasedAggregation("foo", "bar");
-        $this->queryBuilder->fieldBasedAggregation("bar", "bar", "terms", "foo");
-        $this->queryBuilder->fieldBasedAggregation("baz", "bar", "terms", "foo.bar");
+        $this->queryBuilder->fieldBasedAggregation('foo', 'bar');
+        $this->queryBuilder->fieldBasedAggregation('bar', 'bar', 'terms', 'foo');
+        $this->queryBuilder->fieldBasedAggregation('baz', 'bar', 'terms', 'foo.bar');
 
         $expected = [
-            "foo" => [
-                "terms" => ["field" => "bar"],
-                "aggregations" => [
-                    "bar" => [
-                        "terms" => ["field" => "bar"],
-                        "aggregations" => [
-                            "baz" => [
-                                "terms" => ["field" => "bar"]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+            'foo' => [
+                'terms'        => ['field' => 'bar'],
+                'aggregations' => [
+                    'bar' => [
+                        'terms'        => ['field' => 'bar'],
+                        'aggregations' => [
+                            'baz' => [
+                                'terms' => ['field' => 'bar'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         $actual = $this->queryBuilder->getRequest();
@@ -293,8 +294,8 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
      */
     public function ifTheParentPathDoesNotExistAnExceptionisThrown()
     {
-        $this->queryBuilder->fieldBasedAggregation("foo", "bar");
-        $this->queryBuilder->fieldBasedAggregation("bar", "bar", "terms", "doesNotExist");
+        $this->queryBuilder->fieldBasedAggregation('foo', 'bar');
+        $this->queryBuilder->fieldBasedAggregation('bar', 'bar', 'terms', 'doesNotExist');
     }
 
     /**
@@ -303,8 +304,8 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
      */
     public function ifSubbedParentPathDoesNotExistAnExceptionisThrown()
     {
-        $this->queryBuilder->fieldBasedAggregation("foo", "bar");
-        $this->queryBuilder->fieldBasedAggregation("bar", "bar", "terms", "foo.doesNotExist");
+        $this->queryBuilder->fieldBasedAggregation('foo', 'bar');
+        $this->queryBuilder->fieldBasedAggregation('bar', 'bar', 'terms', 'foo.doesNotExist');
     }
 
     /**
@@ -313,24 +314,25 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
     public function aCustomAggregationDefinitionCanBeApplied()
     {
         $expected = [
-            "foo" => [
-                "some" => ["field" => "bar"],
-                "custom" => ["field" => "bar"],
-                "arrays" => ["field" => "bar"]
-            ]
+            'foo' => [
+                'some'   => ['field' => 'bar'],
+                'custom' => ['field' => 'bar'],
+                'arrays' => ['field' => 'bar'],
+            ],
         ];
 
-        $this->queryBuilder->aggregation("foo", $expected['foo']);
+        $this->queryBuilder->aggregation('foo', $expected['foo']);
         $actual = $this->queryBuilder->getRequest();
 
         $this->assertInArray($expected, $actual);
     }
 
     /**
-     * Test helper
+     * Test helper.
      *
      * @param $expected
      * @param $actual
+     *
      * @return void
      */
     protected function assertInArray($expected, $actual)

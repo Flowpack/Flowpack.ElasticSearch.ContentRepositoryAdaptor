@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping;
 
 /*                                                                                                  *
@@ -20,7 +21,7 @@ use TYPO3\TYPO3CR\Domain\Model\NodeType;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 
 /**
- * Builds the mapping information for TYPO3CR Node Types in Elastic Search
+ * Builds the mapping information for TYPO3CR Node Types in Elastic Search.
  *
  * @Flow\Scope("singleton")
  */
@@ -35,6 +36,7 @@ class NodeTypeMappingBuilder
 
     /**
      * @Flow\Inject
+     *
      * @var NodeTypeManager
      */
     protected $nodeTypeManager;
@@ -46,6 +48,7 @@ class NodeTypeMappingBuilder
 
     /**
      * @Flow\Inject
+     *
      * @var ConfigurationManager
      */
     protected $configurationManager;
@@ -53,7 +56,7 @@ class NodeTypeMappingBuilder
     /**
      * Called by the Flow object framework after creating the object and resolving all dependencies.
      *
-     * @param integer $cause Creation cause
+     * @param int $cause Creation cause
      */
     public function initializeObject($cause)
     {
@@ -64,9 +67,10 @@ class NodeTypeMappingBuilder
     }
 
     /**
-     * Converts a TYPO3CR Node Type name into a name which can be used for an Elastic Search Mapping
+     * Converts a TYPO3CR Node Type name into a name which can be used for an Elastic Search Mapping.
      *
      * @param string $nodeTypeName
+     *
      * @return string
      */
     public static function convertNodeTypeNameToMappingName($nodeTypeName)
@@ -75,9 +79,10 @@ class NodeTypeMappingBuilder
     }
 
     /**
-     * Builds a Mapping Collection from the configured node types
+     * Builds a Mapping Collection from the configured node types.
      *
      * @param \Flowpack\ElasticSearch\Domain\Model\Index $index
+     *
      * @return \Flowpack\ElasticSearch\Mapping\MappingCollection<\Flowpack\ElasticSearch\Domain\Model\Mapping>
      */
     public function buildMappingInformation(Index $index)
@@ -101,17 +106,17 @@ class NodeTypeMappingBuilder
 
             // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/mapping-root-object-type.html#_dynamic_templates
             // 'not_analyzed' is necessary
-            $mapping->addDynamicTemplate('dimensions', array(
-                'path_match' => '__dimensionCombinations.*',
+            $mapping->addDynamicTemplate('dimensions', [
+                'path_match'         => '__dimensionCombinations.*',
                 'match_mapping_type' => 'string',
-                'mapping' => array(
-                    'type' => 'string',
-                    'index' => 'not_analyzed'
-                )
-            ));
+                'mapping'            => [
+                    'type'  => 'string',
+                    'index' => 'not_analyzed',
+                ],
+            ]);
             $mapping->setPropertyByPath('__dimensionCombinationHash', [
-                'type' => 'string',
-                'index' => 'not_analyzed'
+                'type'  => 'string',
+                'index' => 'not_analyzed',
             ]);
 
             foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {
@@ -124,7 +129,7 @@ class NodeTypeMappingBuilder
                         $mapping->setPropertyByPath($propertyName, $this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping']);
                     }
                 } else {
-                    $this->lastMappingErrors->addWarning(new \TYPO3\Flow\Error\Warning('Node Type "' . $nodeTypeName . '" - property "' . $propertyName . '": No ElasticSearch Mapping found.'));
+                    $this->lastMappingErrors->addWarning(new \TYPO3\Flow\Error\Warning('Node Type "'.$nodeTypeName.'" - property "'.$propertyName.'": No ElasticSearch Mapping found.'));
                 }
             }
 

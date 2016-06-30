@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Client;
 
 /*                                                                                                  *
@@ -14,7 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Client;
 use TYPO3\Flow\Annotations as Flow;
 
 /**
- * ClientFactory
+ * ClientFactory.
  *
  * @Flow\Scope("singleton")
  */
@@ -22,12 +23,13 @@ class ClientFactory
 {
     /**
      * @Flow\Inject
+     *
      * @var \Flowpack\ElasticSearch\Domain\Factory\ClientFactory
      */
     protected $clientFactory;
 
     /**
-     * Create a client
+     * Create a client.
      *
      * @return \Flowpack\ElasticSearch\Domain\Model\Client
      */

@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
 /*                                                                                                  *
@@ -11,14 +12,14 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator;
 use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
 
 /**
- * Provides CLI features for index handling
+ * Provides CLI features for index handling.
  *
  * @Flow\Scope("singleton")
  */
@@ -26,81 +27,92 @@ class NodeIndexCommandController extends CommandController
 {
     /**
      * @Flow\Inject
+     *
      * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer
      */
     protected $nodeIndexer;
 
     /**
      * @Flow\Inject
+     *
      * @var NodeIndexingManager
      */
     protected $nodeIndexingManager;
 
     /**
      * @Flow\Inject
+     *
      * @var \TYPO3\TYPO3CR\Domain\Repository\WorkspaceRepository
      */
     protected $workspaceRepository;
 
     /**
      * @Flow\Inject
+     *
      * @var \TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository
      */
     protected $nodeDataRepository;
 
     /**
      * @Flow\Inject
+     *
      * @var \TYPO3\TYPO3CR\Domain\Factory\NodeFactory
      */
     protected $nodeFactory;
 
     /**
      * @Flow\Inject
+     *
      * @var \TYPO3\TYPO3CR\Domain\Service\ContextFactory
      */
     protected $contextFactory;
 
     /**
      * @Flow\Inject
+     *
      * @var \TYPO3\Neos\Domain\Service\ContentDimensionPresetSourceInterface
      */
     protected $contentDimensionPresetSource;
 
     /**
      * @Flow\Inject
+     *
      * @var NodeTypeMappingBuilder
      */
     protected $nodeTypeMappingBuilder;
 
     /**
-     * @var integer
+     * @var int
      */
     protected $indexedNodes;
 
     /**
-     * @var integer
+     * @var int
      */
     protected $countedIndexedNodes;
 
     /**
-     * @var integer
+     * @var int
      */
     protected $limit;
 
     /**
      * @Flow\Inject
+     *
      * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface
      */
     protected $logger;
 
     /**
      * @Flow\Inject
+     *
      * @var \TYPO3\Flow\Configuration\ConfigurationManager
      */
     protected $configurationManager;
 
     /**
      * @Flow\Inject
+     *
      * @var ContentDimensionCombinator
      */
     protected $contentDimensionCombinator;
@@ -113,7 +125,7 @@ class NodeIndexCommandController extends CommandController
     /**
      * Called by the Flow object framework after creating the object and resolving all dependencies.
      *
-     * @param integer $cause Creation cause
+     * @param int $cause Creation cause
      */
     public function initializeObject($cause)
     {
@@ -123,7 +135,7 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
-     * Show the mapping which would be sent to the ElasticSearch server
+     * Show the mapping which would be sent to the ElasticSearch server.
      *
      * @return void
      */
@@ -131,7 +143,7 @@ class NodeIndexCommandController extends CommandController
     {
         $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
         foreach ($nodeTypeMappingCollection as $mapping) {
-            /** @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
+            /* @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
             $this->output(\Symfony\Component\Yaml\Yaml::dump($mapping->asArray(), 5, 2));
             $this->outputLine();
         }
@@ -162,10 +174,11 @@ class NodeIndexCommandController extends CommandController
      *
      * This command (re-)indexes all nodes contained in the content repository and sets the schema beforehand.
      *
-     * @param integer $limit Amount of nodes to index at maximum
-     * @param boolean $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
+     * @param int    $limit     Amount of nodes to index at maximum
+     * @param bool   $update    if TRUE, do not throw away the index at the start. Should *only be used for development*.
      * @param string $workspace name of the workspace which should be indexed
-     * @param string $postfix Index postfix, index with the same postifix will be deleted if exist
+     * @param string $postfix   Index postfix, index with the same postifix will be deleted if exist
+     *
      * @return void
      */
     public function buildCommand($limit = null, $update = false, $workspace = null, $postfix = null)
@@ -179,17 +192,17 @@ class NodeIndexCommandController extends CommandController
                 $this->nodeIndexer->getIndex()->delete();
             }
             $this->nodeIndexer->getIndex()->create();
-            $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
+            $this->logger->log('Created index '.$this->nodeIndexer->getIndexName(), LOG_INFO);
 
             $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
             foreach ($nodeTypeMappingCollection as $mapping) {
-                /** @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
+                /* @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
                 $mapping->apply();
             }
             $this->logger->log('Updated Mapping.', LOG_INFO);
         }
 
-        $this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
+        $this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first '.$limit.' ' : '')), LOG_INFO);
 
         $count = 0;
         $this->limit = $limit;
@@ -213,7 +226,7 @@ class NodeIndexCommandController extends CommandController
 
         $this->nodeIndexingManager->flushQueues();
 
-        $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
+        $this->logger->log('Done. (indexed '.$count.' nodes)', LOG_INFO);
         $this->nodeIndexer->getIndex()->refresh();
 
         // TODO: smoke tests
@@ -223,7 +236,7 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
-     * Clean up old indexes (i.e. all but the current one)
+     * Clean up old indexes (i.e. all but the current one).
      *
      * @return void
      */
@@ -233,7 +246,7 @@ class NodeIndexCommandController extends CommandController
             $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
             if (count($indicesToBeRemoved) > 0) {
                 foreach ($indicesToBeRemoved as $indexToBeRemoved) {
-                    $this->logger->log('Removing old index ' . $indexToBeRemoved);
+                    $this->logger->log('Removing old index '.$indexToBeRemoved);
                 }
             } else {
                 $this->logger->log('Nothing to remove.');
@@ -246,12 +259,13 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @param string $workspaceName
+     *
      * @return void
      */
     protected function indexWorkspace($workspaceName)
     {
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-        if ($combinations === array()) {
+        if ($combinations === []) {
             $this->indexWorkspaceWithDimensions($workspaceName);
         } else {
             foreach ($combinations as $combination) {
@@ -262,20 +276,21 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @param string $workspaceName
-     * @param array $dimensions
+     * @param array  $dimensions
+     *
      * @return void
      */
-    protected function indexWorkspaceWithDimensions($workspaceName, array $dimensions = array())
+    protected function indexWorkspaceWithDimensions($workspaceName, array $dimensions = [])
     {
-        $context = $this->contextFactory->create(array('workspaceName' => $workspaceName, 'dimensions' => $dimensions));
+        $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'dimensions' => $dimensions]);
         $rootNode = $context->getRootNode();
 
         $this->traverseNodes($rootNode);
 
-        if ($dimensions === array()) {
-            $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $this->indexedNodes . ' nodes)');
+        if ($dimensions === []) {
+            $this->outputLine('Workspace "'.$workspaceName.'" without dimensions done. (Indexed '.$this->indexedNodes.' nodes)');
         } else {
-            $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $this->indexedNodes . ' nodes)');
+            $this->outputLine('Workspace "'.$workspaceName.'" and dimensions "'.json_encode($dimensions).'" done. (Indexed '.$this->indexedNodes.' nodes)');
         }
 
         $this->countedIndexedNodes = $this->countedIndexedNodes + $this->indexedNodes;
@@ -284,6 +299,7 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @param \TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode
+     *
      * @return void
      */
     protected function traverseNodes(\TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode)
