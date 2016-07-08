@@ -84,6 +84,9 @@ trait IndexWorkspaceTrait
 
         $traverseNodes($rootNode, $indexedNodes);
 
+        $this->nodeFactory->reset();
+        $context->getFirstLevelNodeCache()->flush();
+         
         if ($callback !== null) {
             $callback($workspaceName, $indexedNodes, $dimensions);
         }
