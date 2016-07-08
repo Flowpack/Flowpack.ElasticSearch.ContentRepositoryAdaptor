@@ -22,6 +22,7 @@ use TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator;
 use TYPO3\TYPO3CR\Domain\Service\ContextFactory;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 use TYPO3\TYPO3CR\Search\Indexer\AbstractNodeIndexer;
+use TYPO3\TYPO3CR\Search\Indexer\BulkNodeIndexerInterface;
 
 /**
  * Indexer for Content Repository Nodes. Triggered from the NodeIndexingManager.
@@ -30,7 +31,7 @@ use TYPO3\TYPO3CR\Search\Indexer\AbstractNodeIndexer;
  *
  * @Flow\Scope("singleton")
  */
-class NodeIndexer extends AbstractNodeIndexer
+class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterface
 {
     /**
      * Optional postfix for the index, e.g. to have different indexes by timestamp.
@@ -87,6 +88,11 @@ class NodeIndexer extends AbstractNodeIndexer
      * @var array
      */
     protected $currentBulkRequest = [];
+
+    /**
+     * @var boolean
+     */
+    protected $bulkProcessing = false;
 
     /**
      * Returns the index name to be used for indexing, with optional indexNamePostfix appended.
@@ -162,24 +168,26 @@ class NodeIndexer extends AbstractNodeIndexer
 
             $mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
 
-            // Remove document with the same contextPathHash but different NodeType, required after NodeType change
-            $this->logger->log(sprintf('NodeIndexer: Removing node %s from index (if node type changed from %s). ID: %s', $contextPath, $node->getNodeType()->getName(), $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
-            $this->getIndex()->request('DELETE', '/_query', [], json_encode([
-                'query' => [
-                    'bool' => [
-                        'must' => [
-                            'ids' => [
-                                'values' => [$contextPathHash]
-                            ]
-                        ],
-                        'must_not' => [
-                            'term' => [
-                                '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($node->getNodeType()->getName())
-                            ]
-                        ],
+            if ($this->bulkProcessing === false) {
+                // Remove document with the same contextPathHash but different NodeType, required after NodeType change
+                $this->logger->log(sprintf('NodeIndexer: Search and remove duplicate document if needed. ID: %s', $contextPath, $node->getNodeType()->getName(), $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
+                $this->getIndex()->request('DELETE', '/_query', [], json_encode([
+                    'query' => [
+                        'bool' => [
+                            'must' => [
+                                'ids' => [
+                                    'values' => [$contextPathHash]
+                                ]
+                            ],
+                            'must_not' => [
+                                'term' => [
+                                    '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($node->getNodeType()->getName())
+                                ]
+                            ],
+                        ]
                     ]
-                ]
-            ]));
+                ]));
+            }
 
             if ($node->isRemoved()) {
                 // TODO: handle deletion from the fulltext index as well
@@ -540,5 +548,27 @@ class NodeIndexer extends AbstractNodeIndexer
         }
 
         return $indicesToBeRemoved;
+    }
+
+    /**
+     * Perform indexing without checking about duplication document
+     *
+     * This is used during bulk indexing to improve performance
+     *
+     * @param callable $callback
+     * @throws \Exception
+     */
+    public function withBulkProcessing(callable $callback)
+    {
+        $bulkProcessing = $this->bulkProcessing;
+        $this->bulkProcessing = true;
+        try {
+            /** @noinspection PhpUndefinedMethodInspection */
+            $callback->__invoke();
+        } catch (\Exception $exception) {
+            $this->bulkProcessing = $bulkProcessing;
+            throw $exception;
+        }
+        $this->bulkProcessing = $bulkProcessing;
     }
 }
