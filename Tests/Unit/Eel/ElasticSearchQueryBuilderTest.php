@@ -11,6 +11,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\FilteredQuery;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Model\Workspace;
@@ -41,7 +42,8 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
         $mockWorkspace->expects($this->any())->method('getName')->will($this->returnValue('user-foo'));
 
         $this->queryBuilder = new ElasticSearchQueryBuilder();
-        $this->inject($this->queryBuilder, 'request', $request);
+        $query = new FilteredQuery($this->queryBuilder);
+        $this->inject($this->queryBuilder, 'request', $query);
         $this->queryBuilder->query($node);
     }
 
