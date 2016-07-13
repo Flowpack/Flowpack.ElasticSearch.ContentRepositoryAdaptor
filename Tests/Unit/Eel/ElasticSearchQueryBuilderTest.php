@@ -329,6 +329,32 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
     }
 
     /**
+     * @test
+     */
+    public function requestCanBeExtendedByArbitraryProperties()
+    {
+        $this->queryBuilder->request('foo.bar', ['field' => 'x']);
+        $expected = [
+            'bar' => ['field' => 'x']
+        ];
+        $actual = $this->queryBuilder->getRequest();
+        $this->assertEquals($expected, $actual['foo']);
+    }
+
+    /**
+     * @test
+     */
+    public function existingRequestPropertiesCanBeOverridden()
+    {
+        $this->queryBuilder->limit(2);
+        $this->queryBuilder->request('limit', 10);
+        $expected = 10;
+        $actual = $this->queryBuilder->getRequest();
+        $this->assertEquals($expected, $actual['limit']);
+    }
+
+
+    /**
      * Test helper
      *
      * @param $expected
