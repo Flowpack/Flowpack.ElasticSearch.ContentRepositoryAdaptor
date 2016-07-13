@@ -224,6 +224,11 @@ Furthermore, there is a more low-level operator which can be used to add arbitra
 
 * `queryFilter("filterType", {option1: "value1"})`
 
+At lowest level, there is the `request` operator which allows to modify the request in arbitrary manner. Note that the existing request is merged with the passed-in type in case it is an array:
+
+* `request('query.filtered.query.bool.minimum_should_match', 1)`
+* `request('query.filtered.query.bool', {"minimum_should_match": 1})`
+
 In order to debug the query more easily, the following operation is helpful:
 
 * `log()` log the full query on execution into the Elasticsearch log (i.e. in `Data/Logs/ElasticSearch.log`)
