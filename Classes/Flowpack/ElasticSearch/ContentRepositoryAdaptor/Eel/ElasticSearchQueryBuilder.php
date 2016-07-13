@@ -101,7 +101,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
                             [
                                 'match_all' => []
                             ]
-                        ]
+                        ],
+                        'should' => [],
+                        'must_not' => []
                     ]
 
                 ],

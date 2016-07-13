@@ -55,7 +55,9 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                         'bool' => [
                             'must' => [
                                 ['match_all' => []]
-                            ]
+                            ],
+                            'should' => [],
+                            'must_not' => []
                         ]
                     ],
                     'filter' => [
