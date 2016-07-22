@@ -327,6 +327,23 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
     }
 
     /**
+     * @test
+     */
+    public function getTotalItemsReturnsZeroByDefault()
+    {
+        $this->assertSame(0, $this->queryBuilder->getTotalItems());
+    }
+
+    /**
+     * @test
+     */
+    public function getTotalItemsReturnsTotalHitsIfItExists()
+    {
+        $this->inject($this->queryBuilder, 'result', ['hits' => ['total' => 123]]);
+        $this->assertSame(123, $this->queryBuilder->getTotalItems());
+    }
+
+    /**
      * Test helper
      *
      * @param $expected
