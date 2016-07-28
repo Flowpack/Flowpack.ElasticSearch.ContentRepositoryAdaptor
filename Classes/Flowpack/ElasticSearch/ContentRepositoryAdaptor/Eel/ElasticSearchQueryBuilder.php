@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use TYPO3\Eel\ProtectedContextAwareInterface;
 use TYPO3\Flow\Annotations as Flow;
+use TYPO3\Flow\Utility\Arrays;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Search\Search\QueryBuilderInterface;
 
@@ -101,7 +102,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
                             [
                                 'match_all' => []
                             ]
-                        ]
+                        ],
+                        'should' => [],
+                        'must_not' => []
                     ]
 
                 ],
@@ -786,6 +789,28 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         }
 
         $this->contextNode = $contextNode;
+
+        return $this;
+    }
+
+    /**
+     * Modify a part of the Elasticsearch Request denoted by $path, merging together
+     * the existing values and the passed-in values.
+     *
+     * @param string $path
+     * @param mixed $requestPart
+     * @return $this
+     */
+    public function request($path, $requestPart)
+    {
+        $valueAtPath = Arrays::getValueByPath($this->request, $path);
+        if (is_array($valueAtPath)) {
+            $result = Arrays::arrayMergeRecursiveOverrule($valueAtPath, $requestPart);
+        } else {
+            $result = $requestPart;
+        }
+
+        $this->request = Arrays::setValueByPath($this->request, $path, $result);
 
         return $this;
     }
