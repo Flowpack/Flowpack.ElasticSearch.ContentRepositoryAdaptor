@@ -726,7 +726,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     {
         $this->appendAtPath('query.filtered.query.bool.must', [
             'query_string' => [
-                'query' => $searchWord
+                'query' => json_encode((string)$searchWord)
             ]
         ]);
 
