@@ -141,4 +141,14 @@ interface QueryInterface
      * @return QueryBuilderInterface
      */
     public function appendAtPath($path, array $data);
+
+    /**
+     * Modify a part of the Elasticsearch Request denoted by $path, merging together
+     * the existing values and the passed-in values.
+     *
+     * @param string $path
+     * @param mixed $requestPart
+     * @return $this
+     */
+    public function setByPath($path, $requestPart);
 }

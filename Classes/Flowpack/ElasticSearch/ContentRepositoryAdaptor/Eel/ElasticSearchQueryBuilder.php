@@ -18,6 +18,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use TYPO3\Eel\ProtectedContextAwareInterface;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Object\ObjectManagerInterface;
+use TYPO3\Flow\Utility\Arrays;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Search\Search\QueryBuilderInterface;
 
@@ -666,6 +667,20 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
         $this->contextNode = $contextNode;
 
+        return $this;
+    }
+
+    /**
+     * Modify a part of the Elasticsearch Request denoted by $path, merging together
+     * the existing values and the passed-in values.
+     *
+     * @param string $path
+     * @param mixed $requestPart
+     * @return $this
+     */
+    public function request($path, $requestPart)
+    {
+        $this->request->setByPath($path, $requestPart);
         return $this;
     }
 

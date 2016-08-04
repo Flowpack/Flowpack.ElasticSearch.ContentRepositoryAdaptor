@@ -53,6 +53,28 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     }
 
     /**
+     * Modify a part of the Elasticsearch Request denoted by $path, merging together
+     * the existing values and the passed-in values.
+     *
+     * @param string $path
+     * @param mixed $requestPart
+     * @return QueryInterface
+     */
+    public function setByPath($path, $requestPart)
+    {
+        $valueAtPath = Arrays::getValueByPath($this->request, $path);
+        if (is_array($valueAtPath)) {
+            $result = Arrays::arrayMergeRecursiveOverrule($valueAtPath, $requestPart);
+        } else {
+            $result = $requestPart;
+        }
+
+        $this->request = Arrays::setValueByPath($this->request, $path, $result);
+
+        return $this;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function toArray()
