@@ -143,6 +143,10 @@ class NodeIndexCommandController extends CommandController
         $indexNode = function ($identifier, Workspace $workspace, array $dimensions) {
             $context = $this->createContentContext($workspace->getName(), $dimensions);
             $node = $context->getNodeByIdentifier($identifier);
+            if ($node === null) {
+                $this->outputLine('Node with the given identifier is not found.');
+                $this->quit();
+            }
             $this->outputLine();
             $this->outputLine('Index node "%s" (%s)', [
                 $node->getLabel(),
