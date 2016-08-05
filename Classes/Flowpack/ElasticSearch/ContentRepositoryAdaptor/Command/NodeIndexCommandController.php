@@ -133,6 +133,7 @@ class NodeIndexCommandController extends CommandController
      *
      * @param string $identifier
      * @param string $workspace
+     * @return void
      */
     public function indexNodeCommand($identifier, $workspace = null)
     {
@@ -164,7 +165,7 @@ class NodeIndexCommandController extends CommandController
             $this->nodeIndexer->indexNode($node);
         };
 
-        $indexInWorkspacce = function ($identifier, Workspace $workspace) use ($indexNode) {
+        $indexInWorkspace = function ($identifier, Workspace $workspace) use ($indexNode) {
             $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
             if ($combinations === []) {
                 $indexNode($identifier, $workspace, []);
@@ -177,10 +178,10 @@ class NodeIndexCommandController extends CommandController
 
         if ($workspace === null) {
             foreach ($this->workspaceRepository->findAll() as $workspace) {
-                $indexInWorkspacce($identifier, $workspace);
+                $indexInWorkspace($identifier, $workspace);
             }
         } else {
-            $indexInWorkspacce($identifier, $workspace);
+            $indexInWorkspace($identifier, $workspace);
         }
     }
 
