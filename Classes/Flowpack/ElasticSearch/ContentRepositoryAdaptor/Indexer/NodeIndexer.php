@@ -13,7 +13,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
-use Flowpack\ElasticSearch\Domain\Model\Client;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use TYPO3\Flow\Annotations as Flow;
@@ -259,16 +258,18 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                     [
                         'update' => [
                             '_type' => $document->getType()->getName(),
-                            '_id' => $document->getId()
+                            '_id' => $document->getId(),
+                            '_index' => $this->getIndexName(),
+                            '_retry_on_conflict' => 3
                         ]
                     ],
                     // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
                     [
                         'script' => [
                             'inline' => '
-                                    fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new LinkedHashMap());
-                                    fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new LinkedHashMap());
-                                    ctx._source = newData;
+                                    fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new HashMap());
+                                    fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new HashMap());
+                                    _source = newData;
                                     ctx._source.__fulltext = fulltext;
                                     ctx._source.__fulltextParts = fulltextParts
                                 ',
@@ -308,7 +309,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     {
         $type = NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($node->getNodeType()->getName());
         $this->logger->log(sprintf('NodeIndexer: Check duplicate nodes for %s (%s). ContentContextHash: %s', $contextPath, $type, $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
-        $result = $this->getIndex()->request('GET', '/_search?scroll=1m&search_type=scan', [], json_encode([
+        $result = $this->getIndex()->request('GET', '/_search?scroll=1m', [], json_encode([
+            'sort' => ['_doc'],
             'query' => [
                 'bool' => [
                     'must' => [
@@ -327,14 +329,33 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $treatedContent = $result->getTreatedContent();
         $scrollId = $treatedContent['_scroll_id'];
 
-        $result = $this->getIndex()->request('GET', '/_search/scroll?scroll=1m', [], $scrollId, false);
-        $treatedContent = $result->getTreatedContent();
+
+        $mapHitToDeleteRequest = function ($hit) {
+            $bulkRequest[] = json_encode([
+                'delete' => [
+                    '_type' => $hit['_type'],
+                    '_id' => $hit['_id']
+                ]
+            ]);
+        };
+
+        $bulkRequest = [];
         while (isset($treatedContent['hits']['hits']) && $treatedContent['hits']['hits'] !== []) {
             $hits = $treatedContent['hits']['hits'];
-            $this->logger->log(sprintf('NodeIndexer: Check duplicate nodes for %s (%s), found %d document(s). ContentContextHash: %s', $contextPath, $type, count($hits), $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $bulkRequest = array_merge($bulkRequest, array_map($mapHitToDeleteRequest, $hits));
             $result = $this->getIndex()->request('GET', '/_search/scroll?scroll=1m', [], $scrollId, false);
             $treatedContent = $result->getTreatedContent();
         }
+
+        $this->logger->log(sprintf('NodeIndexer: Check duplicate nodes for %s (%s), found %d document(s). ContentContextHash: %s', $contextPath, $type, count($bulkRequest), $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        if ($bulkRequest !== []) {
+            $this->getIndex()->request('POST', '/_bulk', [], implode("\n", $bulkRequest));
+        }
+        $this->searchClient->request('DELETE', '/_search/scroll', [], json_encode([
+            'scroll_id' => [
+                $scrollId
+            ]
+        ]));
     }
 
     /**
@@ -376,29 +397,21 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 // first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
                 'script' => [
                     'inline' => '
-                    if (!ctx._source.containsKey("__fulltextParts")) {
-						ctx._source.__fulltextParts = new LinkedHashMap();
-					}
-					ctx._source.__fulltextParts[identifier] = fulltext;
-					ctx._source.__fulltext = new LinkedHashMap();
-
-					Iterator<LinkedHashMap.Entry<String, LinkedHashMap>> fulltextByNode = ctx._source.__fulltextParts.entrySet().iterator();
-					for (fulltextByNode; fulltextByNode.hasNext();) {
-						Iterator<LinkedHashMap.Entry<String, String>> elementIterator = fulltextByNode.next().getValue().entrySet().iterator();
-						for (elementIterator; elementIterator.hasNext();) {
-							Map.Entry<String, String> element = elementIterator.next();
-							String value;
-
-							if (ctx._source.__fulltext.containsKey(element.key)) {
-								value = ctx._source.__fulltext[element.key] + " " + element.value.trim();
-							} else {
-								value = element.value.trim();
-							}
-
-							ctx._source.__fulltext[element.key] = value;
-						}
-					}
-                                ',
+                        ctx._source.__fulltext = new HashMap();
+                        if (!ctx._source.containsKey("__fulltextParts")) {
+                            ctx._source.__fulltextParts = new HashMap();
+                        }
+                        ctx._source.__fulltextParts[identifier] = fulltext;
+                        ctx._source.__fulltextParts.each { originNodeIdentifier, partContent -> partContent.each { bucketKey, content ->
+                                if (ctx._source.__fulltext.containsKey(bucketKey)) {
+                                    value = ctx._source.__fulltext[bucketKey] + " " + content.trim();
+                                } else {
+                                    value = content.trim();
+                                }
+                                ctx._source.__fulltext[bucketKey] = value;
+                            }
+                        }
+                    ',
                     'params' => [
                         'identifier' => $node->getIdentifier(),
                         'fulltext' => $fulltextIndexOfNode
