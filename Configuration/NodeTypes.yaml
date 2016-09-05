@@ -116,6 +116,12 @@
     fulltext:
       isRoot: true
   properties:
+    'uriPathSegment':
+      search:
+        elasticSearchMapping:
+          type: string
+          index: not_analyzed
+
     '__fulltextParts':
       search:
         elasticSearchMapping:
