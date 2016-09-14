@@ -177,8 +177,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
 
             if ($node->isRemoved()) {
-                // TODO: handle deletion from the fulltext index as well
                 $mappingType->deleteDocumentById($contextPathHash);
+                $this->updateFulltext($node, [], $targetWorkspaceName);
                 $this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). ID: %s', $contextPath, $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
 
                 return;
@@ -230,6 +230,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             if ($node !== null) {
                 $indexer($node, $targetWorkspaceName);
             }
+        }
+        if ($node->isRemoved()) {
+            $indexer($node, $targetWorkspaceName);
         }
     }
 
@@ -361,9 +364,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      */
     protected function updateFulltext(NodeInterface $node, array $fulltextIndexOfNode, $targetWorkspaceName = null)
     {
-        if ((($targetWorkspaceName !== null && $targetWorkspaceName !== 'live') || $node->getWorkspace()->getName() !== 'live') || count($fulltextIndexOfNode) === 0) {
+        if (($targetWorkspaceName !== null && $targetWorkspaceName !== 'live') || ($node->getWorkspace()->getName() !== 'live' && !$node->isRemoved())) {
             return;
         }
+
 
         $closestFulltextNode = $node;
         while (!$this->isFulltextRoot($closestFulltextNode)) {
@@ -378,6 +382,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $closestFulltextNodeContextPath = str_replace($closestFulltextNode->getContext()->getWorkspace()->getName(), 'live', $closestFulltextNode->getContextPath());
         $closestFulltextNodeContextPathHash = sha1($closestFulltextNodeContextPath);
+
+        $upsertFulltextParts = [];
+        if (!empty($fulltextIndexOfNode)) {
+            $upsertFulltextParts[$node->getIdentifier()] = $fulltextIndexOfNode;
+        }
 
         $this->currentBulkRequest[] = [
             [
@@ -395,7 +404,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                         if (!ctx._source.containsKey("__fulltextParts")) {
                             ctx._source.__fulltextParts = new HashMap();
                         }
-                        ctx._source.__fulltextParts[identifier] = fulltext;
+                        if (fulltext.size() == 0) {
+                            ctx._source.__fulltextParts.remove(identifier);
+                        } else {
+                            ctx._source.__fulltextParts.put(identifier, fulltext);
+                        }
+
                         ctx._source.__fulltextParts.each { originNodeIdentifier, partContent -> partContent.each { bucketKey, content ->
                                 if (ctx._source.__fulltext.containsKey(bucketKey)) {
                                     value = ctx._source.__fulltext[bucketKey] + " " + content.trim();
@@ -413,9 +427,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 ],
                 'upsert' => [
                     '__fulltext' => $fulltextIndexOfNode,
-                    '__fulltextParts' => [
-                        $node->getIdentifier() => $fulltextIndexOfNode
-                    ]
+                    '__fulltextParts' => $upsertFulltextParts
                 ],
                 'lang' => 'groovy'
             ]
