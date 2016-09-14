@@ -1,19 +1,21 @@
 language: php
 matrix:
   include:
+    - php: 7.0
     - php: 5.6
     - php: 5.5
 sudo: false
 before_install:
   - cd ..
-  - wget --no-check-certificate https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.0.zip && unzip elasticsearch-1.7.0.zip
-  - mv elasticsearch-1.7.0 elasticsearch
+  - wget --no-check-certificate https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.5.zip && unzip elasticsearch-1.7.5.zip
+  - mv elasticsearch-1.7.5 elasticsearch
   - cd elasticsearch
   - bin/elasticsearch -d
   - cd ..
   - git clone https://github.com/neos/neos-base-distribution.git
   - cd neos-base-distribution
   - composer require flowpack/elasticsearch-contentrepositoryadaptor dev-master
+  - composer require typo3/typo3cr-search dev-master
 install:
   - composer install
   - cd ..

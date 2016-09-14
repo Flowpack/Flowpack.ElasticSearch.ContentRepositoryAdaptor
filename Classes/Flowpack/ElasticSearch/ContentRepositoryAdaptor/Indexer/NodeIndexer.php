@@ -1,16 +1,17 @@
 <?php
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
 
-/*                                                                                                  *
- * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
- *                                                                                                  *
- * It is free software; you can redistribute it and/or modify it under                              *
- * the terms of the GNU Lesser General Public License, either version 3                             *
- *  of the License, or (at your option) any later version.                                          *
- *                                                                                                  *
- * The TYPO3 project - inspiring people to share!                                                   *
- *                                                                                                  */
+/*
+ * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
+ *
+ * (c) Contributors of the Neos Project - www.neos.io
+ *
+ * This package is Open Source Software. For the full copyright and license
+ * information, please view the LICENSE file which was distributed with this
+ * source code.
+ */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
@@ -41,7 +42,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
     /**
      * @Flow\Inject
-     * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient
+     * @var ElasticSearchClient
      */
     protected $searchClient;
 
@@ -86,7 +87,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      *
      * @var array
      */
-    protected $currentBulkRequest = array();
+    protected $currentBulkRequest = [];
 
     /**
      * @var boolean
@@ -128,17 +129,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     {
         $index = $this->searchClient->findIndex($this->getIndexName());
         $index->setSettingsKey($this->searchClient->getIndexName());
-        return $index;
-    }
 
-    /**
-     * @param callable $callback
-     */
-    public function withBulkProcessing(callable $callback)
-    {
-        $this->enableBulkProcessing = true;
-        $callback();
-        $this->enableBulkProcessing = false;
+        return $index;
     }
 
     /**
@@ -152,7 +144,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     public function indexNode(NodeInterface $node, $targetWorkspaceName = null)
     {
         $indexer = function (NodeInterface $node, $targetWorkspaceName = null) {
-
             $contextPath = $node->getContextPath();
 
             if ($node->getNodeType()->getName() === 'unstructured') {
@@ -171,7 +162,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                     return;
                 }
             }
-
 
             if ($targetWorkspaceName !== null) {
                 $contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
@@ -194,7 +184,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 return;
             }
 
-            $fulltextIndexOfNode = array();
+            $fulltextIndexOfNode = [];
             $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($contextPathHash) {
                 $this->logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $contextPathHash, $propertyName), LOG_DEBUG, null, 'ElasticSearch (CR)');
             });
@@ -225,16 +215,19 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $nodeIdentifier = $node->getIdentifier();
         if ($dimensionCombinations !== []) {
             foreach ($dimensionCombinations as $combination) {
-                $context = $this->contextFactory->create(array('workspaceName' => $workspaceName, 'dimensions' => $combination));
+                $context = $this->contextFactory->create([
+                    'workspaceName' => $workspaceName,
+                    'dimensions' => $combination
+                ]);
                 $node = $context->getNodeByIdentifier($nodeIdentifier);
                 if ($node !== null) {
                     $indexer($node, $targetWorkspaceName);
                 }
             }
         } else {
-            $context = $this->contextFactory->create(array('workspaceName' => $workspaceName));
+            $context = $this->contextFactory->create(['workspaceName' => $workspaceName]);
             $node = $context->getNodeByIdentifier($nodeIdentifier);
-            if ($node !== NULL) {
+            if ($node !== null) {
                 $indexer($node, $targetWorkspaceName);
             }
         }
@@ -283,15 +276,15 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 ];
             } else {
                 // non-fulltext-root documents can be indexed as-they-are
-                $this->currentBulkRequest[] = array(
-                    array(
-                        'index' => array(
+                $this->currentBulkRequest[] = [
+                    [
+                        'index' => [
                             '_type' => $document->getType()->getName(),
                             '_id' => $document->getId()
-                        )
-                    ),
+                        ]
+                    ],
                     $documentData
-                );
+                ];
             }
 
             $this->updateFulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
@@ -378,6 +371,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             if ($closestFulltextNode === null) {
                 // root of hierarchy, no fulltext root found anymore, abort silently...
                 $this->logger->log('No fulltext root found for ' . $node->getPath(), LOG_WARNING);
+
                 return;
             }
         }
@@ -385,15 +379,15 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $closestFulltextNodeContextPath = str_replace($closestFulltextNode->getContext()->getWorkspace()->getName(), 'live', $closestFulltextNode->getContextPath());
         $closestFulltextNodeContextPathHash = sha1($closestFulltextNodeContextPath);
 
-        $this->currentBulkRequest[] = array(
-            array(
-                'update' => array(
+        $this->currentBulkRequest[] = [
+            [
+                'update' => [
                     '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
                     '_id' => $closestFulltextNodeContextPathHash
-                )
-            ),
+                ]
+            ],
             // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
-            array(
+            [
                 // first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
                 'script' => [
                     'inline' => '
@@ -424,10 +418,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                     ]
                 ],
                 'lang' => 'groovy'
-            )
-        );
+            ]
+        ];
     }
-
 
     /**
      * Whether the node is configured as fulltext root.
@@ -451,7 +444,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * Schedule node removal into the current bulk request.
      *
      * @param NodeInterface $node
-     * @return string
+     * @return void
      */
     public function removeNode(NodeInterface $node)
     {
@@ -464,14 +457,14 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         // TODO: handle deletion from the fulltext index as well
         $identifier = sha1($node->getContextPath());
 
-        $this->currentBulkRequest[] = array(
-            array(
-                'delete' => array(
+        $this->currentBulkRequest[] = [
+            [
+                'delete' => [
                     '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($node->getNodeType()),
                     '_id' => $identifier
-                )
-            )
-        );
+                ]
+            ]
+        ];
 
         $this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node actually removed). Persistence ID: %s', $node->getContextPath(), $identifier), LOG_DEBUG, null, 'ElasticSearch (CR)');
     }
@@ -502,7 +495,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         }
 
         if ($content !== '') {
-            $responseAsLines = $this->getIndex()->request('POST', '/_bulk', array(), $content)->getOriginalResponse()->getContent();
+            $responseAsLines = $this->getIndex()->request('POST', '/_bulk', [], $content)->getOriginalResponse()->getContent();
             foreach (explode("\n", $responseAsLines) as $responseLine) {
                 $response = json_decode($responseLine);
                 if (!is_object($response) || (isset($response->errors) && $response->errors !== false)) {
@@ -511,7 +504,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
         }
 
-        $this->currentBulkRequest = array();
+        $this->currentBulkRequest = [];
     }
 
     /**
@@ -533,7 +526,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             throw new Exception('The target index for updateIndexAlias does not exist. This shall never happen.', 1383649125);
         }
 
-        $aliasActions = array();
+        $aliasActions = [];
         try {
             $response = $this->searchClient->request('GET', '/_alias/' . $aliasName);
             if ($response->getStatusCode() !== 200) {
@@ -542,7 +535,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
             $indexNames = array_keys($response->getTreatedContent());
 
-            if ($indexNames === array()) {
+            if ($indexNames === []) {
                 // if there is an actual index with the name we want to use as alias, remove it now
                 $response = $this->searchClient->request('HEAD', '/' . $aliasName);
                 if ($response->getStatusCode() === 200) {
@@ -553,12 +546,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 }
             } else {
                 foreach ($indexNames as $indexName) {
-                    $aliasActions[] = array(
-                        'remove' => array(
+                    $aliasActions[] = [
+                        'remove' => [
                             'index' => $indexName,
                             'alias' => $aliasName
-                        )
-                    );
+                        ]
+                    ];
                 }
             }
         } catch (\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
@@ -568,14 +561,14 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
         }
 
-        $aliasActions[] = array(
-            'add' => array(
+        $aliasActions[] = [
+            'add' => [
                 'index' => $this->getIndexName(),
                 'alias' => $aliasName
-            )
-        );
+            ]
+        ];
 
-        $this->searchClient->request('POST', '/_aliases', array(), \json_encode(array('actions' => $aliasActions)));
+        $this->searchClient->request('POST', '/_aliases', [], \json_encode(['actions' => $aliasActions]));
     }
 
     /**
@@ -593,7 +586,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $indexStatus = $this->searchClient->request('GET', '/_status')->getTreatedContent();
         $allIndices = array_keys($indexStatus['indices']);
 
-        $indicesToBeRemoved = array();
+        $indicesToBeRemoved = [];
 
         foreach ($allIndices as $indexName) {
             if (strpos($indexName, $aliasName . '-') !== 0) {
@@ -614,5 +607,27 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         }
 
         return $indicesToBeRemoved;
+    }
+
+    /**
+     * Perform indexing without checking about duplication document
+     *
+     * This is used during bulk indexing to improve performance
+     *
+     * @param callable $callback
+     * @throws \Exception
+     */
+    public function withBulkProcessing(callable $callback)
+    {
+        $bulkProcessing = $this->enableBulkProcessing;
+        $this->enableBulkProcessing = true;
+        try {
+            /** @noinspection PhpUndefinedMethodInspection */
+            $callback->__invoke();
+        } catch (\Exception $exception) {
+            $this->enableBulkProcessing = $bulkProcessing;
+            throw $exception;
+        }
+        $this->enableBulkProcessing = $bulkProcessing;
     }
 }

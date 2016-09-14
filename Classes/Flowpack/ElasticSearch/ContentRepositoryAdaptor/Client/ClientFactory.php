@@ -1,16 +1,18 @@
 <?php
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Client;
 
-/*                                                                                                  *
- * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
- *                                                                                                  *
- * It is free software; you can redistribute it and/or modify it under                              *
- * the terms of the GNU Lesser General Public License, either version 3                             *
- *  of the License, or (at your option) any later version.                                          *
- *                                                                                                  *
- * The TYPO3 project - inspiring people to share!                                                   *
- *                                                                                                  */
+/*
+ * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
+ *
+ * (c) Contributors of the Neos Project - www.neos.io
+ *
+ * This package is Open Source Software. For the full copyright and license
+ * information, please view the LICENSE file which was distributed with this
+ * source code.
+ */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
+use Flowpack\ElasticSearch\Domain\Model\Client;
 use TYPO3\Flow\Annotations as Flow;
 
 /**
@@ -29,10 +31,10 @@ class ClientFactory
     /**
      * Create a client
      *
-     * @return \Flowpack\ElasticSearch\Domain\Model\Client
+     * @return Client
      */
     public function create()
     {
-        return $this->clientFactory->create(null, 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient');
+        return $this->clientFactory->create(null, ElasticSearchClient::class);
     }
 }

@@ -1,22 +1,21 @@
 <?php
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
-/*                                                                                                  *
- * This script belongs to the TYPO3 Flow package "Flowpack.ElasticSearch.ContentRepositoryAdaptor". *
- *                                                                                                  *
- * It is free software; you can redistribute it and/or modify it under                              *
- * the terms of the GNU Lesser General Public License, either version 3                             *
- *  of the License, or (at your option) any later version.                                          *
- *                                                                                                  *
- * The TYPO3 project - inspiring people to share!                                                   *
- *                                                                                                  */
+/*
+ * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
+ *
+ * (c) Contributors of the Neos Project - www.neos.io
+ *
+ * This package is Open Source Software. For the full copyright and license
+ * information, please view the LICENSE file which was distributed with this
+ * source code.
+ */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
-use TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator;
-use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
 
 /**
  * Provides CLI features for index handling
@@ -25,17 +24,13 @@ use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
  */
 class NodeIndexCommandController extends CommandController
 {
+    use IndexWorkspaceTrait;
+
     /**
      * @Flow\Inject
      * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer
      */
     protected $nodeIndexer;
-
-    /**
-     * @Flow\Inject
-     * @var NodeIndexingManager
-     */
-    protected $nodeIndexingManager;
 
     /**
      * @Flow\Inject
@@ -54,12 +49,6 @@ class NodeIndexCommandController extends CommandController
      * @var \TYPO3\TYPO3CR\Domain\Factory\NodeFactory
      */
     protected $nodeFactory;
-
-    /**
-     * @Flow\Inject
-     * @var \TYPO3\TYPO3CR\Domain\Service\ContextFactory
-     */
-    protected $contextFactory;
 
     /**
      * @Flow\Inject
@@ -89,12 +78,6 @@ class NodeIndexCommandController extends CommandController
      * @var \TYPO3\Flow\Configuration\ConfigurationManager
      */
     protected $configurationManager;
-
-    /**
-     * @Flow\Inject
-     * @var ContentDimensionCombinator
-     */
-    protected $contentDimensionCombinator;
 
     /**
      * @var array
@@ -189,6 +172,13 @@ class NodeIndexCommandController extends CommandController
             $workspace = 'live';
         }
 
+        $callback = function ($workspaceName, $indexedNodes, $dimensions) {
+            if ($dimensions === []) {
+                $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)');
+            } else {
+                $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)');
+            }
+        };
         if ($workspace === null) {
             foreach ($this->workspaceRepository->findAll() as $workspace) {
                 $count += $this->indexWorkspace($workspace->getName());
@@ -232,13 +222,13 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @param string $workspaceName
-     * @return void
+     * @return int
      */
     protected function indexWorkspace($workspaceName)
     {
         $indexedNodes = 0;
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-        if ($combinations === array()) {
+        if ($combinations === []) {
             $indexedNodes += $this->indexWorkspaceWithDimensions($workspaceName);
         } else {
             foreach ($combinations as $combination) {
@@ -252,17 +242,17 @@ class NodeIndexCommandController extends CommandController
     /**
      * @param string $workspaceName
      * @param array $dimensions
-     * @return void
+     * @return int
      */
-    protected function indexWorkspaceWithDimensions($workspaceName, array $dimensions = array())
+    protected function indexWorkspaceWithDimensions($workspaceName, array $dimensions = [])
     {
         $indexedNodes = 0;
-        $context = $this->contextFactory->create(array('workspaceName' => $workspaceName, 'dimensions' => $dimensions));
+        $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'dimensions' => $dimensions]);
         $rootNode = $context->getRootNode();
 
         $indexedNodes += $this->traverseNodes($rootNode);
 
-        if ($dimensions === array()) {
+        if ($dimensions === []) {
             $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)');
         } else {
             $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)');
