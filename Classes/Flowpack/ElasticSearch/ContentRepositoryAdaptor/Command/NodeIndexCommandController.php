@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator;
 use TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager;
 
@@ -71,16 +72,6 @@ class NodeIndexCommandController extends CommandController
      * @var NodeTypeMappingBuilder
      */
     protected $nodeTypeMappingBuilder;
-
-    /**
-     * @var integer
-     */
-    protected $indexedNodes;
-
-    /**
-     * @var integer
-     */
-    protected $countedIndexedNodes;
 
     /**
      * @var integer
@@ -193,8 +184,6 @@ class NodeIndexCommandController extends CommandController
 
         $count = 0;
         $this->limit = $limit;
-        $this->indexedNodes = 0;
-        $this->countedIndexedNodes = 0;
 
         if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
             $workspace = 'live';
@@ -202,13 +191,10 @@ class NodeIndexCommandController extends CommandController
 
         if ($workspace === null) {
             foreach ($this->workspaceRepository->findAll() as $workspace) {
-                $this->indexWorkspace($workspace->getName());
-
-                $count = $count + $this->countedIndexedNodes;
+                $count += $this->indexWorkspace($workspace->getName());
             }
         } else {
-            $this->indexWorkspace($workspace);
-            $count = $count + $this->countedIndexedNodes;
+            $count = $this->indexWorkspace($workspace);
         }
 
         $this->nodeIndexingManager->flushQueues();
@@ -250,14 +236,17 @@ class NodeIndexCommandController extends CommandController
      */
     protected function indexWorkspace($workspaceName)
     {
+        $indexedNodes = 0;
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
         if ($combinations === array()) {
-            $this->indexWorkspaceWithDimensions($workspaceName);
+            $indexedNodes += $this->indexWorkspaceWithDimensions($workspaceName);
         } else {
             foreach ($combinations as $combination) {
-                $this->indexWorkspaceWithDimensions($workspaceName, $combination);
+                $indexedNodes += $this->indexWorkspaceWithDimensions($workspaceName, $combination);
             }
         }
+
+        return $indexedNodes;
     }
 
     /**
@@ -267,36 +256,39 @@ class NodeIndexCommandController extends CommandController
      */
     protected function indexWorkspaceWithDimensions($workspaceName, array $dimensions = array())
     {
+        $indexedNodes = 0;
         $context = $this->contextFactory->create(array('workspaceName' => $workspaceName, 'dimensions' => $dimensions));
         $rootNode = $context->getRootNode();
 
-        $this->traverseNodes($rootNode);
+        $indexedNodes += $this->traverseNodes($rootNode);
 
         if ($dimensions === array()) {
-            $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $this->indexedNodes . ' nodes)');
+            $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)');
         } else {
-            $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $this->indexedNodes . ' nodes)');
+            $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)');
         }
 
-        $this->countedIndexedNodes = $this->countedIndexedNodes + $this->indexedNodes;
-        $this->indexedNodes = 0;
+        return $indexedNodes;
     }
 
     /**
-     * @param \TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode
-     * @return void
+     * @param NodeInterface $currentNode
+     * @param integer $traversedUntilNow
+     * @return integer Indexed nodes in this traversal
      */
-    protected function traverseNodes(\TYPO3\TYPO3CR\Domain\Model\NodeInterface $currentNode)
+    protected function traverseNodes(NodeInterface $currentNode, $traversedUntilNow = 0)
     {
-        if ($this->limit !== null && $this->indexedNodes > $this->limit) {
-            return;
+        if ($this->limit !== null && $traversedUntilNow > $this->limit) {
+            return $traversedUntilNow;
         }
 
         $this->nodeIndexingManager->indexNode($currentNode);
-        $this->indexedNodes++;
+        $traversedUntilNow++;
 
         foreach ($currentNode->getChildNodes() as $childNode) {
-            $this->traverseNodes($childNode);
+            $traversedUntilNow = $this->traverseNodes($childNode, $traversedUntilNow);
         }
+
+        return $traversedUntilNow;
     }
 }
