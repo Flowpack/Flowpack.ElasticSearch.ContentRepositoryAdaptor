@@ -267,7 +267,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                             'inline' => '
                                     fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new HashMap());
                                     fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new HashMap());
-                                    _source = newData;
+                                    ctx._source = newData;
                                     ctx._source.__fulltext = fulltext;
                                     ctx._source.__fulltextParts = fulltextParts
                                 ',
