@@ -2,16 +2,14 @@
 
 # Neos Elasticsearch Adapter
 
-*supporting Elasticsearch versions 1.2.x to 1.7.x*
+*supporting Elasticsearch versions 2.0.x to 2.4.x*, to support older version of ElasticSearch check the branch 2.0.
 
 Created by Sebastian Kurfürst; [contributions by Karsten Dambekalns, Robert Lemke and others](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/graphs/contributors).
 
-This project connects the Neos Content Repository (TYPO3CR) to Elasticsearch; enabling two
-main functionalities:
+This project connects the Neos Content Repository (TYPO3CR) to Elasticsearch; enabling two main functionalities:
 
 * finding Nodes in TypoScript / Eel by arbitrary queries
 * Full-Text Indexing of Pages and other Documents (of course including the full content)
-
 
 ## Relevant Packages
 
@@ -27,11 +25,10 @@ main functionalities:
 ## Installation
 
 ```
-// for development (Master; Tested on Neos 2.0)
-composer require 'typo3/typo3cr-search:@dev'
-composer require 'flowpack/elasticsearch-contentrepositoryadaptor:@dev'
+composer require 'typo3/typo3cr-search'
+composer require 'flowpack/elasticsearch-contentrepositoryadaptor'
 
-composer require 'flowpack/searchplugin:@dev'
+composer require 'flowpack/searchplugin'
 ```
 
 Now, add the routes as described in the [README of Flowpack.SearchPlugin](https://github.com/skurfuerst/Flowpack.SearchPlugin)
@@ -46,10 +43,8 @@ Finally, run `./flow nodeindex:build`, and add the search plugin to your page. I
 There is a need, depending on your version of Elasticsearch, to add specific configuration to your
 Elasticsearch Configuration File `<your-elasticsearch>/config/elasticsearch.yml`.
 
-- [ElasticSearch 1.6 to 1.7](Documentation/ElasticConfiguration-1.6-1.7.md)
-- [ElasticSearch 1.4 to 1.5](Documentation/ElasticConfiguration-1.4-1.5.md)
-- [ElasticSearch 1.3](Documentation/ElasticConfiguration-1.3.md)
-- [ElasticSearch 1.2](Documentation/ElasticConfiguration-1.2.md)
+- [ElasticSearch 2.0 to 2.4](Documentation/ElasticConfiguration-2.0-2.4.md)
+- To support older version of ElasticSearch check the branch 2.0
 
 ## Building up the Index
 
