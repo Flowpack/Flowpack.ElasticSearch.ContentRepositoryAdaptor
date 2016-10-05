@@ -11,7 +11,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
@@ -24,6 +26,12 @@ use TYPO3\Flow\Cli\CommandController;
 class NodeIndexCommandController extends CommandController
 {
     use IndexWorkspaceTrait;
+
+    /**
+     * @Flow\Inject
+     * @var ErrorHandlingService
+     */
+    protected $errorHandlingService;
 
     /**
      * @Flow\Inject
@@ -165,13 +173,6 @@ class NodeIndexCommandController extends CommandController
             $workspace = 'live';
         }
 
-        $callback = function ($workspaceName, $indexedNodes, $dimensions) {
-            if ($dimensions === []) {
-                $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)');
-            } else {
-                $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)');
-            }
-        };
         if ($workspace === null) {
             foreach ($this->workspaceRepository->findAll() as $workspace) {
                 $count += $this->indexWorkspace($workspace->getName(), $limit, $callback);
@@ -182,7 +183,17 @@ class NodeIndexCommandController extends CommandController
 
         $this->nodeIndexingManager->flushQueues();
 
-        $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
+        if ($this->errorHandlingService->hasError()) {
+            $this->outputLine();
+            /** @var ErrorInterface $error */
+            foreach ($this->errorHandlingService as $error) {
+                $this->outputLine('<error>Error</error> ' . $error->message());
+            }
+            $this->outputLine();
+            $this->outputLine('<error>Check your logs for more informations</error>');
+        } else {
+            $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
+        }
         $this->nodeIndexer->getIndex()->refresh();
 
         // TODO: smoke tests
