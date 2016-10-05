@@ -7,5 +7,6 @@ TYPO3:
           backendOptions:
             fileBackend:
               logFileURL: '%FLOW_PATH_DATA%Logs/ElasticSearch_Testing.log'
+              severityThreshold: '%LOG_DEBUG%'
       realtimeIndexing:
         enabled: false
