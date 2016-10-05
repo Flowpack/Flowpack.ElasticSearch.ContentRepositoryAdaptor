@@ -13,7 +13,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\BulkIndexingError;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\MalformedBulkRequestError;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use TYPO3\Flow\Annotations as Flow;
@@ -39,6 +42,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @var string
      */
     protected $indexNamePostfix = '';
+
+    /**
+     * @Flow\Inject
+     * @var ErrorHandlingService
+     */
+    protected $errorHandlingService;
 
     /**
      * @Flow\Inject
@@ -427,7 +436,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             foreach ($bulkRequestTuple as $bulkRequestItem) {
                 $itemAsJson = json_encode($bulkRequestItem);
                 if ($itemAsJson === false) {
-                    $this->logger->log('Indexing Error: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), LOG_ERR, $bulkRequestItem);
+                    $this->errorHandlingService->log(
+                        new MalformedBulkRequestError('Indexing Error: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), $bulkRequestItem)
+                    );
                     continue 2;
                 }
                 $tupleAsJson .= $itemAsJson . chr(10);
@@ -440,7 +451,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             foreach (explode("\n", $responseAsLines) as $responseLine) {
                 $response = json_decode($responseLine);
                 if (!is_object($response) || (isset($response->errors) && $response->errors !== false)) {
-                    $this->logger->log('Indexing Error: ' . $responseLine, LOG_ERR);
+                    $this->errorHandlingService->log(
+                        new BulkIndexingError($this->currentBulkRequest, $responseLine)
+                    );
                 }
             }
         }
