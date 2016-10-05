@@ -1,0 +1,9 @@
+TYPO3:
+  TYPO3CR:
+    Search:
+      elasticSearch:
+        log:
+          backendOptions:
+            fileBackend:
+              logFileURL: '%FLOW_PATH_DATA%Logs/ElasticSearch_Development.log'
+              severityThreshold: '%LOG_DEBUG%'
