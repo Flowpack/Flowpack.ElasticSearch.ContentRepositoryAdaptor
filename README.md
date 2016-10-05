@@ -27,11 +27,9 @@ main functionalities:
 ## Installation
 
 ```
-// for development (Master; Tested on Neos 2.0)
-composer require 'typo3/typo3cr-search:@dev'
-composer require 'flowpack/elasticsearch-contentrepositoryadaptor:@dev'
-
-composer require 'flowpack/searchplugin:@dev'
+composer require 'flowpack/elasticsearch-contentrepositoryadaptor'
+// Not required, but can be used to learn how to integration the flowpack/elasticsearch-contentrepositoryadaptor in your project
+composer require 'flowpack/searchplugin'
 ```
 
 Now, add the routes as described in the [README of Flowpack.SearchPlugin](https://github.com/skurfuerst/Flowpack.SearchPlugin)
