@@ -173,6 +173,13 @@ class NodeIndexCommandController extends CommandController
             $workspace = 'live';
         }
 
+        $callback = function ($workspaceName, $indexedNodes, $dimensions) {
+            if ($dimensions === []) {
+                $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)');
+            } else {
+                $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)');
+            }
+        };
         if ($workspace === null) {
             foreach ($this->workspaceRepository->findAll() as $workspace) {
                 $count += $this->indexWorkspace($workspace->getName(), $limit, $callback);
