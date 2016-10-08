@@ -116,6 +116,9 @@
     fulltext:
       isRoot: true
   properties:
+    title:
+      search:
+        fulltextExtractor: ${Indexing.extractInto('h1', value)}
     '__fulltextParts':
       search:
         elasticSearchMapping:
@@ -123,7 +126,6 @@
           include_in_all: false
           enabled: false
         indexing: ''
-
     '__fulltext':
       search:
         indexing: ''
