@@ -20,6 +20,8 @@ interface ErrorInterface
 {
     /**
      * Log the error message
+     *
+     * @return void
      */
     public function log();
 

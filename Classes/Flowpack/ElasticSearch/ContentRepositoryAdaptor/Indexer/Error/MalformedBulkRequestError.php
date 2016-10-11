@@ -36,7 +36,6 @@ class MalformedBulkRequestError implements ErrorInterface
     protected $tuple;
 
     /**
-     * MalformedBulkRequestError constructor.
      * @param string $message
      * @param array $tuple
      */
@@ -48,6 +47,8 @@ class MalformedBulkRequestError implements ErrorInterface
 
     /**
      * Log the error message
+     *
+     * @return void
      */
     public function log()
     {

@@ -51,7 +51,7 @@ class BulkIndexingError implements ErrorInterface
      * @param array $errors
      * @throws Exception
      */
-    public function __construct(array $currentBulkRequest, $errors)
+    public function __construct(array $currentBulkRequest, array $errors)
     {
         $this->currentBulkRequest = $currentBulkRequest;
         $this->errors = json_decode($errors, true);
@@ -68,6 +68,8 @@ class BulkIndexingError implements ErrorInterface
 
     /**
      * Log the error message
+     *
+     * @return void
      */
     public function log()
     {
