@@ -19,7 +19,7 @@ TYPO3:
             fileBackend:
               logFileURL: '%FLOW_PATH_DATA%Logs/ElasticSearch.log'
               createParentDirectories: TRUE
-              severityThreshold: '%LOG_DEBUG%'
+              severityThreshold: '%LOG_WARNING%'
               maximumLogFileSize: 10485760
               logFilesToKeep: 1
               logMessageOrigin: FALSE
