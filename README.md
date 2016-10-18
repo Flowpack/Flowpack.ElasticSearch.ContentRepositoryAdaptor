@@ -15,7 +15,7 @@ This project connects the Neos Content Repository (TYPO3CR) to Elasticsearch; en
 
 * [TYPO3.TYPO3CR.Search](https://www.neos.io/download-and-extend/packages/typo3/typo3-typo3cr-search.html): provides common functionality for searching TYPO3CR nodes,
   does not contain a search backend
-* [Flowpack.ElasticSearch](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch-contentrepositoryadaptor.html): provides common code for working with Elasticsearch
+* [Flowpack.ElasticSearch](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch.html): provides common code for working with Elasticsearch
 * [Flowpack.ElasticSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch-contentrepositoryadaptor.html): this package
 * [Flowpack.SimpleSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-simplesearch-contentrepositoryadaptor.html): an alternative search backend (to be used
   instead of this package); storing the search index in SQLite
