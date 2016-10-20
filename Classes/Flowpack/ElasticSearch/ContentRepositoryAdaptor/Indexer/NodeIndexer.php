@@ -252,7 +252,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                     ];
                 }
 
-                $this->updateFulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
+                $this->updateFulltext($node, $fulltextIndexOfNode);
             }
 
             $this->logger->log(sprintf('NodeIndexer (%s): Added / updated node %s.', $documentIdentifier, $contextPath), LOG_DEBUG, null, 'ElasticSearch (CR)');
@@ -300,15 +300,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      *
      * @param NodeInterface $node
      * @param array $fulltextIndexOfNode
-     * @param string $targetWorkspaceName
      * @return void
      */
-    protected function updateFulltext(NodeInterface $node, array $fulltextIndexOfNode, $targetWorkspaceName = null)
+    protected function updateFulltext(NodeInterface $node, array $fulltextIndexOfNode)
     {
-        if ((($targetWorkspaceName !== null && $targetWorkspaceName !== 'live') || $node->getWorkspace()->getName() !== 'live') || count($fulltextIndexOfNode) === 0) {
-            return;
-        }
-
         $closestFulltextNode = $node;
         while (!$this->isFulltextRoot($closestFulltextNode)) {
             $closestFulltextNode = $closestFulltextNode->getParent();
