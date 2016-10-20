@@ -332,7 +332,14 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                     if (!ctx._source.containsKey("__fulltextParts")) {
                         ctx._source.__fulltextParts = new LinkedHashMap();
                     }
-                    ctx._source.__fulltextParts[identifier] = fulltext;
+
+                    if (nodeIsRemoved || nodeIsHidden || fulltext.size() == 0) {
+                        if (ctx._source.__fulltextParts.containsKey(identifier)) {
+                            ctx._source.__fulltextParts.remove(identifier);
+                        }
+                    } else {
+                        ctx._source.__fulltextParts[identifier] = fulltext;
+                    }
                     ctx._source.__fulltext = new LinkedHashMap();
 
                     Iterator<LinkedHashMap.Entry<String, LinkedHashMap>> fulltextByNode = ctx._source.__fulltextParts.entrySet().iterator();
@@ -354,6 +361,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 ',
                 'params' => [
                     'identifier' => $node->getIdentifier(),
+                    'nodeIsRemoved' => $node->isRemoved(),
+                    'nodeIsHidden' => $node->isHidden(),
                     'fulltext' => $fulltextIndexOfNode
                 ],
                 'upsert' => [
