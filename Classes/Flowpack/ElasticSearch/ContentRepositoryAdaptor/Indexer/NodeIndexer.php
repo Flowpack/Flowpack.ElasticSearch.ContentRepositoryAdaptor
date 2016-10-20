@@ -255,7 +255,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $this->updateFulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
             }
 
-            $this->logger->log(sprintf('NodeIndexer (%s): Added / updated node %s.', $documentIdentifier, $contextPath), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $this->logger->log(sprintf('NodeIndexer (%s): Indexed node %s.', $documentIdentifier, $contextPath), LOG_DEBUG, null, 'ElasticSearch (CR)');
         };
 
         $handleNode = function (NodeInterface $node, \TYPO3\TYPO3CR\Domain\Service\Context $context) use ($targetWorkspaceName, $indexer) {
@@ -265,10 +265,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             } else {
                 $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
                 if ($node->isRemoved()) {
-                    $this->logger->log(sprintf('NodeIndexer (%s): Removing node with identifier %s, no longer in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
                     $this->removeNode($node, $context->getWorkspaceName());
+                    $this->logger->log(sprintf('NodeIndexer (%s): Removed node with identifier %s, no longer in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
                 } else {
-                    $this->logger->log(sprintf('NodeIndexer (%s): Could not add / update node with identifier %s, not found in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+                    $this->logger->log(sprintf('NodeIndexer (%s): Could not index node with identifier %s, not found in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
                 }
             }
         };
@@ -318,7 +318,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             $closestFulltextNode = $closestFulltextNode->getParent();
             if ($closestFulltextNode === null) {
                 // root of hierarchy, no fulltext root found anymore, abort silently...
-                $this->logger->log('NodeIndexer: No fulltext root found for ' . $node->getPath(), LOG_WARNING);
+                $this->logger->log(sprintf('NodeIndexer: No fulltext root found for node %s (%)', $node->getPath(), $node->getIdentifier()), LOG_WARNING, null, 'ElasticSearch (CR)');
 
                 return;
             }
@@ -332,7 +332,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         if ($closestFulltextNode->isRemoved()) {
             // fulltext root is removed, abort silently...
-            $this->logger->log(sprintf('NodeIndexer (%s): Fulltext root found for %s (%s) not updated, it is removed', $closestFulltextNodeDocumentIdentifier, $node->getPath(), $node->getIdentifier()), LOG_DEBUG);
+            $this->logger->log(sprintf('NodeIndexer (%s): Fulltext root found for %s (%s) not updated, it is removed', $closestFulltextNodeDocumentIdentifier, $node->getPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
             return;
         }
 
@@ -393,7 +393,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             ]
         ];
 
-        $this->logger->log(sprintf('NodeIndexer (%s): Updated fulltext index for %s (%s)', $closestFulltextNodeDocumentIdentifier, $closestFulltextNodeContextPath, $closestFulltextNode->getIdentifier()), LOG_WARNING);
+        $this->logger->log(sprintf('NodeIndexer (%s): Updated fulltext index for %s (%s)', $closestFulltextNodeDocumentIdentifier, $closestFulltextNodeContextPath, $closestFulltextNode->getIdentifier()), LOG_WARNING, null, 'ElasticSearch (CR)');
     }
 
     /**
@@ -469,7 +469,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             foreach ($bulkRequestTuple as $bulkRequestItem) {
                 $itemAsJson = json_encode($bulkRequestItem);
                 if ($itemAsJson === false) {
-                    $this->logger->log('Indexing Error: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), LOG_ERR, $bulkRequestItem, 'ElasticSearch (CR)');
+                    $this->logger->log('NodeIndexer: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), LOG_ERR, $bulkRequestItem, 'ElasticSearch (CR)');
                     continue 2;
                 }
                 $tupleAsJson .= $itemAsJson . chr(10);
@@ -482,7 +482,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             foreach (explode(chr(10), $responseAsLines) as $responseLine) {
                 $response = json_decode($responseLine);
                 if (!is_object($response) || (isset($response->errors) && $response->errors !== false)) {
-                    $this->logger->log('Indexing Error: ' . $responseLine, LOG_ERR, null, 'ElasticSearch (CR)');
+                    $this->logger->log('NodeIndexer: ' . $responseLine, LOG_ERR, null, 'ElasticSearch (CR)');
                 }
             }
         }
