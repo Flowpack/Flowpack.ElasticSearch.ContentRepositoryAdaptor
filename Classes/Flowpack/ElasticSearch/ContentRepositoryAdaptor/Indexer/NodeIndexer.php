@@ -189,14 +189,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 ]));
             }
 
-            if ($node->isRemoved()) {
-                // TODO: handle deletion from the fulltext index as well
-                $mappingType->deleteDocumentById($contextPathHash);
-                $this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). ID: %s', $contextPath, $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
-
-                return;
-            }
-
             $logger = $this->logger;
             $fulltextIndexOfNode = [];
             $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($logger, $documentIdentifier, $node) {
