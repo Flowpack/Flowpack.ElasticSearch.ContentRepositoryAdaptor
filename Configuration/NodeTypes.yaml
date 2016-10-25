@@ -116,6 +116,11 @@
     fulltext:
       isRoot: true
   properties:
+    'uriPathSegment':
+      search:
+        elasticSearchMapping:
+          type: string
+          index: not_analyzed
     title:
       search:
         fulltextExtractor: ${Indexing.extractInto('h1', value)}
