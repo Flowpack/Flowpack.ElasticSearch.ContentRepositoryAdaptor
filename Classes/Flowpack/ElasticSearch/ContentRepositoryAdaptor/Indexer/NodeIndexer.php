@@ -134,7 +134,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     }
 
     /**
-     * index this node, and add it to the current bulk request.
+     * Index this node, and add it to the current bulk request.
      *
      * @param NodeInterface $node
      * @param string $targetWorkspaceName In case this is triggered during publishing, a workspace name will be passed in
@@ -163,20 +163,20 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
             }
 
-            $contextPathHash = sha1($contextPath);
+            $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
             $nodeType = $node->getNodeType();
 
             $mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
 
             if ($this->bulkProcessing === false) {
-                // Remove document with the same contextPathHash but different NodeType, required after NodeType change
-                $this->logger->log(sprintf('NodeIndexer: Search and remove duplicate document if needed. ID: %s', $contextPath, $node->getNodeType()->getName(), $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
+                // Remove document with the same documentIdentifier but different NodeType, required after NodeType change
+                $this->logger->log(sprintf('NodeIndexer (%s): Search and remove duplicate document for node %s (%s) if needed.', $documentIdentifier, $contextPath, $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
                 $this->getIndex()->request('DELETE', '/_query', [], json_encode([
                     'query' => [
                         'bool' => [
                             'must' => [
                                 'ids' => [
-                                    'values' => [$contextPathHash]
+                                    'values' => [$documentIdentifier]
                                 ]
                             ],
                             'must_not' => [
@@ -189,23 +189,15 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 ]));
             }
 
-            if ($node->isRemoved()) {
-                // TODO: handle deletion from the fulltext index as well
-                $mappingType->deleteDocumentById($contextPathHash);
-                $this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). ID: %s', $contextPath, $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
-
-                return;
-            }
-
             $logger = $this->logger;
             $fulltextIndexOfNode = [];
-            $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($logger, $contextPathHash) {
-                $logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $contextPathHash, $propertyName), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($logger, $documentIdentifier, $node) {
+                $logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found, node type %s.', $documentIdentifier, $propertyName, $node->getNodeType()->getName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
             });
 
             $document = new ElasticSearchDocument($mappingType,
                 $nodePropertiesToBeStoredInIndex,
-                $contextPathHash
+                $documentIdentifier
             );
 
             $documentData = $document->getData();
@@ -263,27 +255,52 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $this->updateFulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
             }
 
-            $this->logger->log(sprintf('NodeIndexer: Added / updated node %s. ID: %s Context: %s', $contextPath, $contextPathHash, json_encode($node->getContext()->getProperties())), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $this->logger->log(sprintf('NodeIndexer (%s): Indexed node %s.', $documentIdentifier, $contextPath), LOG_DEBUG, null, 'ElasticSearch (CR)');
         };
 
-        $dimensionCombinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-        $workspaceName = $targetWorkspaceName ?: 'live';
-        $nodeIdentifier = $node->getIdentifier();
-        if ($dimensionCombinations !== []) {
-            foreach ($dimensionCombinations as $combination) {
-                $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'dimensions' => $combination]);
-                $node = $context->getNodeByIdentifier($nodeIdentifier);
-                if ($node !== null) {
-                    $indexer($node, $targetWorkspaceName);
+        $handleNode = function (NodeInterface $node, \TYPO3\TYPO3CR\Domain\Service\Context $context) use ($targetWorkspaceName, $indexer) {
+            $nodeFromContext = $context->getNodeByIdentifier($node->getIdentifier());
+            if ($nodeFromContext instanceof NodeInterface) {
+                $indexer($nodeFromContext, $targetWorkspaceName);
+            } else {
+                $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
+                if ($node->isRemoved()) {
+                    $this->removeNode($node, $context->getWorkspaceName());
+                    $this->logger->log(sprintf('NodeIndexer (%s): Removed node with identifier %s, no longer in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+                } else {
+                    $this->logger->log(sprintf('NodeIndexer (%s): Could not index node with identifier %s, not found in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
                 }
             }
-        } else {
-            $context = $this->contextFactory->create(['workspaceName' => $workspaceName]);
-            $node = $context->getNodeByIdentifier($nodeIdentifier);
-            if ($node !== null) {
-                $indexer($node, $targetWorkspaceName);
+        };
+
+        $workspaceName = $targetWorkspaceName ?: $node->getContext()->getWorkspaceName();
+        $dimensionCombinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+        if ($dimensionCombinations !== []) {
+            foreach ($dimensionCombinations as $combination) {
+                $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'dimensions' => $combination, 'invisibleContentShown' => true]);
+                $handleNode($node, $context);
             }
+        } else {
+            $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'invisibleContentShown' => true]);
+            $handleNode($node, $context);
         }
+    }
+
+    /**
+     * Returns a stable identifier for the Elasticsearch document representing the node
+     *
+     * @param NodeInterface $node
+     * @param string $targetWorkspaceName
+     * @return string
+     */
+    protected function calculateDocumentIdentifier(NodeInterface $node, $targetWorkspaceName = null) {
+        $contextPath = $node->getContextPath();
+
+        if ($targetWorkspaceName !== null) {
+            $contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
+        }
+
+        return sha1($contextPath);
     }
 
     /**
@@ -291,34 +308,39 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      *
      * @param NodeInterface $node
      * @param array $fulltextIndexOfNode
-     * @param string $targetWorkspaceName
+     * @param $targetWorkspaceName
      * @return void
      */
-    protected function updateFulltext(NodeInterface $node, array $fulltextIndexOfNode, $targetWorkspaceName = null)
+    protected function updateFulltext(NodeInterface $node, array $fulltextIndexOfNode, $targetWorkspaceName)
     {
-        if ((($targetWorkspaceName !== null && $targetWorkspaceName !== 'live') || $node->getWorkspace()->getName() !== 'live') || count($fulltextIndexOfNode) === 0) {
-            return;
-        }
-
         $closestFulltextNode = $node;
         while (!$this->isFulltextRoot($closestFulltextNode)) {
             $closestFulltextNode = $closestFulltextNode->getParent();
             if ($closestFulltextNode === null) {
                 // root of hierarchy, no fulltext root found anymore, abort silently...
-                $this->logger->log('No fulltext root found for ' . $node->getPath(), LOG_WARNING);
+                $this->logger->log(sprintf('NodeIndexer: No fulltext root found for node %s (%)', $node->getPath(), $node->getIdentifier()), LOG_WARNING, null, 'ElasticSearch (CR)');
 
                 return;
             }
         }
 
-        $closestFulltextNodeContextPath = str_replace($closestFulltextNode->getContext()->getWorkspace()->getName(), 'live', $closestFulltextNode->getContextPath());
-        $closestFulltextNodeContextPathHash = sha1($closestFulltextNodeContextPath);
+        $closestFulltextNodeContextPath = $closestFulltextNode->getContextPath();
+        if ($targetWorkspaceName !== null) {
+            $closestFulltextNodeContextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $closestFulltextNodeContextPath);
+        }
+        $closestFulltextNodeDocumentIdentifier = sha1($closestFulltextNodeContextPath);
+
+        if ($closestFulltextNode->isRemoved()) {
+            // fulltext root is removed, abort silently...
+            $this->logger->log(sprintf('NodeIndexer (%s): Fulltext root found for %s (%s) not updated, it is removed', $closestFulltextNodeDocumentIdentifier, $node->getPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            return;
+        }
 
         $this->currentBulkRequest[] = [
             [
                 'update' => [
                     '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
-                    '_id' => $closestFulltextNodeContextPathHash
+                    '_id' => $closestFulltextNodeDocumentIdentifier
                 ]
             ],
             // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
@@ -328,7 +350,14 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                     if (!ctx._source.containsKey("__fulltextParts")) {
                         ctx._source.__fulltextParts = new LinkedHashMap();
                     }
-                    ctx._source.__fulltextParts[identifier] = fulltext;
+
+                    if (nodeIsRemoved || nodeIsHidden || fulltext.size() == 0) {
+                        if (ctx._source.__fulltextParts.containsKey(identifier)) {
+                            ctx._source.__fulltextParts.remove(identifier);
+                        }
+                    } else {
+                        ctx._source.__fulltextParts[identifier] = fulltext;
+                    }
                     ctx._source.__fulltext = new LinkedHashMap();
 
                     Iterator<LinkedHashMap.Entry<String, LinkedHashMap>> fulltextByNode = ctx._source.__fulltextParts.entrySet().iterator();
@@ -350,6 +379,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 ',
                 'params' => [
                     'identifier' => $node->getIdentifier(),
+                    'nodeIsRemoved' => $node->isRemoved(),
+                    'nodeIsHidden' => $node->isHidden(),
                     'fulltext' => $fulltextIndexOfNode
                 ],
                 'upsert' => [
@@ -361,6 +392,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 'lang' => 'groovy'
             ]
         ];
+
+        $this->logger->log(sprintf('NodeIndexer (%s): Updated fulltext index for %s (%s)', $closestFulltextNodeDocumentIdentifier, $closestFulltextNodeContextPath, $closestFulltextNode->getIdentifier()), LOG_WARNING, null, 'ElasticSearch (CR)');
     }
 
     /**
@@ -385,33 +418,42 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * Schedule node removal into the current bulk request.
      *
      * @param NodeInterface $node
+     * @param string $targetWorkspaceName
      * @return string
      */
-    public function removeNode(NodeInterface $node)
+    public function removeNode(NodeInterface $node, $targetWorkspaceName = null)
     {
         if ($this->settings['indexAllWorkspaces'] === false) {
-            if ($node->getContext()->getWorkspaceName() !== 'live') {
+            // we are only supposed to index the live workspace.
+            // We need to check the workspace at two occasions; checking the
+            // $targetWorkspaceName and the workspace name of the node's context as fallback
+            if ($targetWorkspaceName !== null && $targetWorkspaceName !== 'live') {
+                return;
+            }
+
+            if ($targetWorkspaceName === null && $node->getContext()->getWorkspaceName() !== 'live') {
                 return;
             }
         }
 
-        // TODO: handle deletion from the fulltext index as well
-        $identifier = sha1($node->getContextPath());
+        $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
 
         $this->currentBulkRequest[] = [
             [
                 'delete' => [
                     '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($node->getNodeType()),
-                    '_id' => $identifier
+                    '_id' => $documentIdentifier
                 ]
             ]
         ];
 
-        $this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node actually removed). Persistence ID: %s', $node->getContextPath(), $identifier), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        $this->updateFulltext($node, [], $targetWorkspaceName);
+
+        $this->logger->log(sprintf('NodeIndexer (%s): Removed node %s (%s) from index.', $documentIdentifier, $node->getContextPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
     }
 
     /**
-     * perform the current bulk request
+     * Perform the current bulk request
      *
      * @return void
      */
@@ -427,7 +469,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             foreach ($bulkRequestTuple as $bulkRequestItem) {
                 $itemAsJson = json_encode($bulkRequestItem);
                 if ($itemAsJson === false) {
-                    $this->logger->log('Indexing Error: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), LOG_ERR, $bulkRequestItem);
+                    $this->logger->log('NodeIndexer: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), LOG_ERR, $bulkRequestItem, 'ElasticSearch (CR)');
                     continue 2;
                 }
                 $tupleAsJson .= $itemAsJson . chr(10);
@@ -437,10 +479,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         if ($content !== '') {
             $responseAsLines = $this->getIndex()->request('POST', '/_bulk', [], $content)->getOriginalResponse()->getContent();
-            foreach (explode("\n", $responseAsLines) as $responseLine) {
+            foreach (explode(chr(10), $responseAsLines) as $responseLine) {
                 $response = json_decode($responseLine);
                 if (!is_object($response) || (isset($response->errors) && $response->errors !== false)) {
-                    $this->logger->log('Indexing Error: ' . $responseLine, LOG_ERR);
+                    $this->logger->log('NodeIndexer: ' . $responseLine, LOG_ERR, null, 'ElasticSearch (CR)');
                 }
             }
         }
