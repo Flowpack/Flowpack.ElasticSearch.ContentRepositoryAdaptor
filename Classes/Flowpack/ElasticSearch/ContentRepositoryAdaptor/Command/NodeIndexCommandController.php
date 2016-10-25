@@ -54,7 +54,7 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @Flow\Inject
-     * @var \TYPO3\Neos\Domain\Service\ContentDimensionPresetSourceInterface
+     * @var \TYPO3\TYPO3CR\Domain\Service\ContentDimensionPresetSourceInterface
      */
     protected $contentDimensionPresetSource;
 
