@@ -64,8 +64,19 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                         'bool' => [
                             'must' => [
                                 0 => [
-                                    'term' => [
-                                        '__parentPath' => '/foo/bar'
+                                    'bool' => [
+                                        'should' => [
+                                            0 => [
+                                                'term' => [
+                                                    '__parentPath' => '/foo/bar'
+                                                ]
+                                            ],
+                                            1 => [
+                                                'term' => [
+                                                    '__path' => '/foo/bar'
+                                                ]
+                                            ]
+                                        ]
                                     ]
                                 ],
                                 1 => [

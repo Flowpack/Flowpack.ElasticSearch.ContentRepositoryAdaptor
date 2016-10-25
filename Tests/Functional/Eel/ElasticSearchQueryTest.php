@@ -125,7 +125,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
             ->log($this->getLogMessagePrefix(__METHOD__))
             ->nodeType('TYPO3.Neos.NodeTypes:Page')
             ->count();
-        $this->assertEquals(3, $resultCount);
+        $this->assertEquals(4, $resultCount);
     }
 
     /**
@@ -151,7 +151,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
             ->limit(1);
 
         $resultCount = $query->count();
-        $this->assertEquals(3, $resultCount, 'Asserting the count query returns the total count.');
+        $this->assertEquals(4, $resultCount, 'Asserting the count query returns the total count.');
     }
 
     /**
@@ -183,7 +183,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
 
         $this->assertArrayHasKey($aggregationTitle, $result);
 
-        $this->assertCount(2, $result[$aggregationTitle]['buckets']);
+        $this->assertCount(3, $result[$aggregationTitle]['buckets']);
 
         $expectedChickenBucket = [
             'key' => 'chicken',
@@ -227,13 +227,13 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
         /** @var QueryResultInterface $result $node */
 
         $this->assertInstanceOf(QueryResultInterface::class, $result);
-        $this->assertCount(3, $result, 'The result should have 3 items');
-        $this->assertEquals(3, $result->count(), 'Count should be 3');
+        $this->assertCount(4, $result, 'The result should have 4 items');
+        $this->assertEquals(4, $result->count(), 'Count should be 4');
 
         $node = $result->getFirst();
 
         $this->assertInstanceOf(NodeInterface::class, $node);
-        $this->assertEquals('egg', $node->getProperty('title'), 'Asserting a desc sort order by property title');
+        $this->assertEquals('welcome', $node->getProperty('title'), 'Asserting a desc sort order by property title');
     }
 
     /**
