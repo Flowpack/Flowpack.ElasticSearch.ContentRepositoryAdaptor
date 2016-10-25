@@ -13,29 +13,23 @@ main functionalities:
 * Full-Text Indexing of Pages and other Documents (of course including the full content)
 
 
-Relevant Packages:
+## Relevant Packages
 
-* `TYPO3.TYPO3CR.Search`: provides common functionality for searching TYPO3CR nodes,
+* [TYPO3.TYPO3CR.Search](https://www.neos.io/download-and-extend/packages/typo3/typo3-typo3cr-search.html): provides common functionality for searching TYPO3CR nodes,
   does not contain a search backend
-
-* `Flowpack.ElasticSearch`: provides common code for working with Elasticsearch
-
-* `Flowpack.ElasticSearch.ContentRepositoryAdaptor`: this package
-
-* `Flowpack.SimpleSearch.ContentRepositoryAdaptor`: an alternative search backend (to be used
+* [Flowpack.ElasticSearch](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch.html): provides common code for working with Elasticsearch
+* [Flowpack.ElasticSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch-contentrepositoryadaptor.html): this package
+* [Flowpack.SimpleSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-simplesearch-contentrepositoryadaptor.html): an alternative search backend (to be used
   instead of this package); storing the search index in SQLite
-
-* `Flowpack.SearchPlugin`: search plugin for Neos
+* [Flowpack.SearchPlugin](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-searchplugin.html): search plugin for Neos
 
 
 ## Installation
 
 ```
-// for development (Master; Tested on Neos 2.0)
-composer require 'typo3/typo3cr-search:@dev'
-composer require 'flowpack/elasticsearch-contentrepositoryadaptor:@dev'
-
-composer require 'flowpack/searchplugin:@dev'
+composer require 'flowpack/elasticsearch-contentrepositoryadaptor'
+// Not required, but can be used to learn how to integration the flowpack/elasticsearch-contentrepositoryadaptor in your project
+composer require 'flowpack/searchplugin'
 ```
 
 Now, add the routes as described in the [README of Flowpack.SearchPlugin](https://github.com/skurfuerst/Flowpack.SearchPlugin)
@@ -47,89 +41,13 @@ Finally, run `./flow nodeindex:build`, and add the search plugin to your page. I
 
 ## Elasticsearch Configuration file elasticsearch.yml
 
-There is a need, depending on your version of Elasticsearch, to add the following lines of configuration to your
+There is a need, depending on your version of Elasticsearch, to add specific configuration to your
 Elasticsearch Configuration File `<your-elasticsearch>/config/elasticsearch.yml`.
 
-### Needed Configuration in configuration.yml for Elasticsearch 1.6.x and 1.7.x
-
-In verson 1.6 the `script.disable_dynamic` settings and the Groovy sandbox as such [have been deprecated]
-(https://www.elastic.co/guide/en/elasticsearch/reference/1.6/modules-scripting.html#enable-dynamic-scripting).
-You may continue to use the settings for version 1.5.x, but this is what would be the correct configuration for 1.6.x and 1.7.x.
-
-```
-# The following settings are absolutely required for the CR adaptor to work
-script.file: on
-script.engine.groovy.inline: sandbox
-script.engine.groovy.indexed: sandbox
-
-script.groovy.sandbox.class_whitelist: java.util.LinkedHashMap
-script.groovy.sandbox.receiver_whitelist:  java.util.Iterator, java.lang.Object, java.util.Map, java.util.Map$Entry
-script.groovy.sandbox.enabled: true
-
-# the following settings secure your cluster
-cluster.name: [PUT_YOUR_CUSTOM_NAME_HERE]
-network.host: 127.0.0.1
-
-# the following settings are well-suited for smaller Elasticsearch instances (e.g. as long as you can stay on one host)
-index.number_of_shards: 1
-index.number_of_replicas: 0
-```
-
-### Needed Configuration in configuration.yml for Elasticsearch 1.4.x and 1.5.x
-
-```
-# The following settings are absolutely required for the CR adaptor to work
-script.disable_dynamic: sandbox
-script.groovy.sandbox.class_whitelist: java.util.LinkedHashMap
-script.groovy.sandbox.receiver_whitelist:  java.util.Iterator, java.lang.Object, java.util.Map, java.util.Map$Entry
-script.groovy.sandbox.enabled: true
-
-# the following settings secure your cluster
-cluster.name: [PUT_YOUR_CUSTOM_NAME_HERE]
-network.host: 127.0.0.1
-
-# the following settings are well-suited for smaller Elasticsearch instances (e.g. as long as you can stay on one host)
-index.number_of_shards: 1
-index.number_of_replicas: 0
-```
-
-### Needed Configuration in configuration.yml for Elasticsearch 1.3.x
-
-```
-# The following settings are absolutely required for the CR adaptor to work
-script.groovy.sandbox.class_whitelist: java.util.LinkedHashMap
-script.groovy.sandbox.receiver_whitelist:  java.util.Iterator, java.lang.Object, java.util.Map, java.util.Map$Entry
-
-# the following settings secure your cluster
-cluster.name: [PUT_YOUR_CUSTOM_NAME_HERE]
-network.host: 127.0.0.1
-
-# the following settings are well-suited for smaller Elasticsearch instances (e.g. as long as you can stay on one host)
-index.number_of_shards: 1
-index.number_of_replicas: 0
-```
-
-You can get further information about this topic here:
-
-http://www.elasticsearch.org/blog/elasticsearch-1-3-0-released/
-http://www.elasticsearch.org/blog/scripting-security/
-http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-scripting.html
-
-## Needed Configuration for Elasticsearch 1.2.x
-
-
-If you are using Elasticsearch version 1.2 you have also to install groovy as a plugin. To install the plugin just run
-the following command in the root folder of your elastic:
-
-```
-bin/plugin -install elasticsearch/elasticsearch-lang-groovy/2.2.0.
-```
-
-```
-script.disable_dynamic: false
-script.default_lang: groovy
-
-```
+- [ElasticSearch 1.6 to 1.7](Documentation/ElasticConfiguration-1.6-1.7.md)
+- [ElasticSearch 1.4 to 1.5](Documentation/ElasticConfiguration-1.4-1.5.md)
+- [ElasticSearch 1.3](Documentation/ElasticConfiguration-1.3.md)
+- [ElasticSearch 1.2](Documentation/ElasticConfiguration-1.2.md)
 
 ## Building up the Index
 
@@ -138,7 +56,6 @@ The node index is updated on the fly, but during development you need to update 
 In case of a mapping update, you need to reindex all nodes. Don't worry to do that in production;
 the system transparently creates a new index, fills it completely, and when everything worked,
 changes the index alias.
-
 
 ```
 ./flow nodeindex:build
@@ -149,7 +66,6 @@ changes the index alias.
  # in order to remove old, non-used indices, you should use this command from time to time:
 ./flow nodeindex:cleanup
 ```
-
 
 ### Advanced Index Settings
 If you need advanced settings you can define them in your *Settings.yaml*:
@@ -781,14 +697,10 @@ The configuration from Version 1 to Version 2 has changed; here's what to change
 
 1. Change the base namespace for configuration from `Flowpack.ElasticSearch.ContentRepositoryAdaptor`
    to `TYPO3.TYPO3CR.Search`. All further adjustments are made underneath this namespace:
-
 2. (If it exists in your configuration:) Move `indexName` to `elasticSearch.indexName`
-
 3. (If it exists in your configuration:) Move `log` to `elasticSearch.log`
-
 4. search for `mapping` (inside `defaultConfigurationPerType.<typeName>`) and replace it by
    `elasticSearchMapping`.
-
 5. Inside the `indexing` expressions (at `defaultConfigurationPerType.<typeName>`), replace
    `ElasticSearch.` by `Indexing.`.
 
@@ -796,11 +708,8 @@ The configuration from Version 1 to Version 2 has changed; here's what to change
 
 1. Replace `elasticSearch` by `search`. This replaces both `<YourNodeType>.elasticSearch`
    and `<YourNodeType>.properties.<propertyName>.elasticSearch`.
-
 2. search for `mapping` (inside `<YourNodeType>.properties.<propertyName>.search`) and replace it by
    `elasticSearchMapping`.
-
 3. Replace `ElasticSeach.fulltext` by `Indexing`
-
 4. Search for `ElasticSearch.` (inside the `indexing` expressions) and replace them by `Indexing.`
 
