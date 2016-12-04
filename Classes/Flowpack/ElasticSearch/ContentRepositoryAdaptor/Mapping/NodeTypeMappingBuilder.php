@@ -57,7 +57,7 @@ class NodeTypeMappingBuilder
      */
     public function initializeObject($cause)
     {
-        if ($cause === \TYPO3\Flow\Object\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
+        if ($cause === \TYPO3\Flow\ObjectManagement\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
             $settings = $this->configurationManager->getConfiguration(\TYPO3\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.TYPO3CR.Search');
             $this->defaultConfigurationPerType = $settings['defaultConfigurationPerType'];
         }
