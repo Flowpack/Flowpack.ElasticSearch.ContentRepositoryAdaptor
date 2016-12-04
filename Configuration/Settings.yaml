@@ -48,13 +48,13 @@ TYPO3:
             format: 'date_time_no_millis'
             include_in_all: false
 
-        'TYPO3\Media\Domain\Model\Asset':
+        'Neos\Media\Domain\Model\Asset':
           elasticSearchMapping: '' # deliberately don't map or index this
 
-        'array<TYPO3\Media\Domain\Model\Asset>':
+        'array<Neos\Media\Domain\Model\Asset>':
           elasticSearchMapping: '' # deliberately don't map or index this
 
-        'TYPO3\Media\Domain\Model\ImageInterface':
+        'Neos\Media\Domain\Model\ImageInterface':
           elasticSearchMapping: '' # deliberately don't map or index this
 
         'references':
