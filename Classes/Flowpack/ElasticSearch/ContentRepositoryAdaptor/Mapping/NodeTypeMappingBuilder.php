@@ -16,8 +16,8 @@ use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Configuration\ConfigurationManager;
-use TYPO3\TYPO3CR\Domain\Model\NodeType;
-use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
+use Neos\ContentRepository\Domain\Model\NodeType;
+use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 
 /**
  * Builds the mapping information for TYPO3CR Node Types in Elastic Search
@@ -58,7 +58,7 @@ class NodeTypeMappingBuilder
     public function initializeObject($cause)
     {
         if ($cause === \Neos\Flow\ObjectManagement\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-            $settings = $this->configurationManager->getConfiguration(\Neos\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.TYPO3CR.Search');
+            $settings = $this->configurationManager->getConfiguration(\Neos\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
             $this->defaultConfigurationPerType = $settings['defaultConfigurationPerType'];
         }
     }

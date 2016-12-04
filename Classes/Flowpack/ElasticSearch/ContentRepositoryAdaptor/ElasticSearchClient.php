@@ -47,7 +47,7 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
     public function initializeObject($cause)
     {
         if ($cause === \Neos\Flow\ObjectManagement\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-            $settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.TYPO3CR.Search');
+            $settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
             $this->indexName = $settings['elasticSearch']['indexName'];
         }
     }

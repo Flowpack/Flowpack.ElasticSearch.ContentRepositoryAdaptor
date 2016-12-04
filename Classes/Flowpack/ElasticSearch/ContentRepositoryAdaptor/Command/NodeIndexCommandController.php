@@ -15,7 +15,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuild
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 /**
  * Provides CLI features for index handling
@@ -34,19 +34,19 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @Flow\Inject
-     * @var \TYPO3\TYPO3CR\Domain\Repository\WorkspaceRepository
+     * @var \Neos\ContentRepository\Domain\Repository\WorkspaceRepository
      */
     protected $workspaceRepository;
 
     /**
      * @Flow\Inject
-     * @var \TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository
+     * @var \Neos\ContentRepository\Domain\Repository\NodeDataRepository
      */
     protected $nodeDataRepository;
 
     /**
      * @Flow\Inject
-     * @var \TYPO3\TYPO3CR\Domain\Factory\NodeFactory
+     * @var \Neos\ContentRepository\Domain\Factory\NodeFactory
      */
     protected $nodeFactory;
 
@@ -92,7 +92,7 @@ class NodeIndexCommandController extends CommandController
     public function initializeObject($cause)
     {
         if ($cause === \Neos\Flow\ObjectManagement\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-            $this->settings = $this->configurationManager->getConfiguration(\Neos\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.TYPO3CR.Search');
+            $this->settings = $this->configurationManager->getConfiguration(\Neos\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
         }
     }
 

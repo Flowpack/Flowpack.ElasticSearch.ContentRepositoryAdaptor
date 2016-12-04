@@ -110,7 +110,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function getType()
     {
-        return 'TYPO3\TYPO3CR\Domain\Model\NodeInterface';
+        return 'Neos\ContentRepository\Domain\Model\NodeInterface';
     }
 
     /**

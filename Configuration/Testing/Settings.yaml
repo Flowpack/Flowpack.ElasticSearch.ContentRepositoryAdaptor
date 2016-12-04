@@ -1,5 +1,6 @@
-TYPO3:
-  TYPO3CR:
+
+Neos:
+  ContentRepository:
     Search:
       elasticSearch:
         indexName: typo3cr_testing

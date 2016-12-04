@@ -14,7 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\ViewHelpers;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
 use Neos\Flow\Annotations as Flow;
 use Neos\FluidAdaptor\Core\ViewHelper\AbstractViewHelper;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 /**
  * View helper to get the raw "hits" array of an ElasticSearchQueryResult for a

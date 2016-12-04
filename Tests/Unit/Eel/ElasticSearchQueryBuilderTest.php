@@ -12,9 +12,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
-use TYPO3\TYPO3CR\Domain\Model\Workspace;
-use TYPO3\TYPO3CR\Domain\Service\Context;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Model\Workspace;
+use Neos\ContentRepository\Domain\Service\Context;
 
 /**
  * Testcase for ElasticSearchQueryBuilder

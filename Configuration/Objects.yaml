@@ -14,7 +14,7 @@ Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandControll
               fileBackend: 'Neos\Flow\Log\Backend\FileBackend'
               ansiConsoleBackend: 'Neos\Flow\Log\Backend\AnsiConsoleBackend'
           4:
-            setting: TYPO3.TYPO3CR.Search.elasticSearch.log.backendOptions
+            setting: Neos.ContentRepository.Search.elasticSearch.log.backendOptions
 
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface:
   scope: singleton
@@ -29,7 +29,7 @@ Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface:
       value:
         fileBackend: 'Neos\Flow\Log\Backend\FileBackend'
     4:
-      setting: TYPO3.TYPO3CR.Search.elasticSearch.log.backendOptions
+      setting: Neos.ContentRepository.Search.elasticSearch.log.backendOptions
 
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient:
   scope: singleton

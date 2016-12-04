@@ -15,13 +15,13 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandCont
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
 use Neos\Flow\Persistence\QueryResultInterface;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
-use TYPO3\TYPO3CR\Domain\Model\Workspace;
-use TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository;
-use TYPO3\TYPO3CR\Domain\Repository\WorkspaceRepository;
-use TYPO3\TYPO3CR\Domain\Service\Context;
-use TYPO3\TYPO3CR\Domain\Service\ContextFactoryInterface;
-use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Model\Workspace;
+use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
+use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
+use Neos\ContentRepository\Domain\Service\Context;
+use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
+use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 
 /**
  * Testcase for ElasticSearchQuery
