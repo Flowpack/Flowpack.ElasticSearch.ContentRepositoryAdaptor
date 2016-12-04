@@ -159,19 +159,19 @@
               include_in_all: true
               boost: 1
 
-'TYPO3.Neos.NodeTypes:TextMixin':
+'Neos.NodeTypes:TextMixin':
   properties:
     text:
       search:
         fulltextExtractor: '${Indexing.extractHtmlTags(value)}'
 
-'TYPO3.Neos.NodeTypes:TitleMixin':
+'Neos.NodeTypes:TitleMixin':
   properties:
     title:
       search:
         fulltextExtractor: '${Indexing.extractHtmlTags(value)}'
 
-'TYPO3.Neos.NodeTypes:Html':
+'Neos.NodeTypes:Html':
   properties:
     source:
       search:
