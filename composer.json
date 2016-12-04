@@ -10,7 +10,8 @@
         "php": ">=7.0",
         "flowpack/elasticsearch": "~2.0 || dev-master",
         "typo3/typo3cr-search": "~2.0 || dev-master",
-        "typo3/flow": "~4.0 || dev-master"
+        "typo3/flow": "~4.0 || dev-master",
+        "neos/fluid-adaptor": "~1.0"
     },
     "autoload": {
         "psr-0": {
