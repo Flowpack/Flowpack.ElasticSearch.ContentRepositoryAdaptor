@@ -8,8 +8,9 @@
     ],
     "require": {
         "php": ">=5.5.0",
-        "flowpack/elasticsearch": "*",
-        "typo3/typo3cr-search": "*"
+        "flowpack/elasticsearch": "~2.0 || dev-master",
+        "typo3/typo3cr-search": "~2.0 || dev-master",
+        "typo3/flow": "~4.0 || dev-master"
     },
     "autoload": {
         "psr-0": {
