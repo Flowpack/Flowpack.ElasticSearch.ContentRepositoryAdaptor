@@ -19,7 +19,7 @@ use TYPO3\TYPO3CR\Domain\Service\Context;
 /**
  * Testcase for ElasticSearchQueryBuilder
  */
-class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
+class ElasticSearchQueryBuilderTest extends \Neos\Flow\Tests\UnitTestCase
 {
     /**
      * @var ElasticSearchQueryBuilder

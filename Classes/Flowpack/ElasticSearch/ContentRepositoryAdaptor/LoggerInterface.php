@@ -11,11 +11,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  * source code.
  */
 
-use TYPO3\Flow\Annotations as Flow;
+use Neos\Flow\Annotations as Flow;
 
 /**
  * Elasticsearch Logger Interface
  */
-interface LoggerInterface extends \TYPO3\Flow\Log\LoggerInterface
+interface LoggerInterface extends \Neos\Flow\Log\LoggerInterface
 {
 }

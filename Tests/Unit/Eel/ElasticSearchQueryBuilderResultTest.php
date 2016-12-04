@@ -18,7 +18,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult
 /**
  * Testcase for ElasticSearchQueryBuilder
  */
-class ElasticSearchQueryBuilderResultTest extends \TYPO3\Flow\Tests\UnitTestCase
+class ElasticSearchQueryBuilderResultTest extends \Neos\Flow\Tests\UnitTestCase
 {
 
     /**

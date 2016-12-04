@@ -14,7 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Eel;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
-use TYPO3\Flow\Persistence\QueryResultInterface;
+use Neos\Flow\Persistence\QueryResultInterface;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Model\Workspace;
 use TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository;
@@ -26,7 +26,7 @@ use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 /**
  * Testcase for ElasticSearchQuery
  */
-class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
+class ElasticSearchQueryTest extends \Neos\Flow\Tests\FunctionalTestCase
 {
     /**
      * @var WorkspaceRepository
