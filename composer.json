@@ -1,13 +1,13 @@
 {
     "name": "flowpack/elasticsearch-contentrepositoryadaptor",
-    "type": "typo3-flow-package",
-    "description": "This package provides functionality for using Elasticsearch on top of TYPO3CR.Search",
+    "type": "neos-package",
+    "description": "This package provides functionality for using Elasticsearch on top of Neos.ContentRepository.Search",
     "homepage": "http://flowpack.org/",
     "license": [
         "LGPL-3.0"
     ],
     "require": {
-        "php": ">=5.5.0",
+        "php": ">=7.0",
         "flowpack/elasticsearch": "~2.0 || dev-master",
         "typo3/typo3cr-search": "~2.0 || dev-master",
         "typo3/flow": "~4.0 || dev-master"
