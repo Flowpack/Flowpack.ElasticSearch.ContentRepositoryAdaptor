@@ -14,8 +14,8 @@
         "neos/fluid-adaptor": "~1.0"
     },
     "autoload": {
-        "psr-0": {
-            "Flowpack\\ElasticSearch\\ContentRepositoryAdaptor": "Classes"
+        "psr-4": {
+            "Flowpack\\ElasticSearch\\ContentRepositoryAdaptor\\": "Classes"
         }
     },
     "extra": {
