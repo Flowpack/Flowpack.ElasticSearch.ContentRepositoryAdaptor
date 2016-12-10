@@ -9,9 +9,9 @@
     "require": {
         "php": ">=7.0",
         "flowpack/elasticsearch": "~2.0 || dev-master",
-        "typo3/typo3cr-search": "~2.0 || dev-master",
-        "typo3/flow": "~4.0 || dev-master",
-        "neos/fluid-adaptor": "~1.0"
+        "neos/content-repository-search": "~3.0 || dev-master",
+        "neos/flow": "~4.0 || dev-master",
+        "neos/fluid-adaptor": "~1.0 || dev-master"
     },
     "autoload": {
         "psr-4": {
