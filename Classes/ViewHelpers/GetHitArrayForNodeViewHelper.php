@@ -39,13 +39,6 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
  */
 class GetHitArrayForNodeViewHelper extends AbstractViewHelper
 {
-    
-	/**
-	 * NOTE: This property has been introduced via code migration to ensure backwards-compatibility.
-	 * @see AbstractViewHelper::isOutputEscapingEnabled()
-	 * @var boolean
-	 */
-	protected $escapeOutput = FALSE;
     /**
      * @param ElasticSearchQueryResult $queryResultObject
      * @param NodeInterface $node
