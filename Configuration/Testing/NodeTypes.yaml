@@ -1,11 +1,12 @@
+
 'Flowpack.ElasticSearch.ContentRepositoryAdaptor:BaseType':
-  superTypes: []
-
+  superTypes: {  }
 'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Type1':
-  superTypes: [ 'Flowpack.ElasticSearch.ContentRepositoryAdaptor:BaseType' ]
-
+  superTypes:
+    'Flowpack.ElasticSearch.ContentRepositoryAdaptor:BaseType': true
 'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Type2':
-  superTypes: []
-
+  superTypes: {  }
 'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Type3':
-  superTypes: [ 'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Type1', 'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Type2' ]
+  superTypes:
+    'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Type1': true
+    'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Type2': true

@@ -11,8 +11,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * source code.
  */
 
-use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Flow\Cli\CommandController;
+use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Cli\CommandController;
 
 /**
  * Provides CLI features for debugging the node types.
@@ -25,7 +25,7 @@ class NodeTypeCommandController extends CommandController
 {
     /**
      * @Flow\Inject
-     * @var \TYPO3\TYPO3CR\Domain\Service\NodeTypeManager
+     * @var \Neos\ContentRepository\Domain\Service\NodeTypeManager
      */
     protected $nodeTypeManager;
 
@@ -38,13 +38,13 @@ class NodeTypeCommandController extends CommandController
     public function showCommand($nodeType = null)
     {
         if ($nodeType !== null) {
-            /** @var \TYPO3\TYPO3CR\Domain\Model\NodeType $nodeType */
+            /** @var \Neos\ContentRepository\Domain\Model\NodeType $nodeType */
             $nodeType = $this->nodeTypeManager->getNodeType($nodeType);
             $configuration = $nodeType->getFullConfiguration();
         } else {
             $nodeTypes = $this->nodeTypeManager->getNodeTypes();
             $configuration = [];
-            /** @var \TYPO3\TYPO3CR\Domain\Model\NodeType $nodeType */
+            /** @var \Neos\ContentRepository\Domain\Model\NodeType $nodeType */
             foreach ($nodeTypes as $nodeTypeName => $nodeType) {
                 $configuration[$nodeTypeName] = $nodeType->getFullConfiguration();
             }

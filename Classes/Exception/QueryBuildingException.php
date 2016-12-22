@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -11,11 +11,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  * source code.
  */
 
-use TYPO3\Flow\Annotations as Flow;
+use Neos\Flow\Annotations as Flow;
 
 /**
- * Elasticsearch Logger Interface
+ * A Query Building Exception
  */
-interface LoggerInterface extends \TYPO3\Flow\Log\LoggerInterface
+class QueryBuildingException extends \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
 {
 }

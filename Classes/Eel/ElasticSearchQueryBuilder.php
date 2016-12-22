@@ -12,11 +12,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
-use TYPO3\Eel\ProtectedContextAwareInterface;
-use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Flow\Utility\Arrays;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
-use TYPO3\TYPO3CR\Search\Search\QueryBuilderInterface;
+use Neos\Eel\ProtectedContextAwareInterface;
+use Neos\Flow\Annotations as Flow;
+use Neos\Utility\Arrays;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
 
 /**
  * Query Builder for ElasticSearch Queries
@@ -396,9 +396,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * Example Usage:
      *
-     *   searchFilter = TYPO3.TypoScript:RawArray {
+     *   searchFilter = Neos.Fusion:RawArray {
      *      author = 'Max'
-     *      tags = TYPO3.TypoScript:RawArray {
+     *      tags = Neos.Fusion:RawArray {
      *        0 = 'a'
      *        1 = 'b'
      *      }
@@ -459,8 +459,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * Example Usage to create a terms aggregation for a property color:
      *
-     * aggregationDefinition = TYPO3.TypoScript:RawArray {
-     *   terms = TYPO3.TypoScript:RawArray {
+     * aggregationDefinition = Neos.Fusion:RawArray {
+     *   terms = Neos.Fusion:RawArray {
      *     field = "color"
      *   }
      * }
@@ -552,9 +552,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * Example Usage of a term suggestion for the fulltext search
      *
-     * suggestionDefinition = TYPO3.TypoScript:RawArray {
+     * suggestionDefinition = Neos.Fusion:RawArray {
      *     text = "some text"
-     *     terms = TYPO3.TypoScript:RawArray {
+     *     terms = Neos.Fusion:RawArray {
      *         field = "body"
      *     }
      * }
@@ -650,7 +650,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * This method is rather internal; just to be called from the ElasticSearchQueryResult. For the public API, please use execute()
      *
-     * @return array<\TYPO3\TYPO3CR\Domain\Model\NodeInterface>
+     * @return array<\Neos\ContentRepository\Domain\Model\NodeInterface>
      */
     public function fetch()
     {
@@ -676,7 +676,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * Get a query result object for lazy execution of the query
      *
-     * @return \Traversable<\TYPO3\Flow\Persistence\QueryResultInterface>
+     * @return \Traversable<\Neos\Flow\Persistence\QueryResultInterface>
      * @api
      */
     public function execute()

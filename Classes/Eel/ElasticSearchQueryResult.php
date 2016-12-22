@@ -11,9 +11,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  * source code.
  */
 
-use TYPO3\Eel\ProtectedContextAwareInterface;
-use TYPO3\Flow\Persistence\QueryResultInterface;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
+use Neos\Eel\ProtectedContextAwareInterface;
+use Neos\Flow\Persistence\QueryResultInterface;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContextAwareInterface
 {

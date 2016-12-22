@@ -11,8 +11,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
  * The TYPO3 project - inspiring people to share!                                                   *
  *                                                                                                  */
 
-use TYPO3\Flow\Annotations as Flow;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
+use Neos\Flow\Annotations as Flow;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 /**
  * Index Workspace Trait
@@ -21,19 +21,19 @@ trait IndexWorkspaceTrait
 {
     /**
      * @Flow\Inject
-     * @var \TYPO3\TYPO3CR\Domain\Service\ContextFactory
+     * @var \Neos\ContentRepository\Domain\Service\ContextFactory
      */
     protected $contextFactory;
 
     /**
      * @Flow\Inject
-     * @var \TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator
+     * @var \Neos\ContentRepository\Domain\Service\ContentDimensionCombinator
      */
     protected $contentDimensionCombinator;
 
     /**
      * @Flow\Inject
-     * @var \TYPO3\TYPO3CR\Search\Indexer\NodeIndexingManager
+     * @var \Neos\ContentRepository\Search\Indexer\NodeIndexingManager
      */
     protected $nodeIndexingManager;
 

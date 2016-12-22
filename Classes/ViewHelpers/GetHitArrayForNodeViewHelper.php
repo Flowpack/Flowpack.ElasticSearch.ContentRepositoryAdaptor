@@ -12,9 +12,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\ViewHelpers;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
-use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Fluid\Core\ViewHelper\AbstractViewHelper;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
+use Neos\Flow\Annotations as Flow;
+use Neos\FluidAdaptor\Core\ViewHelper\AbstractViewHelper;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 /**
  * View helper to get the raw "hits" array of an ElasticSearchQueryResult for a
@@ -50,7 +50,7 @@ class GetHitArrayForNodeViewHelper extends AbstractViewHelper
         $hitArray = $queryResultObject->searchHitForNode($node);
 
         if (!empty($path)) {
-            return \TYPO3\Flow\Utility\Arrays::getValueByPath($hitArray, $path);
+            return \Neos\Utility\Arrays::getValueByPath($hitArray, $path);
         }
 
         return $hitArray;
