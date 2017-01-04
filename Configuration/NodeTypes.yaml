@@ -94,6 +94,10 @@
 
 'Neos.Neos:Timable':
   properties:
+    '_hiddenInIndex':
+      search:
+        indexing: '${node.hiddenInIndex}'
+        
     '_hiddenBeforeDateTime':
       search:
         elasticSearchMapping:
