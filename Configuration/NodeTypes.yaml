@@ -94,10 +94,6 @@
 
 'Neos.Neos:Timable':
   properties:
-    '_hiddenInIndex':
-      search:
-        indexing: '${node.hiddenInIndex}'
-        
     '_hiddenBeforeDateTime':
       search:
         elasticSearchMapping:
@@ -162,6 +158,9 @@
               type: string
               include_in_all: true
               boost: 1
+    '_hiddenInIndex':
+      search:
+        indexing: '${node.hiddenInIndex}'
 
 'Neos.NodeTypes:TextMixin':
   properties:
