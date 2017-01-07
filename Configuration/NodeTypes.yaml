@@ -165,6 +165,9 @@
               type: string
               include_in_all: true
               boost: 1
+    '_hiddenInIndex':
+      search:
+        indexing: '${node.hiddenInIndex}'
 
 'TYPO3.Neos.NodeTypes:Text':
   properties:
