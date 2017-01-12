@@ -293,7 +293,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param string $targetWorkspaceName
      * @return string
      */
-    protected function calculateDocumentIdentifier(NodeInterface $node, $targetWorkspaceName = null) {
+    protected function calculateDocumentIdentifier(NodeInterface $node, $targetWorkspaceName = null)
+    {
         $contextPath = $node->getContextPath();
 
         if ($targetWorkspaceName !== null) {
