@@ -181,6 +181,7 @@ class NodeIndexCommandController extends CommandController
                 $indexInWorkspace($identifier, $workspace);
             }
         } else {
+            $workspace = $this->workspaceRepository->findByIdentifier($workspace);
             $indexInWorkspace($identifier, $workspace);
         }
     }
