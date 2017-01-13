@@ -293,7 +293,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param string $targetWorkspaceName
      * @return string
      */
-    protected function calculateDocumentIdentifier(NodeInterface $node, $targetWorkspaceName = null) {
+    protected function calculateDocumentIdentifier(NodeInterface $node, $targetWorkspaceName = null)
+    {
         $contextPath = $node->getContextPath();
 
         if ($targetWorkspaceName !== null) {
@@ -393,7 +394,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             ]
         ];
 
-        $this->logger->log(sprintf('NodeIndexer (%s): Updated fulltext index for %s (%s)', $closestFulltextNodeDocumentIdentifier, $closestFulltextNodeContextPath, $closestFulltextNode->getIdentifier()), LOG_WARNING, null, 'ElasticSearch (CR)');
+        $this->logger->log(sprintf('NodeIndexer (%s): Updated fulltext index for %s (%s)', $closestFulltextNodeDocumentIdentifier, $closestFulltextNodeContextPath, $closestFulltextNode->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
     }
 
     /**
