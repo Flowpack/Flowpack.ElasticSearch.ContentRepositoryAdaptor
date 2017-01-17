@@ -52,7 +52,7 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @Flow\Inject
-     * @var \Neos\Neos\Domain\Service\ContentDimensionPresetSourceInterface
+     * @var \Neos\ContentRepository\Domain\Service\ContentDimensionPresetSourceInterface
      */
     protected $contentDimensionPresetSource;
 
