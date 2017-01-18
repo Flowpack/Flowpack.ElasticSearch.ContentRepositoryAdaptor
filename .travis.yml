@@ -5,6 +5,10 @@ matrix:
       env: ES=1
     - php: 7.0
       env: ES=2
+    - php: 7.1
+      env: ES=1
+    - php: 7.1
+      env: ES=2
 sudo: false
 before_install:
   - export NEOS_TARGET_VERSION=3.0

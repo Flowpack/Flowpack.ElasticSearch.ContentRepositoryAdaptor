@@ -20,7 +20,7 @@ use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 
 /**
- * Builds the mapping information for TYPO3CR Node Types in Elastic Search
+ * Builds the mapping information for ContentRepository Node Types in Elastic Search
  *
  * @Flow\Scope("singleton")
  */
@@ -64,7 +64,7 @@ class NodeTypeMappingBuilder
     }
 
     /**
-     * Converts a TYPO3CR Node Type name into a name which can be used for an Elastic Search Mapping
+     * Converts a ContentRepository Node Type name into a name which can be used for an Elastic Search Mapping
      *
      * @param string $nodeTypeName
      * @return string

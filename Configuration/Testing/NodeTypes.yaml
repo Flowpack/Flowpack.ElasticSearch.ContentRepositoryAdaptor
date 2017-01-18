@@ -1,4 +1,3 @@
-
 'Flowpack.ElasticSearch.ContentRepositoryAdaptor:BaseType':
   superTypes: {  }
 'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Type1':
