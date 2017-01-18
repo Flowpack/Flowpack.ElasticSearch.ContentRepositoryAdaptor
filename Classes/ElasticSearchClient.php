@@ -27,7 +27,7 @@ use Neos\Flow\Configuration\ConfigurationManager;
 class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
 {
     /**
-     * The index name to be used for querying (by default "typo3cr")
+     * The index name to be used for querying (by default "neoscr")
      *
      * @var string
      */

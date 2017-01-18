@@ -3,15 +3,16 @@
     "type": "neos-package",
     "description": "This package provides functionality for using Elasticsearch on top of Neos.ContentRepository.Search",
     "homepage": "http://flowpack.org/",
-    "license": [
-        "LGPL-3.0"
-    ],
+    "license": "LGPL-3.0",
     "require": {
         "php": ">=7.0",
-        "flowpack/elasticsearch": "~2.0 || dev-master",
-        "neos/content-repository-search": "~3.0 || dev-master",
-        "neos/flow": "~4.0 || dev-master",
-        "neos/fluid-adaptor": "~1.0 || dev-master"
+        "flowpack/elasticsearch": "^2.0",
+        "neos/content-repository": "^3.0",
+        "neos/content-repository-search": "^3.0",
+        "neos/eel": "^4.0",
+        "neos/flow": "^4.0",
+        "neos/fluid-adaptor": "^4.0",
+        "neos/utility-arrays": "^4.0"
     },
     "autoload": {
         "psr-4": {
@@ -19,6 +20,9 @@
         }
     },
     "extra": {
+        "branch-alias": {
+            "dev-master": "3.0.x-dev"
+        },
         "applied-flow-migrations": [
             "TYPO3.FLOW3-201201261636",
             "TYPO3.Fluid-201205031303",

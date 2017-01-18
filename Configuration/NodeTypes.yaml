@@ -1,11 +1,8 @@
-
 'Neos.Neos:Node': &node
   search:
     fulltext:
       enable: true
-
   properties:
-
     '__identifier':
       search:
         elasticSearchMapping:
