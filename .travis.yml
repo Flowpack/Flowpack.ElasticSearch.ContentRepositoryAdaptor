@@ -3,19 +3,19 @@ matrix:
   include:
     - php: 7.0
     - php: 5.6
-    - php: 5.5
 sudo: false
 before_install:
+  - export NEOS_TARGET_VERSION=2.3
   - cd ..
   - wget --no-check-certificate https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.5.zip && unzip elasticsearch-1.7.5.zip
   - mv elasticsearch-1.7.5 elasticsearch
   - cd elasticsearch
   - bin/elasticsearch -d
   - cd ..
-  - git clone https://github.com/neos/neos-base-distribution.git
+  - git clone https://github.com/neos/neos-base-distribution.git -b ${NEOS_TARGET_VERSION}
   - cd neos-base-distribution
-  - composer require flowpack/elasticsearch-contentrepositoryadaptor dev-master
-  - composer require typo3/typo3cr-search dev-master
+  - composer require flowpack/elasticsearch-contentrepositoryadaptor
+  - composer require typo3/typo3cr-search
 install:
   - composer install
   - cd ..
@@ -23,5 +23,5 @@ install:
   - mv Flowpack.ElasticSearch.ContentRepositoryAdaptor neos-base-distribution/Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor
   - cd neos-base-distribution
 script:
-  - bin/phpunit -c Build/BuildEssentials/PhpUnit/UnitTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Unit
-  - bin/phpunit -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional
+  - bin/phpunit --colors -c Build/BuildEssentials/PhpUnit/UnitTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Unit
+  - bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional
