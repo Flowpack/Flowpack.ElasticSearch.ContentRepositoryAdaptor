@@ -672,7 +672,7 @@ in the NodeTypes.yaml. Generally this works by defining the global mapping at `[
 
 ## Multidomain Setup
 
-If you need to run serveral (different) sites on your elasticsearch server you will need to change the Configuration/Settings.yaml indexName for each of your project. So ./flow nodeinxed:build won't overwrite your other sites index.
+If you need to run serveral (different) sites on your elasticsearch server you will need to change the Configuration/Settings.yaml indexName for each of your project. So ./flow nodeindex:build won't overwrite your other sites index.
 
 ```
 TYPO3:
