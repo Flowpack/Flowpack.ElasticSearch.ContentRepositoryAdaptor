@@ -116,6 +116,13 @@
     fulltext:
       isRoot: true
   properties:
+    'title':
+      search:
+        elasticSearchMapping:
+          type: string
+          include_in_all: true
+          boost: 20
+
     '__fulltextParts':
       search:
         elasticSearchMapping:
