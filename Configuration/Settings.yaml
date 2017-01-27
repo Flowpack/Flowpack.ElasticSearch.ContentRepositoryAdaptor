@@ -1,4 +1,3 @@
-
 Neos:
   ContentRepository:
     Search:
@@ -11,7 +10,7 @@ Neos:
       elasticSearch:
 
         # API. name of the ElasticSearch index to use. Will create many indices prefixed by this indexName.
-        indexName: typo3cr
+        indexName: neoscr
 
         # configuration of the ElasticSearch logfile
         log:

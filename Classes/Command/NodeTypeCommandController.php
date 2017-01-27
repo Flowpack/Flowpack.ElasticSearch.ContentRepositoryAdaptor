@@ -17,7 +17,7 @@ use Neos\Flow\Cli\CommandController;
 /**
  * Provides CLI features for debugging the node types.
  *
- * TODO: move to TYPO3CR or Neos
+ * TODO: move to ContentRepository or Neos
  *
  * @Flow\Scope("singleton")
  */
