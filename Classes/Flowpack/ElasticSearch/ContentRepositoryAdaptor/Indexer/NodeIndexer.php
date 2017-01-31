@@ -22,7 +22,6 @@ use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator;
 use TYPO3\TYPO3CR\Domain\Service\Context;
 use TYPO3\TYPO3CR\Domain\Service\ContextFactory;
-use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 use TYPO3\TYPO3CR\Search\Indexer\AbstractNodeIndexer;
 use TYPO3\TYPO3CR\Search\Indexer\BulkNodeIndexerInterface;
 
@@ -47,24 +46,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @var ElasticSearchClient
      */
     protected $searchClient;
-
-    /**
-     * @Flow\Inject
-     * @var NodeTypeMappingBuilder
-     */
-    protected $nodeTypeMappingBuilder;
-
-    /**
-     * @Flow\Inject
-     * @var \TYPO3\Flow\Persistence\PersistenceManagerInterface
-     */
-    protected $persistenceManager;
-
-    /**
-     * @Flow\Inject
-     * @var NodeTypeManager
-     */
-    protected $nodeTypeManager;
 
     /**
      * @Flow\Inject
