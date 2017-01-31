@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.

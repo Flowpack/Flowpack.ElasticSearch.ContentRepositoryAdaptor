@@ -1,5 +1,5 @@
-Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\QueryInterface:
-  className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\FilteredQuery'
+Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface:
+  className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query\FilteredQuery'
 
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController:
   properties:

@@ -171,22 +171,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             if ($this->bulkProcessing === false) {
                 // Remove document with the same contextPathHash but different NodeType, required after NodeType change
                 $this->logger->log(sprintf('NodeIndexer: Search and remove duplicate document if needed. ID: %s', $contextPath, $node->getNodeType()->getName(), $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
-                $this->getIndex()->request('DELETE', '/_query', [], json_encode([
-                    'query' => [
-                        'bool' => [
-                            'must' => [
-                                'ids' => [
-                                    'values' => [$contextPathHash]
-                                ]
-                            ],
-                            'must_not' => [
-                                'term' => [
-                                    '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($node->getNodeType()->getName())
-                                ]
-                            ],
-                        ]
-                    ]
-                ]));
+                $this->driver->deleteByContextPathHash($this->getIndex(), $node, $contextPathHash);
             }
 
             if ($node->isRemoved()) {
@@ -220,47 +205,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
 
             if ($this->isFulltextEnabled($node)) {
-                if ($this->isFulltextRoot($node)) {
-                    // for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
-                    // "update" API instead of the "index" API, with a custom script internally; as we
-                    // shall not delete the "__fulltext" part of the document if it has any.
-                    $this->currentBulkRequest[] = [
-                        [
-                            'update' => [
-                                '_type' => $document->getType()->getName(),
-                                '_id' => $document->getId()
-                            ]
-                        ],
-                        // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
-                        [
-                            'script' => '
-                            fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new LinkedHashMap());
-                            fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new LinkedHashMap());
-                            ctx._source = newData;
-                            ctx._source.__fulltext = fulltext;
-                            ctx._source.__fulltextParts = fulltextParts
-                            ',
-                            'params' => [
-                                'newData' => $documentData
-                            ],
-                            'upsert' => $documentData,
-                            'lang' => 'groovy'
-                        ]
-                    ];
-                } else {
-                    // non-fulltext-root documents can be indexed as-they-are
-                    $this->currentBulkRequest[] = [
-                        [
-                            'index' => [
-                                '_type' => $document->getType()->getName(),
-                                '_id' => $document->getId()
-                            ]
-                        ],
-                        $documentData
-                    ];
-                }
-
-                $this->updateFulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
+            		$this->currentBulkRequest[] = $this->driver->fulltextRootNode($node, $document, $documentData);
+				$this->currentBulkRequest[] = $this->driver->fulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
             }
 
             $this->logger->log(sprintf('NodeIndexer: Added / updated node %s. ID: %s Context: %s', $contextPath, $contextPathHash, json_encode($node->getContext()->getProperties())), LOG_DEBUG, null, 'ElasticSearch (CR)');
@@ -287,101 +233,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     }
 
     /**
-     *
-     *
-     * @param NodeInterface $node
-     * @param array $fulltextIndexOfNode
-     * @param string $targetWorkspaceName
-     * @return void
-     */
-    protected function updateFulltext(NodeInterface $node, array $fulltextIndexOfNode, $targetWorkspaceName = null)
-    {
-        if ((($targetWorkspaceName !== null && $targetWorkspaceName !== 'live') || $node->getWorkspace()->getName() !== 'live') || count($fulltextIndexOfNode) === 0) {
-            return;
-        }
-
-        $closestFulltextNode = $node;
-        while (!$this->isFulltextRoot($closestFulltextNode)) {
-            $closestFulltextNode = $closestFulltextNode->getParent();
-            if ($closestFulltextNode === null) {
-                // root of hierarchy, no fulltext root found anymore, abort silently...
-                $this->logger->log('No fulltext root found for ' . $node->getPath(), LOG_WARNING);
-
-                return;
-            }
-        }
-
-        $closestFulltextNodeContextPath = str_replace($closestFulltextNode->getContext()->getWorkspace()->getName(), 'live', $closestFulltextNode->getContextPath());
-        $closestFulltextNodeContextPathHash = sha1($closestFulltextNodeContextPath);
-
-        $this->currentBulkRequest[] = [
-            [
-                'update' => [
-                    '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
-                    '_id' => $closestFulltextNodeContextPathHash
-                ]
-            ],
-            // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
-            [
-                // first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
-                'script' => '
-                    if (!ctx._source.containsKey("__fulltextParts")) {
-                        ctx._source.__fulltextParts = new LinkedHashMap();
-                    }
-                    ctx._source.__fulltextParts[identifier] = fulltext;
-                    ctx._source.__fulltext = new LinkedHashMap();
-
-                    Iterator<LinkedHashMap.Entry<String, LinkedHashMap>> fulltextByNode = ctx._source.__fulltextParts.entrySet().iterator();
-                    for (fulltextByNode; fulltextByNode.hasNext();) {
-                        Iterator<LinkedHashMap.Entry<String, String>> elementIterator = fulltextByNode.next().getValue().entrySet().iterator();
-                        for (elementIterator; elementIterator.hasNext();) {
-                            Map.Entry<String, String> element = elementIterator.next();
-                            String value;
-
-                            if (ctx._source.__fulltext.containsKey(element.key)) {
-                                value = ctx._source.__fulltext[element.key] + " " + element.value.trim();
-                            } else {
-                                value = element.value.trim();
-                            }
-
-                            ctx._source.__fulltext[element.key] = value;
-                        }
-                    }
-                ',
-                'params' => [
-                    'identifier' => $node->getIdentifier(),
-                    'fulltext' => $fulltextIndexOfNode
-                ],
-                'upsert' => [
-                    '__fulltext' => $fulltextIndexOfNode,
-                    '__fulltextParts' => [
-                        $node->getIdentifier() => $fulltextIndexOfNode
-                    ]
-                ],
-                'lang' => 'groovy'
-            ]
-        ];
-    }
-
-    /**
-     * Whether the node is configured as fulltext root.
-     *
-     * @param NodeInterface $node
-     * @return boolean
-     */
-    protected function isFulltextRoot(NodeInterface $node)
-    {
-        if ($node->getNodeType()->hasConfiguration('search')) {
-            $elasticSearchSettingsForNode = $node->getNodeType()->getConfiguration('search');
-            if (isset($elasticSearchSettingsForNode['fulltext']['isRoot']) && $elasticSearchSettingsForNode['fulltext']['isRoot'] === true) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * Schedule node removal into the current bulk request.
      *
      * @param NodeInterface $node
@@ -398,14 +249,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         // TODO: handle deletion from the fulltext index as well
         $identifier = sha1($node->getContextPath());
 
-        $this->currentBulkRequest[] = [
-            [
-                'delete' => [
-                    '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($node->getNodeType()),
-                    '_id' => $identifier
-                ]
-            ]
-        ];
+		$this->currentBulkRequest[] = $this->driver->delete($node, $identifier);
 
         $this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node actually removed). Persistence ID: %s', $node->getContextPath(), $identifier), LOG_DEBUG, null, 'ElasticSearch (CR)');
     }
@@ -436,9 +280,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         }
 
         if ($content !== '') {
-            $responseAsLines = $this->getIndex()->request('POST', '/_bulk', [], $content)->getOriginalResponse()->getContent();
-            foreach (explode("\n", $responseAsLines) as $responseLine) {
-                $response = json_decode($responseLine);
+            $response = $this->driver->bulk($this->getIndex(), $content);
+            foreach ($response as $responseLine) {
                 if (!is_object($response) || (isset($response->errors) && $response->errors !== false)) {
                     $this->logger->log('Indexing Error: ' . $responseLine, LOG_ERR);
                 }
@@ -469,22 +312,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $aliasActions = [];
         try {
-            $response = $this->searchClient->request('GET', '/_alias/' . $aliasName);
-            if ($response->getStatusCode() !== 200) {
-                throw new Exception('The alias "' . $aliasName . '" was not found with some unexpected error... (return code: ' . $response->getStatusCode() . ')', 1383650137);
-            }
-
-            $indexNames = array_keys($response->getTreatedContent());
+            $indexNames = $this->driver->indexNames($aliasName);
 
             if ($indexNames === []) {
                 // if there is an actual index with the name we want to use as alias, remove it now
-                $response = $this->searchClient->request('HEAD', '/' . $aliasName);
-                if ($response->getStatusCode() === 200) {
-                    $response = $this->searchClient->request('DELETE', '/' . $aliasName);
-                    if ($response->getStatusCode() !== 200) {
-                        throw new Exception('The index "' . $aliasName . '" could not be removed to be replaced by an alias. (return code: ' . $response->getStatusCode() . ')', 1395419177);
-                    }
-                }
+                $this->driver->removeAlias($aliasName);
             } else {
                 foreach ($indexNames as $indexName) {
                     $aliasActions[] = [
@@ -509,7 +341,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             ]
         ];
 
-        $this->searchClient->request('POST', '/_aliases', [], \json_encode(['actions' => $aliasActions]));
+        $this->driver->aliasActions($aliasActions);
     }
 
     /**
@@ -522,9 +354,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     {
         $aliasName = $this->searchClient->getIndexName(); // The alias name is the unprefixed index name
 
-        $currentlyLiveIndices = array_keys($this->searchClient->request('GET', '/_alias/' . $aliasName)->getTreatedContent());
+		$currentlyLiveIndices = $this->driver->currentlyLiveIndices($aliasName);
 
-        $indexStatus = $this->searchClient->request('GET', '/_status')->getTreatedContent();
+        $indexStatus = $this->driver->status();
         $allIndices = array_keys($indexStatus['indices']);
 
         $indicesToBeRemoved = [];
@@ -543,9 +375,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             $indicesToBeRemoved[] = $indexName;
         }
 
-        if (count($indicesToBeRemoved) > 0) {
-            $this->searchClient->request('DELETE', '/' . implode(',', $indicesToBeRemoved) . '/');
-        }
+        $this->driver->deleteIndices($indicesToBeRemoved);
 
         return $indicesToBeRemoved;
     }

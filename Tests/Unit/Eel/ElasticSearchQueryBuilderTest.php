@@ -11,7 +11,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\FilteredQuery;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query\FilteredQuery;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Model\Workspace;

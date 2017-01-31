@@ -11,14 +11,13 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\QueryInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use TYPO3\Eel\ProtectedContextAwareInterface;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Object\ObjectManagerInterface;
-use TYPO3\Flow\Utility\Arrays;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Search\Search\QueryBuilderInterface;
 
@@ -84,7 +83,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
     /**
      * The ElasticSearch request, as it is being built up.
-     * @var QueryInterface
+     * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface
      */
     protected $request;
 
@@ -477,7 +476,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * Get the ElasticSearch request as we need it
      *
-     * @return QueryInterface
+     * @return \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface
      */
     public function getRequest()
     {

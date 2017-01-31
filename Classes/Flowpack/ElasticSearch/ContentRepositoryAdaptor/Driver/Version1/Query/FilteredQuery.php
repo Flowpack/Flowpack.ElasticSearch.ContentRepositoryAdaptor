@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -11,6 +11,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractQuery;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 
 class FilteredQuery extends AbstractQuery
