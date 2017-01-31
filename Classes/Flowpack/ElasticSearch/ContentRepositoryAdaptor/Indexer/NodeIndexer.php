@@ -16,9 +16,11 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
+use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator;
+use TYPO3\TYPO3CR\Domain\Service\Context;
 use TYPO3\TYPO3CR\Domain\Service\ContextFactory;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 use TYPO3\TYPO3CR\Search\Indexer\AbstractNodeIndexer;
@@ -134,7 +136,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     }
 
     /**
-     * index this node, and add it to the current bulk request.
+     * Index this node, and add it to the current bulk request.
      *
      * @param NodeInterface $node
      * @param string $targetWorkspaceName In case this is triggered during publishing, a workspace name will be passed in
@@ -163,34 +165,26 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
             }
 
-            $contextPathHash = sha1($contextPath);
+            $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
             $nodeType = $node->getNodeType();
 
             $mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
 
             if ($this->bulkProcessing === false) {
                 // Remove document with the same contextPathHash but different NodeType, required after NodeType change
-                $this->logger->log(sprintf('NodeIndexer: Search and remove duplicate document if needed. ID: %s', $contextPath, $node->getNodeType()->getName(), $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
-                $this->driver->deleteByContextPathHash($this->getIndex(), $node, $contextPathHash);
-            }
-
-            if ($node->isRemoved()) {
-                // TODO: handle deletion from the fulltext index as well
-                $mappingType->deleteDocumentById($contextPathHash);
-                $this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node flagged as removed). ID: %s', $contextPath, $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
-
-                return;
+                $this->logger->log(sprintf('NodeIndexer (%s): Search and remove duplicate document for node %s (%s) if needed.', $documentIdentifier, $contextPath, $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+                $this->driver->deleteByDocumentIdentifier($this->getIndex(), $node, $documentIdentifier);
             }
 
             $logger = $this->logger;
             $fulltextIndexOfNode = [];
-            $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($logger, $contextPathHash) {
-                $logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found.', $contextPathHash, $propertyName), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($logger, $documentIdentifier, $node) {
+                $logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found, node type %s.', $documentIdentifier, $propertyName, $node->getNodeType()->getName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
             });
 
             $document = new ElasticSearchDocument($mappingType,
                 $nodePropertiesToBeStoredInIndex,
-                $contextPathHash
+                $documentIdentifier
             );
 
             $documentData = $document->getData();
@@ -205,57 +199,94 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
 
             if ($this->isFulltextEnabled($node)) {
-            		$this->currentBulkRequest[] = $this->driver->fulltextRootNode($node, $document, $documentData);
-				$this->currentBulkRequest[] = $this->driver->fulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
+            		$query = $this->driver->fulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
+            		if ($query !== null) {
+            			// todo driver::fulltext must always return an array, extract decision logic to a dedicated method
+					$this->currentBulkRequest[] = $query;
+				}
             }
 
-            $this->logger->log(sprintf('NodeIndexer: Added / updated node %s. ID: %s Context: %s', $contextPath, $contextPathHash, json_encode($node->getContext()->getProperties())), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $this->logger->log(sprintf('NodeIndexer (%s): Indexed node %s.', $documentIdentifier, $contextPath), LOG_DEBUG, null, 'ElasticSearch (CR)');
         };
 
-        $dimensionCombinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-        $workspaceName = $targetWorkspaceName ?: 'live';
-        $nodeIdentifier = $node->getIdentifier();
-        if ($dimensionCombinations !== []) {
-            foreach ($dimensionCombinations as $combination) {
-                $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'dimensions' => $combination]);
-                $node = $context->getNodeByIdentifier($nodeIdentifier);
-                if ($node !== null) {
-                    $indexer($node, $targetWorkspaceName);
+        $handleNode = function (NodeInterface $node, Context $context) use ($targetWorkspaceName, $indexer) {
+            $nodeFromContext = $context->getNodeByIdentifier($node->getIdentifier());
+            if ($nodeFromContext instanceof NodeInterface) {
+                $indexer($nodeFromContext, $targetWorkspaceName);
+            } else {
+                $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
+                if ($node->isRemoved()) {
+                    $this->removeNode($node, $context->getWorkspaceName());
+                    $this->logger->log(sprintf('NodeIndexer (%s): Removed node with identifier %s, no longer in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+                } else {
+                    $this->logger->log(sprintf('NodeIndexer (%s): Could not index node with identifier %s, not found in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
                 }
             }
-        } else {
-            $context = $this->contextFactory->create(['workspaceName' => $workspaceName]);
-            $node = $context->getNodeByIdentifier($nodeIdentifier);
-            if ($node !== null) {
-                $indexer($node, $targetWorkspaceName);
+        };
+
+        $workspaceName = $targetWorkspaceName ?: $node->getContext()->getWorkspaceName();
+        $dimensionCombinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+        if ($dimensionCombinations !== []) {
+            foreach ($dimensionCombinations as $combination) {
+                $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'dimensions' => $combination, 'invisibleContentShown' => true]);
+                $handleNode($node, $context);
             }
+        } else {
+            $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'invisibleContentShown' => true]);
+            $handleNode($node, $context);
         }
+    }
+
+    /**
+     * Returns a stable identifier for the Elasticsearch document representing the node
+     *
+     * @param NodeInterface $node
+     * @param string $targetWorkspaceName
+     * @return string
+     */
+    protected function calculateDocumentIdentifier(NodeInterface $node, $targetWorkspaceName = null)
+    {
+        $contextPath = $node->getContextPath();
+
+        if ($targetWorkspaceName !== null) {
+            $contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
+        }
+
+        return sha1($contextPath);
     }
 
     /**
      * Schedule node removal into the current bulk request.
      *
      * @param NodeInterface $node
-     * @return string
+     * @param string $targetWorkspaceName
+     * @return void
      */
-    public function removeNode(NodeInterface $node)
+    public function removeNode(NodeInterface $node, $targetWorkspaceName = null)
     {
         if ($this->settings['indexAllWorkspaces'] === false) {
-            if ($node->getContext()->getWorkspaceName() !== 'live') {
+            // we are only supposed to index the live workspace.
+            // We need to check the workspace at two occasions; checking the
+            // $targetWorkspaceName and the workspace name of the node's context as fallback
+            if ($targetWorkspaceName !== null && $targetWorkspaceName !== 'live') {
+                return;
+            }
+
+            if ($targetWorkspaceName === null && $node->getContext()->getWorkspaceName() !== 'live') {
                 return;
             }
         }
 
-        // TODO: handle deletion from the fulltext index as well
-        $identifier = sha1($node->getContextPath());
+        $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
 
-		$this->currentBulkRequest[] = $this->driver->delete($node, $identifier);
+		$this->currentBulkRequest[] = $this->driver->delete($node, $documentIdentifier);
+		$this->currentBulkRequest[] = $this->driver->fulltext($node, [], $targetWorkspaceName);
 
-        $this->logger->log(sprintf('NodeIndexer: Removed node %s from index (node actually removed). Persistence ID: %s', $node->getContextPath(), $identifier), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        $this->logger->log(sprintf('NodeIndexer (%s): Removed node %s (%s) from index.', $documentIdentifier, $node->getContextPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
     }
 
     /**
-     * perform the current bulk request
+     * Perform the current bulk request
      *
      * @return void
      */
@@ -271,7 +302,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             foreach ($bulkRequestTuple as $bulkRequestItem) {
                 $itemAsJson = json_encode($bulkRequestItem);
                 if ($itemAsJson === false) {
-                    $this->logger->log('Indexing Error: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), LOG_ERR, $bulkRequestItem);
+                    $this->logger->log('NodeIndexer: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), LOG_ERR, $bulkRequestItem, 'ElasticSearch (CR)');
                     continue 2;
                 }
                 $tupleAsJson .= $itemAsJson . chr(10);
@@ -283,7 +314,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             $response = $this->driver->bulk($this->getIndex(), $content);
             foreach ($response as $responseLine) {
                 if (!is_object($response) || (isset($response->errors) && $response->errors !== false)) {
-                    $this->logger->log('Indexing Error: ' . $responseLine, LOG_ERR);
+                    $this->logger->log('NodeIndexer: ' . $responseLine, LOG_ERR, null, 'ElasticSearch (CR)');
                 }
             }
         }
@@ -296,7 +327,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      *
      * @return void
      * @throws Exception
-     * @throws \Flowpack\ElasticSearch\Transfer\Exception\ApiException
+     * @throws ApiException
      * @throws \Exception
      */
     public function updateIndexAlias()
@@ -327,7 +358,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                     ];
                 }
             }
-        } catch (\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
+        } catch (ApiException $exception) {
             // in case of 404, do not throw an error...
             if ($exception->getResponse()->getStatusCode() !== 404) {
                 throw $exception;

@@ -29,15 +29,13 @@ interface DriverInterface
 
 	public function currentlyLiveIndices($aliasName);
 
-	public function deleteByContextPathHash(Index $index, NodeInterface $node, $contextPathHash);
+	public function deleteByDocumentIdentifier(Index $index, NodeInterface $node, $documentIdentifier);
 
 	public function indexNames($aliasName);
 
 	public function removeAlias($aliasName);
 
 	public function aliasActions(array $actions);
-
-	public function fulltextRootNode(NodeInterface $node, ElasticSearchDocument $document, array $documentData);
 
 	public function fulltext(NodeInterface $node, array $fulltextIndexOfNode, $targetWorkspaceName = null);
 }

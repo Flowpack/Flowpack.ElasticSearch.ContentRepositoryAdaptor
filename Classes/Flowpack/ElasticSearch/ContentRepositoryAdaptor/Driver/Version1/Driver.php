@@ -100,16 +100,16 @@ class Driver extends AbstractDriver implements DriverInterface
 	/**
 	 * @param Index $index
 	 * @param NodeInterface $node
-	 * @param string $contextPathHash
+	 * @param string $documentIdentifier
 	 */
-	public function deleteByContextPathHash(Index $index, NodeInterface $node, $contextPathHash)
+	public function deleteByDocumentIdentifier(Index $index, NodeInterface $node, $documentIdentifier)
 	{
 		$index->request('DELETE', '/_query', [], json_encode([
 			'query' => [
 				'bool' => [
 					'must' => [
 						'ids' => [
-							'values' => [$contextPathHash]
+							'values' => [$documentIdentifier]
 						]
 					],
 					'must_not' => [
@@ -162,84 +162,42 @@ class Driver extends AbstractDriver implements DriverInterface
 
 	/**
 	 * @param NodeInterface $node
-	 * @param ElasticSearchDocument $document
-	 * @param array $documentData
-	 * @return array
-	 */
-	public function fulltextRootNode(NodeInterface $node, ElasticSearchDocument $document, array $documentData)
-	{
-		if ($this->isFulltextRoot($node)) {
-			// for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
-			// "update" API instead of the "index" API, with a custom script internally; as we
-			// shall not delete the "__fulltext" part of the document if it has any.
-			return [
-				[
-					'update' => [
-						'_type' => $document->getType()->getName(),
-						'_id' => $document->getId()
-					]
-				],
-				// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
-				[
-					'script' => '
-                            fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new LinkedHashMap());
-                            fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new LinkedHashMap());
-                            ctx._source = newData;
-                            ctx._source.__fulltext = fulltext;
-                            ctx._source.__fulltextParts = fulltextParts
-                            ',
-					'params' => [
-						'newData' => $documentData
-					],
-					'upsert' => $documentData,
-					'lang' => 'groovy'
-				]
-			];
-		}
-
-		// non-fulltext-root documents can be indexed as-they-are
-		return [
-			[
-				'index' => [
-					'_type' => $document->getType()->getName(),
-					'_id' => $document->getId()
-				]
-			],
-			$documentData
-		];
-	}
-
-	/**
-	 * @param NodeInterface $node
 	 * @param array $fulltextIndexOfNode
 	 * @param string $targetWorkspaceName
 	 * @return array
 	 */
 	public function fulltext(NodeInterface $node, array $fulltextIndexOfNode, $targetWorkspaceName = null)
 	{
-		if ((($targetWorkspaceName !== null && $targetWorkspaceName !== 'live') || $node->getWorkspace()->getName() !== 'live') || count($fulltextIndexOfNode) === 0) {
-			return [];
-		}
-
 		$closestFulltextNode = $node;
 		while (!$this->isFulltextRoot($closestFulltextNode)) {
 			$closestFulltextNode = $closestFulltextNode->getParent();
 			if ($closestFulltextNode === null) {
 				// root of hierarchy, no fulltext root found anymore, abort silently...
-				$this->logger->log('No fulltext root found for ' . $node->getPath(), LOG_WARNING);
+				$this->logger->log(sprintf('NodeIndexer: No fulltext root found for node %s (%)', $node->getPath(), $node->getIdentifier()), LOG_WARNING, null, 'ElasticSearch (CR)');
 
-				return [];
+				return null;
 			}
 		}
 
-		$closestFulltextNodeContextPath = str_replace($closestFulltextNode->getContext()->getWorkspace()->getName(), 'live', $closestFulltextNode->getContextPath());
-		$closestFulltextNodeContextPathHash = sha1($closestFulltextNodeContextPath);
+		$closestFulltextNodeContextPath = $closestFulltextNode->getContextPath();
+		if ($targetWorkspaceName !== null) {
+			$closestFulltextNodeContextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $closestFulltextNodeContextPath);
+		}
+		$closestFulltextNodeDocumentIdentifier = sha1($closestFulltextNodeContextPath);
+
+		if ($closestFulltextNode->isRemoved()) {
+			// fulltext root is removed, abort silently...
+			$this->logger->log(sprintf('NodeIndexer (%s): Fulltext root found for %s (%s) not updated, it is removed', $closestFulltextNodeDocumentIdentifier, $node->getPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+			return null;
+		}
+
+		$this->logger->log(sprintf('NodeIndexer (%s): Updated fulltext index for %s (%s)', $closestFulltextNodeDocumentIdentifier, $closestFulltextNodeContextPath, $closestFulltextNode->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
 
 		return [
 			[
 				'update' => [
 					'_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
-					'_id' => $closestFulltextNodeContextPathHash
+					'_id' => $closestFulltextNodeDocumentIdentifier
 				]
 			],
 			// http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
@@ -249,7 +207,14 @@ class Driver extends AbstractDriver implements DriverInterface
                     if (!ctx._source.containsKey("__fulltextParts")) {
                         ctx._source.__fulltextParts = new LinkedHashMap();
                     }
-                    ctx._source.__fulltextParts[identifier] = fulltext;
+
+                    if (nodeIsRemoved || nodeIsHidden || fulltext.size() == 0) {
+                        if (ctx._source.__fulltextParts.containsKey(identifier)) {
+                            ctx._source.__fulltextParts.remove(identifier);
+                        }
+                    } else {
+                        ctx._source.__fulltextParts[identifier] = fulltext;
+                    }
                     ctx._source.__fulltext = new LinkedHashMap();
 
                     Iterator<LinkedHashMap.Entry<String, LinkedHashMap>> fulltextByNode = ctx._source.__fulltextParts.entrySet().iterator();
@@ -271,6 +236,8 @@ class Driver extends AbstractDriver implements DriverInterface
                 ',
 				'params' => [
 					'identifier' => $node->getIdentifier(),
+					'nodeIsRemoved' => $node->isRemoved(),
+					'nodeIsHidden' => $node->isHidden(),
 					'fulltext' => $fulltextIndexOfNode
 				],
 				'upsert' => [
