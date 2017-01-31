@@ -11,7 +11,7 @@
         "flowpack/elasticsearch": "~2.0 || dev-master",
         "neos/content-repository-search": "~3.0 || dev-master",
         "neos/flow": "~4.0 || dev-master",
-        "neos/fluid-adaptor": "~1.0 || dev-master"
+        "neos/fluid-adaptor": "~4.0 || dev-master"
     },
     "autoload": {
         "psr-4": {
