@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -11,12 +11,15 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
-use TYPO3\Flow\Annotations as Flow;
-
 /**
- * A Query Building Exception
+ * System Driver Interface
  */
-class QueryBuildingException extends Exception
+interface SystemDriverInterface
 {
+    /**
+     * Get the status of the Elastic cluster
+     *
+     * @return array
+     */
+    public function status();
 }

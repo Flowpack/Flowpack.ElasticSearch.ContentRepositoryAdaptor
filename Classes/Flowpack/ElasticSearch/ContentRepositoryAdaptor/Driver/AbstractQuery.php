@@ -14,7 +14,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use TYPO3\Eel\ProtectedContextAwareInterface;
 use TYPO3\Flow\Utility\Arrays;
-use TYPO3\TYPO3CR\Search\Search\QueryBuilderInterface;
 
 /**
  * Default Filtered Query
@@ -29,28 +28,11 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     protected $request = [];
 
     /**
-     * @var QueryBuilderInterface
-     */
-    protected $queryBuilder;
-
-    /**
      * These fields are not accepted in a count request and must therefore be removed before doing so
      *
      * @var array
      */
     protected $unsupportedFieldsInCountRequest = ['fields', 'sort', 'from', 'size', 'highlight', 'aggs', 'aggregations'];
-
-    /**
-     * @param QueryBuilderInterface $queryBuilder
-     * @param array $request Override the default request
-     */
-    public function __construct(QueryBuilderInterface $queryBuilder, array $request = null)
-    {
-        $this->queryBuilder = $queryBuilder;
-        if ($request !== null) {
-            $this->request = $request;
-        }
-    }
 
     /**
      * Modify a part of the Elasticsearch Request denoted by $path, merging together
@@ -99,8 +81,6 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
             $this->request['sort'] = [];
         }
         $this->request['sort'][] = $configuration;
-
-        return $this->queryBuilder;
     }
 
     /**
@@ -117,8 +97,6 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
         } else {
             $this->request['aggregations'][$name] = $aggregationDefinition;
         }
-
-        return $this->queryBuilder;
     }
 
     /**
@@ -147,8 +125,6 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
         }
 
         $path[$name] = $aggregationConfiguration;
-
-        return $this->queryBuilder;
     }
 
     /**
@@ -161,8 +137,6 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
         }
 
         $this->request['suggest'][$name] = $suggestionDefinition;
-
-        return $this->queryBuilder;
     }
 
     /**
@@ -184,8 +158,6 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
                 ]
             ];
         }
-
-        return $this->queryBuilder;
     }
 
     /**
@@ -194,8 +166,6 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     public function setValueByPath($path, $value)
     {
         $this->request = Arrays::setValueByPath($this->request, $path, $value);
-
-        return $this->queryBuilder;
     }
 
     /**
@@ -211,8 +181,6 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
             $currentElement =& $currentElement[$pathPart];
         }
         $currentElement[] = $data;
-
-        return $this->queryBuilder;
     }
 
     /**
@@ -280,5 +248,13 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     public function allowsCallOfMethod($methodName)
     {
         return true;
+    }
+
+    /**
+     * @param array $request
+     */
+    public function replaceRequest(array $request)
+    {
+        $this->request = $request;
     }
 }

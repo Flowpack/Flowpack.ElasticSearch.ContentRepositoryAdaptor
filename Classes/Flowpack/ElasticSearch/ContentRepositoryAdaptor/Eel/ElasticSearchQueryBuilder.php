@@ -83,7 +83,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
     /**
      * The ElasticSearch request, as it is being built up.
-     * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface
+     * @var QueryInterface
+     * @Flow\Inject
      */
     protected $request;
 
@@ -91,14 +92,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @var array
      */
     protected $result = [];
-
-    /**
-     * Initialize Object
-     */
-    public function initializeObject()
-    {
-        $this->request = $this->objectManager->get(QueryInterface::class, $this);
-    }
 
     /**
      * HIGH-LEVEL API
@@ -476,7 +469,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * Get the ElasticSearch request as we need it
      *
-     * @return \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface
+     * @return QueryInterface
      */
     public function getRequest()
     {
@@ -549,7 +542,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function fetch()
     {
-        $request = $this->getRequest();
         $timeBefore = microtime(true);
         $request = $this->request->getRequestAsJSON();
         $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request);
@@ -617,9 +609,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     public function fulltext($searchWord)
     {
         // We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
-        $this->request
-            ->fulltext($searchWord)
-            ->highlight(150, 2);
+        $this->request->fulltext($searchWord);
+        $this->request->highlight(150, 2);
 
         return $this;
     }

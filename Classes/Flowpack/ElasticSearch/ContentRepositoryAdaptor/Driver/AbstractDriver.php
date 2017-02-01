@@ -11,36 +11,43 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\Flow\Annotations as Flow;
+use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 
 /**
  * Abstract Fulltext Indexer
  */
 abstract class AbstractDriver
 {
-	/**
-	 * @Flow\Inject
-	 * @var LoggerInterface
-	 */
-	protected $logger;
+    /**
+     * @Flow\Inject
+     * @var ElasticSearchClient
+     */
+    protected $searchClient;
 
-	/**
-	 * Whether the node is configured as fulltext root.
-	 *
-	 * @param NodeInterface $node
-	 * @return boolean
-	 */
-	protected function isFulltextRoot(NodeInterface $node)
-	{
-		if ($node->getNodeType()->hasConfiguration('search')) {
-			$elasticSearchSettingsForNode = $node->getNodeType()->getConfiguration('search');
-			if (isset($elasticSearchSettingsForNode['fulltext']['isRoot']) && $elasticSearchSettingsForNode['fulltext']['isRoot'] === true) {
-				return true;
-			}
-		}
+    /**
+     * @Flow\Inject
+     * @var LoggerInterface
+     */
+    protected $logger;
 
-		return false;
-	}
+    /**
+     * Whether the node is configured as fulltext root.
+     *
+     * @param NodeInterface $node
+     * @return boolean
+     */
+    protected function isFulltextRoot(NodeInterface $node)
+    {
+        if ($node->getNodeType()->hasConfiguration('search')) {
+            $elasticSearchSettingsForNode = $node->getNodeType()->getConfiguration('search');
+            if (isset($elasticSearchSettingsForNode['fulltext']['isRoot']) && $elasticSearchSettingsForNode['fulltext']['isRoot'] === true) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

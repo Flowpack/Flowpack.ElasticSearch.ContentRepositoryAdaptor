@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\Query;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.

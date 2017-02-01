@@ -12,7 +12,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
-use TYPO3\TYPO3CR\Search\Search\QueryBuilderInterface;
 
 /**
  * Query Interface
@@ -46,7 +45,6 @@ interface QueryInterface
      * Add a sort filter to the request
      *
      * @param array $configuration
-     * @return QueryBuilderInterface
      * @api
      */
     public function addSortFilter($configuration);
@@ -55,7 +53,6 @@ interface QueryInterface
      * Set the size (limit) of the request
      *
      * @param integer $size
-     * @return QueryBuilderInterface
      * @api
      */
     public function size($size);
@@ -64,7 +61,6 @@ interface QueryInterface
      * Set the from (offset) of the request
      *
      * @param integer $size
-     * @return QueryBuilderInterface
      * @api
      */
     public function from($size);
@@ -73,7 +69,6 @@ interface QueryInterface
      * Match the searchword against the fulltext index
      *
      * @param string $searchWord
-     * @return QueryBuilderInterface
      * @api
      */
     public function fulltext($searchWord);
@@ -84,7 +79,6 @@ interface QueryInterface
      *
      * @param integer|boolean $fragmentSize The result fragment size for highlight snippets. If this parameter is FALSE, highlighting will be disabled.
      * @param integer $fragmentCount The number of highlight fragments to show.
-     * @return QueryBuilderInterface
      * @api
      */
     public function highlight($fragmentSize, $fragmentCount = null);
@@ -95,7 +89,6 @@ interface QueryInterface
      * @param string $name
      * @param array $aggregationDefinition
      * @param null $parentPath
-     * @return QueryBuilderInterface
      * @api
      * @throws Exception\QueryBuildingException
      */
@@ -106,7 +99,6 @@ interface QueryInterface
      *
      * @param string $name
      * @param array $suggestionDefinition
-     * @return QueryBuilderInterface
      * @api
      */
     public function suggestions($name, array $suggestionDefinition);
@@ -118,7 +110,6 @@ interface QueryInterface
      * @param mixed $filterOptions
      * @param string $clauseType one of must, should, must_not
      * @throws Exception\QueryBuildingException
-     * @return QueryBuilderInterface
      * @api
      */
     public function queryFilter($filterType, $filterOptions, $clauseType = 'must');
@@ -126,7 +117,6 @@ interface QueryInterface
     /**
      * @param string $path
      * @param string $value
-     * @return QueryBuilderInterface
      */
     public function setValueByPath($path, $value);
 
@@ -138,7 +128,6 @@ interface QueryInterface
      * @param string $path
      * @param array $data
      * @throws Exception\QueryBuildingException
-     * @return QueryBuilderInterface
      */
     public function appendAtPath($path, array $data);
 
@@ -151,4 +140,9 @@ interface QueryInterface
      * @return $this
      */
     public function setByPath($path, $requestPart);
+
+    /**
+     * @param array $request
+     */
+    public function replaceRequest(array $request);
 }

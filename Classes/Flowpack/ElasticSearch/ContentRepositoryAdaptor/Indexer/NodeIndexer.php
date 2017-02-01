@@ -11,6 +11,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexManagementDriverInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
@@ -64,6 +69,36 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @var ContextFactory
      */
     protected $contextFactory;
+
+    /**
+     * @var DocumentDriverInterface
+     * @Flow\Inject
+     */
+    protected $documentDriver;
+
+    /**
+     * @var IndexerDriverInterface
+     * @Flow\Inject
+     */
+    protected $indexerDriver;
+
+    /**
+     * @var IndexManagementDriverInterface
+     * @Flow\Inject
+     */
+    protected $indexManagementDriver;
+
+    /**
+     * @var RequestDriverInterface
+     * @Flow\Inject
+     */
+    protected $requestDriver;
+
+    /**
+     * @var SystemDriverInterface
+     * @Flow\Inject
+     */
+    protected $systemDriver;
 
     /**
      * The current ElasticSearch bulk request, in the format required by http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html
@@ -154,13 +189,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             if ($this->bulkProcessing === false) {
                 // Remove document with the same contextPathHash but different NodeType, required after NodeType change
                 $this->logger->log(sprintf('NodeIndexer (%s): Search and remove duplicate document for node %s (%s) if needed.', $documentIdentifier, $contextPath, $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
-                $this->driver->deleteByDocumentIdentifier($this->getIndex(), $node, $documentIdentifier);
+                $this->documentDriver->deleteByDocumentIdentifier($this->getIndex(), $node, $documentIdentifier);
             }
 
-            $logger = $this->logger;
             $fulltextIndexOfNode = [];
-            $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($logger, $documentIdentifier, $node) {
-                $logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found, node type %s.', $documentIdentifier, $propertyName, $node->getNodeType()->getName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($documentIdentifier, $node) {
+                $this->logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found, node type %s.', $documentIdentifier, $propertyName, $node->getNodeType()->getName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
             });
 
             $document = new ElasticSearchDocument($mappingType,
@@ -180,11 +214,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
 
             if ($this->isFulltextEnabled($node)) {
-            		$query = $this->driver->fulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
-            		if ($query !== null) {
-            			// todo driver::fulltext must always return an array, extract decision logic to a dedicated method
-					$this->currentBulkRequest[] = $query;
-				}
+                $this->currentBulkRequest[] = $this->indexerDriver->document($this->getIndexName(), $node, $document, $documentData, $fulltextIndexOfNode, $targetWorkspaceName);
+                $this->currentBulkRequest[] = $this->indexerDriver->fulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
             }
 
             $this->logger->log(sprintf('NodeIndexer (%s): Indexed node %s.', $documentIdentifier, $contextPath), LOG_DEBUG, null, 'ElasticSearch (CR)');
@@ -260,8 +291,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
 
-		$this->currentBulkRequest[] = $this->driver->delete($node, $documentIdentifier);
-		$this->currentBulkRequest[] = $this->driver->fulltext($node, [], $targetWorkspaceName);
+        $this->currentBulkRequest[] = $this->documentDriver->delete($node, $documentIdentifier);
+        $this->currentBulkRequest[] = $this->indexerDriver->fulltext($node, [], $targetWorkspaceName);
 
         $this->logger->log(sprintf('NodeIndexer (%s): Removed node %s (%s) from index.', $documentIdentifier, $node->getContextPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
     }
@@ -273,12 +304,13 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      */
     public function flush()
     {
-        if (count($this->currentBulkRequest) === 0) {
+        $bulkRequest = array_filter($this->currentBulkRequest);
+        if (count($bulkRequest) === 0) {
             return;
         }
 
         $content = '';
-        foreach ($this->currentBulkRequest as $bulkRequestTuple) {
+        foreach ($bulkRequest as $bulkRequestTuple) {
             $tupleAsJson = '';
             foreach ($bulkRequestTuple as $bulkRequestItem) {
                 $itemAsJson = json_encode($bulkRequestItem);
@@ -292,10 +324,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         }
 
         if ($content !== '') {
-            $response = $this->driver->bulk($this->getIndex(), $content);
+            $response = $this->requestDriver->bulk($this->getIndex(), $content);
             foreach ($response as $responseLine) {
-                if (!is_object($response) || (isset($response->errors) && $response->errors !== false)) {
-                    $this->logger->log('NodeIndexer: ' . $responseLine, LOG_ERR, null, 'ElasticSearch (CR)');
+                if (isset($response['errors']) && $response['errors'] !== false) {
+                    $this->logger->log('NodeIndexer: ' . json_encode($responseLine), LOG_ERR, null, 'ElasticSearch (CR)');
                 }
             }
         }
@@ -324,11 +356,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $aliasActions = [];
         try {
-            $indexNames = $this->driver->indexNames($aliasName);
+            $indexNames = $this->indexManagementDriver->indexesByAlias($aliasName);
 
             if ($indexNames === []) {
                 // if there is an actual index with the name we want to use as alias, remove it now
-                $this->driver->removeAlias($aliasName);
+                $this->indexManagementDriver->remove($aliasName);
             } else {
                 foreach ($indexNames as $indexName) {
                     $aliasActions[] = [
@@ -353,7 +385,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             ]
         ];
 
-        $this->driver->aliasActions($aliasActions);
+        $this->indexManagementDriver->actions($aliasActions);
     }
 
     /**
@@ -366,9 +398,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     {
         $aliasName = $this->searchClient->getIndexName(); // The alias name is the unprefixed index name
 
-		$currentlyLiveIndices = $this->driver->currentlyLiveIndices($aliasName);
+        $currentlyLiveIndices = $this->indexManagementDriver->indexesByAlias($aliasName);
 
-        $indexStatus = $this->driver->status();
+        $indexStatus = $this->systemDriver->status();
         $allIndices = array_keys($indexStatus['indices']);
 
         $indicesToBeRemoved = [];
@@ -387,7 +419,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             $indicesToBeRemoved[] = $indexName;
         }
 
-        $this->driver->deleteIndices($indicesToBeRemoved);
+        $this->indexManagementDriver->delete($indicesToBeRemoved);
 
         return $indicesToBeRemoved;
     }

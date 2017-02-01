@@ -15,8 +15,8 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use TYPO3\Flow\Annotations as Flow;
 
 /**
- * A Query Building Exception
+ * Elastic Driver Configuration exception
  */
-class QueryBuildingException extends Exception
+class DriverConfigurationException extends Exception
 {
 }

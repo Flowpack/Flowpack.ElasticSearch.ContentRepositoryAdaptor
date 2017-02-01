@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -11,12 +11,15 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
 use TYPO3\Flow\Annotations as Flow;
 
 /**
- * A Query Building Exception
+ * Fulltext Indexer Driver for Elastic version 2.x
+ *
+ * @Flow\Scope("singleton")
  */
-class QueryBuildingException extends Exception
+class SystemDriver extends Version1\SystemDriver
 {
+
 }

@@ -1,3 +1,24 @@
+Flowpack:
+  ElasticSearch:
+    ContentRepositoryAdaptor:
+      driver:
+        version: '2.x'
+        mapping:
+          '1.x':
+            query: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query\FilteredQuery'
+            document: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\DocumentDriver'
+            indexer: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexerDriver'
+            indexManagement: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexManagementDriver'
+            request: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\RequestDriver'
+            system: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\SystemDriver'
+          '2.x':
+            query: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\Query\FilteredQuery'
+            document: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\DocumentDriver'
+            indexer: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexerDriver'
+            indexManagement: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexManagementDriver'
+            request: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\RequestDriver'
+            system: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\SystemDriver'
+
 TYPO3:
   TYPO3CR:
     Search:
