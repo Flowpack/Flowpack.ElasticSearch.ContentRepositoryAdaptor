@@ -18,6 +18,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuild
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
+use TYPO3\TYPO3CR\Domain\Model\NodeType;
 
 /**
  * Document Driver for Elastic version 1.x
@@ -44,7 +45,7 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
     /**
      * {@inheritdoc}
      */
-    public function deleteByDocumentIdentifier(Index $index, NodeInterface $node, $documentIdentifier)
+    public function deleteDuplicateDocumentNotMatchingType(Index $index, $documentIdentifier, NodeType $nodeType)
     {
         $index->request('DELETE', '/_query', [], json_encode([
             'query' => [
@@ -56,7 +57,7 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
                     ],
                     'must_not' => [
                         'term' => [
-                            '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($node->getNodeType()->getName())
+                            '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType->getName())
                         ]
                     ],
                 ]

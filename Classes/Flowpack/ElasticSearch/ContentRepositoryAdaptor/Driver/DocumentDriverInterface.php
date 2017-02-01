@@ -12,6 +12,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  */
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
+use TYPO3\TYPO3CR\Domain\Model\NodeType;
 
 /**
  * Document Driver Interface
@@ -31,9 +32,9 @@ interface DocumentDriverInterface
      * Generate the query to delete Elastic Document by Document Identifier but skip Document with the same Node Type
      *
      * @param Index $index
-     * @param NodeInterface $node
      * @param string $documentIdentifier
+     * @param NodeType $nodeType
      * @return array
      */
-    public function deleteByDocumentIdentifier(Index $index, NodeInterface $node, $documentIdentifier);
+    public function deleteDuplicateDocumentNotMatchingType(Index $index, $documentIdentifier, NodeType $nodeType);
 }
