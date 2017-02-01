@@ -12,6 +12,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractIndexerDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
@@ -20,11 +21,11 @@ use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 
 /**
- * Fulltext Indexer Driver for Elastic version 1.x
+ * Indexer Driver for Elastic version 1.x
  *
  * @Flow\Scope("singleton")
  */
-class IndexerDriver extends AbstractDriver implements IndexerDriverInterface
+class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterface
 {
     /**
      * {@inheritdoc}

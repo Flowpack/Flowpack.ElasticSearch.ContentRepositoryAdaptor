@@ -19,17 +19,23 @@ use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 /**
  * Abstract Fulltext Indexer
  */
-abstract class AbstractDriver
+abstract class AbstractIndexerDriver extends AbstractDriver
 {
     /**
-     * @Flow\Inject
-     * @var ElasticSearchClient
+     * Whether the node is configured as fulltext root.
+     *
+     * @param NodeInterface $node
+     * @return boolean
      */
-    protected $searchClient;
+    protected function isFulltextRoot(NodeInterface $node)
+    {
+        if ($node->getNodeType()->hasConfiguration('search')) {
+            $elasticSearchSettingsForNode = $node->getNodeType()->getConfiguration('search');
+            if (isset($elasticSearchSettingsForNode['fulltext']['isRoot']) && $elasticSearchSettingsForNode['fulltext']['isRoot'] === true) {
+                return true;
+            }
+        }
 
-    /**
-     * @Flow\Inject
-     * @var LoggerInterface
-     */
-    protected $logger;
+        return false;
+    }
 }
