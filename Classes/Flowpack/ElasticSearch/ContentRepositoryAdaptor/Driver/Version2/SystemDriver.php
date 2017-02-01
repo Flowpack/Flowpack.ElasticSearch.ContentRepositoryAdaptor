@@ -21,5 +21,4 @@ use TYPO3\Flow\Annotations as Flow;
  */
 class SystemDriver extends Version1\SystemDriver
 {
-
 }

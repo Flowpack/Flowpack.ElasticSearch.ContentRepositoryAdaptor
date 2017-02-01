@@ -18,5 +18,4 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
  */
 class FilteredQuery extends Version1\Query\FilteredQuery
 {
-
 }
