@@ -385,7 +385,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             ]
         ];
 
-        $this->indexManagementDriver->actions($aliasActions);
+        $this->indexManagementDriver->aliasActions($aliasActions);
     }
 
     /**

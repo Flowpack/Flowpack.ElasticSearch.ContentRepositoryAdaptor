@@ -38,7 +38,7 @@ class IndexManagementDriver extends AbstractDriver implements IndexManagementDri
     /**
      * {@inheritdoc}
      */
-    public function actions(array $actions)
+    public function aliasActions(array $actions)
     {
         $this->searchClient->request('POST', '/_aliases', [], \json_encode(['actions' => $actions]));
     }

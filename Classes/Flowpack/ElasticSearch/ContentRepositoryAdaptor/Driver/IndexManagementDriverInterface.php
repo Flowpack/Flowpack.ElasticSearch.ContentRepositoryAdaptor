@@ -46,5 +46,5 @@ interface IndexManagementDriverInterface
      * @param array $actions
      * @return mixed
      */
-    public function actions(array $actions);
+    public function aliasActions(array $actions);
 }
