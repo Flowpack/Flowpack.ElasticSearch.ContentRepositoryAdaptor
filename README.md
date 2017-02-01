@@ -2,16 +2,21 @@
 
 # Neos Elasticsearch Adapter
 
-*supporting Elasticsearch versions 1.2.x to 1.7.x*
-
-Created by Sebastian Kurfürst; [contributions by Karsten Dambekalns, Robert Lemke and others](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/graphs/contributors).
-
 This project connects the Neos Content Repository (TYPO3CR) to Elasticsearch; enabling two
 main functionalities:
 
 * finding Nodes in TypoScript / Eel by arbitrary queries
 * Full-Text Indexing of Pages and other Documents (of course including the full content)
 
+## Elastic version support 
+
+You can switch the Elastic driver by editing ```Settings.yaml``` 
+(```Flowpack.ElasticSearchContentRepositoryAdaptor.driver.version```) with the following value:
+
+* ```1.x``` to support Elastic 1.2 to 1.7
+* ```2.x``` to support Elastic 2.x to 1.4 
+
+_Currently the Driver interfaces as not marked as API, and can be changed to adapt to future needs (especially the support of Elastic v5)._
 
 ## Relevant Packages
 
@@ -22,7 +27,6 @@ main functionalities:
 * [Flowpack.SimpleSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-simplesearch-contentrepositoryadaptor.html): an alternative search backend (to be used
   instead of this package); storing the search index in SQLite
 * [Flowpack.SearchPlugin](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-searchplugin.html): search plugin for Neos
-
 
 ## Installation
 
@@ -713,3 +717,4 @@ The configuration from Version 1 to Version 2 has changed; here's what to change
 3. Replace `ElasticSeach.fulltext` by `Indexing`
 4. Search for `ElasticSearch.` (inside the `indexing` expressions) and replace them by `Indexing.`
 
+Created by Sebastian Kurfürst; [contributions by Karsten Dambekalns, Robert Lemke and others](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/graphs/contributors).
