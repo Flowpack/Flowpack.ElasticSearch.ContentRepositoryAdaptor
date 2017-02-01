@@ -13,7 +13,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\Query;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
 
+/**
+ * Default Filtered Query
+ */
 class FilteredQuery extends Version1\Query\FilteredQuery
 {
-    
+
 }

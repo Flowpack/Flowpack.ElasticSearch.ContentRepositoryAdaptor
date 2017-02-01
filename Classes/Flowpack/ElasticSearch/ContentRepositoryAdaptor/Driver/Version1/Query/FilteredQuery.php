@@ -14,6 +14,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractQuery;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 
+/**
+ * Default Filtered Query
+ */
 class FilteredQuery extends AbstractQuery
 {
     /**

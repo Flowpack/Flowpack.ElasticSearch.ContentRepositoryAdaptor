@@ -20,7 +20,7 @@ use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 
 /**
- * Fulltext Indexer Driver for Elastic version 1.x
+ * Document Driver for Elastic version 1.x
  *
  * @Flow\Scope("singleton")
  */

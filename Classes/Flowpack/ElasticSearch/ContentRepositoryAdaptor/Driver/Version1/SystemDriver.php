@@ -16,7 +16,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface
 use TYPO3\Flow\Annotations as Flow;
 
 /**
- * Fulltext Indexer Driver for Elastic version 1.x
+ * System Driver for Elastic version 1.x
  *
  * @Flow\Scope("singleton")
  */
