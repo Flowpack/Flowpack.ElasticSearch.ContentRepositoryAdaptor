@@ -46,7 +46,7 @@ class IndexManagementDriver extends AbstractDriver implements IndexManagementDri
     /**
      * {@inheritdoc}
      */
-    public function remove($aliasName)
+    public function deleteIndex($aliasName)
     {
         $response = $this->searchClient->request('HEAD', '/' . $aliasName);
         if ($response->getStatusCode() === 200) {

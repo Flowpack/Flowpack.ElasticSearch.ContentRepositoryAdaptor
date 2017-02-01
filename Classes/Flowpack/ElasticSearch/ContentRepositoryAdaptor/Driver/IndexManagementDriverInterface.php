@@ -38,7 +38,7 @@ interface IndexManagementDriverInterface
      * @param string $aliasName
      * @return void
      */
-    public function remove($aliasName);
+    public function deleteIndex($aliasName);
 
     /**
      * Execute batch aliases actions

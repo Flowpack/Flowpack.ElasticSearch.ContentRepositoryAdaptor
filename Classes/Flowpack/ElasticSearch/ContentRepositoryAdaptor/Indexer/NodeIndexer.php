@@ -360,7 +360,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
             if ($indexNames === []) {
                 // if there is an actual index with the name we want to use as alias, remove it now
-                $this->indexManagementDriver->remove($aliasName);
+                $this->indexManagementDriver->deleteIndex($aliasName);
             } else {
                 foreach ($indexNames as $indexName) {
                     $aliasActions[] = [
