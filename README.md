@@ -674,18 +674,19 @@ in the NodeTypes.yaml. Generally this works by defining the global mapping at `[
         search_analyzer: custom_french_analyzer
 ```
 
-## Multidomain Setup
+## Change the default Elastic index name
 
-If you need to run serveral (different) sites on your elasticsearch server you will need to change the Configuration/Settings.yaml indexName for each of your project. So `./flow nodeindex:build` or `./flow nodeindex:cleanup` won't overwrite your other sites index.
+If you need to run serveral (different) neos instances on the same elasticsearch server you will need to change the Configuration/Settings.yaml indexName for each of your project. 
+
+So `./flow nodeindex:build` or `./flow nodeindex:cleanup` won't overwrite your other sites index.
 
 ```
 TYPO3:
   TYPO3CR:
     Search:
       elasticSearch:
-        indexName: typo3cr
+        indexName: useMoreSpecificIndexName
 ```
-
 
 ## Debugging
 
