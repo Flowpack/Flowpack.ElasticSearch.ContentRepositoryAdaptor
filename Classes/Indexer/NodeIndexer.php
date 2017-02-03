@@ -329,7 +329,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
 
         $mapHitToDeleteRequest = function ($hit) {
-            $bulkRequest[] = json_encode([
+            return json_encode([
                 'delete' => [
                     '_type' => $hit['_type'],
                     '_id' => $hit['_id']
@@ -347,7 +347,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $this->logger->log(sprintf('NodeIndexer: Check duplicate nodes for %s (%s), found %d document(s). ContentContextHash: %s', $contextPath, $type, count($bulkRequest), $contextPathHash), LOG_DEBUG, null, 'ElasticSearch (CR)');
         if ($bulkRequest !== []) {
-            $this->getIndex()->request('POST', '/_bulk', [], implode("\n", $bulkRequest));
+            $this->getIndex()->request('POST', '/_bulk', [], implode("\n", $bulkRequest) . "\n");
         }
         $this->searchClient->request('DELETE', '/_search/scroll', [], json_encode([
             'scroll_id' => [
