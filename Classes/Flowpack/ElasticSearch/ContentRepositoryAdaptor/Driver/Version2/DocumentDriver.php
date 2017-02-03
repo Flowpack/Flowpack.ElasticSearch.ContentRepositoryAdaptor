@@ -50,7 +50,7 @@ class DocumentDriver extends Version1\DocumentDriver
         $treatedContent = $result->getTreatedContent();
         $scrollId = $treatedContent['_scroll_id'];
         $mapHitToDeleteRequest = function ($hit) {
-            $bulkRequest[] = json_encode([
+            return json_encode([
                 'delete' => [
                     '_type' => $hit['_type'],
                     '_id' => $hit['_id']
@@ -66,7 +66,7 @@ class DocumentDriver extends Version1\DocumentDriver
         }
         $this->logger->log(sprintf('NodeIndexer: Check duplicate nodes for %s (%s), found %d document(s)', $documentIdentifier, $type, count($bulkRequest)), LOG_DEBUG, null, 'ElasticSearch (CR)');
         if ($bulkRequest !== []) {
-            $index->request('POST', '/_bulk', [], implode("\n", $bulkRequest));
+            $index->request('POST', '/_bulk', [], implode("\n", $bulkRequest) . "\n");
         }
         $this->searchClient->request('DELETE', '/_search/scroll', [], json_encode([
             'scroll_id' => [

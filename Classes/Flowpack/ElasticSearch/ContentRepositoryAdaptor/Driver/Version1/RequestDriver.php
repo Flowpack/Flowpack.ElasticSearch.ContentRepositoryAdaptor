@@ -32,6 +32,9 @@ class RequestDriver extends AbstractDriver implements RequestDriverInterface
             $request = json_encode($request);
         }
 
+        // Bulk request MUST end with line return
+        $request = trim($request) . "\n";
+
         $response = $index->request('POST', '/_bulk', [], $request)->getOriginalResponse()->getContent();
 
         return array_map(function ($line) {
