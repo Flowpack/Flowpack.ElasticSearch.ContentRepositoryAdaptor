@@ -64,7 +64,7 @@ class DocumentDriver extends Version1\DocumentDriver
             $result = $index->request('GET', '/_search/scroll?scroll=1m', [], $scrollId, false);
             $treatedContent = $result->getTreatedContent();
         }
-        $this->logger->log(sprintf('NodeIndexer: Check duplicate nodes for %s (%s), found %d document(s)', $documentIdentifier, $type, count($bulkRequest)), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        $this->logger->log(sprintf('NodeIndexer: Check duplicate nodes for %s (%s), found %d document(s)', $documentIdentifier, $nodeType->getName(), count($bulkRequest)), LOG_DEBUG, null, 'ElasticSearch (CR)');
         if ($bulkRequest !== []) {
             $index->request('POST', '/_bulk', [], implode("\n", $bulkRequest) . "\n");
         }
