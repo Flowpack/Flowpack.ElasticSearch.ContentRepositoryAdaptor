@@ -199,8 +199,8 @@ Right now there are two methods implemented. One generic `aggregation` function 
 aggregation definition and a pre-configured `fieldBasedAggregation`. Both methods can be added to your TS search query.
 You can nest aggregations by providing a parent name.
 
-* `aggregation($name, array $aggregationDefinition, $parentPath = NULL)` -- generic method to add a $aggregationDefinition under a path $parentPath with the name $name
-* `fieldBasedAggregation($name, $field, $type = "terms", $parentPath = NULL)` -- adds a simple filed based Aggregation of type $type with name $name under path $parentPath. Used for simple aggregations like sum, avg, min, max or terms
+* `aggregation($name, array $aggregationDefinition, $parentPath = NULL)` -- generic method to add a $aggregationDefinition under a path $parentPath with the name $name.
+* `fieldBasedAggregation($name, $field, $type = 'terms', $parentPath = '', $size = 10)` -- adds a simple filed based Aggregation of type $type with name $name under path $parentPath. Used for simple aggregations like sum, avg, min, max or terms. By default 10 buckets are returned.
 
 
 ### Examples

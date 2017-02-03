@@ -435,17 +435,19 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * Access all aggregation data with {nodes.aggregations} in your fluid template
      *
-     * @param $name
-     * @param $field
-     * @param string $type
-     * @param null $parentPath
+     * @param string $name The name to identify the resulting aggregation
+     * @param string $field The field to aggregate by
+     * @param string $type Aggregation type
+     * @param string $parentPath
+     * @param int $size The amount of buckets to return
      * @return $this
      */
-    public function fieldBasedAggregation($name, $field, $type = "terms", $parentPath = null)
+    public function fieldBasedAggregation($name, $field, $type = 'terms', $parentPath = '', $size = 10)
     {
         $aggregationDefinition = [
             $type => [
-                'field' => $field
+                'field' => $field,
+                'size' => $size
             ]
         ];
 
@@ -471,17 +473,17 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $name
      * @param array $aggregationDefinition
-     * @param null $parentPath
+     * @param string $parentPath
      * @return $this
      * @throws QueryBuildingException
      */
-    public function aggregation($name, array $aggregationDefinition, $parentPath = null)
+    public function aggregation($name, array $aggregationDefinition, $parentPath = '')
     {
-        if (!array_key_exists("aggregations", $this->request)) {
+        if (!array_key_exists('aggregations', $this->request)) {
             $this->request['aggregations'] = [];
         }
 
-        if ($parentPath !== null) {
+        if ($parentPath !== '') {
             $this->addSubAggregation($parentPath, $name, $aggregationDefinition);
         } else {
             $this->request['aggregations'][$name] = $aggregationDefinition;
@@ -507,9 +509,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         // Find the parentPath
         $path =& $this->request['aggregations'];
 
-        foreach (explode(".", $parentPath) as $subPart) {
+        foreach (explode('.', $parentPath) as $subPart) {
             if ($path == null || !array_key_exists($subPart, $path)) {
-                throw new QueryBuildingException("The parent path " . $subPart . " could not be found when adding a sub aggregation");
+                throw new QueryBuildingException('The parent path ' . $subPart . ' could not be found when adding a sub aggregation');
             }
             $path =& $path[$subPart]['aggregations'];
         }
