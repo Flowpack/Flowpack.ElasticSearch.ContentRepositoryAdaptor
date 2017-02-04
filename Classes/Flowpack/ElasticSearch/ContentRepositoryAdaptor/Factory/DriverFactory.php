@@ -49,8 +49,7 @@ class DriverFactory
      */
     public function createQuery()
     {
-        $className = $this->resolve('query');
-        return new $className();
+        return $this->resolve('query');
     }
 
     /**
@@ -58,8 +57,7 @@ class DriverFactory
      */
     public function createDocumentDriver()
     {
-        $className = $this->resolve('document');
-        return new $className();
+        return $this->resolve('document');
     }
 
     /**
@@ -67,8 +65,7 @@ class DriverFactory
      */
     public function createIndexerDriver()
     {
-        $className = $this->resolve('indexer');
-        return new $className();
+        return $this->resolve('indexer');
     }
 
     /**
@@ -76,8 +73,7 @@ class DriverFactory
      */
     public function createIndexManagementDriver()
     {
-        $className = $this->resolve('indexManagement');
-        return new $className();
+        return $this->resolve('indexManagement');
     }
 
     /**
@@ -85,8 +81,7 @@ class DriverFactory
      */
     public function createRequestDriver()
     {
-        $className = $this->resolve('request');
-        return new $className();
+        return $this->resolve('request');
     }
 
     /**
@@ -94,8 +89,7 @@ class DriverFactory
      */
     public function createSystemDriver()
     {
-        $className = $this->resolve('system');
-        return new $className();
+        return $this->resolve('system');
     }
 
     /**
@@ -106,14 +100,17 @@ class DriverFactory
     protected function resolve($type)
     {
         $version = trim($this->driverVersion);
-        if (trim($this->driverVersion) === '' || !isset($this->mapping[$version][$type])) {
+        if (trim($this->driverVersion) === '' || !isset($this->mapping[$version][$type]['className'])) {
             throw new DriverConfigurationException(sprintf('Missing or wrongly configured driver type "%s" with the given version: %s', $type, $version ?: '[missing]'), 1485933538);
         }
 
-        $className = trim($this->mapping[$version][$type]);
+        $className = trim($this->mapping[$version][$type]['className']);
 
         $this->logger->log(sprintf('Load %s implementation for Elastic %s (%s)', $type, $version, $className), LOG_DEBUG);
 
-        return $className;
+        if (!isset($this->mapping[$version][$type]['arguments'])) {
+            return new $className();
+        }
+        return new $className(...array_values($this->mapping[$version][$type]['arguments']));
     }
 }

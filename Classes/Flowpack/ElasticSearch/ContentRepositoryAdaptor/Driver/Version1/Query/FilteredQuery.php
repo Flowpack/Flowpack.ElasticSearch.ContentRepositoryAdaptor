@@ -20,54 +20,6 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 class FilteredQuery extends AbstractQuery
 {
     /**
-     * The ElasticSearch request, as it is being built up.
-     *
-     * @var array
-     */
-    protected $request = [
-        'query' => [
-            'filtered' => [
-                'query' => [
-                    'bool' => [
-                        'must' => [
-                            [
-                                'match_all' => []
-                            ]
-                        ]
-                    ]
-
-                ],
-                'filter' => [
-                    'bool' => [
-                        'must' => [],
-                        'should' => [],
-                        'must_not' => [
-                            [
-                                'term' => ['_hidden' => true]
-                            ],
-                            [
-                                'range' => [
-                                    '_hiddenBeforeDateTime' => [
-                                        'gt' => 'now'
-                                    ]
-                                ]
-                            ],
-                            [
-                                'range' => [
-                                    '_hiddenAfterDateTime' => [
-                                        'lt' => 'now'
-                                    ]
-                                ]
-                            ],
-                        ],
-                    ]
-                ]
-            ]
-        ],
-        'fields' => ['__path']
-    ];
-
-    /**
      * {@inheritdoc}
      */
     public function getCountRequestAsJSON()

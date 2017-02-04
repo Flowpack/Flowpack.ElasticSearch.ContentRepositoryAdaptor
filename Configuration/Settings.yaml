@@ -5,19 +5,69 @@ Flowpack:
         version: '2.x'
         mapping:
           '1.x':
-            query: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query\FilteredQuery'
-            document: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\DocumentDriver'
-            indexer: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexerDriver'
-            indexManagement: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexManagementDriver'
-            request: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\RequestDriver'
-            system: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\SystemDriver'
+            query:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query\FilteredQuery'
+              arguments:
+                request: &request_version1
+                  query:
+                    filtered:
+                      query:
+                        bool:
+                          must:
+                          - match_all: []
+                      filter:
+                        bool:
+                          must: []
+                          should: []
+                          must_not:
+                          - term:
+                              _hidden: true
+                          - range:
+                              _hiddenBeforeDateTime:
+                                gt: now
+                          - range:
+                              _hiddenAfterDateTime:
+                                lt: now
+                  fields:
+                    - '__path'
+                unsupportedFieldsInCountRequest: &unsupportedFieldsInCountRequest_version1
+                  - 'fields'
+                  - 'sort'
+                  - 'from'
+                  - 'size'
+                  - 'highlight'
+                  - 'aggs'
+                  - 'aggregations'
+
+            document:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\DocumentDriver'
+            indexer:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexerDriver'
+            indexManagement:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexManagementDriver'
+            request:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\RequestDriver'
+            system:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\SystemDriver'
+
           '2.x':
-            query: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\Query\FilteredQuery'
-            document: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\DocumentDriver'
-            indexer: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexerDriver'
-            indexManagement: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexManagementDriver'
-            request: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\RequestDriver'
-            system: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\SystemDriver'
+            query:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\Query\FilteredQuery'
+              arguments:
+                request:
+                  <<: *request_version1
+                unsupportedFieldsInCountRequest:
+                  <<: *unsupportedFieldsInCountRequest_version1
+            document:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\DocumentDriver'
+            indexer:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexerDriver'
+            indexManagement:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexManagementDriver'
+            request:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\RequestDriver'
+            system:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\SystemDriver'
 
 TYPO3:
   TYPO3CR:

@@ -32,7 +32,17 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
      *
      * @var array
      */
-    protected $unsupportedFieldsInCountRequest = ['fields', 'sort', 'from', 'size', 'highlight', 'aggs', 'aggregations'];
+    protected $unsupportedFieldsInCountRequest = [];
+
+    /**
+     * @param array $request
+     * @param array $unsupportedFieldsInCountRequest
+     */
+    public function __construct(array $request, array $unsupportedFieldsInCountRequest)
+    {
+        $this->request = $request;
+        $this->unsupportedFieldsInCountRequest = $unsupportedFieldsInCountRequest;
+    }
 
     /**
      * Modify a part of the Elasticsearch Request denoted by $path, merging together
