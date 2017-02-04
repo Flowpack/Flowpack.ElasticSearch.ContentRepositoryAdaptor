@@ -13,7 +13,7 @@ Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface:
   factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\DriverFactory'
   factoryMethodName: createIndexerDriver
 
-Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexManagementDriverInterface:
+Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface:
   scope: singleton
   factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\DriverFactory'
   factoryMethodName: createIndexManagementDriver

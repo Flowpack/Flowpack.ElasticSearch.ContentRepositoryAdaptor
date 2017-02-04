@@ -13,7 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexManagementDriverInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
@@ -83,10 +83,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     protected $indexerDriver;
 
     /**
-     * @var IndexManagementDriverInterface
+     * @var IndexDriverInterface
      * @Flow\Inject
      */
-    protected $indexManagementDriver;
+    protected $indexDriver;
 
     /**
      * @var RequestDriverInterface
@@ -356,11 +356,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $aliasActions = [];
         try {
-            $indexNames = $this->indexManagementDriver->indexesByAlias($aliasName);
+            $indexNames = $this->indexDriver->indexesByAlias($aliasName);
 
             if ($indexNames === []) {
                 // if there is an actual index with the name we want to use as alias, remove it now
-                $this->indexManagementDriver->deleteIndex($aliasName);
+                $this->indexDriver->deleteIndex($aliasName);
             } else {
                 foreach ($indexNames as $indexName) {
                     $aliasActions[] = [
@@ -385,7 +385,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             ]
         ];
 
-        $this->indexManagementDriver->aliasActions($aliasActions);
+        $this->indexDriver->aliasActions($aliasActions);
     }
 
     /**
@@ -398,7 +398,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     {
         $aliasName = $this->searchClient->getIndexName(); // The alias name is the unprefixed index name
 
-        $currentlyLiveIndices = $this->indexManagementDriver->indexesByAlias($aliasName);
+        $currentlyLiveIndices = $this->indexDriver->indexesByAlias($aliasName);
 
         $indexStatus = $this->systemDriver->status();
         $allIndices = array_keys($indexStatus['indices']);
@@ -419,7 +419,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             $indicesToBeRemoved[] = $indexName;
         }
 
-        $this->indexManagementDriver->delete($indicesToBeRemoved);
+        array_map(function ($index) {
+            $this->indexDriver->deleteIndex($index);
+        }, $indicesToBeRemoved);
 
         return $indicesToBeRemoved;
     }

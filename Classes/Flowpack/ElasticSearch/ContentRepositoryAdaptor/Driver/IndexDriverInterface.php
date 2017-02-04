@@ -12,18 +12,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  */
 
 /**
- * Elastic Index Management Driver Interface
+ * Elastic Index Driver Interface
  */
-interface IndexManagementDriverInterface
+interface IndexDriverInterface
 {
-    /**
-     * Delete given indexes
-     *
-     * @param array $indices
-     * @return void
-     */
-    public function delete(array $indices);
-
     /**
      * Get the list of Indexes attached to the given alias
      *
@@ -35,10 +27,10 @@ interface IndexManagementDriverInterface
     /**
      * Remove alias by name
      *
-     * @param string $aliasName
+     * @param string $index
      * @return void
      */
-    public function deleteIndex($aliasName);
+    public function deleteIndex($index);
 
     /**
      * Execute batch aliases actions

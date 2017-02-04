@@ -44,7 +44,7 @@ Flowpack:
             indexer:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexerDriver'
             indexManagement:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexManagementDriver'
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexDriver'
             request:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\RequestDriver'
             system:
@@ -63,7 +63,7 @@ Flowpack:
             indexer:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexerDriver'
             indexManagement:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexManagementDriver'
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexDriver'
             request:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\RequestDriver'
             system:

@@ -13,7 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DriverInterface;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexManagementDriverInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use TYPO3\Flow\Annotations as Flow;
 
@@ -22,19 +22,8 @@ use TYPO3\Flow\Annotations as Flow;
  *
  * @Flow\Scope("singleton")
  */
-class IndexManagementDriver extends AbstractDriver implements IndexManagementDriverInterface
+class IndexDriver extends AbstractDriver implements IndexDriverInterface
 {
-    /**
-     * {@inheritdoc}
-     */
-    public function delete(array $indices)
-    {
-        if (count($indices) === 0) {
-            return;
-        }
-        $this->searchClient->request('DELETE', '/' . implode(',', $indices) . '/');
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -46,13 +35,13 @@ class IndexManagementDriver extends AbstractDriver implements IndexManagementDri
     /**
      * {@inheritdoc}
      */
-    public function deleteIndex($aliasName)
+    public function deleteIndex($index)
     {
-        $response = $this->searchClient->request('HEAD', '/' . $aliasName);
+        $response = $this->searchClient->request('HEAD', '/' . $index);
         if ($response->getStatusCode() === 200) {
-            $response = $this->searchClient->request('DELETE', '/' . $aliasName);
+            $response = $this->searchClient->request('DELETE', '/' . $index);
             if ($response->getStatusCode() !== 200) {
-                throw new Exception('The index "' . $aliasName . '" could not be removed to be replaced by an alias. (return code: ' . $response->getStatusCode() . ')', 1395419177);
+                throw new Exception('The index "' . $index . '" could not be deleted. (return code: ' . $response->getStatusCode() . ')', 1395419177);
             }
         }
     }

@@ -19,6 +19,6 @@ use TYPO3\Flow\Annotations as Flow;
  *
  * @Flow\Scope("singleton")
  */
-class IndexManagementDriver extends Version1\IndexManagementDriver
+class IndexDriver extends Version1\IndexDriver
 {
 }
