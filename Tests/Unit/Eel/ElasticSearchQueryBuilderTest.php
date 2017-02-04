@@ -59,9 +59,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                         'bool' => [
                             'must' => [
                                 ['match_all' => []]
-                            ],
-                            'should' => [],
-                            'must_not' => []
+                            ]
                         ]
                     ],
                     'filter' => [
@@ -113,7 +111,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
             'fields' => ['__path']
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertSame($expected, $actual);
+        $this->assertEquals($expected, $actual);
     }
 
     /**
