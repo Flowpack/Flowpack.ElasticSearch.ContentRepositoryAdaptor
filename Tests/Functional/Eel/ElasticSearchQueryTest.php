@@ -15,6 +15,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandCont
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
 use TYPO3\Flow\Persistence\QueryResultInterface;
+use TYPO3\Flow\Tests\FunctionalTestCase;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Model\Workspace;
 use TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository;
@@ -22,11 +23,9 @@ use TYPO3\TYPO3CR\Domain\Repository\WorkspaceRepository;
 use TYPO3\TYPO3CR\Domain\Service\Context;
 use TYPO3\TYPO3CR\Domain\Service\ContextFactoryInterface;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
+use TYPO3\TYPO3CR\Search\Search\QueryBuilderInterface;
 
-/**
- * Testcase for ElasticSearchQuery
- */
-class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
+class ElasticSearchQueryTest extends FunctionalTestCase
 {
     /**
      * @var WorkspaceRepository
@@ -106,7 +105,23 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     }
 
     /**
-     * @return ElasticSearchQueryBuilder
+     * @test
+     */
+    public function elasticSearchQueryBuilderStartsClean()
+    {
+        /** @var ElasticSearchQueryBuilder $query */
+        $query = $this->objectManager->get(ElasticSearchQueryBuilder::class);
+        $cleanRequestArray = $query->getRequest()->toArray();
+        $query->nodeType('TYPO3.Neos.NodeTypes:Page');
+
+        $query2 = $this->objectManager->get(ElasticSearchQueryBuilder::class);
+
+        $this->assertNotSame($query->getRequest(), $query2->getRequest());
+        $this->assertEquals($cleanRequestArray, $query2->getRequest()->toArray());
+    }
+
+    /**
+     * @return QueryBuilderInterface
      */
     protected function getQueryBuilder()
     {
