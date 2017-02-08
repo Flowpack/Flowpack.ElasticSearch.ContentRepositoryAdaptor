@@ -20,7 +20,7 @@ before_install:
   - cd ..
   - git clone https://github.com/neos/neos-base-distribution.git -b ${NEOS_TARGET_VERSION}
   - cd neos-base-distribution
-  - composer require typo3/typo3cr-search:2.0 flowpack/elasticsearch-contentrepositoryadaptor
+  - composer require typo3/typo3cr-search:2.1.2 flowpack/elasticsearch-contentrepositoryadaptor
 install:
   - composer install
   - curl https://raw.githubusercontent.com/neos/flow-development-collection/3.3/TYPO3.Flow/Classes/TYPO3/Flow/Object/ObjectManager.php -o Packages/Framework/TYPO3.Flow/Classes/TYPO3/Flow/Object/ObjectManager.php
@@ -30,4 +30,5 @@ install:
   - cd neos-base-distribution
 script:
   - bin/phpunit --colors -c Build/BuildEssentials/PhpUnit/UnitTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Unit
-  - FLOW_CONTEXT="Testing/ElasticVersion$ES" bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional
+  - if [ "$ES" = 1 ]; then FLOW_CONTEXT="Testing/ElasticVersion1" bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional; fi
+  - if [ "$ES" = 2 ]; then FLOW_CONTEXT="Testing/ElasticVersion2" bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional; fi
