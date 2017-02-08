@@ -24,10 +24,11 @@ before_install:
   - composer require typo3/typo3cr-search
 install:
   - composer install
+  - curl https://raw.githubusercontent.com/neos/flow-development-collection/3.3/TYPO3.Flow/Classes/TYPO3/Flow/Object/ObjectManager.php -o Packages/Framework/TYPO3.Flow/Classes/TYPO3/Flow/Object/ObjectManager.php
   - cd ..
   - rm -rf neos-base-distribution/Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor
   - mv Flowpack.ElasticSearch.ContentRepositoryAdaptor neos-base-distribution/Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor
   - cd neos-base-distribution
 script:
   - bin/phpunit --colors -c Build/BuildEssentials/PhpUnit/UnitTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Unit
-  - FLOW_CONTEXT="Testing/ElasticVersion{$ES}" bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional
+  - FLOW_CONTEXT="Testing/ElasticVersion$ES" bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional
