@@ -13,6 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query\FilteredQuery;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
+use TYPO3\Flow\Tests\UnitTestCase;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Model\Workspace;
 use TYPO3\TYPO3CR\Domain\Service\Context;
@@ -20,7 +21,7 @@ use TYPO3\TYPO3CR\Domain\Service\Context;
 /**
  * Testcase for ElasticSearchQueryBuilder
  */
-class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
+class ElasticSearchQueryBuilderTest extends UnitTestCase
 {
     /**
      * @var ElasticSearchQueryBuilder
@@ -42,7 +43,51 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
         $mockWorkspace->expects($this->any())->method('getName')->will($this->returnValue('user-foo'));
 
         $this->queryBuilder = new ElasticSearchQueryBuilder();
-        $query = new FilteredQuery($this->queryBuilder);
+
+        $request = [
+           'query' => [
+               'filtered' => [
+                   'query' => [
+                       'bool' => [
+                           'must' => [
+                               ['match_all' => []]
+                           ]
+                       ]
+                   ],
+                   'filter' => [
+                       'bool' => [
+                           'must' => [],
+                           'should' => [],
+                           'must_not' => [
+                               [
+                                   'term' => ['_hidden' => true]
+                               ],
+                               [
+                                   'range' => [
+                                       '_hiddenBeforeDateTime' => [
+                                           'gt' => 'now'
+                                       ]
+                                   ]
+                               ],
+                               [
+                                   'range' => [
+                                       '_hiddenAfterDateTime' => [
+                                           'lt' => 'now'
+                                       ]
+                                   ]
+                               ]
+                           ]
+                       ]
+                   ]
+               ]
+           ],
+            'fields' => ['__path']
+        ];
+        $unsupportedFieldsInCountRequest = ['fields', 'sort', 'from', 'size', 'highlight', 'aggs', 'aggregations'];
+
+        $this->inject($this->queryBuilder, 'request', new FilteredQuery($request, $unsupportedFieldsInCountRequest));
+
+        $query = new FilteredQuery($this->queryBuilder->getRequest()->toArray(), []);
         $this->inject($this->queryBuilder, 'request', $query);
         $this->queryBuilder->query($node);
     }
