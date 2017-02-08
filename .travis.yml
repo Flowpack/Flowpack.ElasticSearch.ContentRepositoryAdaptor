@@ -20,8 +20,7 @@ before_install:
   - cd ..
   - git clone https://github.com/neos/neos-base-distribution.git -b ${NEOS_TARGET_VERSION}
   - cd neos-base-distribution
-  - composer require flowpack/elasticsearch-contentrepositoryadaptor
-  - composer require typo3/typo3cr-search
+  - composer require typo3/typo3cr-search:2.0 flowpack/elasticsearch-contentrepositoryadaptor
 install:
   - composer install
   - curl https://raw.githubusercontent.com/neos/flow-development-collection/3.3/TYPO3.Flow/Classes/TYPO3/Flow/Object/ObjectManager.php -o Packages/Framework/TYPO3.Flow/Classes/TYPO3/Flow/Object/ObjectManager.php

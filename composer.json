@@ -8,7 +8,7 @@
         "php": ">=5.5.0",
 
         "flowpack/elasticsearch": "*",
-        "typo3/typo3cr-search": "*"
+        "typo3/typo3cr-search": "~2.0.0"
     },
     "autoload": {
         "psr-0": {
