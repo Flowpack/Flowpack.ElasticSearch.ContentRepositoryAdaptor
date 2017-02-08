@@ -20,47 +20,17 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use TYPO3\Flow\Annotations as Flow;
 
 /**
+ * A factory for creating the ElasticSearch Query
+ *
  * @Flow\Scope("singleton")
  */
-class DriverFactory extends AbstractDriverSpecificObjectFactory
+class QueryFactory extends AbstractDriverSpecificObjectFactory
 {
     /**
-     * @return DocumentDriverInterface
+     * @return QueryInterface
      */
-    public function createDocumentDriver()
+    public function createQuery()
     {
-        return $this->resolve('document');
-    }
-
-    /**
-     * @return IndexerDriverInterface
-     */
-    public function createIndexerDriver()
-    {
-        return $this->resolve('indexer');
-    }
-
-    /**
-     * @return IndexerDriverInterface
-     */
-    public function createIndexManagementDriver()
-    {
-        return $this->resolve('indexManagement');
-    }
-
-    /**
-     * @return IndexerDriverInterface
-     */
-    public function createRequestDriver()
-    {
-        return $this->resolve('request');
-    }
-
-    /**
-     * @return IndexerDriverInterface
-     */
-    public function createSystemDriver()
-    {
-        return $this->resolve('system');
+        return $this->resolve('query');
     }
 }

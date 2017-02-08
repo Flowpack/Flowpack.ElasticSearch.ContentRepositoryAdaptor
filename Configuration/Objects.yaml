@@ -1,6 +1,6 @@
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface:
   scope: prototype
-  factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\DriverFactory'
+  factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\QueryFactory'
   factoryMethodName: createQuery
 
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface:
