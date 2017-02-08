@@ -2,13 +2,19 @@ language: php
 matrix:
   include:
     - php: 7.0
+      env: ES=1
+    - php: 7.0
+      env: ES=2
     - php: 5.6
+      env: ES=1
+    - php: 5.6
+      env: ES=2
 sudo: false
 before_install:
   - export NEOS_TARGET_VERSION=2.3
   - cd ..
-  - wget --no-check-certificate https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.5.zip && unzip elasticsearch-1.7.5.zip
-  - mv elasticsearch-1.7.5 elasticsearch
+  - if [ "$ES" = 1 ]; then wget --no-check-certificate https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.5.zip && unzip elasticsearch-1.7.5.zip && mv elasticsearch-1.7.5 elasticsearch; fi
+  - if [ "$ES" = 2 ]; then wget --no-check-certificate https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-2.4.3.zip && unzip elasticsearch-2.4.3.zip && mv elasticsearch-2.4.3 elasticsearch; fi
   - cd elasticsearch
   - bin/elasticsearch -d
   - cd ..
@@ -24,4 +30,4 @@ install:
   - cd neos-base-distribution
 script:
   - bin/phpunit --colors -c Build/BuildEssentials/PhpUnit/UnitTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Unit
-  - FLOW_CONTEXT=Testing/ElasticVersion1 bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional
+  - FLOW_CONTEXT="Testing/ElasticVersion{$ES}" bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional
