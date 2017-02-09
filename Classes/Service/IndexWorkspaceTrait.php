@@ -67,7 +67,11 @@ trait IndexWorkspaceTrait
      */
     protected function indexWorkspaceWithDimensions($workspaceName, array $dimensions = [], $limit = null, callable $callback = null)
     {
-        $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'dimensions' => $dimensions]);
+        $context = $this->contextFactory->create([
+            'workspaceName' => $workspaceName,
+            'dimensions' => $dimensions,
+            'invisibleContentShown' => true
+        ]);
         $rootNode = $context->getRootNode();
         $indexedNodes = 0;
 

@@ -222,7 +222,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             foreach ($dimensionCombinations as $combination) {
                 $context = $this->contextFactory->create([
                     'workspaceName' => $workspaceName,
-                    'dimensions' => $combination
+                    'dimensions' => $combination,
+                    'invisibleContentShown' => true
                 ]);
                 $node = $context->getNodeByIdentifier($nodeIdentifier);
                 if ($node !== null) {
@@ -230,7 +231,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 }
             }
         } else {
-            $context = $this->contextFactory->create(['workspaceName' => $workspaceName]);
+            $context = $this->contextFactory->create([
+                'workspaceName' => $workspaceName,
+                'invisibleContentShown' => true
+            ]);
             $node = $context->getNodeByIdentifier($nodeIdentifier);
             if ($node !== null) {
                 $indexer($node, $targetWorkspaceName);
