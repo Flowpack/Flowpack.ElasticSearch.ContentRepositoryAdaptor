@@ -249,7 +249,11 @@ class NodeIndexCommandController extends CommandController
     protected function indexWorkspaceWithDimensions($workspaceName, array $dimensions = [])
     {
         $indexedNodes = 0;
-        $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'dimensions' => $dimensions]);
+        $context = $this->contextFactory->create([
+            'workspaceName' => $workspaceName,
+            'dimensions' => $dimensions,
+            'invisibleContentShown' => true
+        ]);
         $rootNode = $context->getRootNode();
 
         $indexedNodes += $this->traverseNodes($rootNode);
