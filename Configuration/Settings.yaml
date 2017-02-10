@@ -2,7 +2,7 @@ Flowpack:
   ElasticSearch:
     ContentRepositoryAdaptor:
       driver:
-        version: '2.x'
+        version: '1.x'
         mapping:
           '1.x':
             query:
