@@ -127,8 +127,10 @@ class IndexerDriver extends Version1\IndexerDriver
                             ctx._source.__fulltextParts = new HashMap();
                         }
                         
-                        if (fulltext.size() == 0) {
-                            ctx._source.__fulltextParts.remove(identifier);
+                        if (nodeIsRemoved || nodeIsHidden || fulltext.size() == 0) {
+                            if (ctx._source.__fulltextParts.containsKey(identifier)) {
+                                ctx._source.__fulltextParts.remove(identifier);
+                            }
                         } else {
                             ctx._source.__fulltextParts.put(identifier, fulltext);
                         }
