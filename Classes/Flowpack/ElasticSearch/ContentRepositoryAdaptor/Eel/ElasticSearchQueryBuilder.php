@@ -13,6 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use TYPO3\Eel\ProtectedContextAwareInterface;
@@ -728,5 +729,23 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
 
         return array_values($nodes);
+    }
+
+    /**
+     * Proxy method to access the public method of the Request object
+     *
+     * This is useful with custom Request type where not wrapper method exist in the QueryBuilder.
+     *
+     * @param string $method
+     * @param array $args
+     * @return $this
+     * @throws Exception
+     */
+    public function __call($method, array $args) {
+        if (!method_exists($this->request, $method)) {
+            throw new Exception(sprintf('Method "%s" does not exist in the current Request object "%s"', $method, get_class($this->request)), 1486763515);
+        }
+        call_user_func_array([$this->request, $method], $args);
+        return $this;
     }
 }
