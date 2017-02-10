@@ -741,7 +741,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @return $this
      * @throws Exception
      */
-    public function __call($method, array $args) {
+    public function __call($method, array $args)
+    {
         if (!method_exists($this->request, $method)) {
             throw new Exception(sprintf('Method "%s" does not exist in the current Request object "%s"', $method, get_class($this->request)), 1486763515);
         }
