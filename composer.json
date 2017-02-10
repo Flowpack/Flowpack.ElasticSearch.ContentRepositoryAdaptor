@@ -7,8 +7,8 @@
     "require": {
         "php": ">=5.5.0",
 
-        "flowpack/elasticsearch": "*",
-        "typo3/typo3cr-search": "~2.0.0"
+        "flowpack/elasticsearch": "^1.1.0",
+        "typo3/typo3cr-search": "^2.1.0"
     },
     "autoload": {
         "psr-0": {
