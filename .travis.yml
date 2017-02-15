@@ -23,7 +23,6 @@ before_install:
   - composer require typo3/typo3cr-search:2.1.2 flowpack/elasticsearch-contentrepositoryadaptor
 install:
   - composer install
-  - curl https://raw.githubusercontent.com/neos/flow-development-collection/3.3/TYPO3.Flow/Classes/TYPO3/Flow/Object/ObjectManager.php -o Packages/Framework/TYPO3.Flow/Classes/TYPO3/Flow/Object/ObjectManager.php
   - cd ..
   - rm -rf neos-base-distribution/Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor
   - mv Flowpack.ElasticSearch.ContentRepositoryAdaptor neos-base-distribution/Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor
