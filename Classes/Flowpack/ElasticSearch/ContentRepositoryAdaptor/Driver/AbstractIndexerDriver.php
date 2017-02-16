@@ -17,7 +17,7 @@ use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 
 /**
- * Abstract Fulltext Indexer
+ * Abstract Fulltext Indexer Driver
  */
 abstract class AbstractIndexerDriver extends AbstractDriver
 {

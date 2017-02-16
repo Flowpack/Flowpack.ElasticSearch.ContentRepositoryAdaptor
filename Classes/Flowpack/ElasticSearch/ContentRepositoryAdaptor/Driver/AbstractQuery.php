@@ -16,7 +16,7 @@ use TYPO3\Eel\ProtectedContextAwareInterface;
 use TYPO3\Flow\Utility\Arrays;
 
 /**
- * Default Filtered Query
+ * Abstract Elasticsearch Query
  */
 abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \ArrayAccess, ProtectedContextAwareInterface
 {
@@ -77,7 +77,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * {@inheritdoc}
      */
-    public function getRequestAsJSON()
+    public function getRequestAsJson()
     {
         return json_encode($this);
     }

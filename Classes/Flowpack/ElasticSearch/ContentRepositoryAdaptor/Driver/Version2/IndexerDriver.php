@@ -18,7 +18,7 @@ use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 
 /**
- * Indexer Driver for Elastic version 2.x
+ * Indexer driver for Elasticsearch version 2.x
  *
  * @Flow\Scope("singleton")
  */

@@ -18,7 +18,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use TYPO3\Flow\Annotations as Flow;
 
 /**
- * Index Management Driver for Elastic version 1.x
+ * Index Management driver for Elasticsearch version 1.x
  *
  * @Flow\Scope("singleton")
  */

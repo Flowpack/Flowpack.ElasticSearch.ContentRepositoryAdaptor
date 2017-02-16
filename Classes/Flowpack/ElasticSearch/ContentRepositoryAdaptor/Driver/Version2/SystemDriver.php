@@ -15,7 +15,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
 use TYPO3\Flow\Annotations as Flow;
 
 /**
- * System Driver for Elastic version 2.x
+ * System driver for Elasticsearch version 2.x
  *
  * @Flow\Scope("singleton")
  */

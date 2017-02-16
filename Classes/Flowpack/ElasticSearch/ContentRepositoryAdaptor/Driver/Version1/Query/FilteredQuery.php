@@ -22,7 +22,7 @@ class FilteredQuery extends AbstractQuery
     /**
      * {@inheritdoc}
      */
-    public function getCountRequestAsJSON()
+    public function getCountRequestAsJson()
     {
         $request = $this->request;
         foreach ($this->unsupportedFieldsInCountRequest as $field) {
@@ -71,6 +71,6 @@ class FilteredQuery extends AbstractQuery
             throw new Exception\QueryBuildingException('The given clause type "' . $clauseType . '" is not supported. Must be one of "must", "should", "must_not".', 1383716082);
         }
 
-        return $this->appendAtPath('query.filtered.filter.bool.' . $clauseType, [$filterType => $filterOptions]);
+        $this->appendAtPath('query.filtered.filter.bool.' . $clauseType, [$filterType => $filterOptions]);
     }
 }

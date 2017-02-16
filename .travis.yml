@@ -20,7 +20,7 @@ before_install:
   - cd ..
   - git clone https://github.com/neos/neos-base-distribution.git -b ${NEOS_TARGET_VERSION}
   - cd neos-base-distribution
-  - composer require typo3/typo3cr-search:2.1.2 flowpack/elasticsearch-contentrepositoryadaptor
+  - composer require neos/content-repository-search:~2.1.0 flowpack/elasticsearch-contentrepositoryadaptor
 install:
   - composer install
   - cd ..

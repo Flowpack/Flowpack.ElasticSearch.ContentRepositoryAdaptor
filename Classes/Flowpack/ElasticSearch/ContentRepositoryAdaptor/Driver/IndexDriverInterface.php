@@ -12,7 +12,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  */
 
 /**
- * Elastic Index Driver Interface
+ * Elasticsearch Index Driver Interface
  */
 interface IndexDriverInterface
 {

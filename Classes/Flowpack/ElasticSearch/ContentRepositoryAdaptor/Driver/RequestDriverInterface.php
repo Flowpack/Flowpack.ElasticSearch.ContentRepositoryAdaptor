@@ -13,7 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 
 /**
- * Request Driver Interface
+ * Elasticsearch Request Driver Interface
  */
 interface RequestDriverInterface
 {

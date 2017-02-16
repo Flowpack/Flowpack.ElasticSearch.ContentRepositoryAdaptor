@@ -10,6 +10,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  * information, please view the LICENSE file which was distributed with this
  * source code.
  */
+
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 

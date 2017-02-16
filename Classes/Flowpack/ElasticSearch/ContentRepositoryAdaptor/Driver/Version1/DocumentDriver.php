@@ -21,7 +21,7 @@ use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Model\NodeType;
 
 /**
- * Document Driver for Elastic version 1.x
+ * Document driver for Elasticsearch version 1.x
  *
  * @Flow\Scope("singleton")
  */

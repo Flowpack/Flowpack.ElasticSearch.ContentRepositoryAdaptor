@@ -30,7 +30,7 @@ interface QueryInterface
      *
      * @return string
      */
-    public function getRequestAsJSON();
+    public function getRequestAsJson();
 
     /**
      * Get the current count request as JSON string
@@ -39,12 +39,13 @@ interface QueryInterface
      *
      * @return string
      */
-    public function getCountRequestAsJSON();
+    public function getCountRequestAsJson();
 
     /**
      * Add a sort filter to the request
      *
      * @param array $configuration
+     * @return void
      * @api
      */
     public function addSortFilter($configuration);
@@ -53,6 +54,7 @@ interface QueryInterface
      * Set the size (limit) of the request
      *
      * @param integer $size
+     * @return void
      * @api
      */
     public function size($size);
@@ -61,6 +63,7 @@ interface QueryInterface
      * Set the from (offset) of the request
      *
      * @param integer $size
+     * @return void
      * @api
      */
     public function from($size);
@@ -69,6 +72,7 @@ interface QueryInterface
      * Match the searchword against the fulltext index
      *
      * @param string $searchWord
+     * @return void
      * @api
      */
     public function fulltext($searchWord);
@@ -79,6 +83,7 @@ interface QueryInterface
      *
      * @param integer|boolean $fragmentSize The result fragment size for highlight snippets. If this parameter is FALSE, highlighting will be disabled.
      * @param integer $fragmentCount The number of highlight fragments to show.
+     * @return void
      * @api
      */
     public function highlight($fragmentSize, $fragmentCount = null);
@@ -88,7 +93,8 @@ interface QueryInterface
      *
      * @param string $name
      * @param array $aggregationDefinition
-     * @param null $parentPath
+     * @param string $parentPath
+     * @return void
      * @api
      * @throws Exception\QueryBuildingException
      */
@@ -99,6 +105,7 @@ interface QueryInterface
      *
      * @param string $name
      * @param array $suggestionDefinition
+     * @return void
      * @api
      */
     public function suggestions($name, array $suggestionDefinition);
@@ -109,6 +116,7 @@ interface QueryInterface
      * @param string $filterType
      * @param mixed $filterOptions
      * @param string $clauseType one of must, should, must_not
+     * @return void
      * @throws Exception\QueryBuildingException
      * @api
      */
@@ -117,6 +125,7 @@ interface QueryInterface
     /**
      * @param string $path
      * @param string $value
+     * @return void
      */
     public function setValueByPath($path, $value);
 
@@ -127,6 +136,7 @@ interface QueryInterface
      *
      * @param string $path
      * @param array $data
+     * @return void
      * @throws Exception\QueryBuildingException
      */
     public function appendAtPath($path, array $data);
@@ -143,6 +153,7 @@ interface QueryInterface
 
     /**
      * @param array $request
+     * @return void
      */
     public function replaceRequest(array $request);
 }

@@ -17,7 +17,7 @@ use Flowpack\ElasticSearch\Domain\Model\Index;
 use TYPO3\Flow\Annotations as Flow;
 
 /**
- * Request Driver for Elastic version 1.x
+ * Request driver for Elasticsearch version 1.x
  *
  * @Flow\Scope("singleton")
  */

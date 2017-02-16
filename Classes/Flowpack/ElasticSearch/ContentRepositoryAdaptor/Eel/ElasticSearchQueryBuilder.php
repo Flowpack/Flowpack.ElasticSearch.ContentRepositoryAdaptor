@@ -544,7 +544,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     public function fetch()
     {
         $timeBefore = microtime(true);
-        $request = $this->request->getRequestAsJSON();
+        $request = $this->request->getRequestAsJson();
         $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request);
         $timeAfterwards = microtime(true);
 
@@ -585,7 +585,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     public function count()
     {
         $timeBefore = microtime(true);
-        $request = $this->getRequest()->getCountRequestAsJSON();
+        $request = $this->getRequest()->getCountRequestAsJson();
 
         $response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', [], $request);
         $timeAfterwards = microtime(true);
@@ -734,19 +734,19 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * Proxy method to access the public method of the Request object
      *
-     * This is useful with custom Request type where not wrapper method exist in the QueryBuilder.
+     * This is used to call a method of a custom Request type where no corresponding wrapper method exist in the QueryBuilder.
      *
      * @param string $method
-     * @param array $args
+     * @param array $arguments
      * @return $this
      * @throws Exception
      */
-    public function __call($method, array $args)
+    public function __call($method, array $arguments)
     {
         if (!method_exists($this->request, $method)) {
             throw new Exception(sprintf('Method "%s" does not exist in the current Request object "%s"', $method, get_class($this->request)), 1486763515);
         }
-        call_user_func_array([$this->request, $method], $args);
+        call_user_func_array([$this->request, $method], $arguments);
         return $this;
     }
 }
