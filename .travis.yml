@@ -1,6 +1,10 @@
 language: php
 matrix:
   include:
+    - php: 7.1
+      env: ES=1
+    - php: 7.1
+      env: ES=2
     - php: 7.0
       env: ES=1
     - php: 7.0
@@ -20,9 +24,9 @@ before_install:
   - cd ..
   - git clone https://github.com/neos/neos-base-distribution.git -b ${NEOS_TARGET_VERSION}
   - cd neos-base-distribution
-  - composer require neos/content-repository-search:~2.1.0 flowpack/elasticsearch-contentrepositoryadaptor
+  - composer require --no-update --no-interaction flowpack/elasticsearch-contentrepositoryadaptor
 install:
-  - composer install
+  - composer install --no-interaction
   - cd ..
   - rm -rf neos-base-distribution/Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor
   - mv Flowpack.ElasticSearch.ContentRepositoryAdaptor neos-base-distribution/Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor
