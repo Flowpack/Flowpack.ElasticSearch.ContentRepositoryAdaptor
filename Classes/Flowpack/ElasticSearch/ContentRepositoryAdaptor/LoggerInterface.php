@@ -11,8 +11,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  * source code.
  */
 
-use TYPO3\Flow\Annotations as Flow;
-
 /**
  * Elasticsearch Logger Interface
  */

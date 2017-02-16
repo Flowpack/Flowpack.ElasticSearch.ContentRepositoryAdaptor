@@ -86,7 +86,7 @@ trait IndexWorkspaceTrait
 
         $this->nodeFactory->reset();
         $context->getFirstLevelNodeCache()->flush();
-         
+
         if ($callback !== null) {
             $callback($workspaceName, $indexedNodes, $dimensions);
         }

@@ -84,6 +84,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
     /**
      * The ElasticSearch request, as it is being built up.
+     *
      * @var QueryInterface
      * @Flow\Inject
      */
@@ -172,7 +173,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * This algorithm can be re-checked when https://github.com/elasticsearch/elasticsearch/issues/3300 is merged.
      *
-     *
      * @param integer $limit
      * @return ElasticSearchQueryBuilder
      * @api
@@ -200,7 +200,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
     /**
      * output records starting at $from
-     *
      *
      * @param integer $from
      * @return ElasticSearchQueryBuilder
@@ -304,6 +303,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     public function queryFilter($filterType, $filterOptions, $clauseType = 'must')
     {
         $this->request->queryFilter($filterType, $filterOptions, $clauseType);
+
         return $this;
     }
 
@@ -320,6 +320,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     public function appendAtPath($path, array $data)
     {
         $this->request->appendAtPath($path, $data);
+
         return $this;
     }
 
@@ -410,6 +411,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     public function aggregation($name, array $aggregationDefinition, $parentPath = null)
     {
         $this->request->aggregation($name, $aggregationDefinition, $parentPath);
+
         return $this;
     }
 
@@ -464,6 +466,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     public function suggestions($name, array $suggestionDefinition)
     {
         $this->request->suggestions($name, $suggestionDefinition);
+
         return $this;
     }
 
@@ -500,6 +503,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         if (isset($this->result['hits']['total'])) {
             return (int)$this->result['hits']['total'];
         }
+
         return 0;
     }
 
@@ -673,6 +677,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     public function request($path, $requestPart)
     {
         $this->request->setByPath($path, $requestPart);
+
         return $this;
     }
 
@@ -747,6 +752,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             throw new Exception(sprintf('Method "%s" does not exist in the current Request object "%s"', $method, get_class($this->request)), 1486763515);
         }
         call_user_func_array([$this->request, $method], $arguments);
+
         return $this;
     }
 }

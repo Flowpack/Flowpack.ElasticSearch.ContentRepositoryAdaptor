@@ -14,7 +14,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use TYPO3\Flow\Annotations as Flow;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 
 /**
  * Abstract Elasticsearch driver

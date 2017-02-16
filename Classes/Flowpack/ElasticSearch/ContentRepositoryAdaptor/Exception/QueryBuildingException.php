@@ -12,7 +12,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
-use TYPO3\Flow\Annotations as Flow;
 
 /**
  * A Query Building Exception
