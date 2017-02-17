@@ -8,13 +8,13 @@ main functionalities:
 * finding Nodes in TypoScript / Eel by arbitrary queries
 * Full-Text Indexing of Pages and other Documents (of course including the full content)
 
-## Elastic version support 
+## Elastic version support
 
-You can switch the Elastic driver by editing ```Settings.yaml``` 
+You can switch the Elastic driver by editing ```Settings.yaml```
 (```Flowpack.ElasticSearchContentRepositoryAdaptor.driver.version```) with the following value:
 
 * ```1.x``` to support Elastic 1.2 to 1.7
-* ```2.x``` to support Elastic 2.x to 1.4 
+* ```2.x``` to support Elastic 2.x
 
 _Currently the Driver interfaces as not marked as API, and can be changed to adapt to future needs (especially the support of Elastic v5)._
 
@@ -48,6 +48,7 @@ Finally, run `./flow nodeindex:build`, and add the search plugin to your page. I
 There is a need, depending on your version of Elasticsearch, to add specific configuration to your
 Elasticsearch Configuration File `<your-elasticsearch>/config/elasticsearch.yml`.
 
+- [ElasticSearch 2.x](Documentation/ElasticConfiguration-2.x.md)
 - [ElasticSearch 1.6 to 1.7](Documentation/ElasticConfiguration-1.6-1.7.md)
 - [ElasticSearch 1.4 to 1.5](Documentation/ElasticConfiguration-1.4-1.5.md)
 - [ElasticSearch 1.3](Documentation/ElasticConfiguration-1.3.md)
@@ -680,7 +681,7 @@ in the NodeTypes.yaml. Generally this works by defining the global mapping at `[
 
 ## Change the default Elastic index name
 
-If you need to run serveral (different) neos instances on the same elasticsearch server you will need to change the Configuration/Settings.yaml indexName for each of your project. 
+If you need to run serveral (different) neos instances on the same elasticsearch server you will need to change the Configuration/Settings.yaml indexName for each of your project.
 
 So `./flow nodeindex:build` or `./flow nodeindex:cleanup` won't overwrite your other sites index.
 

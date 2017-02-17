@@ -42,7 +42,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                         '_id' => $document->getId()
                     ]
                 ],
-                // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
+                // http://www.elasticsearch.org/guide/en/elasticsearch/reference/1.7/docs-update.html
                 [
                     'script' => '
                             fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new LinkedHashMap());

@@ -42,7 +42,7 @@ class IndexerDriver extends Version1\IndexerDriver
                         '_retry_on_conflict' => 3
                     ]
                 ],
-                // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
+                // http://www.elasticsearch.org/guide/en/elasticsearch/reference/2.4/docs-update.html
                 [
                     'script' => [
                         'inline' => '
