@@ -213,19 +213,23 @@ class ElasticSearchQueryTest extends FunctionalTestCase
      */
     public function termSuggestion()
     {
-        $titleSuggestionKey = "chickn";
+        $titleSuggestionKey = 'chickn';
 
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->termSuggestions($titleSuggestionKey, "title")
+            ->termSuggestions($titleSuggestionKey, 'title')
             ->execute()
             ->getSuggestions();
 
-        $this->assertArrayHasKey("options", $result);
+        $this->assertArrayHasKey('suggestions', $result);
+        $this->assertTrue(is_array($result['suggestions']), 'Suggestions must be an array.');
+        $firstSuggestion = current($result['suggestions']);
 
-        $this->assertCount(1, $result['options']);
+        $this->assertArrayHasKey('options', $firstSuggestion);
 
-        $this->assertEquals('chicken', $result['options'][0]['text']);
+        $this->assertCount(1, $firstSuggestion['options']);
+
+        $this->assertEquals('chicken', $firstSuggestion['options'][0]['text']);
     }
 
     /**

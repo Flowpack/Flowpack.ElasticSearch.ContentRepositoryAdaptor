@@ -208,20 +208,32 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     }
 
     /**
+     * Returns an array of type
+     * [
+     *     <suggestionName> => [
+     *         'text' => <term>
+     *         'options' => [
+     *              [
+     *               'text' => <suggestionText>
+     *               'score' => <score>
+     *              ],
+     *              [
+     *              ...
+     *              ]
+     *         ]
+     *     ]
+     * ]
+     *
      * @return array
      */
     public function getSuggestions()
     {
         $this->initialize();
-        if (count($this->result['suggest']) === 1) {
-            $suggestArray = current($this->result['suggest']);
-
-            if (count($suggestArray) === 1) {
-                return current($suggestArray);
-            }
+        if (array_key_exists('suggest', $this->result)) {
+            return $this->result['suggest'];
         }
 
-        return $this->result['suggest'];
+        return [];
     }
 
     /**
