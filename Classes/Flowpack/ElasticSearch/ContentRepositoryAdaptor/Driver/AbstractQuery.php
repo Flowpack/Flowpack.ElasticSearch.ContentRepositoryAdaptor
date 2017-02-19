@@ -96,13 +96,13 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * {@inheritdoc}
      */
-    public function aggregation($name, array $aggregationDefinition, $parentPath = null)
+    public function aggregation($name, array $aggregationDefinition, $parentPath = '')
     {
         if (!array_key_exists('aggregations', $this->request)) {
             $this->request['aggregations'] = [];
         }
 
-        if ($parentPath !== null) {
+        if ((string)$parentPath !== '') {
             $this->addSubAggregation($parentPath, $name, $aggregationDefinition);
         } else {
             $this->request['aggregations'][$name] = $aggregationDefinition;
@@ -116,8 +116,8 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
      * insert your $aggregationConfiguration under
      * $this->request['aggregations']['foo']['aggregations']['bar']['aggregations'][$name]
      *
-     * @param $parentPath
-     * @param $name
+     * @param string $parentPath The parent path to add the sub aggregation to
+     * @param string $name The name to identify the resulting aggregation
      * @param array $aggregationConfiguration
      * @return QueryInterface
      * @throws Exception\QueryBuildingException
@@ -127,9 +127,9 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
         // Find the parentPath
         $path =& $this->request['aggregations'];
 
-        foreach (explode(".", $parentPath) as $subPart) {
+        foreach (explode('.', $parentPath) as $subPart) {
             if ($path == null || !array_key_exists($subPart, $path)) {
-                throw new Exception\QueryBuildingException("The parent path " . $subPart . " could not be found when adding a sub aggregation");
+                throw new Exception\QueryBuildingException(sprintf('The parent path segment "%s" could not be found when adding a sub aggregation to parent path "%s"', $subPart, $parentPath));
             }
             $path =& $path[$subPart]['aggregations'];
         }
