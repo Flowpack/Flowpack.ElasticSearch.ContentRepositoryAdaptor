@@ -11,7 +11,7 @@ main functionalities:
 ## Elastic version support
 
 You can switch the Elastic driver by editing ```Settings.yaml```
-(```Flowpack.ElasticSearchContentRepositoryAdaptor.driver.version```) with the following value:
+(```Flowpack.ElasticSearch.ContentRepositoryAdaptor.driver.version```) with the following value:
 
 * ```1.x``` to support Elastic 1.2 to 1.7
 * ```2.x``` to support Elastic 2.x
