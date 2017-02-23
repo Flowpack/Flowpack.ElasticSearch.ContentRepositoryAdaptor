@@ -208,28 +208,50 @@ class ElasticSearchQueryTest extends FunctionalTestCase
         $this->assertEquals($expectedChickenBucket, $result[$aggregationTitle]['buckets'][0]);
     }
 
-    /**
-     * @test
-     */
-    public function termSuggestion()
+    public function termSuggestionDataProvider()
     {
-        $titleSuggestionKey = 'chickn';
+        return [
+            'singleWord' => [
+                'term' => 'chickn',
+                'expectedBestSuggestions' => [
+                    'chicken'
+                ]
+            ],
+            'multiWord' => [
+                'term' => 'chickn eggs',
+                'expectedBestSuggestions' => [
+                    'chicken',
+                    'egg'
+                ]
+            ],
+        ];
+    }
 
+    /**
+     * @dataProvider termSuggestionDataProvider
+     * @test
+     *
+     * @param string $term
+     * @param array $expectedBestSuggestions
+     */
+    public function termSuggestion($term, $expectedBestSuggestions)
+    {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->termSuggestions($titleSuggestionKey, 'title')
+            ->termSuggestions($term, 'title')
             ->execute()
             ->getSuggestions();
 
         $this->assertArrayHasKey('suggestions', $result);
         $this->assertTrue(is_array($result['suggestions']), 'Suggestions must be an array.');
-        $firstSuggestion = current($result['suggestions']);
+        $this->assertCount(count($expectedBestSuggestions), $result['suggestions']);
 
-        $this->assertArrayHasKey('options', $firstSuggestion);
-
-        $this->assertCount(1, $firstSuggestion['options']);
-
-        $this->assertEquals('chicken', $firstSuggestion['options'][0]['text']);
+        foreach ($expectedBestSuggestions as $key => $expectedBestSuggestion) {
+            $suggestion = $result['suggestions'][$key];
+            $this->assertArrayHasKey('options', $suggestion);
+            $this->assertCount(1, $suggestion['options']);
+            $this->assertEquals($expectedBestSuggestion, $suggestion['options'][0]['text']);
+        }
     }
 
     /**
