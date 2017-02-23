@@ -279,29 +279,35 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
     public function simpleAggregationExamples()
     {
         return [
-            ['min', 'foo', 'bar'],
-            ['terms', 'foo', 'bar'],
-            ['sum', 'foo', 'bar'],
-            ['stats', 'foo', 'bar'],
-            ['value_count', 'foo', 'bar']
+            ['min', 'foo', 'bar', 10],
+            ['terms', 'foo', 'bar', 10],
+            ['sum', 'foo', 'bar', 10],
+            ['stats', 'foo', 'bar', 10],
+            ['value_count', 'foo', 'bar', 20]
         ];
     }
 
     /**
      * @test
      * @dataProvider simpleAggregationExamples
+     *
+     * @param string $type
+     * @param string $name
+     * @param string $field
+     * @param integer size
      */
-    public function anSimpleAggregationCanBeAddedToTheRequest($type, $name, $field)
+    public function anSimpleAggregationCanBeAddedToTheRequest($type, $name, $field, $size)
     {
         $expected = [
             $name => [
                 $type => [
-                    'field' => $field
+                    'field' => $field,
+                    'size' => $size
                 ]
             ]
         ];
 
-        $this->queryBuilder->fieldBasedAggregation($name, $field, $type);
+        $this->queryBuilder->fieldBasedAggregation($name, $field, $type, '', $size);
         $actual = $this->queryBuilder->getRequest()->toArray();
 
         $this->assertInArray($expected, $actual);
@@ -312,19 +318,28 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
      */
     public function anAggregationCanBeSubbedUnderAPath()
     {
-        $this->queryBuilder->fieldBasedAggregation("foo", "bar");
-        $this->queryBuilder->fieldBasedAggregation("bar", "bar", "terms", "foo");
-        $this->queryBuilder->fieldBasedAggregation("baz", "bar", "terms", "foo.bar");
+        $this->queryBuilder->fieldBasedAggregation('foo', 'bar');
+        $this->queryBuilder->fieldBasedAggregation('bar', 'bar', 'terms', 'foo');
+        $this->queryBuilder->fieldBasedAggregation('baz', 'bar', 'terms', 'foo.bar');
 
         $expected = [
-            "foo" => [
-                "terms" => ["field" => "bar"],
-                "aggregations" => [
-                    "bar" => [
-                        "terms" => ["field" => "bar"],
-                        "aggregations" => [
-                            "baz" => [
-                                "terms" => ["field" => "bar"]
+            'foo' => [
+                'terms' => [
+                    'field' => 'bar',
+                    'size' => 10
+                ],
+                'aggregations' => [
+                    'bar' => [
+                        'terms' => [
+                            'field' => 'bar',
+                            'size' => 10
+                        ],
+                        'aggregations' => [
+                            'baz' => [
+                                'terms' => [
+                                    'field' => 'bar',
+                                    'size' => 10
+                                ],
                             ]
                         ]
                     ]

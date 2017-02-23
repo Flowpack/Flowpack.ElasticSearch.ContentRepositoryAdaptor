@@ -91,14 +91,14 @@ interface QueryInterface
     /**
      * This method is used to create any kind of aggregation.
      *
-     * @param string $name
+     * @param string $name The name to identify the resulting aggregation
      * @param array $aggregationDefinition
-     * @param string $parentPath
+     * @param string $parentPath ParentPath to define the parent of a sub aggregation
      * @return void
      * @api
      * @throws Exception\QueryBuildingException
      */
-    public function aggregation($name, array $aggregationDefinition, $parentPath = null);
+    public function aggregation($name, array $aggregationDefinition, $parentPath = '');
 
     /**
      * This method is used to create any kind of suggestion.
