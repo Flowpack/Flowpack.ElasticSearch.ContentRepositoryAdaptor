@@ -38,6 +38,7 @@ Flowpack:
                   - 'highlight'
                   - 'aggs'
                   - 'aggregations'
+                  - 'suggest'
 
             document:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\DocumentDriver'
