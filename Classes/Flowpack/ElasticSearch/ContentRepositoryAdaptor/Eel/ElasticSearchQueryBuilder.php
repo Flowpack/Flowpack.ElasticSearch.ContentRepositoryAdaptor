@@ -424,7 +424,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * nodes = ${Search....termSuggestions("aTerm")}
      *
-     * Access all suggestions data with {nodes.suggestions} in your fluid template
+     * Access all suggestions data with ${Search....getSuggestions()}
      *
      * @param string $text
      * @param string $field
