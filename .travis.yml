@@ -27,6 +27,8 @@ install:
   - rm -rf neos-base-distribution/Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor
   - mv Flowpack.ElasticSearch.ContentRepositoryAdaptor neos-base-distribution/Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor
   - cd neos-base-distribution
+  - composer dump-autoload
+  - ./flow flow:package:rescan
 script:
   - bin/phpunit --colors -c Build/BuildEssentials/PhpUnit/UnitTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Unit
   - if [ "$ES" = 1 ]; then FLOW_CONTEXT="Testing/ElasticVersion1" bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional; fi
