@@ -171,19 +171,19 @@
 
 'Neos.NodeTypes:Text':
   properties:
-    text:
+    'text':
       search:
         fulltextExtractor: '${Indexing.extractHtmlTags(value)}'
 
 'Neos.NodeTypes:Headline':
   properties:
-    title:
+    'title':
       search:
         fulltextExtractor: '${Indexing.extractHtmlTags(value)}'
 
 
 'Neos.NodeTypes:TextWithImage':
   properties:
-    source:
+    'text':
       search:
         fulltextExtractor: '${Indexing.extractHtmlTags(value)}'

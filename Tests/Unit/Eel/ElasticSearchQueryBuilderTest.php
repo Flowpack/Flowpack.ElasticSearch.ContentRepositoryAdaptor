@@ -111,19 +111,8 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
                         'bool' => [
                             'must' => [
                                 0 => [
-                                    'bool' => [
-                                        'should' => [
-                                            0 => [
-                                                'term' => [
-                                                    '__parentPath' => '/foo/bar'
-                                                ]
-                                            ],
-                                            1 => [
-                                                'term' => [
-                                                    '__path' => '/foo/bar'
-                                                ]
-                                            ]
-                                        ]
+                                    'term' => [
+                                        '__parentPath' => '/foo/bar'
                                     ]
                                 ],
                                 1 => [
