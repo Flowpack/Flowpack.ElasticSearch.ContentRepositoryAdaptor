@@ -88,7 +88,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
         ]);
         $rootNode = $this->context->getRootNode();
 
-        $this->siteNode = $rootNode->createNode('welcome', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
+        $this->siteNode = $rootNode->createNode('welcome', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
         $this->siteNode->setProperty('title', 'welcome');
 
         $this->nodeDataRepository = $this->objectManager->get(NodeDataRepository::class);
@@ -112,7 +112,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
         /** @var ElasticSearchQueryBuilder $query */
         $query = $this->objectManager->get(ElasticSearchQueryBuilder::class);
         $cleanRequestArray = $query->getRequest()->toArray();
-        $query->nodeType('TYPO3.Neos.NodeTypes:Page');
+        $query->nodeType('Neos.NodeTypes:Page');
 
         $query2 = $this->objectManager->get(ElasticSearchQueryBuilder::class);
 
@@ -138,7 +138,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         $resultCount = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('TYPO3.Neos.NodeTypes:Page')
+            ->nodeType('Neos.NodeTypes:Page')
             ->count();
         $this->assertEquals(3, $resultCount);
     }
@@ -162,7 +162,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         $query = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('TYPO3.Neos.NodeTypes:Page')
+            ->nodeType('Neos.NodeTypes:Page')
             ->limit(1);
 
         $resultCount = $query->count();
@@ -261,7 +261,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('TYPO3.Neos.NodeTypes:Page')
+            ->nodeType('Neos.NodeTypes:Page')
             ->sortDesc('title')
             ->execute();
 
@@ -284,7 +284,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('TYPO3.Neos.NodeTypes:Page')
+            ->nodeType('Neos.NodeTypes:Page')
             ->sortAsc('title')
             ->execute();
         /** @var ElasticSearchQueryResult $result */
@@ -301,7 +301,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('TYPO3.Neos.NodeTypes:Page')
+            ->nodeType('Neos.NodeTypes:Page')
             ->sortAsc('title')
             ->execute();
 
@@ -323,13 +323,13 @@ class ElasticSearchQueryTest extends FunctionalTestCase
      */
     protected function createNodesForNodeSearchTest()
     {
-        $newNode1 = $this->siteNode->createNode('test-node-1', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
+        $newNode1 = $this->siteNode->createNode('test-node-1', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
         $newNode1->setProperty('title', 'chicken');
 
-        $newNode2 = $this->siteNode->createNode('test-node-2', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
+        $newNode2 = $this->siteNode->createNode('test-node-2', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
         $newNode2->setProperty('title', 'chicken');
 
-        $newNode3 = $this->siteNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
+        $newNode3 = $this->siteNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
         $newNode3->setProperty('title', 'egg');
 
         $dimensionContext = $this->contextFactory->create([
