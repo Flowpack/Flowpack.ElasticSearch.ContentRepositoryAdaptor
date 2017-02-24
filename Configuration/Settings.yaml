@@ -103,10 +103,6 @@ Flowpack:
               className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\RequestDriver
             system:
               className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\SystemDriver
-TYPO3:
-  TypoScript:
-    defaultContext:
-      SearchResult: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\SearchResultHelper
 Neos:
   ContentRepository:
     Search:
@@ -154,3 +150,6 @@ Neos:
           elasticSearchMapping:
             type: string
             index: not_analyzed
+  Fusion:
+    defaultContext:
+      SearchResult: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\SearchResultHelper

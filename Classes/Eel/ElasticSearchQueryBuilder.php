@@ -329,9 +329,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * Example Usage:
      *
-     *   searchFilter = TYPO3.TypoScript:RawArray {
+     *   searchFilter = Neos.Fusion:RawArray {
      *      author = 'Max'
-     *      tags = TYPO3.TypoScript:RawArray {
+     *      tags = Neos.Fusion:RawArray {
      *        0 = 'a'
      *        1 = 'b'
      *      }
@@ -394,8 +394,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * Example Usage to create a terms aggregation for a property color:
      *
-     * aggregationDefinition = TYPO3.TypoScript:RawArray {
-     *   terms = TYPO3.TypoScript:RawArray {
+     * aggregationDefinition = Neos.Fusion:RawArray {
+     *   terms = Neos.Fusion:RawArray {
      *     field = "color"
      *   }
      * }
@@ -450,9 +450,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * Example Usage of a term suggestion for the fulltext search
      *
-     * suggestionDefinition = TYPO3.TypoScript:RawArray {
+     * suggestionDefinition = Neos.Fusion:RawArray {
      *     text = "some text"
-     *     terms = TYPO3.TypoScript:RawArray {
+     *     terms = Neos.Fusion:RawArray {
      *         field = "body"
      *     }
      * }
