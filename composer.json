@@ -78,7 +78,8 @@
             "Neos.Neos-20161201222211",
             "Neos.Fusion-20161202215034",
             "Neos.ContentRepository.Search-20161210231100",
-            "Neos.Fusion-20161219092345"
+            "Neos.Fusion-20161219092345",
+            "Neos.ContentRepository-20161219093512"
         ]
     }
 }
