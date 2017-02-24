@@ -138,3 +138,7 @@ TYPO3:
           elasticSearchMapping:
             type: string
             index: not_analyzed
+
+  TypoScript:
+    defaultContext:
+      SearchResult: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\SearchResultHelper'
