@@ -12,7 +12,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
-use Neos\Flow\Utility\Arrays;
+use Neos\Utility\Arrays;
 
 class FunctionScoreQuery extends FilteredQuery
 {

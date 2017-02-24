@@ -40,7 +40,7 @@ class NodeTypeMappingBuilder
     protected $nodeTypeManager;
 
     /**
-     * @var \Neos\Flow\Error\Result
+     * @var \Neos\Error\Messages\Result
      */
     protected $lastMappingErrors;
 
@@ -82,7 +82,7 @@ class NodeTypeMappingBuilder
      */
     public function buildMappingInformation(Index $index)
     {
-        $this->lastMappingErrors = new \Neos\Flow\Error\Result();
+        $this->lastMappingErrors = new \Neos\Error\Messages\Result();
 
         $mappings = new MappingCollection(MappingCollection::TYPE_ENTITY);
 
@@ -124,7 +124,7 @@ class NodeTypeMappingBuilder
                         $mapping->setPropertyByPath($propertyName, $this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping']);
                     }
                 } else {
-                    $this->lastMappingErrors->addWarning(new \Neos\Flow\Error\Warning('Node Type "' . $nodeTypeName . '" - property "' . $propertyName . '": No ElasticSearch Mapping found.'));
+                    $this->lastMappingErrors->addWarning(new \Neos\Error\Messages\Warning('Node Type "' . $nodeTypeName . '" - property "' . $propertyName . '": No ElasticSearch Mapping found.'));
                 }
             }
 
@@ -135,7 +135,7 @@ class NodeTypeMappingBuilder
     }
 
     /**
-     * @return \Neos\Flow\Error\Result
+     * @return \Neos\Error\Messages\Result
      */
     public function getLastMappingErrors()
     {

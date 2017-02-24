@@ -13,7 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use TYPO3\Eel\ProtectedContextAwareInterface;
-use Neos\Flow\Utility\Arrays;
+use Neos\Utility\Arrays;
 
 /**
  * Abstract Elasticsearch Query
