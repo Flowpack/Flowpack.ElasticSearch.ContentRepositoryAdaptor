@@ -3,10 +3,11 @@
     "type": "typo3-flow-package",
     "description": "This package provides functionality for using Elasticsearch on top of Neos.ContentRepository.Search",
     "homepage": "http://flowpack.org/",
-    "license": ["LGPL-3.0"],
+    "license": [
+        "LGPL-3.0"
+    ],
     "require": {
         "php": ">=5.5.0",
-
         "flowpack/elasticsearch": "^1.1.0",
         "neos/content-repository-search": "^2.1.0"
     },
@@ -14,5 +15,10 @@
         "psr-4": {
             "Flowpack\\ElasticSearch\\ContentRepositoryAdaptor\\": "Classes"
         }
+    },
+    "extra": {
+        "applied-flow-migrations": [
+            "TYPO3.FLOW3-201201261636"
+        ]
     }
 }
