@@ -15,6 +15,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandCont
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
 use Neos\Flow\Persistence\QueryResultInterface;
+use Neos\Flow\Tests\FunctionalTestCase;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
@@ -22,11 +23,9 @@ use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Service\Context;
 use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
+use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
 
-/**
- * Testcase for ElasticSearchQuery
- */
-class ElasticSearchQueryTest extends \Neos\Flow\Tests\FunctionalTestCase
+class ElasticSearchQueryTest extends FunctionalTestCase
 {
     /**
      * @var WorkspaceRepository
@@ -106,7 +105,23 @@ class ElasticSearchQueryTest extends \Neos\Flow\Tests\FunctionalTestCase
     }
 
     /**
-     * @return ElasticSearchQueryBuilder
+     * @test
+     */
+    public function elasticSearchQueryBuilderStartsClean()
+    {
+        /** @var ElasticSearchQueryBuilder $query */
+        $query = $this->objectManager->get(ElasticSearchQueryBuilder::class);
+        $cleanRequestArray = $query->getRequest()->toArray();
+        $query->nodeType('Neos.NodeTypes:Page');
+
+        $query2 = $this->objectManager->get(ElasticSearchQueryBuilder::class);
+
+        $this->assertNotSame($query->getRequest(), $query2->getRequest());
+        $this->assertEquals($cleanRequestArray, $query2->getRequest()->toArray());
+    }
+
+    /**
+     * @return QueryBuilderInterface
      */
     protected function getQueryBuilder()
     {
@@ -125,7 +140,7 @@ class ElasticSearchQueryTest extends \Neos\Flow\Tests\FunctionalTestCase
             ->log($this->getLogMessagePrefix(__METHOD__))
             ->nodeType('Neos.NodeTypes:Page')
             ->count();
-        $this->assertEquals(4, $resultCount);
+        $this->assertEquals(3, $resultCount);
     }
 
     /**
@@ -151,7 +166,7 @@ class ElasticSearchQueryTest extends \Neos\Flow\Tests\FunctionalTestCase
             ->limit(1);
 
         $resultCount = $query->count();
-        $this->assertEquals(4, $resultCount, 'Asserting the count query returns the total count.');
+        $this->assertEquals(3, $resultCount, 'Asserting the count query returns the total count.');
     }
 
     /**
@@ -183,7 +198,7 @@ class ElasticSearchQueryTest extends \Neos\Flow\Tests\FunctionalTestCase
 
         $this->assertArrayHasKey($aggregationTitle, $result);
 
-        $this->assertCount(3, $result[$aggregationTitle]['buckets']);
+        $this->assertCount(2, $result[$aggregationTitle]['buckets']);
 
         $expectedChickenBucket = [
             'key' => 'chicken',
@@ -193,24 +208,50 @@ class ElasticSearchQueryTest extends \Neos\Flow\Tests\FunctionalTestCase
         $this->assertEquals($expectedChickenBucket, $result[$aggregationTitle]['buckets'][0]);
     }
 
-    /**
-     * @test
-     */
-    public function termSuggestion()
+    public function termSuggestionDataProvider()
     {
-        $titleSuggestionKey = "chickn";
+        return [
+            'singleWord' => [
+                'term' => 'chickn',
+                'expectedBestSuggestions' => [
+                    'chicken'
+                ]
+            ],
+            'multiWord' => [
+                'term' => 'chickn eggs',
+                'expectedBestSuggestions' => [
+                    'chicken',
+                    'egg'
+                ]
+            ],
+        ];
+    }
 
+    /**
+     * @dataProvider termSuggestionDataProvider
+     * @test
+     *
+     * @param string $term
+     * @param array $expectedBestSuggestions
+     */
+    public function termSuggestion($term, $expectedBestSuggestions)
+    {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->termSuggestions($titleSuggestionKey, "title")
+            ->termSuggestions($term, 'title')
             ->execute()
             ->getSuggestions();
 
-        $this->assertArrayHasKey("options", $result);
+        $this->assertArrayHasKey('suggestions', $result);
+        $this->assertTrue(is_array($result['suggestions']), 'Suggestions must be an array.');
+        $this->assertCount(count($expectedBestSuggestions), $result['suggestions']);
 
-        $this->assertCount(1, $result['options']);
-
-        $this->assertEquals('chicken', $result['options'][0]['text']);
+        foreach ($expectedBestSuggestions as $key => $expectedBestSuggestion) {
+            $suggestion = $result['suggestions'][$key];
+            $this->assertArrayHasKey('options', $suggestion);
+            $this->assertCount(1, $suggestion['options']);
+            $this->assertEquals($expectedBestSuggestion, $suggestion['options'][0]['text']);
+        }
     }
 
     /**
@@ -227,13 +268,13 @@ class ElasticSearchQueryTest extends \Neos\Flow\Tests\FunctionalTestCase
         /** @var QueryResultInterface $result $node */
 
         $this->assertInstanceOf(QueryResultInterface::class, $result);
-        $this->assertCount(4, $result, 'The result should have 4 items');
-        $this->assertEquals(4, $result->count(), 'Count should be 4');
+        $this->assertCount(3, $result, 'The result should have 3 items');
+        $this->assertEquals(3, $result->count(), 'Count should be 3');
 
         $node = $result->getFirst();
 
         $this->assertInstanceOf(NodeInterface::class, $node);
-        $this->assertEquals('welcome', $node->getProperty('title'), 'Asserting a desc sort order by property title');
+        $this->assertEquals('egg', $node->getProperty('title'), 'Asserting a desc sort order by property title');
     }
 
     /**

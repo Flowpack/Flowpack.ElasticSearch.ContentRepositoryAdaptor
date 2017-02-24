@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\Query;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -11,9 +11,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  * source code.
  */
 
-/**
- * Elasticsearch Logger Interface
- */
-interface LoggerInterface extends \Neos\Flow\Log\LoggerInterface
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
+
+class FunctionScoreQuery extends Version1\Query\FunctionScoreQuery
 {
 }

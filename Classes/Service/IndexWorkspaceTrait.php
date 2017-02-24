@@ -71,7 +71,7 @@ trait IndexWorkspaceTrait
         $rootNode = $context->getRootNode();
         $indexedNodes = 0;
 
-        $traverseNodes = function (NodeInterface $currentNode, &$indexedNodes) use ($limit, &$indexedNodes, &$traverseNodes) {
+        $traverseNodes = function (NodeInterface $currentNode, &$indexedNodes) use ($limit, &$traverseNodes) {
             if ($limit !== null && $indexedNodes > $limit) {
                 return;
             }
@@ -86,7 +86,7 @@ trait IndexWorkspaceTrait
 
         $this->nodeFactory->reset();
         $context->getFirstLevelNodeCache()->flush();
-         
+
         if ($callback !== null) {
             $callback($workspaceName, $indexedNodes, $dimensions);
         }

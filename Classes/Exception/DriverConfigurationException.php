@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -11,9 +11,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
+
 /**
- * Elasticsearch Logger Interface
+ * Elastic Driver Configuration exception
  */
-interface LoggerInterface extends \Neos\Flow\Log\LoggerInterface
+class DriverConfigurationException extends Exception
 {
 }

@@ -15,7 +15,8 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuild
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\Neos\Controller\CreateContentContextTrait;
+use Neos\ContentRepository\Domain\Model\Workspace;
 
 /**
  * Provides CLI features for index handling
@@ -25,6 +26,7 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
 class NodeIndexCommandController extends CommandController
 {
     use IndexWorkspaceTrait;
+    use CreateContentContextTrait;
 
     /**
      * @Flow\Inject
@@ -61,11 +63,6 @@ class NodeIndexCommandController extends CommandController
      * @var NodeTypeMappingBuilder
      */
     protected $nodeTypeMappingBuilder;
-
-    /**
-     * @var integer
-     */
-    protected $limit;
 
     /**
      * @Flow\Inject
@@ -132,6 +129,64 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
+     * Index a single node by the given identifier and workspace name
+     *
+     * @param string $identifier
+     * @param string $workspace
+     * @return void
+     */
+    public function indexNodeCommand($identifier, $workspace = null)
+    {
+        if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
+            $workspace = 'live';
+        }
+
+        $indexNode = function ($identifier, Workspace $workspace, array $dimensions) {
+            $context = $this->createContentContext($workspace->getName(), $dimensions);
+            $node = $context->getNodeByIdentifier($identifier);
+            if ($node === null) {
+                $this->outputLine('Node with the given identifier is not found.');
+                $this->quit();
+            }
+            $this->outputLine();
+            $this->outputLine('Index node "%s" (%s)', [
+                $node->getLabel(),
+                $node->getIdentifier(),
+            ]);
+            $this->outputLine('  workspace: %s', [
+                $workspace->getName()
+            ]);
+            $this->outputLine('  node type: %s', [
+                $node->getNodeType()->getName()
+            ]);
+            $this->outputLine('  dimensions: %s', [
+                json_encode($dimensions)
+            ]);
+            $this->nodeIndexer->indexNode($node);
+        };
+
+        $indexInWorkspace = function ($identifier, Workspace $workspace) use ($indexNode) {
+            $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+            if ($combinations === []) {
+                $indexNode($identifier, $workspace, []);
+            } else {
+                foreach ($combinations as $combination) {
+                    $indexNode($identifier, $workspace, $combination);
+                }
+            }
+        };
+
+        if ($workspace === null) {
+            foreach ($this->workspaceRepository->findAll() as $workspace) {
+                $indexInWorkspace($identifier, $workspace);
+            }
+        } else {
+            $workspace = $this->workspaceRepository->findByIdentifier($workspace);
+            $indexInWorkspace($identifier, $workspace);
+        }
+    }
+
+    /**
      * Index all nodes by creating a new index and when everything was completed, switch the index alias.
      *
      * This command (re-)indexes all nodes contained in the content repository and sets the schema beforehand.
@@ -166,7 +221,6 @@ class NodeIndexCommandController extends CommandController
         $this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
 
         $count = 0;
-        $this->limit = $limit;
 
         if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
             $workspace = 'live';
@@ -181,10 +235,10 @@ class NodeIndexCommandController extends CommandController
         };
         if ($workspace === null) {
             foreach ($this->workspaceRepository->findAll() as $workspace) {
-                $count += $this->indexWorkspace($workspace->getName());
+                $count += $this->indexWorkspace($workspace->getName(), $limit, $callback);
             }
         } else {
-            $count = $this->indexWorkspace($workspace);
+            $count += $this->indexWorkspace($workspace, $limit, $callback);
         }
 
         $this->nodeIndexingManager->flushQueues();
@@ -206,81 +260,17 @@ class NodeIndexCommandController extends CommandController
     public function cleanupCommand()
     {
         try {
-            $removedIndices = $this->nodeIndexer->removeOldIndices();
-            if (count($removedIndices) > 0) {
-                if (count($removedIndices) === 1) {
-                    $this->logger->log('Removed old index ' . current($removedIndices) . '.');
-                } else {
-                    $this->logger->log('Removed old indices ' . implode(', ', $removedIndices) . '.');
+            $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
+            if (count($indicesToBeRemoved) > 0) {
+                foreach ($indicesToBeRemoved as $indexToBeRemoved) {
+                    $this->logger->log('Removing old index ' . $indexToBeRemoved);
                 }
             } else {
                 $this->logger->log('Nothing to remove.');
             }
         } catch (\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
             $response = json_decode($exception->getResponse());
-            $this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s: %s"', $response->status, $response->error->type, $response->error->reason));
+            $this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s"', $response->status, $response->error));
         }
-    }
-
-    /**
-     * @param string $workspaceName
-     * @return int
-     */
-    protected function indexWorkspace($workspaceName)
-    {
-        $indexedNodes = 0;
-        $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-        if ($combinations === []) {
-            $indexedNodes += $this->indexWorkspaceWithDimensions($workspaceName);
-        } else {
-            foreach ($combinations as $combination) {
-                $indexedNodes += $this->indexWorkspaceWithDimensions($workspaceName, $combination);
-            }
-        }
-
-        return $indexedNodes;
-    }
-
-    /**
-     * @param string $workspaceName
-     * @param array $dimensions
-     * @return int
-     */
-    protected function indexWorkspaceWithDimensions($workspaceName, array $dimensions = [])
-    {
-        $indexedNodes = 0;
-        $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'dimensions' => $dimensions]);
-        $rootNode = $context->getRootNode();
-
-        $indexedNodes += $this->traverseNodes($rootNode);
-
-        if ($dimensions === []) {
-            $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)');
-        } else {
-            $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)');
-        }
-
-        return $indexedNodes;
-    }
-
-    /**
-     * @param NodeInterface $currentNode
-     * @param integer $traversedUntilNow
-     * @return integer Indexed nodes in this traversal
-     */
-    protected function traverseNodes(NodeInterface $currentNode, $traversedUntilNow = 0)
-    {
-        if ($this->limit !== null && $traversedUntilNow > $this->limit) {
-            return $traversedUntilNow;
-        }
-
-        $this->nodeIndexingManager->indexNode($currentNode);
-        $traversedUntilNow++;
-
-        foreach ($currentNode->getChildNodes() as $childNode) {
-            $traversedUntilNow = $this->traverseNodes($childNode, $traversedUntilNow);
-        }
-
-        return $traversedUntilNow;
     }
 }
