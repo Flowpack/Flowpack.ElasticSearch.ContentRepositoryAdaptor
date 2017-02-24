@@ -11,6 +11,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  * source code.
  */
 
-class Exception extends \TYPO3\Flow\Exception
+class Exception extends \Neos\Flow\Exception
 {
 }

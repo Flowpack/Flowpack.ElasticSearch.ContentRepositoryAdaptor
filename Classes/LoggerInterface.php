@@ -14,6 +14,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
 /**
  * Elasticsearch Logger Interface
  */
-interface LoggerInterface extends \TYPO3\Flow\Log\LoggerInterface
+interface LoggerInterface extends \Neos\Flow\Log\LoggerInterface
 {
 }

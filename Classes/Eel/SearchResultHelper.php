@@ -12,7 +12,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  */
 
 use TYPO3\Eel\ProtectedContextAwareInterface;
-use TYPO3\Flow\Annotations as Flow;
+use Neos\Flow\Annotations as Flow;
 
 /**
  * Eel Helper to process the ElasticSearch Query Result

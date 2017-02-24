@@ -14,7 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterface;
 use Flowpack\ElasticSearch\Domain\Model\Index;
-use TYPO3\Flow\Annotations as Flow;
+use Neos\Flow\Annotations as Flow;
 
 /**
  * Request driver for Elasticsearch version 1.x

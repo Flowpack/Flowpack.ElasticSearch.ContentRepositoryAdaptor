@@ -18,7 +18,7 @@ use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 /**
  * Testcase for ElasticSearchQueryBuilder
  */
-class GetHitArrayForNodeViewHelperTest extends \TYPO3\Flow\Tests\UnitTestCase
+class GetHitArrayForNodeViewHelperTest extends \Neos\Flow\Tests\UnitTestCase
 {
     /**
      * @var GetHitArrayForNodeViewHelper

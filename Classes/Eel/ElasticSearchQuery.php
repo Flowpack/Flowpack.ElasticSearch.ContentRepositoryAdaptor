@@ -12,7 +12,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
-use TYPO3\Flow\Persistence\QueryInterface;
+use Neos\Flow\Persistence\QueryInterface;
 
 /**
  * This ElasticSearchQuery object is just used inside ElasticSearchQueryResult->getQuery(), so that pagination

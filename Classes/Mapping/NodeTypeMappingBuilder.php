@@ -14,8 +14,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
-use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Flow\Configuration\ConfigurationManager;
+use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Configuration\ConfigurationManager;
 use TYPO3\TYPO3CR\Domain\Model\NodeType;
 use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
 
@@ -40,7 +40,7 @@ class NodeTypeMappingBuilder
     protected $nodeTypeManager;
 
     /**
-     * @var \TYPO3\Flow\Error\Result
+     * @var \Neos\Flow\Error\Result
      */
     protected $lastMappingErrors;
 
@@ -57,8 +57,8 @@ class NodeTypeMappingBuilder
      */
     public function initializeObject($cause)
     {
-        if ($cause === \TYPO3\Flow\ObjectManagement\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-            $settings = $this->configurationManager->getConfiguration(\TYPO3\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.TYPO3CR.Search');
+        if ($cause === \Neos\Flow\ObjectManagement\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
+            $settings = $this->configurationManager->getConfiguration(\Neos\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.TYPO3CR.Search');
             $this->defaultConfigurationPerType = $settings['defaultConfigurationPerType'];
         }
     }
@@ -82,7 +82,7 @@ class NodeTypeMappingBuilder
      */
     public function buildMappingInformation(Index $index)
     {
-        $this->lastMappingErrors = new \TYPO3\Flow\Error\Result();
+        $this->lastMappingErrors = new \Neos\Flow\Error\Result();
 
         $mappings = new MappingCollection(MappingCollection::TYPE_ENTITY);
 
@@ -124,7 +124,7 @@ class NodeTypeMappingBuilder
                         $mapping->setPropertyByPath($propertyName, $this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping']);
                     }
                 } else {
-                    $this->lastMappingErrors->addWarning(new \TYPO3\Flow\Error\Warning('Node Type "' . $nodeTypeName . '" - property "' . $propertyName . '": No ElasticSearch Mapping found.'));
+                    $this->lastMappingErrors->addWarning(new \Neos\Flow\Error\Warning('Node Type "' . $nodeTypeName . '" - property "' . $propertyName . '": No ElasticSearch Mapping found.'));
                 }
             }
 
@@ -135,7 +135,7 @@ class NodeTypeMappingBuilder
     }
 
     /**
-     * @return \TYPO3\Flow\Error\Result
+     * @return \Neos\Flow\Error\Result
      */
     public function getLastMappingErrors()
     {

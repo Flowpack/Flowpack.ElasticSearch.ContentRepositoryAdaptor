@@ -49,7 +49,7 @@ class GetHitArrayForNodeViewHelper extends AbstractViewHelper
         $hitArray = $queryResultObject->searchHitForNode($node);
 
         if (!empty($path)) {
-            return \TYPO3\Flow\Utility\Arrays::getValueByPath($hitArray, $path);
+            return \Neos\Flow\Utility\Arrays::getValueByPath($hitArray, $path);
         }
 
         return $hitArray;

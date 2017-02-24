@@ -12,7 +12,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface;
-use TYPO3\Flow\Annotations as Flow;
+use Neos\Flow\Annotations as Flow;
 
 /**
  * A factory for creating the ElasticSearch Query

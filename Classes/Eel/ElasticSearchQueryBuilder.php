@@ -17,8 +17,8 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use TYPO3\Eel\ProtectedContextAwareInterface;
-use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Flow\ObjectManagement\ObjectManagerInterface;
+use Neos\Flow\Annotations as Flow;
+use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Search\Search\QueryBuilderInterface;
 
@@ -571,7 +571,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * Get a query result object for lazy execution of the query
      *
-     * @return \Traversable<\TYPO3\Flow\Persistence\QueryResultInterface>
+     * @return \Traversable<\Neos\Flow\Persistence\QueryResultInterface>
      * @api
      */
     public function execute()

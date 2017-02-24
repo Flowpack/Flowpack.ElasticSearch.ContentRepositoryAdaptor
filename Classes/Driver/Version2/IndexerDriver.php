@@ -14,7 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
-use TYPO3\Flow\Annotations as Flow;
+use Neos\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 
 /**
