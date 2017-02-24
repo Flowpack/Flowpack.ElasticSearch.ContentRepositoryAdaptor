@@ -1,5 +1,5 @@
 
-'TYPO3.Neos:Node': &node
+'Neos.Neos:Node': &node
   search:
     fulltext:
       enable: true
@@ -86,13 +86,13 @@
 
 'unstructured': *node
 
-'TYPO3.Neos:Hidable':
+'Neos.Neos:Hidable':
   properties:
     '_hidden':
       search:
         indexing: '${node.hidden}'
 
-'TYPO3.Neos:Timable':
+'Neos.Neos:Timable':
   properties:
     '_hiddenBeforeDateTime':
       search:
@@ -111,7 +111,7 @@
         indexing: '${(node.hiddenAfterDateTime ? Date.format(node.hiddenAfterDateTime, "Y-m-d\TH:i:sP") : null)}'
 
 
-'TYPO3.Neos:Document':
+'Neos.Neos:Document':
   search:
     fulltext:
       isRoot: true

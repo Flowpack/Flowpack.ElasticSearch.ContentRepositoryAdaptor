@@ -15,7 +15,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuild
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
-use TYPO3\Neos\Controller\CreateContentContextTrait;
+use Neos\Neos\Controller\CreateContentContextTrait;
 use TYPO3\TYPO3CR\Domain\Model\Workspace;
 
 /**
