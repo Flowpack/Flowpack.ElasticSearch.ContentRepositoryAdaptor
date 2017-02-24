@@ -17,7 +17,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterfac
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Neos\Flow\Annotations as Flow;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 /**
  * Indexer driver for Elasticsearch version 1.x

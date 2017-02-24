@@ -13,7 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 
 use Neos\Eel\ProtectedContextAwareInterface;
 use Neos\Flow\Persistence\QueryResultInterface;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContextAwareInterface
 {

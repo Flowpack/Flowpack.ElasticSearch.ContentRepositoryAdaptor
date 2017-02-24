@@ -1,144 +1,156 @@
+
 Flowpack:
   ElasticSearch:
     ContentRepositoryAdaptor:
       driver:
-        version: '1.x'
+        version: 1.x
         mapping:
-          '1.x':
+          1.x:
             query:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query\FilteredQuery'
+              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query\FilteredQuery
               arguments:
-                request: &request_version1
+                request:
                   query:
                     filtered:
                       query:
                         bool:
                           must:
-                          - match_all: []
+                            -
+                              match_all: {  }
                       filter:
                         bool:
-                          must: []
-                          should: []
+                          must: {  }
+                          should: {  }
                           must_not:
-                          - term:
-                              _hidden: true
-                          - range:
-                              _hiddenBeforeDateTime:
-                                gt: now
-                          - range:
-                              _hiddenAfterDateTime:
-                                lt: now
+                            -
+                              term:
+                                _hidden: true
+                            -
+                              range:
+                                _hiddenBeforeDateTime:
+                                  gt: now
+                            -
+                              range:
+                                _hiddenAfterDateTime:
+                                  lt: now
                   fields:
-                    - '__path'
-                unsupportedFieldsInCountRequest: &unsupportedFieldsInCountRequest_version1
-                  - 'fields'
-                  - 'sort'
-                  - 'from'
-                  - 'size'
-                  - 'highlight'
-                  - 'aggs'
-                  - 'aggregations'
-                  - 'suggest'
-
+                    - __path
+                unsupportedFieldsInCountRequest:
+                  - fields
+                  - sort
+                  - from
+                  - size
+                  - highlight
+                  - aggs
+                  - aggregations
+                  - suggest
             document:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\DocumentDriver'
+              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\DocumentDriver
             indexer:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexerDriver'
+              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexerDriver
             indexManagement:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexDriver'
+              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexDriver
             request:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\RequestDriver'
+              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\RequestDriver
             system:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\SystemDriver'
-
-          '2.x':
+              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\SystemDriver
+          2.x:
             query:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\Query\FilteredQuery'
+              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\Query\FilteredQuery
               arguments:
                 request:
-                  <<: *request_version1
+                  query:
+                    filtered:
+                      query:
+                        bool:
+                          must:
+                            -
+                              match_all: {  }
+                      filter:
+                        bool:
+                          must: {  }
+                          should: {  }
+                          must_not:
+                            -
+                              term:
+                                _hidden: true
+                            -
+                              range:
+                                _hiddenBeforeDateTime:
+                                  gt: now
+                            -
+                              range:
+                                _hiddenAfterDateTime:
+                                  lt: now
+                  fields:
+                    - __path
                 unsupportedFieldsInCountRequest:
-                  <<: *unsupportedFieldsInCountRequest_version1
+                  - fields
+                  - sort
+                  - from
+                  - size
+                  - highlight
+                  - aggs
+                  - aggregations
+                  - suggest
             document:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\DocumentDriver'
+              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\DocumentDriver
             indexer:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexerDriver'
+              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexerDriver
             indexManagement:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexDriver'
+              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexDriver
             request:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\RequestDriver'
+              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\RequestDriver
             system:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\SystemDriver'
-
+              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\SystemDriver
 TYPO3:
-  TYPO3CR:
+  TypoScript:
+    defaultContext:
+      SearchResult: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\SearchResultHelper
+Neos:
+  ContentRepository:
     Search:
-
-      # API. If set to FALSE, only index the "live" workspace and not user workspaces.
-      # If you only index the live workspace, Search will not work for your editors in the user workspaces.
-      # Furthermore, if you heavily rely on Search for collecting content, this might be strange for editors to
-      # work with -- as unpublished changes are not indexed right away.
       indexAllWorkspaces: true
-
       elasticSearch:
-
-        # API. name of the ElasticSearch index to use. Will create many indices prefixed by this indexName.
         indexName: typo3cr
-
-        # configuration of the ElasticSearch logfile
         log:
           backendOptions:
             fileBackend:
               logFileURL: '%FLOW_PATH_DATA%Logs/ElasticSearch.log'
-              createParentDirectories: TRUE
+              createParentDirectories: true
               severityThreshold: '%LOG_DEBUG%'
               maximumLogFileSize: 10485760
               logFilesToKeep: 1
-              logMessageOrigin: FALSE
-
+              logMessageOrigin: false
             ansiConsoleBackend:
               disableAnsi: false
-
       defaultConfigurationPerType:
-
         string:
           elasticSearchMapping:
             type: string
             include_in_all: false
-
         boolean:
           elasticSearchMapping:
             type: boolean
-
         integer:
           elasticSearchMapping:
             type: integer
-
         DateTime:
           elasticSearchMapping:
             type: date
-            format: 'date_time_no_millis'
+            format: date_time_no_millis
             include_in_all: false
-
-        'Neos\Media\Domain\Model\Asset':
-          elasticSearchMapping: '' # deliberately don't map or index this
-
-        'array<Neos\Media\Domain\Model\Asset>':
-          elasticSearchMapping: '' # deliberately don't map or index this
-
-        'Neos\Media\Domain\Model\ImageInterface':
-          elasticSearchMapping: '' # deliberately don't map or index this
-
-        'references':
-          elasticSearchMapping:
-            type: string # an array of strings, to be precise
-            index: not_analyzed
-
-        'reference':
+        Neos\Media\Domain\Model\Asset:
+          elasticSearchMapping: ''
+        array<Neos\Media\Domain\Model\Asset>:
+          elasticSearchMapping: ''
+        Neos\Media\Domain\Model\ImageInterface:
+          elasticSearchMapping: ''
+        references:
           elasticSearchMapping:
             type: string
             index: not_analyzed
-
-  TypoScript:
-    defaultContext:
-      SearchResult: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\SearchResultHelper'
+        reference:
+          elasticSearchMapping:
+            type: string
+            index: not_analyzed
