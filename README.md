@@ -2,14 +2,21 @@
 
 # Neos Elasticsearch Adapter
 
-*supporting Elasticsearch versions 2.0.x to 2.4.x*, to support older version of ElasticSearch check the branch 2.0.
-
-Created by Sebastian Kurfürst; [contributions by Karsten Dambekalns, Robert Lemke and others](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/graphs/contributors).
-
-This project connects the Neos Content Repository to Elasticsearch; enabling two main functionalities:
+This project connects the Neos Content Repository (TYPO3CR) to Elasticsearch; enabling two
+main functionalities:
 
 * finding Nodes in Fusion / Eel by arbitrary queries
 * Full-Text Indexing of Pages and other Documents (of course including the full content)
+
+## Elastic version support
+
+You can switch the Elastic driver by editing ```Settings.yaml```
+(```Flowpack.ElasticSearch.ContentRepositoryAdaptor.driver.version```) with the following value:
+
+* ```1.x``` to support Elastic 1.2 to 1.7
+* ```2.x``` to support Elastic 2.x
+
+_Currently the Driver interfaces as not marked as API, and can be changed to adapt to future needs (especially the support of Elastic v5)._
 
 ## Relevant Packages
 
@@ -20,13 +27,11 @@ This project connects the Neos Content Repository to Elasticsearch; enabling two
 * [Flowpack.SimpleSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-simplesearch-contentrepositoryadaptor.html): an alternative search backend (to be used instead of this package); storing the search index in SQLite
 * [Flowpack.SearchPlugin](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-searchplugin.html): search plugin for Neos
 
-
 ## Installation
 
 ```
-composer require 'neos/content-repository-search'
 composer require 'flowpack/elasticsearch-contentrepositoryadaptor'
-
+// Not required, but can be used to learn how to integration the flowpack/elasticsearch-contentrepositoryadaptor in your project
 composer require 'flowpack/searchplugin'
 ```
 
@@ -42,8 +47,11 @@ Finally, run `./flow nodeindex:build`, and add the search plugin to your page. I
 There is a need, depending on your version of Elasticsearch, to add specific configuration to your
 Elasticsearch Configuration File `<your-elasticsearch>/config/elasticsearch.yml`.
 
-- [ElasticSearch 2.0 to 2.4](Documentation/ElasticConfiguration-2.0-2.4.md)
-- To support older version of ElasticSearch check the branch 2.0
+- [ElasticSearch 2.x](Documentation/ElasticConfiguration-2.x.md)
+- [ElasticSearch 1.6 to 1.7](Documentation/ElasticConfiguration-1.6-1.7.md)
+- [ElasticSearch 1.4 to 1.5](Documentation/ElasticConfiguration-1.4-1.5.md)
+- [ElasticSearch 1.3](Documentation/ElasticConfiguration-1.3.md)
+- [ElasticSearch 1.2](Documentation/ElasticConfiguration-1.2.md)
 
 ## Building up the Index
 
@@ -199,8 +207,8 @@ Right now there are two methods implemented. One generic `aggregation` function 
 aggregation definition and a pre-configured `fieldBasedAggregation`. Both methods can be added to your TS search query.
 You can nest aggregations by providing a parent name.
 
-* `aggregation($name, array $aggregationDefinition, $parentPath = NULL)` -- generic method to add a $aggregationDefinition under a path $parentPath with the name $name
-* `fieldBasedAggregation($name, $field, $type = "terms", $parentPath = NULL)` -- adds a simple filed based Aggregation of type $type with name $name under path $parentPath. Used for simple aggregations like sum, avg, min, max or terms
+* `aggregation($name, array $aggregationDefinition, $parentPath = NULL)` -- generic method to add a $aggregationDefinition under a path $parentPath with the name $name.
+* `fieldBasedAggregation($name, $field, $type = 'terms', $parentPath = '', $size = 10)` -- adds a simple filed based Aggregation of type $type with name $name under path $parentPath. Used for simple aggregations like sum, avg, min, max or terms. By default 10 buckets are returned.
 
 
 ### Examples
@@ -672,7 +680,9 @@ in the NodeTypes.yaml. Generally this works by defining the global mapping at `[
 
 ## Change the default Elastic index name
 
-If you need to run serveral (different) neos instances on the same elasticsearch server you will need to change the Configuration/Settings.yaml indexName for each of your project. So `./flow nodeindex:build` or `./flow nodeindex:cleanup` won't overwrite your other sites index.
+If you need to run serveral (different) neos instances on the same elasticsearch server you will need to change the Configuration/Settings.yaml indexName for each of your project.
+
+So `./flow nodeindex:build` or `./flow nodeindex:cleanup` won't overwrite your other sites index.
 
 ```
 TYPO3:
@@ -719,3 +729,5 @@ The configuration from Version 1 to Version 2 has changed; here's what to change
    `elasticSearchMapping`.
 3. Replace `ElasticSeach.fulltext` by `Indexing`
 4. Search for `ElasticSearch.` (inside the `indexing` expressions) and replace them by `Indexing.`
+
+Created by Sebastian Kurfürst; [contributions by Karsten Dambekalns, Robert Lemke and others](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/graphs/contributors).

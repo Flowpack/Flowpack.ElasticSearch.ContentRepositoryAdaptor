@@ -11,8 +11,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  * source code.
  */
 
-use Neos\Flow\Annotations as Flow;
-
 class Exception extends \Neos\Flow\Exception
 {
 }

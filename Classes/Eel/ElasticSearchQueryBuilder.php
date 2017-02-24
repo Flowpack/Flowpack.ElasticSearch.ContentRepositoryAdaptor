@@ -11,10 +11,14 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use Neos\Eel\ProtectedContextAwareInterface;
 use Neos\Flow\Annotations as Flow;
-use Neos\Utility\Arrays;
+use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
 
@@ -25,9 +29,15 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 {
     /**
      * @Flow\Inject
-     * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient
+     * @var ElasticSearchClient
      */
     protected $elasticSearchClient;
+
+    /**
+     * @Flow\Inject
+     * @var ObjectManagerInterface
+     */
+    protected $objectManager;
 
     /**
      * The node inside which searching should happen
@@ -38,7 +48,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
     /**
      * @Flow\Inject
-     * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface
+     * @var LoggerInterface
      */
     protected $logger;
 
@@ -63,13 +73,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     protected $from;
 
     /**
-     * These fields are not accepted in a count request and must therefore be removed before doing so
-     *
-     * @var array
-     */
-    protected $unsupportedFieldsInCountRequest = ['fields', 'sort', 'from', 'size', 'highlight', 'aggs', 'aggregations'];
-
-    /**
      * This (internal) array stores, for the last search request, a mapping from Node Identifiers
      * to the full ElasticSearch Hit which was returned.
      *
@@ -82,65 +85,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * The ElasticSearch request, as it is being built up.
      *
-     * @var array
+     * @var QueryInterface
+     * @Flow\Inject
      */
-    protected $request = [
-        // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-request-query.html
-        'query' => [
-            // The top-level query we're working on is a *filtered* query, as this allows us to efficiently
-            // apply *global constraints* in the form of *filters* which apply on the whole query.
-            //
-            // NOTE: we do NOT add a search request FILTER to the query currently, because that would mean
-            // that the filters ONLY apply for query results, but NOT for facet calculation (as explained on
-            // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-request-filter.html)
-            //
-            // Reference: http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-filtered-query.html
-            'filtered' => [
-                'query' => [
-                    'bool' => [
-                        'must' => [
-                            [
-                                'match_all' => []
-                            ]
-                        ],
-                        'should' => [],
-                        'must_not' => []
-                    ]
-
-                ],
-                'filter' => [
-                    // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-bool-filter.html
-                    'bool' => [
-                        'must' => [],
-                        'should' => [],
-                        'must_not' => [
-                            // Filter out all hidden elements
-                            [
-                                'term' => ['_hidden' => true]
-                            ],
-                            // if now < hiddenBeforeDateTime: HIDE
-                            // -> hiddenBeforeDateTime > now
-                            [
-                                'range' => [
-                                    '_hiddenBeforeDateTime' => [
-                                        'gt' => 'now'
-                                    ]
-                                ]
-                            ],
-                            [
-                                'range' => [
-                                    '_hiddenAfterDateTime' => [
-                                        'lt' => 'now'
-                                    ]
-                                ]
-                            ],
-                        ],
-                    ]
-                ]
-            ]
-        ],
-        'fields' => ['__path']
-    ];
+    protected $request;
 
     /**
      * @var array
@@ -212,11 +160,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function sort($configuration)
     {
-        if (!isset($this->request['sort'])) {
-            $this->request['sort'] = [];
-        }
-
-        $this->request['sort'][] = $configuration;
+        $this->request->addSortFilter($configuration);
 
         return $this;
     }
@@ -228,7 +172,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * and then we filter after execution when we have found the right number of results.
      *
      * This algorithm can be re-checked when https://github.com/elasticsearch/elasticsearch/issues/3300 is merged.
-     *
      *
      * @param integer $limit
      * @return ElasticSearchQueryBuilder
@@ -250,14 +193,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $this->limit = $limit;
 
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-request-from-size.html
-        $this->request['size'] = $limit * $currentWorkspaceNestingLevel;
+        $this->request->size($limit * $currentWorkspaceNestingLevel);
 
         return $this;
     }
 
     /**
      * output records starting at $from
-     *
      *
      * @param integer $from
      * @return ElasticSearchQueryBuilder
@@ -270,7 +212,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         }
 
         $this->from = $from;
-        $this->request['from'] = $from;
+        $this->request->from($from);
 
         return $this;
     }
@@ -360,11 +302,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function queryFilter($filterType, $filterOptions, $clauseType = 'must')
     {
-        if (!in_array($clauseType, ['must', 'should', 'must_not'])) {
-            throw new QueryBuildingException('The given clause type "' . $clauseType . '" is not supported. Must be one of "must", "should", "must_not".', 1383716082);
-        }
+        $this->request->queryFilter($filterType, $filterOptions, $clauseType);
 
-        return $this->appendAtPath('query.filtered.filter.bool.' . $clauseType, [$filterType => $filterOptions]);
+        return $this;
     }
 
     /**
@@ -379,14 +319,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function appendAtPath($path, array $data)
     {
-        $currentElement =& $this->request;
-        foreach (explode('.', $path) as $pathPart) {
-            if (!isset($currentElement[$pathPart])) {
-                throw new QueryBuildingException('The element at path "' . $path . '" was not an array (failed at "' . $pathPart . '").', 1383716367);
-            }
-            $currentElement =& $currentElement[$pathPart];
-        }
-        $currentElement[] = $data;
+        $this->request->appendAtPath($path, $data);
 
         return $this;
     }
@@ -435,17 +368,19 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * Access all aggregation data with {nodes.aggregations} in your fluid template
      *
-     * @param $name
-     * @param $field
-     * @param string $type
-     * @param null $parentPath
+     * @param string $name The name to identify the resulting aggregation
+     * @param string $field The field to aggregate by
+     * @param string $type Aggregation type
+     * @param string $parentPath
+     * @param int $size The amount of buckets to return
      * @return $this
      */
-    public function fieldBasedAggregation($name, $field, $type = "terms", $parentPath = null)
+    public function fieldBasedAggregation($name, $field, $type = 'terms', $parentPath = '', $size = 10)
     {
         $aggregationDefinition = [
             $type => [
-                'field' => $field
+                'field' => $field,
+                'size' => $size
             ]
         ];
 
@@ -471,50 +406,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $name
      * @param array $aggregationDefinition
-     * @param null $parentPath
+     * @param string $parentPath
      * @return $this
      * @throws QueryBuildingException
      */
-    public function aggregation($name, array $aggregationDefinition, $parentPath = null)
+    public function aggregation($name, array $aggregationDefinition, $parentPath = '')
     {
-        if (!array_key_exists("aggregations", $this->request)) {
-            $this->request['aggregations'] = [];
-        }
-
-        if ($parentPath !== null) {
-            $this->addSubAggregation($parentPath, $name, $aggregationDefinition);
-        } else {
-            $this->request['aggregations'][$name] = $aggregationDefinition;
-        }
-
-        return $this;
-    }
-
-    /**
-     * This is an low level method for internal usage.
-     * You can add a custom $aggregationConfiguration under a given $parentPath. The $parentPath foo.bar would
-     * insert your $aggregationConfiguration under
-     * $this->request['aggregations']['foo']['aggregations']['bar']['aggregations'][$name]
-     *
-     * @param $parentPath
-     * @param $name
-     * @param array $aggregationConfiguration
-     * @return $this
-     * @throws QueryBuildingException
-     */
-    protected function addSubAggregation($parentPath, $name, $aggregationConfiguration)
-    {
-        // Find the parentPath
-        $path =& $this->request['aggregations'];
-
-        foreach (explode(".", $parentPath) as $subPart) {
-            if ($path == null || !array_key_exists($subPart, $path)) {
-                throw new QueryBuildingException("The parent path " . $subPart . " could not be found when adding a sub aggregation");
-            }
-            $path =& $path[$subPart]['aggregations'];
-        }
-
-        $path[$name] = $aggregationConfiguration;
+        $this->request->aggregation($name, $aggregationDefinition, $parentPath);
 
         return $this;
     }
@@ -526,7 +424,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * nodes = ${Search....termSuggestions("aTerm")}
      *
-     * Access all suggestions data with {nodes.suggestions} in your fluid template
+     * Access all suggestions data with ${Search....getSuggestions()}
      *
      * @param string $text
      * @param string $field
@@ -569,11 +467,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function suggestions($name, array $suggestionDefinition)
     {
-        if (!array_key_exists('suggest', $this->request)) {
-            $this->request['suggest'] = [];
-        }
-
-        $this->request['suggest'][$name] = $suggestionDefinition;
+        $this->request->suggestions($name, $suggestionDefinition);
 
         return $this;
     }
@@ -581,7 +475,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * Get the ElasticSearch request as we need it
      *
-     * @return array
+     * @return QueryInterface
      */
     public function getRequest()
     {
@@ -611,6 +505,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         if (isset($this->result['hits']['total'])) {
             return (int)$this->result['hits']['total'];
         }
+
         return 0;
     }
 
@@ -654,9 +549,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function fetch()
     {
-        $request = $this->getRequest();
         $timeBefore = microtime(true);
-        $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], json_encode($request));
+        $request = $this->request->getRequestAsJson();
+        $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request);
         $timeAfterwards = microtime(true);
 
         $this->result = $response->getTreatedContent();
@@ -664,7 +559,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $this->result['nodes'] = [];
         if ($this->logThisQuery === true) {
             $this->logger->log(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s',
-                $this->logMessage, json_encode($request), (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($this->result['hits']['hits']), $this->result['hits']['total']), LOG_DEBUG);
+                $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($this->result['hits']['hits']), $this->result['hits']['total']), LOG_DEBUG);
         }
         if (array_key_exists('hits', $this->result) && is_array($this->result['hits']) && count($this->result['hits']) > 0) {
             $this->result['nodes'] = $this->convertHitsToNodes($this->result['hits']);
@@ -696,21 +591,16 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     public function count()
     {
         $timeBefore = microtime(true);
-        $request = $this->getRequest();
-        foreach ($this->unsupportedFieldsInCountRequest as $field) {
-            if (isset($request[$field])) {
-                unset($request[$field]);
-            }
-        }
+        $request = $this->getRequest()->getCountRequestAsJson();
 
-        $response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', [], json_encode($request));
+        $response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', [], $request);
         $timeAfterwards = microtime(true);
 
         $treatedContent = $response->getTreatedContent();
         $count = $treatedContent['count'];
 
         if ($this->logThisQuery === true) {
-            $this->logger->log('Count Query Log (' . $this->logMessage . '): ' . json_encode($request) . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
+            $this->logger->log('Count Query Log (' . $this->logMessage . '): ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
         }
 
         return $count;
@@ -725,14 +615,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function fulltext($searchWord)
     {
-        $this->appendAtPath('query.filtered.query.bool.must', [
-            'query_string' => [
-                'query' => json_encode((string)$searchWord)
-            ]
-        ]);
-
         // We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
-        return $this->highlight(150, 2);
+        $this->request->fulltext($searchWord);
+        $this->request->highlight(150, 2);
+
+        return $this;
     }
 
     /**
@@ -746,20 +633,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function highlight($fragmentSize, $fragmentCount = null)
     {
-        if ($fragmentSize === false) {
-            // Highlighting is disabled.
-            unset($this->request['highlight']);
-        } else {
-            $this->request['highlight'] = [
-                'fields' => [
-                    '__fulltext*' => [
-                        'fragment_size' => $fragmentSize,
-                        'no_match_size' => $fragmentSize,
-                        'number_of_fragments' => $fragmentCount
-                    ]
-                ]
-            ];
-        }
+        $this->request->highlight($fragmentSize, $fragmentCount);
 
         return $this;
     }
@@ -813,14 +687,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function request($path, $requestPart)
     {
-        $valueAtPath = Arrays::getValueByPath($this->request, $path);
-        if (is_array($valueAtPath)) {
-            $result = Arrays::arrayMergeRecursiveOverrule($valueAtPath, $requestPart);
-        } else {
-            $result = $requestPart;
-        }
-
-        $this->request = Arrays::setValueByPath($this->request, $path, $result);
+        $this->request->setByPath($path, $requestPart);
 
         return $this;
     }
@@ -878,5 +745,25 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
 
         return array_values($nodes);
+    }
+
+    /**
+     * Proxy method to access the public method of the Request object
+     *
+     * This is used to call a method of a custom Request type where no corresponding wrapper method exist in the QueryBuilder.
+     *
+     * @param string $method
+     * @param array $arguments
+     * @return $this
+     * @throws Exception
+     */
+    public function __call($method, array $arguments)
+    {
+        if (!method_exists($this->request, $method)) {
+            throw new Exception(sprintf('Method "%s" does not exist in the current Request object "%s"', $method, get_class($this->request)), 1486763515);
+        }
+        call_user_func_array([$this->request, $method], $arguments);
+
+        return $this;
     }
 }

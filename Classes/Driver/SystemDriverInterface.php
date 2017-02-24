@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -12,8 +12,14 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  */
 
 /**
- * Elasticsearch Logger Interface
+ * System Driver Interface
  */
-interface LoggerInterface extends \Neos\Flow\Log\LoggerInterface
+interface SystemDriverInterface
 {
+    /**
+     * Get the status of the Elastic cluster
+     *
+     * @return array
+     */
+    public function status();
 }

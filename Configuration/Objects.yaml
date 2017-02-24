@@ -1,3 +1,33 @@
+Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface:
+  scope: prototype
+  factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\QueryFactory'
+  factoryMethodName: createQuery
+
+Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface:
+  scope: singleton
+  factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\DriverFactory'
+  factoryMethodName: createDocumentDriver
+
+Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface:
+  scope: singleton
+  factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\DriverFactory'
+  factoryMethodName: createIndexerDriver
+
+Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface:
+  scope: singleton
+  factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\DriverFactory'
+  factoryMethodName: createIndexManagementDriver
+
+Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterface:
+  scope: singleton
+  factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\DriverFactory'
+  factoryMethodName: createRequestDriver
+
+Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface:
+  scope: singleton
+  factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\DriverFactory'
+  factoryMethodName: createSystemDriver
+
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController:
   properties:
     logger:
@@ -33,5 +63,5 @@ Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface:
 
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient:
   scope: singleton
-  factoryObjectName: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Client\ClientFactory
+  factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Client\ClientFactory'
   factoryMethodName: create

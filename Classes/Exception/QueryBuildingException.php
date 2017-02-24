@@ -11,11 +11,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
  * source code.
  */
 
-use Neos\Flow\Annotations as Flow;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 
 /**
  * A Query Building Exception
  */
-class QueryBuildingException extends \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+class QueryBuildingException extends Exception
 {
 }

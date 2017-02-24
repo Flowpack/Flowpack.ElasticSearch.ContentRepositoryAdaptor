@@ -15,7 +15,8 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuild
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\Neos\Controller\CreateContentContextTrait;
+use Neos\ContentRepository\Domain\Model\Workspace;
 
 /**
  * Provides CLI features for index handling
@@ -25,6 +26,7 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
 class NodeIndexCommandController extends CommandController
 {
     use IndexWorkspaceTrait;
+    use CreateContentContextTrait;
 
     /**
      * @Flow\Inject
@@ -128,6 +130,64 @@ class NodeIndexCommandController extends CommandController
                     $this->outputLine($warning);
                 }
             }
+        }
+    }
+
+    /**
+     * Index a single node by the given identifier and workspace name
+     *
+     * @param string $identifier
+     * @param string $workspace
+     * @return void
+     */
+    public function indexNodeCommand($identifier, $workspace = null)
+    {
+        if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
+            $workspace = 'live';
+        }
+
+        $indexNode = function ($identifier, Workspace $workspace, array $dimensions) {
+            $context = $this->createContentContext($workspace->getName(), $dimensions);
+            $node = $context->getNodeByIdentifier($identifier);
+            if ($node === null) {
+                $this->outputLine('Node with the given identifier is not found.');
+                $this->quit();
+            }
+            $this->outputLine();
+            $this->outputLine('Index node "%s" (%s)', [
+                $node->getLabel(),
+                $node->getIdentifier(),
+            ]);
+            $this->outputLine('  workspace: %s', [
+                $workspace->getName()
+            ]);
+            $this->outputLine('  node type: %s', [
+                $node->getNodeType()->getName()
+            ]);
+            $this->outputLine('  dimensions: %s', [
+                json_encode($dimensions)
+            ]);
+            $this->nodeIndexer->indexNode($node);
+        };
+
+        $indexInWorkspace = function ($identifier, Workspace $workspace) use ($indexNode) {
+            $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+            if ($combinations === []) {
+                $indexNode($identifier, $workspace, []);
+            } else {
+                foreach ($combinations as $combination) {
+                    $indexNode($identifier, $workspace, $combination);
+                }
+            }
+        };
+
+        if ($workspace === null) {
+            foreach ($this->workspaceRepository->findAll() as $workspace) {
+                $indexInWorkspace($identifier, $workspace);
+            }
+        } else {
+            $workspace = $this->workspaceRepository->findByIdentifier($workspace);
+            $indexInWorkspace($identifier, $workspace);
         }
     }
 

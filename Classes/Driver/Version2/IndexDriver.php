@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -11,9 +11,14 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
+use Neos\Flow\Annotations as Flow;
+
 /**
- * Elasticsearch Logger Interface
+ * Index management driver for Elasticsearch version 2.x
+ *
+ * @Flow\Scope("singleton")
  */
-interface LoggerInterface extends \Neos\Flow\Log\LoggerInterface
+class IndexDriver extends Version1\IndexDriver
 {
 }
