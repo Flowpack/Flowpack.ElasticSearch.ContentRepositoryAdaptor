@@ -16,7 +16,7 @@ You can switch the Elastic driver by editing ```Settings.yaml```
 * ```1.x``` to support Elastic 1.2 to 1.7
 * ```2.x``` to support Elastic 2.x
 
-_Currently the Driver interfaces as not marked as API, and can be changed to adapt to future needs (especially the support of Elastic v5)._
+_Currently the Driver interfaces is not marked as API, and can be changed to adapt to future needs (especially the support of Elastic v5)._
 
 ## Relevant Packages
 
