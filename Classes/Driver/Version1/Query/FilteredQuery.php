@@ -57,7 +57,7 @@ class FilteredQuery extends AbstractQuery
     {
         $this->appendAtPath('query.filtered.query.bool.must', [
             'query_string' => [
-                'query' => $searchWord
+                'query' => json_encode($searchWord)
             ]
         ]);
     }
