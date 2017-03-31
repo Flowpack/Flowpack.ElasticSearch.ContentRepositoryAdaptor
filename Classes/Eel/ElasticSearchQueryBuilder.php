@@ -651,7 +651,17 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         // on indexing, the __parentPath is tokenized to contain ALL parent path parts,
         // e.g. /foo, /foo/bar/, /foo/bar/baz; to speed up matching.. That's why we use a simple "term" filter here.
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-term-filter.html
-        $this->queryFilter('term', ['__parentPath' => $contextNode->getPath()]);
+        // another term filter against the path allows the context node itself to be found
+        $this->queryFilter('bool', [
+            'should' => [
+                [
+                    'term' => ['__parentPath' => $contextNode->getPath()]
+                ],
+                [
+                    'term' => ['__path' => $contextNode->getPath()]
+                ]
+            ]
+        ]);
 
         //
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-terms-filter.html
