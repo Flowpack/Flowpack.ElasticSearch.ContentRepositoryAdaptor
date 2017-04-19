@@ -11,7 +11,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -19,6 +20,13 @@ use Neos\Flow\Annotations as Flow;
  *
  * @Flow\Scope("singleton")
  */
-class SystemDriver extends Version1\SystemDriver
+class SystemDriver extends AbstractDriver implements SystemDriverInterface
 {
+    /**
+     * {@inheritdoc}
+     */
+    public function status()
+    {
+        return ['indices' => $this->searchClient->request('GET', '/_recovery')->getTreatedContent()];
+    }
 }
