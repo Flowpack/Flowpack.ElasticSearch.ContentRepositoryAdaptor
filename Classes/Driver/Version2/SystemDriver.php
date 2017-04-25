@@ -21,4 +21,11 @@ use TYPO3\Flow\Annotations as Flow;
  */
 class SystemDriver extends Version1\SystemDriver
 {
+    /**
+     * @inheritDoc
+     */
+    public function status()
+    {
+        return $this->searchClient->request('GET', '/_stats')->getTreatedContent();
+    }
 }
