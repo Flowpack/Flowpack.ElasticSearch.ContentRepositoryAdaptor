@@ -56,6 +56,8 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
             throw new Exception('The alias "' . $alias . '" was not found with some unexpected error... (return code: ' . $response->getStatusCode() . ')', 1383650137);
         }
 
-        return array_keys($response->getTreatedContent());
+        // return empty array if content from response cannot be read as an array
+        $treatedContent = $response->getTreatedContent();
+        return is_array($treatedContent) ? array_keys($treatedContent) : [];
     }
 }
