@@ -141,6 +141,8 @@ class NodeIndexCommandController extends CommandController
             $workspace = 'live';
         }
 
+        $defaultDimensionCombination = $this->getDefaultDimensionCombination();
+
         $indexNode = function ($identifier, Workspace $workspace, array $dimensions) {
             $context = $this->createContentContext($workspace->getName(), $dimensions);
             $node = $context->getNodeByIdentifier($identifier);
@@ -165,15 +167,8 @@ class NodeIndexCommandController extends CommandController
             $this->nodeIndexer->indexNode($node);
         };
 
-        $indexInWorkspace = function ($identifier, Workspace $workspace) use ($indexNode) {
-            $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-            if ($combinations === []) {
-                $indexNode($identifier, $workspace, []);
-            } else {
-                foreach ($combinations as $combination) {
-                    $indexNode($identifier, $workspace, $combination);
-                }
-            }
+        $indexInWorkspace = function ($identifier, Workspace $workspace) use ($indexNode, $defaultDimensionCombination) {
+            $indexNode($identifier, $workspace, $defaultDimensionCombination);
         };
 
         if ($workspace === null) {
