@@ -106,4 +106,5 @@ trait IndexWorkspaceTrait
         }
 
         return $defaultCombination;
-    }}
+    }
+}
