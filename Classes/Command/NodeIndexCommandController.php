@@ -225,7 +225,7 @@ class NodeIndexCommandController extends CommandController
             if ($dimensions === []) {
                 $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)');
             } else {
-                $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)');
+                $this->outputLine('Workspace "' . $workspaceName . '" including dimensions done. (Indexed ' . $indexedNodes . ' nodes)');
             }
         };
         if ($workspace === null) {
