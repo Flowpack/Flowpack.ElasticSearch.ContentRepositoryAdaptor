@@ -30,7 +30,7 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @Flow\Inject
-     * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer
+     * @var \TYPO3\TYPO3CR\Search\Indexer\NodeIndexerInterface
      */
     protected $nodeIndexer;
 
