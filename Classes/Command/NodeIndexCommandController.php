@@ -13,9 +13,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
+use Neos\ContentRepository\Domain\Service\Context;
+use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
-use Neos\Neos\Controller\CreateContentContextTrait;
 use Neos\ContentRepository\Domain\Model\Workspace;
 
 /**
@@ -26,7 +27,6 @@ use Neos\ContentRepository\Domain\Model\Workspace;
 class NodeIndexCommandController extends CommandController
 {
     use IndexWorkspaceTrait;
-    use CreateContentContextTrait;
 
     /**
      * @Flow\Inject
@@ -75,6 +75,12 @@ class NodeIndexCommandController extends CommandController
      * @var \Neos\Flow\Configuration\ConfigurationManager
      */
     protected $configurationManager;
+
+    /**
+     * @Flow\Inject
+     * @var ContextFactoryInterface
+     */
+    protected $contextFactory;
 
     /**
      * @var array
@@ -273,4 +279,30 @@ class NodeIndexCommandController extends CommandController
             $this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s: %s"', $response->status, $response->error->type, $response->error->reason));
         }
     }
+
+    /**
+     * Create a ContentContext based on the given workspace name
+     *
+     * @param string $workspaceName Name of the workspace to set for the context
+     * @param array $dimensions Optional list of dimensions and their values which should be set
+     * @return Context
+     */
+    protected function createContentContext($workspaceName, array $dimensions = array())
+    {
+        $contextProperties = array(
+            'workspaceName' => $workspaceName,
+            'invisibleContentShown' => true,
+            'inaccessibleContentShown' => true
+        );
+
+        if ($dimensions !== array()) {
+            $contextProperties['dimensions'] = $dimensions;
+            $contextProperties['targetDimensions'] = array_map(function ($dimensionValues) {
+                return array_shift($dimensionValues);
+            }, $dimensions);
+        }
+
+        return $this->contextFactory->create($contextProperties);
+    }
+
 }
