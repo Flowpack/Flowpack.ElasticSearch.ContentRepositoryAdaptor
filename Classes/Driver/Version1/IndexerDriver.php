@@ -114,7 +114,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
             [
                 // first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
                 'script' => '
-                    if (!(ctx._source.containsKey("__fulltextParts") && ctx._source.__fulltextParts instanceof HashMap)) {
+                    if (!(ctx._source.containsKey("__fulltextParts") && ctx._source.__fulltextParts instanceof LinkedHashMap)) {
                         ctx._source.__fulltextParts = new LinkedHashMap();
                     }
 
