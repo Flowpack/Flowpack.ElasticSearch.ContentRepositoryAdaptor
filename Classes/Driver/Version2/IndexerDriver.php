@@ -124,7 +124,7 @@ class IndexerDriver extends Version1\IndexerDriver
                     'inline' => '
                         ctx._source.__fulltext = new HashMap();
                         
-                        if (!ctx._source.containsKey("__fulltextParts")) {
+                        if (!(ctx._source.containsKey("__fulltextParts") && ctx._source.__fulltextParts instanceof HashMap)) {
                             ctx._source.__fulltextParts = new HashMap();
                         }
                         
