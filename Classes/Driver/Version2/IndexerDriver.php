@@ -123,11 +123,11 @@ class IndexerDriver extends Version1\IndexerDriver
                 'script' => [
                     'inline' => '
                         ctx._source.__fulltext = new HashMap();
-                        
-                        if (!(ctx._source.containsKey("__fulltextParts") && ctx._source.__fulltextParts instanceof HashMap)) {
+
+                        if (!(ctx._source.containsKey("__fulltextParts") && ctx._source.__fulltextParts instanceof Map)) {
                             ctx._source.__fulltextParts = new HashMap();
                         }
-                        
+
                         if (nodeIsRemoved || nodeIsHidden || fulltext.size() == 0) {
                             if (ctx._source.__fulltextParts.containsKey(identifier)) {
                                 ctx._source.__fulltextParts.remove(identifier);
@@ -135,7 +135,7 @@ class IndexerDriver extends Version1\IndexerDriver
                         } else {
                             ctx._source.__fulltextParts.put(identifier, fulltext);
                         }
-    
+
                         ctx._source.__fulltextParts.each { originNodeIdentifier, partContent -> partContent.each { bucketKey, content ->
                                 if (ctx._source.__fulltext.containsKey(bucketKey)) {
                                     value = ctx._source.__fulltext[bucketKey] + " " + content.trim();
