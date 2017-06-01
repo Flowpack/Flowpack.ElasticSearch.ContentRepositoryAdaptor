@@ -188,13 +188,3 @@
       search:
         fulltextExtractor: '${Indexing.extractHtmlTags(value)}'
 
-
-'unstructured':
-  properties:
-    '__workspace':
-      search:
-        elasticSearchMapping:
-          type: string
-          index: not_analyzed
-          include_in_all: false
-        indexing: ''

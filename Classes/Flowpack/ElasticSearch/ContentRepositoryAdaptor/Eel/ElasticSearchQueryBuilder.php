@@ -656,6 +656,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     {
         $request = $this->getRequest();
         $timeBefore = microtime(true);
+        $this->elasticSearchClient->setSuffix('en');
+        
         $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], json_encode($request));
         $timeAfterwards = microtime(true);
 
