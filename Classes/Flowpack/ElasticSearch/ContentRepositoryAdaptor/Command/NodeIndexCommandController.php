@@ -204,8 +204,8 @@ class NodeIndexCommandController extends CommandController
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
 
         foreach ($combinations as $combination) {
-            $langPrefix = $combination['language'][0];
-            $this->nodeIndexer->setIndexNamePostfix(($postfix ?: $timestamp).'-'.$langPrefix);
+            $langSuffix = $combination['language'][0];
+            $this->nodeIndexer->setIndexNamePostfix(($postfix ?: $timestamp).'-'.$langSuffix);
             if ($update === true) {
                 $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
             } else {
