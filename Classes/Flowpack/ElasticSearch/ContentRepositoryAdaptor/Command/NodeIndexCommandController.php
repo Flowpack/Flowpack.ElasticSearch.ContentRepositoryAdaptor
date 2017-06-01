@@ -203,8 +203,8 @@ class NodeIndexCommandController extends CommandController
         $timestamp = time();
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
         $resetWorkspace = $workspace;
-        foreach ($combinations as $combination) {
-            $langSuffix = $combination['language'][0];
+        foreach ($combinations as $dimensions) {
+            $langSuffix = $dimensions['language'][0];
             $this->nodeIndexer->setSuffix($langSuffix);
             $this->nodeIndexer->setIndexNamePostfix(($postfix ?: $timestamp));
             if ($update === true) {
@@ -244,10 +244,10 @@ class NodeIndexCommandController extends CommandController
             };
             if ($workspace === null) {
                 foreach ($this->workspaceRepository->findAll() as $workspace) {
-                    $count += $this->indexWorkspace($workspace->getName(), $limit, $callback);
+                    $count += $this->indexWorkspace($workspace->getName(), $limit, $callback, $dimensions);
                 }
             } else {
-                $count += $this->indexWorkspace($workspace, $limit, $callback);
+                $count += $this->indexWorkspace($workspace, $limit, $callback, $dimensions);
             }
 
             $this->nodeIndexingManager->flushQueues();
