@@ -59,6 +59,7 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      */
     public function getIndexName()
     {
+
         return $this->indexName;
     }
 

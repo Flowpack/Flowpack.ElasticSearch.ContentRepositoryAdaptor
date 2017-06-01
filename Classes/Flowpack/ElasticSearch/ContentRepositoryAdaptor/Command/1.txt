@@ -205,7 +205,7 @@ class NodeIndexCommandController extends CommandController
 
         foreach ($combinations as $combination) {
             $langPrefix = $combination['language'][0];
-            $this->nodeIndexer->setIndexNamePostfix(($postfix ?: $timestamp).'-'.$langPrefix);
+            $this->nodeIndexer->setIndexNamePostfix(($postfix ?: $timestamp). '-'. $langPrefix);
             if ($update === true) {
                 $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
             } else {

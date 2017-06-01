@@ -577,8 +577,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 // filter out all indices not starting with the alias-name, as they are unrelated to our application
                 continue;
             }
-
-            if (array_search($indexName, $currentlyLiveIndices) !== false) {
+            $search = substr($indexName,0,strrpos($indexName,'-'));
+            $key = array_filter($currentlyLiveIndices, function($element) use($search) {
+                return strpos($element,$search) !== FALSE;
+            });
+            if ($key) {
                 // skip the currently live index names from deletion
                 continue;
             }
