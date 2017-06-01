@@ -125,6 +125,15 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      *
      * @return Index
      */
+    public function setSuffix($langSuffix)
+    {
+        $this->searchClient->setSuffix($langSuffix);
+    }
+    /**
+     * Return the currently active index to be used for indexing
+     *
+     * @return Index
+     */
     public function getIndex()
     {
         $index = $this->searchClient->findIndex($this->getIndexName());
@@ -577,11 +586,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 // filter out all indices not starting with the alias-name, as they are unrelated to our application
                 continue;
             }
-            $search = substr($indexName,0,strrpos($indexName,'-'));
-            $key = array_filter($currentlyLiveIndices, function($element) use($search) {
-                return strpos($element,$search) !== FALSE;
-            });
-            if ($key) {
+            if (array_search($indexName, $currentlyLiveIndices) !== false) {
                 // skip the currently live index names from deletion
                 continue;
             }

@@ -34,6 +34,13 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
     protected $indexName;
 
     /**
+     * The language suffix
+     *
+     * @var string
+     */
+    protected $indexSuffix;
+
+    /**
      * @Flow\Inject
      * @var ConfigurationManager
      */
@@ -60,8 +67,20 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
     public function getIndexName()
     {
 
-        return $this->indexName;
+        return $this->indexName . $this->indexSuffix;
     }
+
+    /**
+     * Set the index suffix
+     *
+     * @return string
+     */
+    public function setSuffix($indexSuffix)
+    {
+
+        $this->indexSuffix = '-'.$indexSuffix;
+    }
+
 
     /**
      * Retrieve the index to be used for querying or on-the-fly indexing.
@@ -71,6 +90,6 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      */
     public function getIndex()
     {
-        return $this->findIndex($this->indexName);
+        return $this->findIndex($this->indexName . $this->indexSuffix);
     }
 }

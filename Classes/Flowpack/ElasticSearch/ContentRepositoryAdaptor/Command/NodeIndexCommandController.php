@@ -205,7 +205,8 @@ class NodeIndexCommandController extends CommandController
 
         foreach ($combinations as $combination) {
             $langSuffix = $combination['language'][0];
-            $this->nodeIndexer->setIndexNamePostfix(($postfix ?: $timestamp).'-'.$langSuffix);
+            $this->nodeIndexer->setSuffix($langSuffix);
+            $this->nodeIndexer->setIndexNamePostfix(($postfix ?: $timestamp));
             if ($update === true) {
                 $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
             } else {
@@ -272,13 +273,20 @@ class NodeIndexCommandController extends CommandController
     public function cleanupCommand()
     {
         try {
-            $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
-            if (count($indicesToBeRemoved) > 0) {
-                foreach ($indicesToBeRemoved as $indexToBeRemoved) {
-                    $this->logger->log('Removing old index ' . $indexToBeRemoved);
+
+        $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+
+            foreach ($combinations as $combination) {
+                $langSuffix = $combination['language'][0];
+                $this->nodeIndexer->setSuffix($langSuffix);
+                $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
+                if (count($indicesToBeRemoved) > 0) {
+                    foreach ($indicesToBeRemoved as $indexToBeRemoved) {
+                        $this->logger->log('Removing old index ' . $indexToBeRemoved);
+                    }
+                } else {
+                    $this->logger->log('Nothing to remove.');
                 }
-            } else {
-                $this->logger->log('Nothing to remove.');
             }
         } catch (\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
             $response = json_decode($exception->getResponse());
