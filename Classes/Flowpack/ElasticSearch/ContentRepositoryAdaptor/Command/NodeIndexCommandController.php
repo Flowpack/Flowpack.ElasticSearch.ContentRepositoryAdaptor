@@ -202,7 +202,7 @@ class NodeIndexCommandController extends CommandController
     {
         $timestamp = time();
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-
+        $resetWorkspace = $workspace;
         foreach ($combinations as $combination) {
             $langSuffix = $combination['language'][0];
             $this->nodeIndexer->setSuffix($langSuffix);
@@ -229,11 +229,9 @@ class NodeIndexCommandController extends CommandController
 
             $count = 0;
 
-            if ($workspace === null || $this->settings['indexAllWorkspaces'] === false) {
-                $indexWorkspace = 'live';
-            }
-            else {
-                $indexWorkspace = $workspace->getName();
+
+            if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
+                $workspace = 'live';
             }
 
             $callback = function ($workspaceName, $indexedNodes, $dimensions) {
@@ -246,10 +244,10 @@ class NodeIndexCommandController extends CommandController
             };
             if ($workspace === null) {
                 foreach ($this->workspaceRepository->findAll() as $workspace) {
-                    $count += $this->indexWorkspace($indexWorkspace, $limit, $callback, $combination);
+                    $count += $this->indexWorkspace($workspace->getName(), $limit, $callback);
                 }
             } else {
-                $count += $this->indexWorkspace($indexWorkspace, $limit, $callback, $combination);
+                $count += $this->indexWorkspace($workspace, $limit, $callback);
             }
 
             $this->nodeIndexingManager->flushQueues();
@@ -261,6 +259,7 @@ class NodeIndexCommandController extends CommandController
             if ($update === false) {
                 $this->nodeIndexer->updateIndexAlias();
             }
+            $workspace = $resetWorkspace;
         }
 
     }
