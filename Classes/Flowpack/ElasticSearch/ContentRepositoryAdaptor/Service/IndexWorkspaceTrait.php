@@ -50,8 +50,8 @@ trait IndexWorkspaceTrait
         if ($dimensions === []) {
             $count += $this->indexWorkspaceWithDimensions($workspaceName, [], $limit, $callback);
         } else {
-            foreach ($dimensions as $combination) {
-                $count += $this->indexWorkspaceWithDimensions($workspaceName, $combination, $limit, $callback);
+            foreach ($dimensions as $dimension) {
+                $count += $this->indexWorkspaceWithDimensions($workspaceName, $dimension, $limit, $callback);
             }
         }
 

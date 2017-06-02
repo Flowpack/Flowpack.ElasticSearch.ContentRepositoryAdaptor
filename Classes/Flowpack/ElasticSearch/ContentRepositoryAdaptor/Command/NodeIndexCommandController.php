@@ -202,10 +202,17 @@ class NodeIndexCommandController extends CommandController
     {
         $timestamp = time();
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+
         $resetWorkspace = $workspace;
-        foreach ($combinations as $dimensions) {
-            $langSuffix = $dimensions['language'][0];
-            $this->nodeIndexer->setSuffix($langSuffix);
+        $resetLimit = $limit;
+        $resetNodeIndexer = $this->nodeIndexer;
+        foreach ($combinations as $dimension) {
+            $workspace = $resetWorkspace;
+            $limit = $resetLimit;
+            $this->nodeIndexer = $resetNodeIndexer;
+
+            $langSuffix = $dimension['language'][0];
+            $this->nodeIndexer->setDimension($langSuffix);
             $this->nodeIndexer->setIndexNamePostfix(($postfix ?: $timestamp));
             if ($update === true) {
                 $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
@@ -244,10 +251,10 @@ class NodeIndexCommandController extends CommandController
             };
             if ($workspace === null) {
                 foreach ($this->workspaceRepository->findAll() as $workspace) {
-                    $count += $this->indexWorkspace($workspace->getName(), $limit, $callback, $dimensions);
+                    $count += $this->indexWorkspace($workspace->getName(), $limit, $callback, ['language' => $dimension]);
                 }
             } else {
-                $count += $this->indexWorkspace($workspace, $limit, $callback, $dimensions);
+                $count += $this->indexWorkspace($workspace, $limit, $callback, ['language' => $dimension]);
             }
 
             $this->nodeIndexingManager->flushQueues();
@@ -259,7 +266,6 @@ class NodeIndexCommandController extends CommandController
             if ($update === false) {
                 $this->nodeIndexer->updateIndexAlias();
             }
-            $workspace = $resetWorkspace;
         }
 
     }
@@ -277,7 +283,7 @@ class NodeIndexCommandController extends CommandController
 
             foreach ($combinations as $combination) {
                 $langSuffix = $combination['language'][0];
-                $this->nodeIndexer->setSuffix($langSuffix);
+                $this->nodeIndexer->setDimension($langSuffix);
                 $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
                 if (count($indicesToBeRemoved) > 0) {
                     foreach ($indicesToBeRemoved as $indexToBeRemoved) {

@@ -38,7 +38,7 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      *
      * @var string
      */
-    protected $indexSuffix;
+    protected $languageDimension;
 
     /**
      * @Flow\Inject
@@ -66,19 +66,17 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      */
     public function getIndexName()
     {
-
-        return $this->indexName . $this->indexSuffix;
+        return $this->indexName . $this->languageDimension;
     }
 
     /**
-     * Set the index suffix
+     * Set the index language dimension
      *
      * @return string
      */
-    public function setSuffix($indexSuffix)
+    public function setDimension($languageDimension)
     {
-
-        $this->indexSuffix = '-'.$indexSuffix;
+        $this->languageDimension = '-'.$languageDimension;
     }
 
 
@@ -90,6 +88,6 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      */
     public function getIndex()
     {
-        return $this->findIndex($this->indexName . $this->indexSuffix);
+        return $this->findIndex($this->indexName . $this->languageDimension);
     }
 }

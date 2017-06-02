@@ -125,9 +125,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      *
      * @return Index
      */
-    public function setSuffix($langSuffix)
+    public function setDimension($langDimension)
     {
-        $this->searchClient->setSuffix($langSuffix);
+        $this->searchClient->setDimension($langDimension);
     }
     /**
      * Return the currently active index to be used for indexing
