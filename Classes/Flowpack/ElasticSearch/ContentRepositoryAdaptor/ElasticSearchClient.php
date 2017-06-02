@@ -57,6 +57,7 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
             $settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.TYPO3CR.Search');
             $this->indexName = $settings['elasticSearch']['indexName'];
         }
+        $this->setDimension('en');
     }
 
     /**

@@ -204,15 +204,9 @@ class NodeIndexCommandController extends CommandController
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
 
         $resetWorkspace = $workspace;
-        $resetLimit = $limit;
-        $resetNodeIndexer = $this->nodeIndexer;
         foreach ($combinations as $dimension) {
             $workspace = $resetWorkspace;
-            $limit = $resetLimit;
-            $this->nodeIndexer = $resetNodeIndexer;
-
-            $langSuffix = $dimension['language'][0];
-            $this->nodeIndexer->setDimension($langSuffix);
+            $this->nodeIndexer->setDimension($dimension);
             $this->nodeIndexer->setIndexNamePostfix(($postfix ?: $timestamp));
             if ($update === true) {
                 $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
@@ -242,7 +236,6 @@ class NodeIndexCommandController extends CommandController
             }
 
             $callback = function ($workspaceName, $indexedNodes, $dimensions) {
-
                 if ($dimensions === []) {
                     $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)');
                 } else {
@@ -282,8 +275,7 @@ class NodeIndexCommandController extends CommandController
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
 
             foreach ($combinations as $combination) {
-                $langSuffix = $combination['language'][0];
-                $this->nodeIndexer->setDimension($langSuffix);
+                $this->nodeIndexer->setDimension($combination);
                 $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
                 if (count($indicesToBeRemoved) > 0) {
                     foreach ($indicesToBeRemoved as $indexToBeRemoved) {

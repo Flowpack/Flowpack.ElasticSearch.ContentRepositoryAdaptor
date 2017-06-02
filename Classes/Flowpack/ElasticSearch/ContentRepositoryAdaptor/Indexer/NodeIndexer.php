@@ -95,6 +95,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     protected $bulkProcessing = false;
 
     /**
+     * @var array
+     */
+    protected $dimensionCombinations = [];
+
+    /**
      * Returns the index name to be used for indexing, with optional indexNamePostfix appended.
      *
      * @return string
@@ -121,13 +126,15 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     }
 
     /**
-     * Return the currently active index to be used for indexing
+     * Set the actual dimensions
      *
-     * @return Index
+     * @param array $dimensions
+     * @return void
      */
-    public function setDimension($langDimension)
+    public function setDimension($dimensions)
     {
-        $this->searchClient->setDimension($langDimension);
+        $this->dimensionCombinations = $dimensions;
+        $this->searchClient->setDimension($dimensions['language'][0]);
     }
     /**
      * Return the currently active index to be used for indexing
@@ -215,6 +222,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
 
             $dimensionCombinations = $node->getContext()->getDimensions();
+            if (sizeof($this->dimensionCombinations)) {
+                $dimensionCombinations = $this->dimensionCombinations;
+            }
+
             if (is_array($dimensionCombinations)) {
                 $documentData['__dimensionCombinations'] = $dimensionCombinations;
                 $documentData['__dimensionCombinationHash'] = md5(json_encode($dimensionCombinations));

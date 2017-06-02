@@ -72,18 +72,18 @@ trait IndexWorkspaceTrait
         $rootNode = $context->getRootNode();
         $indexedNodes = 0;
 
-        $traverseNodes = function (NodeInterface $currentNode, &$indexedNodes) use ($limit, &$traverseNodes) {
+        $traverseNodes = function (NodeInterface $currentNode, &$indexedNodes, $dimensions) use ($limit, &$traverseNodes) {
             if ($limit !== null && $indexedNodes > $limit) {
                 return;
             }
             $this->nodeIndexingManager->indexNode($currentNode);
             $indexedNodes++;
-            array_map(function (NodeInterface $childNode) use ($traverseNodes, &$indexedNodes) {
-                $traverseNodes($childNode, $indexedNodes);
+            array_map(function (NodeInterface $childNode) use ($traverseNodes, &$indexedNodes, $dimensions) {
+                $traverseNodes($childNode, $indexedNodes, $dimensions);
             }, $currentNode->getChildNodes());
         };
 
-        $traverseNodes($rootNode, $indexedNodes);
+        $traverseNodes($rootNode, $indexedNodes, $dimensions);
 
         $this->nodeFactory->reset();
         $context->getFirstLevelNodeCache()->flush();
