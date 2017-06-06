@@ -17,6 +17,7 @@ use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Cli\CommandController;
 use TYPO3\Neos\Controller\CreateContentContextTrait;
 use TYPO3\TYPO3CR\Domain\Model\Workspace;
+use TYPO3\TYPO3CR\Domain\Repository\ContentDimensionRepository;
 
 /**
  * Provides CLI features for index handling
@@ -199,57 +200,67 @@ class NodeIndexCommandController extends CommandController
      */
     public function buildCommand($limit = null, $update = false, $workspace = null, $postfix = null)
     {
-        if ($update === true) {
-            $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
-        } else {
-            $this->nodeIndexer->setIndexNamePostfix($postfix ?: time());
-            if ($this->nodeIndexer->getIndex()->exists() === true) {
-                $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
-                $this->nodeIndexer->getIndex()->delete();
-            }
-            $this->nodeIndexer->getIndex()->create();
-            $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
+        $timestamp = time();
+        $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
 
-            $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
-            foreach ($nodeTypeMappingCollection as $mapping) {
-                /** @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
-                $mapping->apply();
-            }
-            $this->logger->log('Updated Mapping.', LOG_INFO);
-        }
-
-        $this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
-
-        $count = 0;
-
-        if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
-            $workspace = 'live';
-        }
-
-        $callback = function ($workspaceName, $indexedNodes, $dimensions) {
-            if ($dimensions === []) {
-                $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)');
+        $resetWorkspace = $workspace;
+        foreach ($combinations as $dimension) {
+            $workspace = $resetWorkspace;
+            $this->nodeIndexer->setDimension($dimension);
+            $this->nodeIndexer->setIndexNamePostfix(($postfix ?: $timestamp));
+            if ($update === true) {
+                $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
             } else {
-                $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)');
+                if ($this->nodeIndexer->getIndex()->exists() === true) {
+                    $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
+                    $this->nodeIndexer->getIndex()->delete();
+                }
+                $this->nodeIndexer->getIndex()->create();
+                $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
+
+                $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
+                foreach ($nodeTypeMappingCollection as $mapping) {
+                    /** @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
+                    $mapping->apply();
+                }
+                $this->logger->log('Updated Mapping.', LOG_INFO);
             }
-        };
-        if ($workspace === null) {
-            foreach ($this->workspaceRepository->findAll() as $workspace) {
-                $count += $this->indexWorkspace($workspace->getName(), $limit, $callback);
+
+            $this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
+
+            $count = 0;
+
+
+            if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
+                $workspace = 'live';
             }
-        } else {
-            $count += $this->indexWorkspace($workspace, $limit, $callback);
+
+            $callback = function ($workspaceName, $indexedNodes, $dimensions) {
+                if ($dimensions === []) {
+                    $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)');
+                } else {
+                    $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)');
+                }
+            };
+            if ($workspace === null) {
+                foreach ($this->workspaceRepository->findAll() as $workspace) {
+                    $count += $this->indexWorkspace($workspace->getName(), $limit, $callback, ['language' => $dimension]);
+                }
+            } else {
+                $count += $this->indexWorkspace($workspace, $limit, $callback, ['language' => $dimension]);
+            }
+
+            $this->nodeIndexingManager->flushQueues();
+
+            $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
+            $this->nodeIndexer->getIndex()->refresh();
+
+            // TODO: smoke tests
+            if ($update === false) {
+                $this->nodeIndexer->updateIndexAlias();
+            }
         }
 
-        $this->nodeIndexingManager->flushQueues();
-
-        $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
-        $this->nodeIndexer->getIndex()->refresh();
-
-        // TODO: smoke tests
-        if ($update === false) {
-            $this->nodeIndexer->updateIndexAlias();
-        }
     }
 
     /**
@@ -260,13 +271,19 @@ class NodeIndexCommandController extends CommandController
     public function cleanupCommand()
     {
         try {
-            $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
-            if (count($indicesToBeRemoved) > 0) {
-                foreach ($indicesToBeRemoved as $indexToBeRemoved) {
-                    $this->logger->log('Removing old index ' . $indexToBeRemoved);
+
+        $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+
+            foreach ($combinations as $combination) {
+                $this->nodeIndexer->setDimension($combination);
+                $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
+                if (count($indicesToBeRemoved) > 0) {
+                    foreach ($indicesToBeRemoved as $indexToBeRemoved) {
+                        $this->logger->log('Removing old index ' . $indexToBeRemoved);
+                    }
+                } else {
+                    $this->logger->log('Nothing to remove.');
                 }
-            } else {
-                $this->logger->log('Nothing to remove.');
             }
         } catch (\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
             $response = json_decode($exception->getResponse());

@@ -95,6 +95,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     protected $bulkProcessing = false;
 
     /**
+     * @var array
+     */
+    protected $dimensionCombinations = [];
+
+    /**
      * Returns the index name to be used for indexing, with optional indexNamePostfix appended.
      *
      * @return string
@@ -120,6 +125,17 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $this->indexNamePostfix = $indexNamePostfix;
     }
 
+    /**
+     * Set the actual dimensions
+     *
+     * @param array $dimensions
+     * @return void
+     */
+    public function setDimension($dimensions)
+    {
+        $this->dimensionCombinations = $dimensions;
+        $this->searchClient->setDimension($dimensions['language'][0]);
+    }
     /**
      * Return the currently active index to be used for indexing
      *
@@ -206,6 +222,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
 
             $dimensionCombinations = $node->getContext()->getDimensions();
+            if (sizeof($this->dimensionCombinations)) {
+                $dimensionCombinations = $this->dimensionCombinations;
+            }
+
             if (is_array($dimensionCombinations)) {
                 $documentData['__dimensionCombinations'] = $dimensionCombinations;
                 $documentData['__dimensionCombinationHash'] = md5(json_encode($dimensionCombinations));
@@ -577,7 +597,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 // filter out all indices not starting with the alias-name, as they are unrelated to our application
                 continue;
             }
-
             if (array_search($indexName, $currentlyLiveIndices) !== false) {
                 // skip the currently live index names from deletion
                 continue;

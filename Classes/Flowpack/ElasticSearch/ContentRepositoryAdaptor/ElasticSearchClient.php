@@ -13,6 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
 
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Configuration\ConfigurationManager;
+use TYPO3\Neos\Domain\Service\ContentContextFactory;
 
 /**
  * The elasticsearch client to be used by the content repository adapter. Singleton, can be injected.
@@ -34,10 +35,24 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
     protected $indexName;
 
     /**
+     * The language suffix
+     *
+     * @var string
+     */
+    protected $languageDimension;
+
+    /**
      * @Flow\Inject
      * @var ConfigurationManager
      */
     protected $configurationManager;
+
+    /**
+     * @Flow\Inject
+     * @var ContentContextFactory
+     */
+    protected $contextFactory;
+
 
     /**
      * Called by the Flow object framework after creating the object and resolving all dependencies.
@@ -50,6 +65,12 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
             $settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'TYPO3.TYPO3CR.Search');
             $this->indexName = $settings['elasticSearch']['indexName'];
         }
+        $instance = current($this->contextFactory->getInstances());
+        if ($instance) {
+            $dimensions = $instance->getDimensions();
+            $this->setDimension($dimensions['language'][0]);
+        }
+
     }
 
     /**
@@ -59,8 +80,19 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      */
     public function getIndexName()
     {
-        return $this->indexName;
+        return $this->indexName . $this->languageDimension;
     }
+
+    /**
+     * Set the index language dimension
+     *
+     * @return string
+     */
+    public function setDimension($languageDimension)
+    {
+        $this->languageDimension = '-'.$languageDimension;
+    }
+
 
     /**
      * Retrieve the index to be used for querying or on-the-fly indexing.
@@ -70,6 +102,6 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      */
     public function getIndex()
     {
-        return $this->findIndex($this->indexName);
+        return $this->findIndex($this->indexName . $this->languageDimension);
     }
 }
