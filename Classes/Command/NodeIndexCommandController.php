@@ -30,7 +30,7 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @Flow\Inject
-     * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer
+     * @var \Neos\ContentRepository\Search\Indexer\NodeIndexerInterface
      */
     protected $nodeIndexer;
 
@@ -187,8 +187,12 @@ class NodeIndexCommandController extends CommandController
                 $indexInWorkspace($identifier, $workspace);
             }
         } else {
-            $workspace = $this->workspaceRepository->findByIdentifier($workspace);
-            $indexInWorkspace($identifier, $workspace);
+            $workspaceInstance = $this->workspaceRepository->findByIdentifier($workspace);
+            if ($workspaceInstance === null) {
+                $this->outputLine('The given workspace (%s) does not exist.', [$workspace]);
+                $this->quit(1);
+            }
+            $indexInWorkspace($identifier, $workspaceInstance);
         }
     }
 
@@ -205,6 +209,11 @@ class NodeIndexCommandController extends CommandController
      */
     public function buildCommand($limit = null, $update = false, $workspace = null, $postfix = null)
     {
+        if ($workspace !== null && $this->workspaceRepository->findByIdentifier($workspace) === null) {
+            $this->logger->log('The given workspace (' . $workspace . ') does not exist.', LOG_ERR);
+            $this->quit(1);
+        }
+
         if ($update === true) {
             $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
         } else {
