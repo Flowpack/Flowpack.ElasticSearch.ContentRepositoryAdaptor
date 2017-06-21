@@ -237,13 +237,13 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     }
 
     /**
-     * Returns the ElasticSearch "hit" (e.g. the raw content being transferred back from ElasticSearch)
+     * Returns the Elasticsearch "hit" (e.g. the raw content being transferred back from Elasticsearch)
      * for the given node.
      *
      * Can be used for example to access highlighting information.
      *
      * @param NodeInterface $node
-     * @return array the ElasticSearch hit, or NULL if it does not exist.
+     * @return array the Elasticsearch hit, or NULL if it does not exist.
      * @api
      */
     public function searchHitForNode(NodeInterface $node)
@@ -253,7 +253,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 
     /**
      * Returns the array with all sort values for a given node. The values are fetched from the raw content
-     * ElasticSearch returns within the hit data
+     * Elasticsearch returns within the hit data
      *
      * @param NodeInterface $node
      * @return array

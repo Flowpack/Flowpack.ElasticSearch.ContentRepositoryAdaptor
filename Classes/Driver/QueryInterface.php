@@ -132,7 +132,7 @@ interface QueryInterface
     /**
      * Append $data to the given array at $path inside $this->request.
      *
-     * Low-level method to manipulate the ElasticSearch Query
+     * Low-level method to manipulate the Elasticsearch Query
      *
      * @param string $path
      * @param array $data
