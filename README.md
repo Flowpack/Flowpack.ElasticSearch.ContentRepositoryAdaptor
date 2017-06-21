@@ -293,7 +293,7 @@ prototype(Vendor.Name:FilteredProductList) {
 ```
 
 In the first lines we will add a new searchFilter variable and add your selected sku's as a filter. Based on this selection
-we will add two aggregations of type terms. You can access the filter in your template with `{filter.aggregation}`. With
+we will add two aggregations of type terms. You can access the filter in your template with `{filter.aggregations}`. With
 this information it is easy to create a form with some select fields with all available options. If you submit the form
 just call the same page and add the get parameter color and/or size.
 The next lines will parse those parameters and add them to the searchFilter. Based on your selection all products will
