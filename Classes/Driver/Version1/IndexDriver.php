@@ -12,7 +12,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use TYPO3\Flow\Annotations as Flow;
