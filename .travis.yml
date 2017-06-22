@@ -5,16 +5,21 @@ matrix:
       env: ES=1
     - php: 7.0
       env: ES=2
+    - php: 7.0
+      env: ES=5
     - php: 5.6
       env: ES=1
     - php: 5.6
       env: ES=2
+    - php: 5.6
+      env: ES=5
 sudo: false
 before_install:
   - export NEOS_TARGET_VERSION=2.3
   - cd ..
   - if [ "$ES" = 1 ]; then wget --no-check-certificate https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.5.zip && unzip elasticsearch-1.7.5.zip && mv elasticsearch-1.7.5 elasticsearch; fi
   - if [ "$ES" = 2 ]; then wget --no-check-certificate https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-2.4.3.zip && unzip elasticsearch-2.4.3.zip && mv elasticsearch-2.4.3 elasticsearch; fi
+  - if [ "$ES" = 5 ]; then wget --no-check-certificate https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.4.2.zip && unzip elasticsearch-5.4.2.zip && mv elasticsearch-5.4.2 elasticsearch; fi
   - cd elasticsearch
   - bin/elasticsearch -d
   - cd ..
@@ -31,3 +36,4 @@ script:
   - bin/phpunit --colors -c Build/BuildEssentials/PhpUnit/UnitTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Unit
   - if [ "$ES" = 1 ]; then FLOW_CONTEXT="Testing/ElasticVersion1" bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional; fi
   - if [ "$ES" = 2 ]; then FLOW_CONTEXT="Testing/ElasticVersion2" bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional; fi
+  - if [ "$ES" = 5 ]; then FLOW_CONTEXT="Testing/ElasticVersion5" bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional; fi

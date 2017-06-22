@@ -74,6 +74,27 @@ Flowpack:
             nodeTypeMappingBuilder:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\Mapping\NodeTypeMappingBuilder'
 
+          '5.x':
+            query:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Query\FilteredQuery'
+              arguments:
+                request:
+                  <<: *request_version1
+                unsupportedFieldsInCountRequest:
+                  <<: *unsupportedFieldsInCountRequest_version1
+            document:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\DocumentDriver'
+            indexer:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\IndexerDriver'
+            indexManagement:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\IndexDriver'
+            request:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\RequestDriver'
+            system:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\SystemDriver'
+            nodeTypeMappingBuilder:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Mapping\NodeTypeMappingBuilder'
+
 TYPO3:
   TYPO3CR:
     Search:
