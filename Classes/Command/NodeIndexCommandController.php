@@ -30,7 +30,7 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Search\Indexer\NodeIndexerInterface
+     * @var \TYPO3\TYPO3CR\Search\Indexer\NodeIndexerInterface
      */
     protected $nodeIndexer;
 
