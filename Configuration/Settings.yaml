@@ -50,6 +50,8 @@ Flowpack:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\RequestDriver'
             system:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\SystemDriver'
+            nodeTypeMappingBuilder:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Mapping\NodeTypeMappingBuilder'
 
           '2.x':
             query:
@@ -69,6 +71,8 @@ Flowpack:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\RequestDriver'
             system:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\SystemDriver'
+            nodeTypeMappingBuilder:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\Mapping\NodeTypeMappingBuilder'
 
 TYPO3:
   TYPO3CR:

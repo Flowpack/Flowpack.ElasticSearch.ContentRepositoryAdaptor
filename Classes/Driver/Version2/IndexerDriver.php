@@ -11,8 +11,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
@@ -24,6 +24,12 @@ use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
  */
 class IndexerDriver extends Version1\IndexerDriver
 {
+    /**
+     * @Flow\Inject
+     * @var NodeTypeMappingBuilderInterface
+     */
+    protected $nodeTypeMappingBuilder;
+
     /**
      * {@inheritdoc}
      */
@@ -110,10 +116,11 @@ class IndexerDriver extends Version1\IndexerDriver
             $upsertFulltextParts[$node->getIdentifier()] = $fulltextIndexOfNode;
         }
 
+        $nodeTypeMappingBuilder = $this->nodeTypeMappingBuilder;
         return [
             [
                 'update' => [
-                    '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
+                    '_type' => $nodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
                     '_id' => $closestFulltextNodeDocumentIdentifier
                 ]
             ],
