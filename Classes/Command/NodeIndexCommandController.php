@@ -211,21 +211,9 @@ class NodeIndexCommandController extends CommandController
         if ($update === true) {
             $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
         } else {
-            $this->nodeIndexer->setIndexNamePostfix($postfix ?: time());
-            if ($this->nodeIndexer->getIndex()->exists() === true) {
-                $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
-                $this->nodeIndexer->getIndex()->delete();
-            }
-            $this->nodeIndexer->getIndex()->create();
-            $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
-
-            $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
-            foreach ($nodeTypeMappingCollection as $mapping) {
-                /** @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
-                $mapping->apply();
-            }
-            $this->logger->log('Updated Mapping.', LOG_INFO);
+            $this->createNewIndex($postfix);
         }
+        $this->applyMapping();
 
         $this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
 
@@ -281,5 +269,37 @@ class NodeIndexCommandController extends CommandController
             $response = json_decode($exception->getResponse());
             $this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s: %s"', $response->status, $response->error->type, $response->error->reason));
         }
+    }
+
+    /**
+     * Create a new index with the given $postfix.
+     *
+     * @param string $postfix
+     * @return void
+     */
+    protected function createNewIndex($postfix)
+    {
+        $this->nodeIndexer->setIndexNamePostfix($postfix ?: time());
+        if ($this->nodeIndexer->getIndex()->exists() === true) {
+            $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
+            $this->nodeIndexer->getIndex()->delete();
+        }
+        $this->nodeIndexer->getIndex()->create();
+        $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
+    }
+
+    /**
+     * Apply the mapping to the current index.
+     *
+     * @return void
+     */
+    protected function applyMapping()
+    {
+        $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
+        foreach ($nodeTypeMappingCollection as $mapping) {
+            /** @var Mapping $mapping */
+            $mapping->apply();
+        }
+        $this->logger->log('Updated Mapping.', LOG_INFO);
     }
 }
