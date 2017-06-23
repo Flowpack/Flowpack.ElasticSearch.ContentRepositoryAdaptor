@@ -49,22 +49,14 @@ class IndexerDriver extends Version1\IndexerDriver
                     ]
                 ],
                 // http://www.elasticsearch.org/guide/en/elasticsearch/reference/2.4/docs-update.html
-                [
-                    'script' => [
-                        'inline' => '
-                                fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new HashMap());
-                                fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new HashMap());
-                                ctx._source = newData;
-                                ctx._source.__fulltext = fulltext;
-                                ctx._source.__fulltextParts = fulltextParts
-                            ',
-                        'params' => [
-                            'newData' => $documentData
-                        ]
-                    ],
-                    'upsert' => $documentData,
-                    'lang' => 'groovy'
-                ]
+                'script' => [
+                    'script_id' => 'updateFulltextParts',
+                    'lang' => 'groovy',
+                    'params' => [
+                        'newData' => $documentData
+                    ]
+                ],
+                'upsert' => $documentData
             ];
         }
 
@@ -128,31 +120,8 @@ class IndexerDriver extends Version1\IndexerDriver
             [
                 // first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
                 'script' => [
-                    'inline' => '
-                        ctx._source.__fulltext = new HashMap();
-
-                        if (!(ctx._source.containsKey("__fulltextParts") && ctx._source.__fulltextParts instanceof Map)) {
-                            ctx._source.__fulltextParts = new HashMap();
-                        }
-
-                        if (nodeIsRemoved || nodeIsHidden || fulltext.size() == 0) {
-                            if (ctx._source.__fulltextParts.containsKey(identifier)) {
-                                ctx._source.__fulltextParts.remove(identifier);
-                            }
-                        } else {
-                            ctx._source.__fulltextParts.put(identifier, fulltext);
-                        }
-
-                        ctx._source.__fulltextParts.each { originNodeIdentifier, partContent -> partContent.each { bucketKey, content ->
-                                if (ctx._source.__fulltext.containsKey(bucketKey)) {
-                                    value = ctx._source.__fulltext[bucketKey] + " " + content.trim();
-                                } else {
-                                    value = content.trim();
-                                }
-                                ctx._source.__fulltext[bucketKey] = value;
-                            }
-                        }
-                    ',
+                    'script_id' => 'regenerateFulltext',
+                    'lang' => 'groovy',
                     'params' => [
                         'identifier' => $node->getIdentifier(),
                         'nodeIsRemoved' => $node->isRemoved(),
@@ -164,7 +133,6 @@ class IndexerDriver extends Version1\IndexerDriver
                     '__fulltext' => $fulltextIndexOfNode,
                     '__fulltextParts' => $upsertFulltextParts
                 ],
-                'lang' => 'groovy'
             ]
         ];
     }

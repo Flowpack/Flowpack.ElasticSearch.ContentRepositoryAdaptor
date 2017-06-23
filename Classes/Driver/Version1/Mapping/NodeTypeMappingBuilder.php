@@ -12,6 +12,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Mappin
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractNodeTypeMappingBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
@@ -28,6 +29,12 @@ use TYPO3\TYPO3CR\Domain\Model\NodeType;
 class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
 {
     /**
+     * @Flow\Inject
+     * @var ElasticSearchClient
+     */
+    protected $client;
+
+    /**
      * Builds a Mapping Collection from the configured node types
      *
      * @param Index $index
@@ -38,6 +45,8 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
         $this->lastMappingErrors = new Result();
 
         $mappings = new MappingCollection(MappingCollection::TYPE_ENTITY);
+
+        $this->setupStoredScripts($index);
 
         /** @var NodeType $nodeType */
         foreach ($this->nodeTypeManager->getNodeTypes() as $nodeTypeName => $nodeType) {
@@ -85,5 +94,59 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
         }
 
         return $mappings;
+    }
+
+    /**
+     * Store scripts used during indexing in Elasticsearch.
+     *
+     * @param Index $index
+     * @return void
+     */
+    protected function setupStoredScripts(Index $index)
+    {
+        $this->client->request(
+            'POST',
+            '/_scripts/groovy/updateFulltextParts',
+            [],
+            json_encode(['script' => '
+                    fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new HashMap());
+                    fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new HashMap());
+                    ctx._source = newData;
+                    ctx._source.__fulltext = fulltext;
+                    ctx._source.__fulltextParts = fulltextParts'
+            ])
+        );
+
+        $this->client->request(
+            'POST',
+            '/_scripts/groovy/regenerateFulltext',
+            [],
+            json_encode(['script' => '
+                ctx._source.__fulltext = new HashMap();
+                if (!ctx._source.containsKey("__fulltextParts")) {
+                    ctx._source.__fulltextParts = new HashMap();
+                }
+                
+                if (nodeIsRemoved || nodeIsHidden || fulltext.size() == 0) {
+                    if (ctx._source.__fulltextParts.containsKey(identifier)) {
+                        ctx._source.__fulltextParts.remove(identifier);
+                    }
+                } else {
+                    ctx._source.__fulltextParts.put(identifier, fulltext);
+                }
+
+                ctx._source.__fulltextParts.each {
+                    originNodeIdentifier, partContent -> partContent.each {
+                        bucketKey, content ->
+                            if (ctx._source.__fulltext.containsKey(bucketKey)) {
+                                value = ctx._source.__fulltext[bucketKey] + " " + content.trim();
+                            } else {
+                                value = content.trim();
+                            }
+                            ctx._source.__fulltext[bucketKey] = value;
+                    }
+                }'
+            ])
+        );
     }
 }
