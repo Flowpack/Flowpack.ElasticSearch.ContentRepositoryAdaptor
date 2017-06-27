@@ -1,4 +1,12 @@
 language: php
+sudo: false
+git:
+  depth: 5
+  submodules: false
+addons:
+  apt:
+    packages:
+      - oracle-java8-set-default
 matrix:
   include:
     - php: 7.0
@@ -13,8 +21,8 @@ matrix:
       env: ES=2
     - php: 5.6
       env: ES=5
-sudo: false
 before_install:
+  - export JAVA_HOME=/usr/lib/jvm/java-8-oracle
   - export NEOS_TARGET_VERSION=2.3
   - cd ..
   - if [ "$ES" = 1 ]; then wget --no-check-certificate https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.5.zip && unzip elasticsearch-1.7.5.zip && mv elasticsearch-1.7.5 elasticsearch; fi
