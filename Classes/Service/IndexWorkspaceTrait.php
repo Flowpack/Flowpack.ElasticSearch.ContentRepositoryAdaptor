@@ -46,14 +46,9 @@ trait IndexWorkspaceTrait
     protected function indexWorkspace($workspaceName, $limit = null, callable $callback = null)
     {
         $count = 0;
-        $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-        if ($combinations === []) {
-            $count += $this->indexWorkspaceWithDimensions($workspaceName, [], $limit, $callback);
-        } else {
-            foreach ($combinations as $combination) {
-                $count += $this->indexWorkspaceWithDimensions($workspaceName, $combination, $limit, $callback);
-            }
-        }
+        $defaultDimensionCombination = $this->getDefaultDimensionCombination();
+
+        $count += $this->indexWorkspaceWithDimensions($workspaceName, $defaultDimensionCombination, $limit, $callback);
 
         return $count;
     }
@@ -92,5 +87,24 @@ trait IndexWorkspaceTrait
         }
 
         return $indexedNodes;
+    }
+
+    /**
+     * @return array
+     */
+    protected function getDefaultDimensionCombination()
+    {
+        $defaultCombination = array();
+
+        $allDimensionPresets = $this->contentDimensionPresetSource->getAllPresets();
+        $dimensionNames = array_keys($allDimensionPresets);
+        $dimensionCount = count($dimensionNames);
+        if ($dimensionCount > 0) {
+            foreach ($dimensionNames as $dimensionName) {
+                $defaultCombination[$dimensionName] = $this->contentDimensionPresetSource->getDefaultPreset($dimensionName)['values'];
+            }
+        }
+
+        return $defaultCombination;
     }
 }
