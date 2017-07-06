@@ -6,7 +6,6 @@ Since version 2.0 the fine-grained script settings are in place as described in 
 ```
 # The following settings are absolutely required for the CR adaptor to work
 script.inline: true
-script.indexed: true
 
 # the following settings secure your cluster
 cluster.name: [PUT_YOUR_CUSTOM_NAME_HERE]
