@@ -42,10 +42,16 @@ class IndexerDriver extends Version2\IndexerDriver
                         '_retry_on_conflict' => 3
                     ]
                 ],
-                // http://www.elasticsearch.org/guide/en/elasticsearch/reference/2.4/docs-update.html
+                // http://www.elasticsearch.org/guide/en/elasticsearch/reference/5.0/docs-update.html
                 [
                     'script' => [
-                        'stored' => 'updateFulltextParts',
+                        'lang' => 'painless',
+                        'inline' => '
+                            HashMap fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new HashMap());
+                            HashMap fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new HashMap());
+                            ctx._source = params.newData;
+                            ctx._source.__fulltext = fulltext;
+                            ctx._source.__fulltextParts = fulltextParts',
                         'params' => [
                             'newData' => $documentData
                         ]
@@ -114,7 +120,32 @@ class IndexerDriver extends Version2\IndexerDriver
             [
                 // first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
                 'script' => [
-                    'stored' => 'regenerateFulltext',
+                    'lang' => 'painless',
+                    'inline' => '
+                        ctx._source.__fulltext = new HashMap();
+                        if (!ctx._source.containsKey("__fulltextParts")) {
+                            ctx._source.__fulltextParts = new HashMap();
+                        }
+                        
+                        if (params.nodeIsRemoved || params.nodeIsHidden || params.fulltext.size() == 0) {
+                            if (ctx._source.__fulltextParts.containsKey(params.identifier)) {
+                                ctx._source.__fulltextParts.remove(params.identifier);
+                            }
+                        } else {
+                            ctx._source.__fulltextParts.put(params.identifier, params.fulltext);
+                        }
+    
+                        ctx._source.__fulltextParts.each {
+                            originNodeIdentifier, partContent -> partContent.each {
+                                bucketKey, content ->
+                                    if (ctx._source.__fulltext.containsKey(bucketKey)) {
+                                        value = ctx._source.__fulltext[bucketKey] + " " + content.trim();
+                                    } else {
+                                        value = content.trim();
+                                    }
+                                    ctx._source.__fulltext[bucketKey] = value;
+                            }
+                        }',
                     'params' => [
                         'identifier' => $node->getIdentifier(),
                         'nodeIsRemoved' => $node->isRemoved(),
