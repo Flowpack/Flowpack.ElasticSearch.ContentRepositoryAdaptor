@@ -73,7 +73,7 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
                 'path_match' => '__dimensionCombinations.*',
                 'match_mapping_type' => 'string',
                 'mapping' => [
-                    'type' => 'keyword'
+                    'type' => 'text'
                 ]
             ]);
             $mapping->setPropertyByPath('__dimensionCombinationHash', [
