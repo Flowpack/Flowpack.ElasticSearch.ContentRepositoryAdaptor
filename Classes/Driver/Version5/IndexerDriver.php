@@ -126,7 +126,7 @@ class IndexerDriver extends Version2\IndexerDriver
                         if (!ctx._source.containsKey("__fulltextParts")) {
                             ctx._source.__fulltextParts = new HashMap();
                         }
-                        
+
                         if (params.nodeIsRemoved || params.nodeIsHidden || params.fulltext.size() == 0) {
                             if (ctx._source.__fulltextParts.containsKey(params.identifier)) {
                                 ctx._source.__fulltextParts.remove(params.identifier);
@@ -134,16 +134,16 @@ class IndexerDriver extends Version2\IndexerDriver
                         } else {
                             ctx._source.__fulltextParts.put(params.identifier, params.fulltext);
                         }
-    
-                        ctx._source.__fulltextParts.each {
-                            originNodeIdentifier, partContent -> partContent.each {
-                                bucketKey, content ->
-                                    if (ctx._source.__fulltext.containsKey(bucketKey)) {
-                                        value = ctx._source.__fulltext[bucketKey] + " " + content.trim();
-                                    } else {
-                                        value = content.trim();
-                                    }
-                                    ctx._source.__fulltext[bucketKey] = value;
+
+                        for (fulltextPart in ctx._source.__fulltextParts.entrySet()) {
+                            for (entry in fulltextPart.getValue().entrySet()) {
+                                def value = "";
+                                if (ctx._source.__fulltext.containsKey(entry.getKey())) {
+                                    value = ctx._source.__fulltext[entry.getKey()] + " " + entry.getValue().trim();
+                                } else {
+                                    value = entry.getValue().trim();
+                                }
+                                ctx._source.__fulltext[entry.getKey()] = value;
                             }
                         }',
                     'params' => [
