@@ -38,20 +38,50 @@ trait IndexWorkspaceTrait
     protected $nodeIndexingManager;
 
     /**
+     * @var array
+     */
+    protected $contentDimensionCombinationsToIndex;
+
+    /**
+     * @var array
+     */
+    protected $contentDimensionCombinationsToIndexHashes;
+
+    /**
      * @param string $workspaceName
      * @param integer $limit
      * @param callable $callback
      * @return integer
      */
-    protected function indexWorkspace($workspaceName, $limit = null, callable $callback = null)
+    protected function indexWorkspace($workspaceName, $limit = null, callable $callback = null, $selectedIndexDimensionCombinationPreset = null)
     {
+        if (!$this->contentDimensionCombinationsToIndex) {
+            try {
+                if (is_null($selectedIndexDimensionCombinationPreset)) {
+                    $selectedIndexDimensionCombinationPreset = $this->configurationManager->getConfiguration(\Neos\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS,
+                        'Flowpack.ElasticSearch.ContentRepositoryAdaptor.indexDimensionCombinationPreset');
+                }
+                $this->contentDimensionCombinationsToIndex = $this->configurationManager->getConfiguration(\Neos\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS,
+                    'Flowpack.ElasticSearch.ContentRepositoryAdaptor.indexDimensionCombinationPresets.' . $selectedIndexDimensionCombinationPreset);
+
+                $this->contentDimensionCombinationsToIndexHashes = array();
+                foreach ($this->contentDimensionCombinationsToIndex as $contentDimensionCombination) {
+                    $this->contentDimensionCombinationsToIndexHashes[] = sha1(serialize($contentDimensionCombination));
+                }
+            } catch (\Exception $e) {
+                $this->contentDimensionCombinationsToIndex = [];
+            }
+        }
+
         $count = 0;
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
         if ($combinations === []) {
             $count += $this->indexWorkspaceWithDimensions($workspaceName, [], $limit, $callback);
         } else {
             foreach ($combinations as $combination) {
-                $count += $this->indexWorkspaceWithDimensions($workspaceName, $combination, $limit, $callback);
+                if (count($this->contentDimensionCombinationsToIndex) <= 0 || in_array(sha1(serialize($combination)), $this->contentDimensionCombinationsToIndexHashes)) {
+                    $count += $this->indexWorkspaceWithDimensions($workspaceName, $combination, $limit, $callback);
+                }
             }
         }
 
