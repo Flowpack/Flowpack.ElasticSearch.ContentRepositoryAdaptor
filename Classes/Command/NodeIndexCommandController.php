@@ -314,5 +314,4 @@ class NodeIndexCommandController extends CommandController
 
         return $this->contextFactory->create($contextProperties);
     }
-
 }
