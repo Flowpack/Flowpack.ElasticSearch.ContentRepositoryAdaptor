@@ -103,6 +103,24 @@ Flowpack:
               className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\RequestDriver
             system:
               className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\SystemDriver
+
+      indexDimensionCombinationPreset: default
+      indexDimensionCombinationPresets:
+        default: []
+#        customExample:
+#          -
+#            language:
+#              - de
+#              - en
+#            country:
+#              - GLOBAL
+#          -
+#            language:
+#              - fr
+#              - en
+#            country:
+#              - GLOBAL
+
 Neos:
   ContentRepository:
     Search:

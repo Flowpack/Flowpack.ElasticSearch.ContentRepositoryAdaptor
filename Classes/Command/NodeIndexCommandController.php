@@ -205,9 +205,10 @@ class NodeIndexCommandController extends CommandController
      * @param boolean $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
      * @param string $workspace name of the workspace which should be indexed
      * @param string $postfix Index postfix, index with the same postifix will be deleted if exist
+     * @param string $dimensionsPreset Select a custom preset to limit the indexed dimension combinations
      * @return void
      */
-    public function buildCommand($limit = null, $update = false, $workspace = null, $postfix = null)
+    public function buildCommand($limit = null, $update = false, $workspace = null, $postfix = null, $dimensionsPreset = null)
     {
         if ($workspace !== null && $this->workspaceRepository->findByIdentifier($workspace) === null) {
             $this->logger->log('The given workspace (' . $workspace . ') does not exist.', LOG_ERR);
@@ -250,10 +251,10 @@ class NodeIndexCommandController extends CommandController
         };
         if ($workspace === null) {
             foreach ($this->workspaceRepository->findAll() as $workspace) {
-                $count += $this->indexWorkspace($workspace->getName(), $limit, $callback);
+                $count += $this->indexWorkspace($workspace->getName(), $limit, $callback, $dimensionsPreset);
             }
         } else {
-            $count += $this->indexWorkspace($workspace, $limit, $callback);
+            $count += $this->indexWorkspace($workspace, $limit, $callback, $dimensionsPreset);
         }
 
         $this->nodeIndexingManager->flushQueues();
