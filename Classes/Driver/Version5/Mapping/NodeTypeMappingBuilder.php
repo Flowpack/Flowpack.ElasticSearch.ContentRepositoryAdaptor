@@ -141,5 +141,4 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
             $this->adjustStringTypeMapping($item);
         }
     }
-
 }
