@@ -42,7 +42,7 @@ You can switch the Elastic driver by editing ```Settings.yaml```
 * ```2.x``` to support Elastic 2.x
 * ```5.x``` to support Elastic 5.x
 
-_Currently the Driver interfaces as not marked as API, and can be changed to adapt to future needs._
+_Currently the Driver interfaces are not marked as API, and can be changed to adapt to future needs._
 
 **Note:** When using Elasticsearch 5.x changes to the types may need to be done in your mapping.
 More information on the [mapping in ElasticSearch 5.x](Documentation/ElasticMapping-5.x.md).
