@@ -49,14 +49,20 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                     ]
                 ],
                 // http://www.elasticsearch.org/guide/en/elasticsearch/reference/1.7/docs-update.html
-                'script' => [
-                    'script_id' => 'updateFulltextParts',
-                    'lang' => 'groovy',
+                [
+                    'script' => '
+                            fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new LinkedHashMap());
+                            fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new LinkedHashMap());
+                            ctx._source = newData;
+                            ctx._source.__fulltext = fulltext;
+                            ctx._source.__fulltextParts = fulltextParts
+                            ',
                     'params' => [
                         'newData' => $documentData
-                    ]
-                ],
-                'upsert' => $documentData
+                    ],
+                    'upsert' => $documentData,
+                    'lang' => 'groovy'
+                ]
             ];
         } else {
             // non-fulltext-root documents can be indexed as-they-are
@@ -112,22 +118,52 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                 ]
             ],
             // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
-            // first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
-            'script' => [
-                'script_id' => 'regenerateFulltext',
-                'lang' => 'groovy',
+            [
+                // first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
+                'script' => '
+                    if (!(ctx._source.containsKey("__fulltextParts") && ctx._source.__fulltextParts instanceof Map)) {
+                        ctx._source.__fulltextParts = new LinkedHashMap();
+                    }
+
+                    if (nodeIsRemoved || nodeIsHidden || fulltext.size() == 0) {
+                        if (ctx._source.__fulltextParts.containsKey(identifier)) {
+                            ctx._source.__fulltextParts.remove(identifier);
+                        }
+                    } else {
+                        ctx._source.__fulltextParts[identifier] = fulltext;
+                    }
+                    ctx._source.__fulltext = new LinkedHashMap();
+
+                    Iterator<LinkedHashMap.Entry<String, LinkedHashMap>> fulltextByNode = ctx._source.__fulltextParts.entrySet().iterator();
+                    for (fulltextByNode; fulltextByNode.hasNext();) {
+                        Iterator<LinkedHashMap.Entry<String, String>> elementIterator = fulltextByNode.next().getValue().entrySet().iterator();
+                        for (elementIterator; elementIterator.hasNext();) {
+                            Map.Entry<String, String> element = elementIterator.next();
+                            String value;
+
+                            if (ctx._source.__fulltext.containsKey(element.key)) {
+                                value = ctx._source.__fulltext[element.key] + " " + element.value.trim();
+                            } else {
+                                value = element.value.trim();
+                            }
+
+                            ctx._source.__fulltext[element.key] = value;
+                        }
+                    }
+                ',
                 'params' => [
                     'identifier' => $node->getIdentifier(),
                     'nodeIsRemoved' => $node->isRemoved(),
                     'nodeIsHidden' => $node->isHidden(),
                     'fulltext' => $fulltextIndexOfNode
                 ],
-            ],
-            'upsert' => [
-                '__fulltext' => $fulltextIndexOfNode,
-                '__fulltextParts' => [
-                    $node->getIdentifier() => $fulltextIndexOfNode
-                ]
+                'upsert' => [
+                    '__fulltext' => $fulltextIndexOfNode,
+                    '__fulltextParts' => [
+                        $node->getIdentifier() => $fulltextIndexOfNode
+                    ]
+                ],
+                'lang' => 'groovy'
             ]
         ];
     }

@@ -53,8 +53,6 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
 
         $mappings = new MappingCollection(MappingCollection::TYPE_ENTITY);
 
-        $this->setupStoredScripts($index);
-
         /** @var NodeType $nodeType */
         foreach ($this->nodeTypeManager->getNodeTypes() as $nodeTypeName => $nodeType) {
             if ($nodeTypeName === 'unstructured' || $nodeType->isAbstract()) {
@@ -75,7 +73,7 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
                 'path_match' => '__dimensionCombinations.*',
                 'match_mapping_type' => 'string',
                 'mapping' => [
-                    'type' => 'keyword'
+                    'type' => 'text'
                 ]
             ]);
             $mapping->setPropertyByPath('__dimensionCombinationHash', [
@@ -102,67 +100,6 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
         }
 
         return $mappings;
-    }
-
-    /**
-     * Store scripts used during indexing in Elasticsearch.
-     *
-     * @param Index $index
-     * @return void
-     */
-    protected function setupStoredScripts(Index $index)
-    {
-        $this->client->request(
-            'POST',
-            '/_scripts/updateFulltextParts',
-            [],
-            json_encode(['script' => [
-                'lang' => 'painless',
-                'code' => '
-                    HashMap fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new HashMap());
-                    HashMap fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new HashMap());
-                    ctx._source = params.newData;
-                    ctx._source.__fulltext = fulltext;
-                    ctx._source.__fulltextParts = fulltextParts'
-                ]
-            ])
-        );
-
-        $this->client->request(
-            'POST',
-            '/_scripts/regenerateFulltext',
-            [],
-            json_encode(['script' => [
-                'lang' => 'painless',
-                'code' => '
-                        ctx._source.__fulltext = new HashMap();
-                        if (!ctx._source.containsKey("__fulltextParts")) {
-                            ctx._source.__fulltextParts = new HashMap();
-                        }
-                        
-                        if (params.nodeIsRemoved || params.nodeIsHidden || params.fulltext.size() == 0) {
-                            if (ctx._source.__fulltextParts.containsKey(params.identifier)) {
-                                ctx._source.__fulltextParts.remove(params.identifier);
-                            }
-                        } else {
-                            ctx._source.__fulltextParts.put(params.identifier, params.fulltext);
-                        }
-    
-                        ctx._source.__fulltextParts.each {
-                            originNodeIdentifier, partContent -> partContent.each {
-                                bucketKey, content ->
-                                    if (ctx._source.__fulltext.containsKey(bucketKey)) {
-                                        value = ctx._source.__fulltext[bucketKey] + " " + content.trim();
-                                    } else {
-                                        value = content.trim();
-                                    }
-                                    ctx._source.__fulltext[bucketKey] = value;
-                            }
-                        }
-                        '
-                ]
-            ])
-        );
     }
 
     /**
