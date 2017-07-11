@@ -161,7 +161,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * Index this node, and add it to the current bulk request.
      *
      * @param NodeInterface $node
-     * @param string $targetWorkspaceName In case this is triggered during publishing, a workspace name will be passed in
+     * @param string $targetWorkspaceName In case indexing is triggered during publishing, a target workspace name will be passed in
      * @return void
      * @throws \TYPO3\TYPO3CR\Search\Exception\IndexingException
      */
