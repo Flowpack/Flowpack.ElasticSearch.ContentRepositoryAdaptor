@@ -11,13 +11,24 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
+use Flowpack\ElasticSearch\Domain\Model\Mapping;
+use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
+use Neos\ContentRepository\Domain\Factory\NodeFactory;
+use Neos\ContentRepository\Domain\Model\Workspace;
+use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
+use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
+use Neos\ContentRepository\Domain\Service\ContentDimensionPresetSourceInterface;
 use Neos\ContentRepository\Domain\Service\Context;
 use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
+use Neos\ContentRepository\Search\Indexer\NodeIndexerInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
-use Neos\ContentRepository\Domain\Model\Workspace;
+use Neos\Flow\Configuration\ConfigurationManager;
+use Neos\Flow\ObjectManagement\ObjectManagerInterface;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Provides CLI features for index handling
@@ -30,31 +41,31 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Search\Indexer\NodeIndexerInterface
+     * @var NodeIndexerInterface
      */
     protected $nodeIndexer;
 
     /**
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Domain\Repository\WorkspaceRepository
+     * @var WorkspaceRepository
      */
     protected $workspaceRepository;
 
     /**
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Domain\Repository\NodeDataRepository
+     * @var NodeDataRepository
      */
     protected $nodeDataRepository;
 
     /**
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Domain\Factory\NodeFactory
+     * @var NodeFactory
      */
     protected $nodeFactory;
 
     /**
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Domain\Service\ContentDimensionPresetSourceInterface
+     * @var ContentDimensionPresetSourceInterface
      */
     protected $contentDimensionPresetSource;
 
@@ -66,13 +77,13 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @Flow\Inject
-     * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface
+     * @var LoggerInterface
      */
     protected $logger;
 
     /**
      * @Flow\Inject
-     * @var \Neos\Flow\Configuration\ConfigurationManager
+     * @var ConfigurationManager
      */
     protected $configurationManager;
 
@@ -94,8 +105,8 @@ class NodeIndexCommandController extends CommandController
      */
     public function initializeObject($cause)
     {
-        if ($cause === \Neos\Flow\ObjectManagement\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-            $this->settings = $this->configurationManager->getConfiguration(\Neos\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
+        if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
+            $this->settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
         }
     }
 
@@ -108,8 +119,8 @@ class NodeIndexCommandController extends CommandController
     {
         $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
         foreach ($nodeTypeMappingCollection as $mapping) {
-            /** @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
-            $this->output(\Symfony\Component\Yaml\Yaml::dump($mapping->asArray(), 5, 2));
+            /** @var Mapping $mapping */
+            $this->output(Yaml::dump($mapping->asArray(), 5, 2));
             $this->outputLine();
         }
         $this->outputLine('------------');
@@ -187,6 +198,7 @@ class NodeIndexCommandController extends CommandController
                 $indexInWorkspace($identifier, $workspace);
             }
         } else {
+            /** @var Workspace $workspaceInstance */
             $workspaceInstance = $this->workspaceRepository->findByIdentifier($workspace);
             if ($workspaceInstance === null) {
                 $this->outputLine('The given workspace (%s) does not exist.', [$workspace]);
@@ -204,7 +216,7 @@ class NodeIndexCommandController extends CommandController
      * @param integer $limit Amount of nodes to index at maximum
      * @param boolean $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
      * @param string $workspace name of the workspace which should be indexed
-     * @param string $postfix Index postfix, index with the same postifix will be deleted if exist
+     * @param string $postfix Index postfix, index with the same postfix will be deleted if exist
      * @return void
      */
     public function buildCommand($limit = null, $update = false, $workspace = null, $postfix = null)
@@ -217,21 +229,9 @@ class NodeIndexCommandController extends CommandController
         if ($update === true) {
             $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
         } else {
-            $this->nodeIndexer->setIndexNamePostfix($postfix ?: time());
-            if ($this->nodeIndexer->getIndex()->exists() === true) {
-                $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
-                $this->nodeIndexer->getIndex()->delete();
-            }
-            $this->nodeIndexer->getIndex()->create();
-            $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
-
-            $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
-            foreach ($nodeTypeMappingCollection as $mapping) {
-                /** @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
-                $mapping->apply();
-            }
-            $this->logger->log('Updated Mapping.', LOG_INFO);
+            $this->createNewIndex($postfix);
         }
+        $this->applyMapping();
 
         $this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
 
@@ -283,7 +283,7 @@ class NodeIndexCommandController extends CommandController
             } else {
                 $this->logger->log('Nothing to remove.');
             }
-        } catch (\Flowpack\ElasticSearch\Transfer\Exception\ApiException $exception) {
+        } catch (ApiException $exception) {
             $response = json_decode($exception->getResponse());
             $this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s: %s"', $response->status, $response->error->type, $response->error->reason));
         }
@@ -314,4 +314,35 @@ class NodeIndexCommandController extends CommandController
         return $this->contextFactory->create($contextProperties);
     }
 
+    /**
+     * Create a new index with the given $postfix.
+     *
+     * @param string $postfix
+     * @return void
+     */
+    protected function createNewIndex($postfix)
+    {
+        $this->nodeIndexer->setIndexNamePostfix($postfix ?: time());
+        if ($this->nodeIndexer->getIndex()->exists() === true) {
+            $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
+            $this->nodeIndexer->getIndex()->delete();
+        }
+        $this->nodeIndexer->getIndex()->create();
+        $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
+    }
+
+    /**
+     * Apply the mapping to the current index.
+     *
+     * @return void
+     */
+    protected function applyMapping()
+    {
+        $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
+        foreach ($nodeTypeMappingCollection as $mapping) {
+            /** @var Mapping $mapping */
+            $mapping->apply();
+        }
+        $this->logger->log('Updated Mapping.', LOG_INFO);
+    }
 }
