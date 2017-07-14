@@ -291,6 +291,7 @@ class NodeIndexCommandController extends CommandController
      */
     public function cleanupCommand()
     {
+        $removed = false;
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
         foreach ($combinations as $dimensionsValues) {
             try {
@@ -298,10 +299,9 @@ class NodeIndexCommandController extends CommandController
                 $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
                 if (count($indicesToBeRemoved) > 0) {
                     foreach ($indicesToBeRemoved as $indexToBeRemoved) {
+                        $removed = true;
                         $this->logger->log('Removing old index ' . $indexToBeRemoved);
                     }
-                } else {
-                    $this->logger->log('Nothing to remove.');
                 }
             } catch (ApiException $exception) {
                 $response = json_decode($exception->getResponse());
@@ -312,6 +312,9 @@ class NodeIndexCommandController extends CommandController
                     $this->logger->log(sprintf('%s, saying "%s"', $message, $response->error));
                 }
             }
+        }
+        if ($removed === false) {
+            $this->logger->log('Nothing to remove.');
         }
     }
 
