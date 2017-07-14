@@ -249,7 +249,7 @@ class NodeIndexCommandController extends CommandController
             }
         };
 
-        $build = function ($dimensionsValues) use ($workspace, $update, $limit, $workspaceLogger) {
+        $build = function (array $dimensionsValues) use ($workspace, $update, $limit, $workspaceLogger) {
             $this->nodeIndexer->setDimensions($dimensionsValues);
             $this->outputLine();
             $this->logger->log(sprintf('Indexing %snodes', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
@@ -269,19 +269,28 @@ class NodeIndexCommandController extends CommandController
             }
 
             $this->nodeIndexingManager->flushQueues();
-            $this->nodeIndexer->getIndex()->refresh();
 
             $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
+        };
 
-            // TODO: smoke tests
-            if ($update === false) {
-                $this->nodeIndexer->updateIndexAlias();
+        $refresh = function (array $dimensionsValues) {
+            $this->nodeIndexer->setDimensions($dimensionsValues);
+            $this->nodeIndexer->getIndex()->refresh();
+        };
+
+        $update = function (array $dimensionsValues) use ($update) {
+            if ($update === true) {
+                return;
             }
+            $this->nodeIndexer->setDimensions($dimensionsValues);
+            $this->nodeIndexer->updateIndexAlias();
         };
 
         $combinations = new ArrayCollection($this->contentDimensionCombinator->getAllAllowedCombinations());
         $combinations->map($create);
         $combinations->map($build);
+        $combinations->map($refresh);
+        $combinations->map($update);
     }
 
     /**
