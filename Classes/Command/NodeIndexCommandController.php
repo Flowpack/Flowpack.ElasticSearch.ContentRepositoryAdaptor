@@ -291,9 +291,9 @@ class NodeIndexCommandController extends CommandController
      */
     public function cleanupCommand()
     {
-        try {
-            $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-            foreach ($combinations as $dimensionsValues) {
+        $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+        foreach ($combinations as $dimensionsValues) {
+            try {
                 $this->nodeIndexer->setDimensions($dimensionsValues);
                 $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
                 if (count($indicesToBeRemoved) > 0) {
@@ -303,14 +303,14 @@ class NodeIndexCommandController extends CommandController
                 } else {
                     $this->logger->log('Nothing to remove.');
                 }
-            }
-        } catch (ApiException $exception) {
-            $response = json_decode($exception->getResponse());
-            $message = \sprintf('Nothing removed. ElasticSearch responded with status %s', $response->status);
-            if (isset($response->error->type)) {
-                $this->logger->log(sprintf('%s, saying "%s: %s"', $message, $response->error->type, $response->error->reason));
-            } else {
-                $this->logger->log(sprintf('%s, saying "%s"', $message, $response->error));
+            } catch (ApiException $exception) {
+                $response = json_decode($exception->getResponse());
+                $message = \sprintf('Nothing removed. ElasticSearch responded with status %s', $response->status);
+                if (isset($response->error->type)) {
+                    $this->logger->log(sprintf('%s, saying "%s: %s"', $message, $response->error->type, $response->error->reason));
+                } else {
+                    $this->logger->log(sprintf('%s, saying "%s"', $message, $response->error));
+                }
             }
         }
     }
