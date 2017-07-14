@@ -351,13 +351,14 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
 
         foreach ($this->dimensionsRegistry as $hash => $dimensions) {
-            $this->searchClient->setDimensions($dimensions);
-            $response = $this->requestDriver->bulk($this->getIndex(), $payload[$hash]);
-            foreach ($response as $responseLine) {
-                if (isset($response['errors']) && $response['errors'] !== false) {
-                    $this->logger->log('NodeIndexer: ' . json_encode($responseLine), LOG_ERR, null, 'ElasticSearch (CR)');
+            $this->searchClient->withDimensions(function () use (&$payload, $hash) {
+                $response = $this->requestDriver->bulk($this->getIndex(), $payload[$hash]);
+                foreach ($response as $responseLine) {
+                    if (isset($response['errors']) && $response['errors'] !== false) {
+                        $this->logger->log('NodeIndexer: ' . json_encode($responseLine), LOG_ERR, null, 'ElasticSearch (CR)');
+                    }
                 }
-            }
+            }, $dimensions);
         }
 
         $this->dimensionsRegistry = [];

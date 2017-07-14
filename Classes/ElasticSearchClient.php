@@ -43,6 +43,11 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
     protected $dimensionsHash;
 
     /**
+     * @var array
+     */
+    protected $dimensions;
+
+    /**
      * @Flow\Inject
      * @var ConfigurationManager
      */
@@ -69,12 +74,28 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
         $targetDimensions = array_map(function ($dimensionValues) {
             return [array_shift($dimensionValues)];
         }, $dimensionValues);
+        $this->dimensions = $dimensionValues;
         $this->dimensionsHash = $targetDimensions !== [] ? Utility::sortDimensionValueArrayAndReturnDimensionsHash($targetDimensions) : null;
     }
 
+    /**
+     * @return string
+     */
     public function getDimensionsHash()
     {
         return $this->dimensionsHash;
+    }
+
+    /**
+     * @param \Closure $closure
+     * @param array $dimensionValues
+     */
+    public function withDimensions(\Closure $closure, array $dimensionValues = [])
+    {
+        $previousDimensions = $this->dimensions;
+        $this->setDimensions($dimensionValues);
+        $closure();
+        $this->setDimensions($previousDimensions);
     }
 
     /**
