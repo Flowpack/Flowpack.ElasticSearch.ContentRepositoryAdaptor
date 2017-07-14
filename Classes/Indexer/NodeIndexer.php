@@ -331,7 +331,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             return;
         }
 
-        $bulkRequests = [];
+        $payload = [];
         foreach ($bulkRequest as $bulkRequestTuple) {
             $tupleAsJson = '';
             foreach ($bulkRequestTuple['items'] as $bulkRequestItem) {
@@ -343,21 +343,16 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $tupleAsJson .= $itemAsJson . chr(10);
             }
             $hash = $bulkRequestTuple['targetDimensions'];
-            if (!isset($bulkRequests[$hash])) {
-                $bulkRequests[$hash] = '';
+            if (!isset($payload[$hash])) {
+                $payload[$hash] = '';
             }
-            $bulkRequests[$hash] .= $tupleAsJson;
+            $payload[$hash] .= $tupleAsJson;
         }
 
-        if ($bulkRequests === []) {
-            $this->dimensionsRegistry = [];
-            $this->currentBulkRequest = [];
-            return;
-        }
 
         foreach ($this->dimensionsRegistry as $hash => $dimensions) {
             $this->searchClient->setDimensions($dimensions);
-            $response = $this->requestDriver->bulk($this->getIndex(), $bulkRequests[$hash]);
+            $response = $this->requestDriver->bulk($this->getIndex(), $payload[$hash]);
             foreach ($response as $responseLine) {
                 if (isset($response['errors']) && $response['errors'] !== false) {
                     $this->logger->log('NodeIndexer: ' . json_encode($responseLine), LOG_ERR, null, 'ElasticSearch (CR)');
