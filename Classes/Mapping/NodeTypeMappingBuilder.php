@@ -99,21 +99,6 @@ class NodeTypeMappingBuilder
                 $mapping->setFullMapping($fullConfiguration['search']['elasticSearchMapping']);
             }
 
-            // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/mapping-root-object-type.html#_dynamic_templates
-            // 'not_analyzed' is necessary
-            $mapping->addDynamicTemplate('dimensions', [
-                'path_match' => '__dimensionCombinations.*',
-                'match_mapping_type' => 'string',
-                'mapping' => [
-                    'type' => 'string',
-                    'index' => 'not_analyzed'
-                ]
-            ]);
-            $mapping->setPropertyByPath('__dimensionCombinationHash', [
-                'type' => 'string',
-                'index' => 'not_analyzed'
-            ]);
-
             foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {
                 if (isset($propertyConfiguration['search']) && isset($propertyConfiguration['search']['elasticSearchMapping'])) {
                     if (is_array($propertyConfiguration['search']['elasticSearchMapping'])) {

@@ -130,11 +130,6 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
                                     'terms' => [
                                         '__workspace' => ['live', 'user-foo']
                                     ]
-                                ],
-                                2 => [
-                                    'term' => [
-                                        '__dimensionCombinationHash' => 'd751713988987e9331980363e24189ce'
-                                    ]
                                 ]
                             ],
                             'should' => [],
