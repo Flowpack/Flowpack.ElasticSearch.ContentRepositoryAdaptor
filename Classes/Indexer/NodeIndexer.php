@@ -22,6 +22,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuild
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
+use Neos\ContentRepository\Utility;
 use Neos\Flow\Annotations as Flow;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
@@ -128,6 +129,14 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     }
 
     /**
+     * @param array $dimensionValues
+     */
+    public function setDimensions(array $dimensionValues = [])
+    {
+        $this->searchClient->setDimensions($dimensionValues);
+    }
+
+    /**
      * Set the postfix for the index name
      *
      * @param string $indexNamePostfix
@@ -207,15 +216,15 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $documentData['__workspace'] = $targetWorkspaceName;
             }
 
-            $dimensionCombinations = $node->getContext()->getDimensions();
-            if (is_array($dimensionCombinations)) {
-                $documentData['__dimensionCombinations'] = $dimensionCombinations;
-                $documentData['__dimensionCombinationHash'] = md5(json_encode($dimensionCombinations));
-            }
-
             if ($this->isFulltextEnabled($node)) {
-                $this->currentBulkRequest[] = $this->indexerDriver->document($this->getIndexName(), $node, $document, $documentData);
-                $this->currentBulkRequest[] = $this->indexerDriver->fulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
+                $this->currentBulkRequest[] = [
+                    'targetDimensions' => $node->getContext()->getTargetDimensions(),
+                    'items' => $this->indexerDriver->document($this->getIndexName(), $node, $document, $documentData)
+                ];
+                $this->currentBulkRequest[] = [
+                    'targetDimensions' => $node->getContext()->getTargetDimensions(),
+                    'items' => $this->indexerDriver->fulltext($node, $fulltextIndexOfNode, $targetWorkspaceName),
+                ];
             }
 
             $this->logger->log(sprintf('NodeIndexer (%s): Indexed node %s.', $documentIdentifier, $contextPath), LOG_DEBUG, null, 'ElasticSearch (CR)');
@@ -291,8 +300,14 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
 
-        $this->currentBulkRequest[] = $this->documentDriver->delete($node, $documentIdentifier);
-        $this->currentBulkRequest[] = $this->indexerDriver->fulltext($node, [], $targetWorkspaceName);
+        $this->currentBulkRequest[] = [
+            'targetDimensions' => $node->getContext()->getTargetDimensions(),
+            'items' => $this->documentDriver->delete($node, $documentIdentifier)
+        ];
+        $this->currentBulkRequest[] = [
+            'targetDimensions' => $node->getContext()->getTargetDimensions(),
+            'items' => $this->indexerDriver->fulltext($node, [], $targetWorkspaceName)
+        ];
 
         $this->logger->log(sprintf('NodeIndexer (%s): Removed node %s (%s) from index.', $documentIdentifier, $node->getContextPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
     }
@@ -309,10 +324,15 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             return;
         }
 
-        $content = '';
+        $dimensionsRegistry = [];
+
+        $bulkRequests = [];
         foreach ($bulkRequest as $bulkRequestTuple) {
             $tupleAsJson = '';
-            foreach ($bulkRequestTuple as $bulkRequestItem) {
+            if ($bulkRequestTuple['items'] === null) {
+                continue;
+            }
+            foreach ($bulkRequestTuple['items'] as $bulkRequestItem) {
                 $itemAsJson = json_encode($bulkRequestItem);
                 if ($itemAsJson === false) {
                     $this->logger->log('NodeIndexer: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), LOG_ERR, $bulkRequestItem, 'ElasticSearch (CR)');
@@ -320,11 +340,25 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 }
                 $tupleAsJson .= $itemAsJson . chr(10);
             }
-            $content .= $tupleAsJson;
+            $targetDimensions = array_map(function ($dimensionValues) {
+                return [$dimensionValues];
+            }, $bulkRequestTuple['targetDimensions']);
+            $hash = Utility::sortDimensionValueArrayAndReturnDimensionsHash($targetDimensions);
+            if (!isset($bulkRequests[$hash])) {
+                $bulkRequests[$hash] = '';
+            }
+            $dimensionsRegistry[$hash] = $targetDimensions;
+            $bulkRequests[$hash] .= $tupleAsJson;
         }
 
-        if ($content !== '') {
-            $response = $this->requestDriver->bulk($this->getIndex(), $content);
+        if ($bulkRequests === []) {
+            $this->currentBulkRequest = [];
+            return;
+        }
+
+        foreach ($dimensionsRegistry as $hash => $dimensions) {
+            $this->searchClient->setDimensions($dimensions);
+            $response = $this->requestDriver->bulk($this->getIndex(), $bulkRequests[$hash]);
             foreach ($response as $responseLine) {
                 if (isset($response['errors']) && $response['errors'] !== false) {
                     $this->logger->log('NodeIndexer: ' . json_encode($responseLine), LOG_ERR, null, 'ElasticSearch (CR)');

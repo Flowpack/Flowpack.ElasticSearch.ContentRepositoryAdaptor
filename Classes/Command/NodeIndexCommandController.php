@@ -11,6 +11,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * source code.
  */
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
@@ -226,45 +227,61 @@ class NodeIndexCommandController extends CommandController
             $this->quit(1);
         }
 
-        if ($update === true) {
-            $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
-        } else {
-            $this->createNewIndex($postfix);
-        }
-        $this->applyMapping();
+        $postfix = $postfix ?: time();
 
-        $this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
+        $create = function (array $dimensionsValues) use ($update, $postfix) {
+            $this->nodeIndexer->setDimensions($dimensionsValues);
 
-        $count = 0;
+            if ($update === true) {
+                $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
+            } else {
+                $this->createNewIndex($postfix, $dimensionsValues);
+            }
 
-        if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
-            $workspace = 'live';
-        }
+            $this->applyMapping();
+        };
 
-        $callback = function ($workspaceName, $indexedNodes, $dimensions) {
+        $workspaceLogger = function ($workspaceName, $indexedNodes, $dimensions) {
             if ($dimensions === []) {
                 $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)');
             } else {
                 $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)');
             }
         };
-        if ($workspace === null) {
-            foreach ($this->workspaceRepository->findAll() as $workspace) {
-                $count += $this->indexWorkspace($workspace->getName(), $limit, $callback);
+
+        $build = function ($dimensionsValues) use ($workspace, $update, $limit, $workspaceLogger) {
+            $this->nodeIndexer->setDimensions($dimensionsValues);
+            $this->outputLine();
+            $this->logger->log(sprintf('Indexing %snodes', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
+
+            $count = 0;
+
+            if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
+                $workspace = 'live';
             }
-        } else {
-            $count += $this->indexWorkspace($workspace, $limit, $callback);
-        }
 
-        $this->nodeIndexingManager->flushQueues();
+            if ($workspace === null) {
+                foreach ($this->workspaceRepository->findAll() as $workspace) {
+                    $count += $this->indexWorkspaceWithDimensions($workspace->getName(), $dimensionsValues, $limit, $workspaceLogger);
+                }
+            } else {
+                $count += $this->indexWorkspaceWithDimensions($workspace, $dimensionsValues, $limit, $workspaceLogger);
+            }
 
-        $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
-        $this->nodeIndexer->getIndex()->refresh();
+            $this->nodeIndexingManager->flushQueues();
+            $this->nodeIndexer->getIndex()->refresh();
 
-        // TODO: smoke tests
-        if ($update === false) {
-            $this->nodeIndexer->updateIndexAlias();
-        }
+            $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
+
+            // TODO: smoke tests
+            if ($update === false) {
+                $this->nodeIndexer->updateIndexAlias();
+            }
+        };
+
+        $combinations = new ArrayCollection($this->contentDimensionCombinator->getAllAllowedCombinations());
+        $combinations->map($create);
+        $combinations->map($build);
     }
 
     /**
@@ -275,17 +292,26 @@ class NodeIndexCommandController extends CommandController
     public function cleanupCommand()
     {
         try {
-            $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
-            if (count($indicesToBeRemoved) > 0) {
-                foreach ($indicesToBeRemoved as $indexToBeRemoved) {
-                    $this->logger->log('Removing old index ' . $indexToBeRemoved);
+            $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+            foreach ($combinations as $dimensionsValues) {
+                $this->nodeIndexer->setDimensions($dimensionsValues);
+                $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
+                if (count($indicesToBeRemoved) > 0) {
+                    foreach ($indicesToBeRemoved as $indexToBeRemoved) {
+                        $this->logger->log('Removing old index ' . $indexToBeRemoved);
+                    }
+                } else {
+                    $this->logger->log('Nothing to remove.');
                 }
-            } else {
-                $this->logger->log('Nothing to remove.');
             }
         } catch (ApiException $exception) {
             $response = json_decode($exception->getResponse());
-            $this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s: %s"', $response->status, $response->error->type, $response->error->reason));
+            $message = \sprintf('Nothing removed. ElasticSearch responded with status %s', $response->status);
+            if (isset($response->error->type)) {
+                $this->logger->log(sprintf('%s, saying "%s: %s"', $message, $response->error->type, $response->error->reason));
+            } else {
+                $this->logger->log(sprintf('%s, saying "%s"', $message, $response->error));
+            }
         }
     }
 
@@ -318,17 +344,19 @@ class NodeIndexCommandController extends CommandController
      * Create a new index with the given $postfix.
      *
      * @param string $postfix
+     * @param array $dimensionHash
      * @return void
      */
-    protected function createNewIndex($postfix)
+    protected function createNewIndex($postfix, array $dimensionValues = [])
     {
-        $this->nodeIndexer->setIndexNamePostfix($postfix ?: time());
+        $this->nodeIndexer->setIndexNamePostfix($postfix);
         if ($this->nodeIndexer->getIndex()->exists() === true) {
             $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
             $this->nodeIndexer->getIndex()->delete();
         }
         $this->nodeIndexer->getIndex()->create();
         $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
+        $this->logger->log('+ Dimensions: ' . \json_encode($dimensionValues), LOG_INFO);
     }
 
     /**
@@ -343,6 +371,6 @@ class NodeIndexCommandController extends CommandController
             /** @var Mapping $mapping */
             $mapping->apply();
         }
-        $this->logger->log('Updated Mapping.', LOG_INFO);
+        $this->logger->log('+ Updated Mapping.', LOG_INFO);
     }
 }

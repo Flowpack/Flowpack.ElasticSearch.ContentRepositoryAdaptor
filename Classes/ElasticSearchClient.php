@@ -11,8 +11,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  * source code.
  */
 
+use Neos\ContentRepository\Utility;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Configuration\ConfigurationManager;
+use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 
 /**
  * The elasticsearch client to be used by the content repository adapter. Singleton, can be injected.
@@ -34,6 +36,13 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
     protected $indexName;
 
     /**
+     * MD5 hash of the content dimensions
+     *
+     * @var string
+     */
+    protected $dimensionsHash;
+
+    /**
      * @Flow\Inject
      * @var ConfigurationManager
      */
@@ -46,10 +55,26 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      */
     public function initializeObject($cause)
     {
-        if ($cause === \Neos\Flow\ObjectManagement\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
+        if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
             $settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
             $this->indexName = $settings['elasticSearch']['indexName'];
         }
+    }
+
+    /**
+     * @param string $dimensionsHash
+     */
+    public function setDimensions(array $dimensionValues = [])
+    {
+        $targetDimensions = array_map(function ($dimensionValues) {
+            return [array_shift($dimensionValues)];
+        }, $dimensionValues);
+        $this->dimensionsHash = $targetDimensions !== [] ? Utility::sortDimensionValueArrayAndReturnDimensionsHash($targetDimensions) : null;
+    }
+
+    public function getDimensionsHash()
+    {
+        return $this->dimensionsHash;
     }
 
     /**
@@ -59,7 +84,7 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      */
     public function getIndexName()
     {
-        return $this->indexName;
+        return $this->dimensionsHash ? $this->indexName . '-' . $this->dimensionsHash : $this->indexName;
     }
 
     /**
@@ -70,6 +95,6 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      */
     public function getIndex()
     {
-        return $this->findIndex($this->indexName);
+        return $this->findIndex($this->getIndexName());
     }
 }
