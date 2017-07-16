@@ -11,6 +11,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Neos\ContentRepository\Utility;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Configuration\ConfigurationManager;
@@ -28,6 +29,12 @@ use Neos\Flow\ObjectManagement\ObjectManagerInterface;
  */
 class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
 {
+    /**
+     * @var DimensionsService
+     * @Flow\Inject
+     */
+    protected $dimensionsService;
+
     /**
      * The index name to be used for querying (by default "typo3cr")
      *
@@ -76,13 +83,7 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
             $this->dimensionsHash = null;
             return;
         }
-
-        $targetDimensions = array_map(function ($dimensionValues) {
-            return [array_shift($dimensionValues)];
-        }, $dimensionValues);
-
-        $this->dimensions = $dimensionValues;
-        $this->dimensionsHash = Utility::sortDimensionValueArrayAndReturnDimensionsHash($targetDimensions);
+        $this->dimensionsHash = $this->dimensionsService->hash($dimensionValues);
     }
 
     /**

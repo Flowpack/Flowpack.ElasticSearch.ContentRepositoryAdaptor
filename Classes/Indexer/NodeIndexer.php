@@ -19,6 +19,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
@@ -46,6 +47,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @var string
      */
     protected $indexNamePostfix = '';
+
+    /**
+     * @var DimensionsService
+     * @Flow\Inject
+     */
+    protected $dimensionsService;
 
     /**
      * @Flow\Inject
@@ -371,13 +378,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      */
     protected function computeTargetDimensionsHash(NodeInterface $node)
     {
-        $dimensions = array_map(function ($dimensionValues) {
-            return [$dimensionValues];
-        }, $node->getContext()->getTargetDimensions());
-        $hash = Utility::sortDimensionValueArrayAndReturnDimensionsHash($dimensions);
+        $hash = $this->dimensionsService->hash($node->getContext()->getTargetDimensions());
 
         if (!isset($this->dimensionsRegistry[$hash])) {
-            $this->dimensionsRegistry[$hash] = $dimensions;
+            $this->dimensionsRegistry[$hash] = $node->getContext()->getTargetDimensions();
         }
         
         return $hash;
