@@ -45,7 +45,7 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
     /**
      * @var array
      */
-    protected $dimensions;
+    protected $dimensions = [];
 
     /**
      * @Flow\Inject
@@ -71,11 +71,18 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      */
     public function setDimensions(array $dimensionValues = [])
     {
+        if ($dimensionValues === []) {
+            $this->dimensions = [];
+            $this->dimensionsHash = null;
+            return;
+        }
+
         $targetDimensions = array_map(function ($dimensionValues) {
             return [array_shift($dimensionValues)];
         }, $dimensionValues);
+
         $this->dimensions = $dimensionValues;
-        $this->dimensionsHash = $targetDimensions !== [] ? Utility::sortDimensionValueArrayAndReturnDimensionsHash($targetDimensions) : null;
+        $this->dimensionsHash = Utility::sortDimensionValueArrayAndReturnDimensionsHash($targetDimensions);
     }
 
     /**
