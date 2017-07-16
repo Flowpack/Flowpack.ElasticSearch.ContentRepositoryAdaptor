@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 use Doctrine\Common\Collections\ArrayCollection;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
@@ -95,6 +96,12 @@ class NodeIndexCommandController extends CommandController
     protected $contextFactory;
 
     /**
+     * @Flow\Inject
+     * @var DimensionsService
+     */
+    protected $dimensionsService;
+
+    /**
      * @var array
      */
     protected $settings;
@@ -108,6 +115,17 @@ class NodeIndexCommandController extends CommandController
     {
         if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
             $this->settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
+        }
+    }
+
+    /**
+     * Mapping between dimensions presets and index name
+     */
+    public function showDimensionsMappingCommand()
+    {
+        $indexName = $this->nodeIndexer->getIndexName();
+        foreach ($this->contentDimensionCombinator->getAllAllowedCombinations() as $dimensionValues) {
+            $this->outputLine('<info>%s-%s</info> %s', [$indexName, $this->dimensionsService->hash($dimensionValues), \json_encode($dimensionValues)]);
         }
     }
 
