@@ -11,15 +11,17 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query\FilteredQuery;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
-use TYPO3\TYPO3CR\Domain\Model\Workspace;
-use TYPO3\TYPO3CR\Domain\Service\Context;
+use Neos\Flow\Tests\UnitTestCase;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Model\Workspace;
+use Neos\ContentRepository\Domain\Service\Context;
 
 /**
  * Testcase for ElasticSearchQueryBuilder
  */
-class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
+class ElasticSearchQueryBuilderTest extends UnitTestCase
 {
     /**
      * @var ElasticSearchQueryBuilder
@@ -28,6 +30,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
 
     public function setUp()
     {
+        /** @var NodeInterface|\PHPUnit_Framework_MockObject_MockObject $node */
         $node = $this->createMock(NodeInterface::class);
         $node->expects($this->any())->method('getPath')->will($this->returnValue('/foo/bar'));
         $mockContext = $this->getMockBuilder(Context::class)->disableOriginalConstructor()->getMock();
@@ -40,6 +43,52 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
         $mockWorkspace->expects($this->any())->method('getName')->will($this->returnValue('user-foo'));
 
         $this->queryBuilder = new ElasticSearchQueryBuilder();
+
+        $request = [
+           'query' => [
+               'filtered' => [
+                   'query' => [
+                       'bool' => [
+                           'must' => [
+                               ['match_all' => []]
+                           ]
+                       ]
+                   ],
+                   'filter' => [
+                       'bool' => [
+                           'must' => [],
+                           'should' => [],
+                           'must_not' => [
+                               [
+                                   'term' => ['_hidden' => true]
+                               ],
+                               [
+                                   'range' => [
+                                       '_hiddenBeforeDateTime' => [
+                                           'gt' => 'now'
+                                       ]
+                                   ]
+                               ],
+                               [
+                                   'range' => [
+                                       '_hiddenAfterDateTime' => [
+                                           'lt' => 'now'
+                                       ]
+                                   ]
+                               ]
+                           ]
+                       ]
+                   ]
+               ]
+           ],
+            'fields' => ['__path']
+        ];
+        $unsupportedFieldsInCountRequest = ['fields', 'sort', 'from', 'size', 'highlight', 'aggs', 'aggregations'];
+
+        $this->inject($this->queryBuilder, 'request', new FilteredQuery($request, $unsupportedFieldsInCountRequest));
+
+        $query = new FilteredQuery($this->queryBuilder->getRequest()->toArray(), []);
+        $this->inject($this->queryBuilder, 'request', $query);
         $this->queryBuilder->query($node);
     }
 
@@ -55,17 +104,26 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                         'bool' => [
                             'must' => [
                                 ['match_all' => []]
-                            ],
-                            'should' => [],
-                            'must_not' => []
+                            ]
                         ]
                     ],
                     'filter' => [
                         'bool' => [
                             'must' => [
                                 0 => [
-                                    'term' => [
-                                        '__parentPath' => '/foo/bar'
+                                    'bool' => [
+                                        'should' => [
+                                            0 => [
+                                                'term' => [
+                                                    '__parentPath' => '/foo/bar'
+                                                ]
+                                            ],
+                                            1 => [
+                                                'term' => [
+                                                    '__path' => '/foo/bar'
+                                                ]
+                                            ]
+                                        ]
                                     ]
                                 ],
                                 1 => [
@@ -108,8 +166,8 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
             ],
             'fields' => ['__path']
         ];
-        $actual = $this->queryBuilder->getRequest();
-        $this->assertSame($expected, $actual);
+        $actual = $this->queryBuilder->getRequest()->toArray();
+        $this->assertEquals($expected, $actual);
     }
 
     /**
@@ -132,7 +190,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                 '__typeAndSupertypes' => 'Foo.Bar:Baz'
             ]
         ];
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
         $this->assertInArray($expected, $actual['query']['filtered']['filter']['bool']['must']);
     }
 
@@ -147,7 +205,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                 'fieldName' => ['order' => 'asc']
             ]
         ];
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
         $this->assertSame($expected, $actual['sort']);
     }
 
@@ -168,7 +226,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                 'field3' => ['order' => 'asc']
             ]
         ];
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
         $this->assertSame($expected, $actual['sort']);
     }
 
@@ -178,7 +236,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
     public function limitWorks()
     {
         $this->queryBuilder->limit(2);
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
         $this->assertSame(2, $actual['size']);
     }
 
@@ -193,7 +251,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                 'fieldName' => ['order' => 'desc']
             ]
         ];
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
         $this->assertSame($expected, $actual['sort']);
     }
 
@@ -222,7 +280,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
                 'fieldName' => [$operator => $value]
             ]
         ];
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
         $this->assertInArray($expected, $actual['query']['filtered']['filter']['bool']['must']);
     }
 
@@ -232,30 +290,36 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
     public function simpleAggregationExamples()
     {
         return [
-            ['min', 'foo', 'bar'],
-            ['terms', 'foo', 'bar'],
-            ['sum', 'foo', 'bar'],
-            ['stats', 'foo', 'bar'],
-            ['value_count', 'foo', 'bar']
+            ['min', 'foo', 'bar', 10],
+            ['terms', 'foo', 'bar', 10],
+            ['sum', 'foo', 'bar', 10],
+            ['stats', 'foo', 'bar', 10],
+            ['value_count', 'foo', 'bar', 20]
         ];
     }
 
     /**
      * @test
      * @dataProvider simpleAggregationExamples
+     *
+     * @param string $type
+     * @param string $name
+     * @param string $field
+     * @param integer size
      */
-    public function anSimpleAggregationCanBeAddedToTheRequest($type, $name, $field)
+    public function anSimpleAggregationCanBeAddedToTheRequest($type, $name, $field, $size)
     {
         $expected = [
             $name => [
                 $type => [
-                    'field' => $field
+                    'field' => $field,
+                    'size' => $size
                 ]
             ]
         ];
 
-        $this->queryBuilder->fieldBasedAggregation($name, $field, $type);
-        $actual = $this->queryBuilder->getRequest();
+        $this->queryBuilder->fieldBasedAggregation($name, $field, $type, '', $size);
+        $actual = $this->queryBuilder->getRequest()->toArray();
 
         $this->assertInArray($expected, $actual);
     }
@@ -265,19 +329,28 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
      */
     public function anAggregationCanBeSubbedUnderAPath()
     {
-        $this->queryBuilder->fieldBasedAggregation("foo", "bar");
-        $this->queryBuilder->fieldBasedAggregation("bar", "bar", "terms", "foo");
-        $this->queryBuilder->fieldBasedAggregation("baz", "bar", "terms", "foo.bar");
+        $this->queryBuilder->fieldBasedAggregation('foo', 'bar');
+        $this->queryBuilder->fieldBasedAggregation('bar', 'bar', 'terms', 'foo');
+        $this->queryBuilder->fieldBasedAggregation('baz', 'bar', 'terms', 'foo.bar');
 
         $expected = [
-            "foo" => [
-                "terms" => ["field" => "bar"],
-                "aggregations" => [
-                    "bar" => [
-                        "terms" => ["field" => "bar"],
-                        "aggregations" => [
-                            "baz" => [
-                                "terms" => ["field" => "bar"]
+            'foo' => [
+                'terms' => [
+                    'field' => 'bar',
+                    'size' => 10
+                ],
+                'aggregations' => [
+                    'bar' => [
+                        'terms' => [
+                            'field' => 'bar',
+                            'size' => 10
+                        ],
+                        'aggregations' => [
+                            'baz' => [
+                                'terms' => [
+                                    'field' => 'bar',
+                                    'size' => 10
+                                ],
                             ]
                         ]
                     ]
@@ -285,7 +358,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
             ]
         ];
 
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
         $this->assertInArray($expected, $actual);
     }
 
@@ -323,7 +396,7 @@ class ElasticSearchQueryBuilderTest extends \TYPO3\Flow\Tests\UnitTestCase
         ];
 
         $this->queryBuilder->aggregation("foo", $expected['foo']);
-        $actual = $this->queryBuilder->getRequest();
+        $actual = $this->queryBuilder->getRequest()->toArray();
 
         $this->assertInArray($expected, $actual);
     }

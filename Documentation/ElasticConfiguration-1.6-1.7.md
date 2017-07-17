@@ -1,6 +1,6 @@
 # Needed Configuration in configuration.yml for Elasticsearch 1.6.x and 1.7.x
 
-In verson 1.6 the `script.disable_dynamic` settings and the Groovy sandbox as such [have been deprecated]
+In version 1.6 the `script.disable_dynamic` settings and the Groovy sandbox as such [have been deprecated]
 (https://www.elastic.co/guide/en/elasticsearch/reference/1.6/modules-scripting.html#enable-dynamic-scripting).
 You may continue to use the settings for version 1.5.x, but this is what would be the correct configuration for 1.6.x and 1.7.x.
 

@@ -14,19 +14,18 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Eel;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
-use TYPO3\Flow\Persistence\QueryResultInterface;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
-use TYPO3\TYPO3CR\Domain\Model\Workspace;
-use TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository;
-use TYPO3\TYPO3CR\Domain\Repository\WorkspaceRepository;
-use TYPO3\TYPO3CR\Domain\Service\Context;
-use TYPO3\TYPO3CR\Domain\Service\ContextFactoryInterface;
-use TYPO3\TYPO3CR\Domain\Service\NodeTypeManager;
+use Neos\Flow\Persistence\QueryResultInterface;
+use Neos\Flow\Tests\FunctionalTestCase;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Model\Workspace;
+use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
+use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
+use Neos\ContentRepository\Domain\Service\Context;
+use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
+use Neos\ContentRepository\Domain\Service\NodeTypeManager;
+use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
 
-/**
- * Testcase for ElasticSearchQuery
- */
-class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
+class ElasticSearchQueryTest extends FunctionalTestCase
 {
     /**
      * @var WorkspaceRepository
@@ -89,7 +88,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
         ]);
         $rootNode = $this->context->getRootNode();
 
-        $this->siteNode = $rootNode->createNode('welcome', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
+        $this->siteNode = $rootNode->createNode('welcome', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
         $this->siteNode->setProperty('title', 'welcome');
 
         $this->nodeDataRepository = $this->objectManager->get(NodeDataRepository::class);
@@ -106,7 +105,23 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     }
 
     /**
-     * @return ElasticSearchQueryBuilder
+     * @test
+     */
+    public function elasticSearchQueryBuilderStartsClean()
+    {
+        /** @var ElasticSearchQueryBuilder $query */
+        $query = $this->objectManager->get(ElasticSearchQueryBuilder::class);
+        $cleanRequestArray = $query->getRequest()->toArray();
+        $query->nodeType('Neos.NodeTypes:Page');
+
+        $query2 = $this->objectManager->get(ElasticSearchQueryBuilder::class);
+
+        $this->assertNotSame($query->getRequest(), $query2->getRequest());
+        $this->assertEquals($cleanRequestArray, $query2->getRequest()->toArray());
+    }
+
+    /**
+     * @return QueryBuilderInterface
      */
     protected function getQueryBuilder()
     {
@@ -123,9 +138,9 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     {
         $resultCount = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('TYPO3.Neos.NodeTypes:Page')
+            ->nodeType('Neos.NodeTypes:Page')
             ->count();
-        $this->assertEquals(3, $resultCount);
+        $this->assertEquals(4, $resultCount);
     }
 
     /**
@@ -147,11 +162,11 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     {
         $query = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('TYPO3.Neos.NodeTypes:Page')
+            ->nodeType('Neos.NodeTypes:Page')
             ->limit(1);
 
         $resultCount = $query->count();
-        $this->assertEquals(3, $resultCount, 'Asserting the count query returns the total count.');
+        $this->assertEquals(4, $resultCount, 'Asserting the count query returns the total count.');
     }
 
     /**
@@ -183,7 +198,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
 
         $this->assertArrayHasKey($aggregationTitle, $result);
 
-        $this->assertCount(2, $result[$aggregationTitle]['buckets']);
+        $this->assertCount(3, $result[$aggregationTitle]['buckets']);
 
         $expectedChickenBucket = [
             'key' => 'chicken',
@@ -193,24 +208,50 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
         $this->assertEquals($expectedChickenBucket, $result[$aggregationTitle]['buckets'][0]);
     }
 
-    /**
-     * @test
-     */
-    public function termSuggestion()
+    public function termSuggestionDataProvider()
     {
-        $titleSuggestionKey = "chickn";
+        return [
+            'singleWord' => [
+                'term' => 'chickn',
+                'expectedBestSuggestions' => [
+                    'chicken'
+                ]
+            ],
+            'multiWord' => [
+                'term' => 'chickn eggs',
+                'expectedBestSuggestions' => [
+                    'chicken',
+                    'egg'
+                ]
+            ],
+        ];
+    }
 
+    /**
+     * @dataProvider termSuggestionDataProvider
+     * @test
+     *
+     * @param string $term
+     * @param array $expectedBestSuggestions
+     */
+    public function termSuggestion($term, $expectedBestSuggestions)
+    {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->termSuggestions($titleSuggestionKey, "title")
+            ->termSuggestions($term, 'title')
             ->execute()
             ->getSuggestions();
 
-        $this->assertArrayHasKey("options", $result);
+        $this->assertArrayHasKey('suggestions', $result);
+        $this->assertTrue(is_array($result['suggestions']), 'Suggestions must be an array.');
+        $this->assertCount(count($expectedBestSuggestions), $result['suggestions']);
 
-        $this->assertCount(1, $result['options']);
-
-        $this->assertEquals('chicken', $result['options'][0]['text']);
+        foreach ($expectedBestSuggestions as $key => $expectedBestSuggestion) {
+            $suggestion = $result['suggestions'][$key];
+            $this->assertArrayHasKey('options', $suggestion);
+            $this->assertCount(1, $suggestion['options']);
+            $this->assertEquals($expectedBestSuggestion, $suggestion['options'][0]['text']);
+        }
     }
 
     /**
@@ -220,20 +261,20 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('TYPO3.Neos.NodeTypes:Page')
+            ->nodeType('Neos.NodeTypes:Page')
             ->sortDesc('title')
             ->execute();
 
         /** @var QueryResultInterface $result $node */
 
         $this->assertInstanceOf(QueryResultInterface::class, $result);
-        $this->assertCount(3, $result, 'The result should have 3 items');
-        $this->assertEquals(3, $result->count(), 'Count should be 3');
+        $this->assertCount(4, $result, 'The result should have 3 items');
+        $this->assertEquals(4, $result->count(), 'Count should be 3');
 
         $node = $result->getFirst();
 
         $this->assertInstanceOf(NodeInterface::class, $node);
-        $this->assertEquals('egg', $node->getProperty('title'), 'Asserting a desc sort order by property title');
+        $this->assertEquals('welcome', $node->getProperty('title'), 'Asserting a desc sort order by property title');
     }
 
     /**
@@ -243,7 +284,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('TYPO3.Neos.NodeTypes:Page')
+            ->nodeType('Neos.NodeTypes:Page')
             ->sortAsc('title')
             ->execute();
         /** @var ElasticSearchQueryResult $result */
@@ -260,7 +301,7 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('TYPO3.Neos.NodeTypes:Page')
+            ->nodeType('Neos.NodeTypes:Page')
             ->sortAsc('title')
             ->execute();
 
@@ -282,13 +323,13 @@ class ElasticSearchQueryTest extends \TYPO3\Flow\Tests\FunctionalTestCase
      */
     protected function createNodesForNodeSearchTest()
     {
-        $newNode1 = $this->siteNode->createNode('test-node-1', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
+        $newNode1 = $this->siteNode->createNode('test-node-1', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
         $newNode1->setProperty('title', 'chicken');
 
-        $newNode2 = $this->siteNode->createNode('test-node-2', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
+        $newNode2 = $this->siteNode->createNode('test-node-2', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
         $newNode2->setProperty('title', 'chicken');
 
-        $newNode3 = $this->siteNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
+        $newNode3 = $this->siteNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
         $newNode3->setProperty('title', 'egg');
 
         $dimensionContext = $this->contextFactory->create([

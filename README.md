@@ -2,39 +2,40 @@
 
 # Neos Elasticsearch Adapter
 
-*supporting Elasticsearch versions 1.2.x to 1.7.x*
-
-Created by Sebastian Kurfürst; [contributions by Karsten Dambekalns, Robert Lemke and others](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/graphs/contributors).
-
 This project connects the Neos Content Repository (TYPO3CR) to Elasticsearch; enabling two
 main functionalities:
 
-* finding Nodes in TypoScript / Eel by arbitrary queries
+* finding Nodes in Fusion / Eel by arbitrary queries
 * Full-Text Indexing of Pages and other Documents (of course including the full content)
 
+## Elastic version support
+
+You can switch the Elastic driver by editing ```Settings.yaml```
+(```Flowpack.ElasticSearch.ContentRepositoryAdaptor.driver.version```) with the following value:
+
+* ```1.x``` to support Elastic 1.2 to 1.7
+* ```2.x``` to support Elastic 2.x
+
+_Currently the Driver interfaces is not marked as API, and can be changed to adapt to future needs (especially the support of Elastic v5)._
 
 ## Relevant Packages
 
-* [TYPO3.TYPO3CR.Search](https://www.neos.io/download-and-extend/packages/typo3/typo3-typo3cr-search.html): provides common functionality for searching TYPO3CR nodes,
+* [Neos.ContentRepository.Search](https://www.neos.io/download-and-extend/packages/typo3/typo3-typo3cr-search.html): provides common functionality for searching Neos Content Repository nodes,
   does not contain a search backend
-* [Flowpack.ElasticSearch](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch-contentrepositoryadaptor.html): provides common code for working with Elasticsearch
+* [Flowpack.ElasticSearch](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch.html): provides common code for working with Elasticsearch
 * [Flowpack.ElasticSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch-contentrepositoryadaptor.html): this package
-* [Flowpack.SimpleSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-simplesearch-contentrepositoryadaptor.html): an alternative search backend (to be used
-  instead of this package); storing the search index in SQLite
+* [Flowpack.SimpleSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-simplesearch-contentrepositoryadaptor.html): an alternative search backend (to be used instead of this package); storing the search index in SQLite
 * [Flowpack.SearchPlugin](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-searchplugin.html): search plugin for Neos
-
 
 ## Installation
 
 ```
-// for development (Master; Tested on Neos 2.0)
-composer require 'typo3/typo3cr-search:@dev'
-composer require 'flowpack/elasticsearch-contentrepositoryadaptor:@dev'
-
-composer require 'flowpack/searchplugin:@dev'
+composer require 'flowpack/elasticsearch-contentrepositoryadaptor'
+// Not required, but can be used to learn how to integration the flowpack/elasticsearch-contentrepositoryadaptor in your project
+composer require 'flowpack/searchplugin'
 ```
 
-Now, add the routes as described in the [README of Flowpack.SearchPlugin](https://github.com/skurfuerst/Flowpack.SearchPlugin)
+Now, add the routes as described in the [README of Flowpack.SearchPlugin](https://github.com/Flowpack/Flowpack.SearchPlugin)
 as the **first route** in Configuration/Routes.yaml.
 
 Then, ensure to update `<your-elasticsearch>/config/elasticsearch.yml` as explained below; then start Elasticsearch.
@@ -46,6 +47,7 @@ Finally, run `./flow nodeindex:build`, and add the search plugin to your page. I
 There is a need, depending on your version of Elasticsearch, to add specific configuration to your
 Elasticsearch Configuration File `<your-elasticsearch>/config/elasticsearch.yml`.
 
+- [ElasticSearch 2.x](Documentation/ElasticConfiguration-2.x.md)
 - [ElasticSearch 1.6 to 1.7](Documentation/ElasticConfiguration-1.6-1.7.md)
 - [ElasticSearch 1.4 to 1.5](Documentation/ElasticConfiguration-1.4-1.5.md)
 - [ElasticSearch 1.3](Documentation/ElasticConfiguration-1.3.md)
@@ -101,7 +103,7 @@ If you use multiple client configurations, please change the *default* key just 
 
 ## Doing Arbitrary Queries
 
-We'll first show how to do arbitrary Elasticsearch Queries in TypoScript. This is a more powerful
+We'll first show how to do arbitrary Elasticsearch Queries in Fusion. This is a more powerful
 alternative to FlowQuery. In the long run, we might be able to integrate this API back into FlowQuery,
 but for now it works well as-is.
 
@@ -158,25 +160,25 @@ In order to debug the query more easily, the following operation is helpful:
 Use Case: On a "Tag Overview" page, you want to show all pages being tagged in a certain way
 
 Setup: You have two node types in a blog called `Acme.Blog:Post` and `Acme.Blog:Tag`, both
-inheriting from `TYPO3.Neos:Document`. The `Post` node type has a property `tags` which is
+inheriting from `Neos.Neos:Document`. The `Post` node type has a property `tags` which is
 of type `references`, pointing to `Tag` documents.
 
-TypoScript setup:
+Fusion setup:
 
 ```
  # for "Tag" documents, replace the main content area.
-prototype(TYPO3.Neos:PrimaryContent).acmeBlogTag {
+prototype(Neos.Neos:PrimaryContent).acmeBlogTag {
 	condition = ${q(node).is('[instanceof Acme.Blog:Tag]')}
 	type = 'Acme.Blog:TagPage'
 }
 
  # The "TagPage"
-prototype(Acme.Blog:TagPage) < prototype(TYPO3.TypoScript:Collection) {
+prototype(Acme.Blog:TagPage) < prototype(Neos.Fusion:Collection) {
 	collection = ${Search.query(site).nodeType('Acme.Blog:Post').exactMatch('tags', node).sortDesc('creationDate').execute()}
 	itemName = 'node'
 	itemRenderer = Acme.Blog:SingleTag
 }
-prototype(Acme.Blog:SingleTag) < prototype(TYPO3.Neos:Template) {
+prototype(Acme.Blog:SingleTag) < prototype(Neos.Neos:Template) {
 	...
 }
 ```
@@ -205,8 +207,8 @@ Right now there are two methods implemented. One generic `aggregation` function 
 aggregation definition and a pre-configured `fieldBasedAggregation`. Both methods can be added to your TS search query.
 You can nest aggregations by providing a parent name.
 
-* `aggregation($name, array $aggregationDefinition, $parentPath = NULL)` -- generic method to add a $aggregationDefinition under a path $parentPath with the name $name
-* `fieldBasedAggregation($name, $field, $type = "terms", $parentPath = NULL)` -- adds a simple filed based Aggregation of type $type with name $name under path $parentPath. Used for simple aggregations like sum, avg, min, max or terms
+* `aggregation($name, array $aggregationDefinition, $parentPath = NULL)` -- generic method to add a $aggregationDefinition under a path $parentPath with the name $name.
+* `fieldBasedAggregation($name, $field, $type = 'terms', $parentPath = '', $size = 10)` -- adds a simple filed based Aggregation of type $type with name $name under path $parentPath. Used for simple aggregations like sum, avg, min, max or terms. By default 10 buckets are returned.
 
 
 ### Examples
@@ -244,8 +246,8 @@ fieldBasedAggregation("anotherAggregation", "field", "avg", "colors.avgprice")
 To add a custom aggregation you can use the `aggregation()` method. All you have to do is to provide an array with your
 aggregation definition. This example would do the same as the fieldBasedAggregation would do for you:
 ```
-aggregationDefinition = TYPO3.TypoScript:RawArray {
-	terms = TYPO3.TypoScript:RawArray {
+aggregationDefinition = Neos.Fusion:RawArray {
+	terms = Neos.Fusion:RawArray {
 		field = "color"
 	}
 }
@@ -259,11 +261,11 @@ an NodeTye ProductList with an property `products`. This property contains a com
 be a reference on other products.
 
 ```
-prototype(Vendor.Name:FilteredProductList) < prototype(TYPO3.Neos:Content)
+prototype(Vendor.Name:FilteredProductList) < prototype(Neos.Neos:Content)
 prototype(Vendor.Name:FilteredProductList) {
 
 	// Create SearchFilter for products
-	searchFilter = TYPO3.TypoScript:RawArray {
+	searchFilter = Neos.Fusion:RawArray {
 		sku = ${String.split(q(node).property("products"), ",")}
 	}
 
@@ -290,7 +292,7 @@ prototype(Vendor.Name:FilteredProductList) {
 ```
 
 In the first lines we will add a new searchFilter variable and add your selected sku's as a filter. Based on this selection
-we will add two aggregations of type terms. You can access the filter in your template with `{filter.aggregation}`. With
+we will add two aggregations of type terms. You can access the filter in your template with `{filter.aggregations}`. With
 this information it is easy to create a form with some select fields with all available options. If you submit the form
 just call the same page and add the get parameter color and/or size.
 The next lines will parse those parameters and add them to the searchFilter. Based on your selection all products will
@@ -335,9 +337,9 @@ nodes = ${q(Search.query(site).....sortAsc("title").sortDesc("name").execute())}
 
 # Custom sort operation
 
-geoSorting = TYPO3.TypoScript:RawArray {
-    _geo_distance = TYPO3.TypoScript:RawArray {
-        latlng = TYPO3.TypoScript:RawArray {
+geoSorting = Neos.Fusion:RawArray {
+    _geo_distance = Neos.Fusion:RawArray {
+        latlng = Neos.Fusion:RawArray {
             lat = 51.512711
             lon = 7.453084
         }
@@ -370,9 +372,9 @@ First of all you have to define a property in your NodeTypes.yaml for your node 
 
 Query your nodes in your TypoScript:
 ```
-geoSorting = TYPO3.TypoScript:RawArray {
-    _geo_distance = TYPO3.TypoScript:RawArray {
-        latlng = TYPO3.TypoScript:RawArray {
+geoSorting = Neos.Fusion:RawArray {
+    _geo_distance = Neos.Fusion:RawArray {
+        latlng = Neos.Fusion:RawArray {
             lat = 51.512711
             lon = 7.453084
         }
@@ -397,8 +399,8 @@ the `GetHitArrayForNodeViewHelper`:
 
 ```
 
-The ViewHelper will use \TYPO3\Flow\Utility\Arrays::getValueByPath() to return a specified path. So you can make use
-of an array or a string. Check the documentation \TYPO3\Flow\Utility\Arrays::getValueByPath() for more informations.
+The ViewHelper will use \Neos\Utility\Arrays::getValueByPath() to return a specified path. So you can make use
+of an array or a string. Check the documentation \Neos\Utility\Arrays::getValueByPath() for more information.
 
 **Important notice**
 
@@ -426,7 +428,7 @@ and finally one for the plain text (`__fulltext.text`). All of these fields add 
 Elasticsearch `_all` field, and are configured with different `boost` values.
 
 In order to search this index, you can just search inside the `_all` field with an additional limitation
-of `__typeAndSupertypes` containing `TYPO3.Neos:Document`.
+of `__typeAndSupertypes` containing `Neos.Neos:Document`.
 
 **For a search user interface, checkout the Flowpack.SearchPlugin package**
 
@@ -464,10 +466,10 @@ You can access your suggestions inside your fluid template with
 Phrase query that returns query suggestions
 
 ```
-suggestionsQueryDefinition = TYPO3.TypoScript:RawArray {
+suggestionsQueryDefinition = Neos.Fusion:RawArray {
     text = 'some Text'
-    simple_phrase = TYPO3.TypoScript:RawArray {
-        phrase = TYPO3.TypoScript:RawArray {
+    simple_phrase = Neos.Fusion:RawArray {
+        phrase = Neos.Fusion:RawArray {
             analyzer = 'body'
             field = 'bigram'
             size = 1
@@ -485,7 +487,7 @@ suggestions = ${Search.query(site)...suggestions('my_suggestions', this.suggesti
 with sane defaults for all Neos data types.**
 
 Indexing of properties is configured at two places. The defaults per-data-type are configured
-inside `TYPO3.TYPO3CR.Search.defaultConfigurationPerType` of `Settings.yaml`.
+inside `Neos.ContentRepository.Search.defaultConfigurationPerType` of `Settings.yaml`.
 Furthermore, this can be overridden using the `properties.[....].search` path inside
 `NodeTypes.yaml`.
 
@@ -498,8 +500,8 @@ This configuration contains two parts:
 Example (from the default configuration):
 ```
  # Settings.yaml
-TYPO3:
-  TYPO3CR:
+Neos:
+  ContentRepository:
     Search:
       defaultConfigurationPerType:
 
@@ -514,7 +516,7 @@ TYPO3:
 
 ```
  # NodeTypes.yaml
-'TYPO3.Neos:Timable':
+'Neos.Neos:Timable':
   properties:
     '_hiddenBeforeDateTime':
       search:
@@ -550,7 +552,7 @@ In order to enable fulltext indexing, every `Document` node must be configured a
 the following is configured in the default configuration:
 
 ```
-'TYPO3.Neos:Document':
+'Neos.Neos:Document':
   search:
     fulltext:
       isRoot: true
@@ -565,7 +567,7 @@ in `NodeTypes.yaml` at `properties.[propertyName].search.fulltextExtractor`.
 An example:
 
 ```
-'TYPO3.Neos.NodeTypes:Text':
+'Neos.Neos.NodeTypes:Text':
   properties:
     'text':
       search:
@@ -619,17 +621,17 @@ If you want to index attachments, you need to install the [Elasticsearch Attachm
 Then, you can add the following to your `Settings.yaml`:
 
 ```
-TYPO3:
-  TYPO3CR:
+Neos:
+  ContentRepository:
     Search:
       defaultConfigurationPerType:
-        'TYPO3\Media\Domain\Model\Asset':
+        'Neos\Media\Domain\Model\Asset':
           elasticSearchMapping:
             type: attachment
             include_in_all: true
           indexing: ${Indexing.indexAsset(value)}
 
-        'array<TYPO3\Media\Domain\Model\Asset>':
+        'array<Neos\Media\Domain\Model\Asset>':
           elasticSearchMapping:
             type: attachment
             include_in_all: true
@@ -649,7 +651,7 @@ Flowpack:
   ElasticSearch:
     indexes:
       default:
-        'typo3cr': # This index name must be the same as in the TYPO3.TYPO3CR.Search.elasticSearch.indexName setting
+        'neoscontentrepository': # This index name must be the same as in the Neos.ContentRepository.Search.elasticSearch.indexName setting
           analysis:
             filter:
               elision:
@@ -668,7 +670,7 @@ Then, you can change the analyzers on a per-field level; or e.g. reconfigure the
 in the NodeTypes.yaml. Generally this works by defining the global mapping at `[nodeType].search.elasticSearchMapping`:
 
 ```
-'TYPO3.Neos:Node':
+'Neos.Neos:Node':
   search:
     elasticSearchMapping:
       _all:
@@ -676,6 +678,19 @@ in the NodeTypes.yaml. Generally this works by defining the global mapping at `[
         search_analyzer: custom_french_analyzer
 ```
 
+## Change the default Elastic index name
+
+If you need to run serveral (different) neos instances on the same elasticsearch server you will need to change the Configuration/Settings.yaml indexName for each of your project.
+
+So `./flow nodeindex:build` or `./flow nodeindex:cleanup` won't overwrite your other sites index.
+
+```
+TYPO3:
+  TYPO3CR:
+    Search:
+      elasticSearch:
+        indexName: useMoreSpecificIndexName
+```
 
 ## Debugging
 
@@ -689,7 +704,7 @@ In order to understand what's going on, the following commands are helpful:
 ## Version 2 vs Version 1
 
 * Version 1 is the initial, productive version of the Neos Elasticsearch adapter.
-* Version 2 has a dependency on TYPO3.TYPO3CR.Search; which contains base functionality
+* Version 2 has a dependency on Neos.ContentRepository.Search; which contains base functionality
   which is also relevant for other search implementations (like the SQLite based SimpleSearch).
 
 The configuration from Version 1 to Version 2 has changed; here's what to change:
@@ -698,7 +713,7 @@ The configuration from Version 1 to Version 2 has changed; here's what to change
 **Settings.yaml**
 
 1. Change the base namespace for configuration from `Flowpack.ElasticSearch.ContentRepositoryAdaptor`
-   to `TYPO3.TYPO3CR.Search`. All further adjustments are made underneath this namespace:
+   to `Neos.ContentRepository.Search`. All further adjustments are made underneath this namespace:
 2. (If it exists in your configuration:) Move `indexName` to `elasticSearch.indexName`
 3. (If it exists in your configuration:) Move `log` to `elasticSearch.log`
 4. search for `mapping` (inside `defaultConfigurationPerType.<typeName>`) and replace it by
@@ -715,3 +730,4 @@ The configuration from Version 1 to Version 2 has changed; here's what to change
 3. Replace `ElasticSeach.fulltext` by `Indexing`
 4. Search for `ElasticSearch.` (inside the `indexing` expressions) and replace them by `Indexing.`
 
+Created by Sebastian Kurfürst; [contributions by Karsten Dambekalns, Robert Lemke and others](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/graphs/contributors).
