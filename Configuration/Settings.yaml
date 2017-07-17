@@ -115,7 +115,7 @@ Neos:
       elasticSearch:
 
         # API. name of the Elasticsearch index to use. Will create many indices prefixed by this indexName.
-        indexName: neoscr
+        indexName: typo3cr
 
         # configuration of the ElasticSearch logfile
         log:
