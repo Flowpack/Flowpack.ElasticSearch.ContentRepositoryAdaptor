@@ -239,7 +239,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $handleNode = function (NodeInterface $node, Context $context) use ($targetWorkspaceName, $indexer) {
             $nodeFromContext = $context->getNodeByIdentifier($node->getIdentifier());
             if ($nodeFromContext instanceof NodeInterface) {
-                $indexer($nodeFromContext, $targetWorkspaceName);
+                $this->searchClient->withDimensions(function () use ($indexer, $nodeFromContext, $targetWorkspaceName) {
+                    $indexer($nodeFromContext, $targetWorkspaceName);
+                }, $nodeFromContext->getContext()->getTargetDimensions());
             } else {
                 $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
                 if ($node->isRemoved()) {
@@ -356,7 +358,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             $payload[$hash] .= $tupleAsJson;
         }
 
-
         foreach ($this->dimensionsRegistry as $hash => $dimensions) {
             $this->searchClient->withDimensions(function () use (&$payload, $hash) {
                 $response = $this->requestDriver->bulk($this->getIndex(), $payload[$hash]);
@@ -436,6 +437,73 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 'alias' => $aliasName
             ]
         ];
+
+        $this->indexDriver->aliasActions($aliasActions);
+    }
+
+    /**
+     * Update the main alias to allow to query all indices at once
+     */
+    public function updateMainAlias()
+    {
+        $aliasActions = [];
+        $aliasNamePrefix = $this->searchClient->getIndexNamePrefix(); // The alias name is the unprefixed index name
+
+        $indexNames = $this->indexDriver->indexesByPrefix($aliasNamePrefix);
+        $indexNames = \array_values(\array_filter($indexNames, function ($indexName) {
+            $suffix = '-' . $this->indexNamePostfix;
+            $indexNameParts = \explode('-', $indexName);
+            return substr($indexName, 0 - strlen($suffix)) === $suffix && count($indexNameParts) === 3;
+        }));
+
+        $cleanupAlias = function ($alias) use (&$aliasActions) {
+            try {
+                $indexNames = $this->indexDriver->indexesByAlias($alias);
+                $this->indexDriver->deleteIndex($alias);
+                if ($indexNames === []) {
+                    // if there is an actual index with the name we want to use as alias, remove it now
+                    $this->indexDriver->deleteIndex($alias);
+                } else {
+                    foreach ($indexNames as $indexName) {
+                        $aliasActions[] = [
+                            'remove' => [
+                                'index' => $indexName,
+                                'alias' => $alias
+                            ]
+                        ];
+                    }
+                }
+            } catch (ApiException $exception) {
+                // in case of 404, do not throw an error...
+                if ($exception->getResponse()->getStatusCode() !== 404) {
+                    throw $exception;
+                }
+            }
+        };
+
+        $postfix = function ($alias) {
+            return $alias . '-' . $this->indexNamePostfix;
+        };
+
+        if (\count($indexNames) > 0) {
+            $cleanupAlias($aliasNamePrefix);
+            $cleanupAlias($postfix($aliasNamePrefix));
+
+            foreach ($indexNames as $indexName) {
+                $aliasActions[] = [
+                    'add' => [
+                        'index' => $indexName,
+                        'alias' => $aliasNamePrefix
+                    ]
+                ];
+                $aliasActions[] = [
+                    'add' => [
+                        'index' => $indexName,
+                        'alias' => $postfix($aliasNamePrefix)
+                    ]
+                ];
+            }
+        }
 
         $this->indexDriver->aliasActions($aliasActions);
     }
