@@ -117,6 +117,14 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
     }
 
     /**
+     * @return string
+     */
+    public function getIndexNamePrefix()
+    {
+        return $this->indexName;
+    }
+
+    /**
      * Retrieve the index to be used for querying or on-the-fly indexing.
      * In ElasticSearch, this index is an *alias* to the currently used index.
      *
