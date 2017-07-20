@@ -296,7 +296,7 @@ class NodeIndexCommandController extends CommandController
             $this->nodeIndexer->getIndex()->refresh();
         };
 
-        $update = function (array $dimensionsValues) use ($update) {
+        $updateAliases = function (array $dimensionsValues) use ($update) {
             if ($update === true) {
                 return;
             }
@@ -308,7 +308,9 @@ class NodeIndexCommandController extends CommandController
         $combinations->map($create);
         $combinations->map($build);
         $combinations->map($refresh);
-        $combinations->map($update);
+        $combinations->map($updateAliases);
+
+        $this->nodeIndexer->updateMainAlias();
     }
 
     /**
