@@ -312,7 +312,7 @@ class NodeIndexCommandController extends CommandController
         $combinations->map($refresh);
         $combinations->map($updateAliases);
 
-        $this->logger->log(vsprintf('Update main alias alias for index %s', [$this->nodeIndexer->getIndexName()]), LOG_INFO);
+        $this->logger->log('Update main alias alias', LOG_INFO);
         $this->nodeIndexer->updateMainAlias();
     }
 
