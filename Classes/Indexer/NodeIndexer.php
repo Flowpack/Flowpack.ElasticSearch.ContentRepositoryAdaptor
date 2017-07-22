@@ -459,7 +459,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $cleanupAlias = function ($alias) use (&$aliasActions) {
             try {
                 $indexNames = $this->indexDriver->indexesByAlias($alias);
-                $this->indexDriver->deleteIndex($alias);
                 if ($indexNames === []) {
                     // if there is an actual index with the name we want to use as alias, remove it now
                     $this->indexDriver->deleteIndex($alias);
