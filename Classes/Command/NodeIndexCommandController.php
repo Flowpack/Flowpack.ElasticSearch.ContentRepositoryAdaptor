@@ -270,7 +270,7 @@ class NodeIndexCommandController extends CommandController
         $build = function (array $dimensionsValues) use ($workspace, $update, $limit, $workspaceLogger) {
             $this->nodeIndexer->setDimensions($dimensionsValues);
             $this->outputLine();
-            $this->logger->log(sprintf('Indexing %snodes', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
+            $this->logger->log(vsprintf('Indexing %snodes to %s', [($limit !== null ? 'the first ' . $limit . ' ' : ''), $this->nodeIndexer->getIndexName()]), LOG_INFO);
 
             $count = 0;
 
@@ -293,6 +293,7 @@ class NodeIndexCommandController extends CommandController
 
         $refresh = function (array $dimensionsValues) {
             $this->nodeIndexer->setDimensions($dimensionsValues);
+            $this->logger->log(vsprintf('Refresh index %s', [$this->nodeIndexer->getIndexName()]), LOG_INFO);
             $this->nodeIndexer->getIndex()->refresh();
         };
 
@@ -301,6 +302,7 @@ class NodeIndexCommandController extends CommandController
                 return;
             }
             $this->nodeIndexer->setDimensions($dimensionsValues);
+            $this->logger->log(vsprintf('Update alias for index %s', [$this->nodeIndexer->getIndexName()]), LOG_INFO);
             $this->nodeIndexer->updateIndexAlias();
         };
 
@@ -310,6 +312,7 @@ class NodeIndexCommandController extends CommandController
         $combinations->map($refresh);
         $combinations->map($updateAliases);
 
+        $this->logger->log(vsprintf('Update main alias alias for index %s', [$this->nodeIndexer->getIndexName()]), LOG_INFO);
         $this->nodeIndexer->updateMainAlias();
     }
 
