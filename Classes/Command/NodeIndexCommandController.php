@@ -29,7 +29,10 @@ use Neos\ContentRepository\Search\Indexer\NodeIndexerInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 use Neos\Flow\Configuration\ConfigurationManager;
+use Neos\Flow\Core\Booting\Scripts;
+use Neos\Flow\Exception;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
+use Neos\Utility\Files;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -40,6 +43,12 @@ use Symfony\Component\Yaml\Yaml;
 class NodeIndexCommandController extends CommandController
 {
     use IndexWorkspaceTrait;
+
+    /**
+     * @Flow\InjectConfiguration(package="Neos.Flow")
+     * @var array
+     */
+    protected $flowSettings;
 
     /**
      * @Flow\Inject
@@ -246,18 +255,149 @@ class NodeIndexCommandController extends CommandController
         }
 
         $postfix = $postfix ?: time();
+        $this->nodeIndexer->setIndexNamePostfix($postfix);
 
         $create = function (array $dimensionsValues) use ($update, $postfix) {
-            $this->nodeIndexer->setDimensions($dimensionsValues);
-
-            if ($update === true) {
-                $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
-            } else {
-                $this->createNewIndex($postfix, $dimensionsValues);
-            }
-
-            $this->applyMapping();
+            $this->executeInternalCommand('createinternal', \array_filter([
+                'postfix' => $postfix,
+                'update' => $update,
+                'dimensionsValues' => \json_encode($dimensionsValues)
+            ]));
         };
+
+        $build = function (array $dimensionsValues) use ($workspace, $limit, $update, $postfix) {
+            $this->executeInternalCommand('buildinternal', \array_filter([
+                'dimensionsValues' => \json_encode($dimensionsValues),
+                'workspace' => $workspace,
+                'postfix' => $postfix,
+                'limit' => $limit,
+            ]));
+        };
+
+        $refresh = function (array $dimensionsValues) use ($postfix) {
+            $this->executeInternalCommand('refreshinternal', \array_filter([
+                'dimensionsValues' => \json_encode($dimensionsValues),
+                'postfix' => $postfix,
+            ]));
+        };
+
+        $updateAliases = function (array $dimensionsValues) use ($update, $postfix) {
+            $this->executeInternalCommand('aliasinternal', \array_filter([
+                'dimensionsValues' => \json_encode($dimensionsValues),
+                'update' => $update,
+                'postfix' => $postfix,
+            ]));
+        };
+
+        $combinations = new ArrayCollection($this->contentDimensionCombinator->getAllAllowedCombinations());
+
+        $this->outputSection('Create indicies ...');
+        $combinations->map($create);
+
+        $this->outputSection('Indexing nodes ...');
+        $combinations->map($build);
+
+        $this->outputSection('Refresh indicies ...');
+        $combinations->map($refresh);
+
+        $this->outputSection('Update aliases ...');
+        $combinations->map($updateAliases);
+
+        $this->nodeIndexer->updateMainAlias();
+
+        $this->outputLine();
+        $this->logger->log(vsprintf('+ Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]), LOG_INFO);
+    }
+
+    /**
+     * @param string $title
+     */
+    protected function outputSection($title)
+    {
+        $this->outputLine();
+        $this->outputLine('<b>%s</b>', [$title]);
+    }
+
+    /**
+     * @param string $dimensionsValues
+     * @param bool $update
+     * @param int $postfix
+     * @Flow\Internal
+     */
+    public function createInternalCommand($dimensionsValues, $update = false, $postfix = null)
+    {
+
+        if ($update === true) {
+            $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
+        } else {
+            $dimensionsValues = $this->configureInternalCommand($dimensionsValues, $postfix);
+            if ($this->nodeIndexer->getIndex()->exists() === true) {
+                $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
+                $this->nodeIndexer->getIndex()->delete();
+            }
+            $this->nodeIndexer->getIndex()->create();
+            $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
+            $this->logger->log('+ Dimensions: ' . \json_encode($dimensionsValues), LOG_INFO);
+        }
+
+        $this->applyMapping();
+
+        $this->logger->log(vsprintf('+ Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]), LOG_INFO);
+    }
+
+    /**
+     * @param string $dimensionsValues
+     * @param string $postfix
+     * @param string $workspace
+     * @param int $limit
+     * @Flow\Internal
+     */
+    public function buildInternalCommand($dimensionsValues, $workspace = null, $postfix = null, $limit = null)
+    {
+        $dimensionsValues = $this->configureInternalCommand($dimensionsValues, $postfix);
+
+        $this->logger->log(vsprintf('Indexing %snodes to %s', [($limit !== null ? 'the first ' . $limit . ' ' : ''), $this->nodeIndexer->getIndexName()]), LOG_INFO);
+
+        $count = 0;
+
+        if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
+            $workspace = 'live';
+        }
+
+        if ($workspace === null) {
+            foreach ($this->workspaceRepository->findAll() as $workspace) {
+                $count += $this->executeBuildWorkspaceCommand(\array_filter([
+                    'workspace' => $workspace->getName(),
+                    'dimensionsValues' => \json_encode($dimensionsValues),
+                    'limit' => $limit,
+                    'postfix' => $postfix
+                ]));
+            }
+        } else {
+            $count += $this->executeBuildWorkspaceCommand(\array_filter([
+                'workspace' => $workspace,
+                'dimensionsValues' => \json_encode($dimensionsValues),
+                'limit' => $limit,
+                'postfix' => $postfix
+            ]));
+        }
+
+        $this->nodeIndexingManager->flushQueues();
+
+        $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
+    }
+
+    /**
+     * @param string $workspace
+     * @param string $dimensionsValues
+     * @param int $postfix
+     * @param int $limit
+     * @return int
+     * @Flow\Internal
+     */
+    public function buildWorkspaceInternalCommand($workspace, $dimensionsValues, $postfix, $limit = null)
+    {
+        $dimensionsValues = $this->configureInternalCommand($dimensionsValues, $postfix);
 
         $workspaceLogger = function ($workspaceName, $indexedNodes, $dimensions) {
             if ($dimensions === []) {
@@ -266,54 +406,54 @@ class NodeIndexCommandController extends CommandController
                 $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)');
             }
         };
+        $count = $this->indexWorkspaceWithDimensions($workspace, $dimensionsValues, $limit, $workspaceLogger);
+        $this->logger->log(vsprintf('Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]), LOG_INFO);
+        $this->outputLine($count);
+    }
 
-        $build = function (array $dimensionsValues) use ($workspace, $update, $limit, $workspaceLogger) {
-            $this->nodeIndexer->setDimensions($dimensionsValues);
-            $this->outputLine();
-            $this->logger->log(vsprintf('Indexing %snodes to %s', [($limit !== null ? 'the first ' . $limit . ' ' : ''), $this->nodeIndexer->getIndexName()]), LOG_INFO);
+    /**
+     * @param string $dimensionsValues
+     * @param int $postfix
+     * @Flow\Internal
+     */
+    public function refreshInternalCommand($dimensionsValues, $postfix)
+    {
+        $this->configureInternalCommand($dimensionsValues, $postfix);
 
-            $count = 0;
+        $this->logger->log(vsprintf('Refresh index %s', [$this->nodeIndexer->getIndexName()]), LOG_INFO);
+        $this->logger->log(vsprintf('+ Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]), LOG_INFO);
+        $this->nodeIndexer->getIndex()->refresh();
+    }
 
-            if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
-                $workspace = 'live';
-            }
+    /**
+     * @param string $dimensionsValues
+     * @param int $postfix
+     * @param bool $update
+     * @Flow\Internal
+     */
+    public function aliasInternalCommand($dimensionsValues, $postfix, $update = false)
+    {
+        if ($update === true) {
+            return;
+        }
+        $this->configureInternalCommand($dimensionsValues, $postfix);
 
-            if ($workspace === null) {
-                foreach ($this->workspaceRepository->findAll() as $workspace) {
-                    $count += $this->indexWorkspaceWithDimensions($workspace->getName(), $dimensionsValues, $limit, $workspaceLogger);
-                }
-            } else {
-                $count += $this->indexWorkspaceWithDimensions($workspace, $dimensionsValues, $limit, $workspaceLogger);
-            }
+        $this->logger->log(vsprintf('Update alias for index %s', [$this->nodeIndexer->getIndexName()]), LOG_INFO);
+        $this->nodeIndexer->updateIndexAlias();
+    }
 
-            $this->nodeIndexingManager->flushQueues();
+    /**
+     * @param string $dimensionsValues
+     * @param string $postfix
+     * @return array
+     */
+    public function configureInternalCommand($dimensionsValues, $postfix)
+    {
+        $dimensionsValues = \json_decode($dimensionsValues, true);
 
-            $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
-        };
-
-        $refresh = function (array $dimensionsValues) {
-            $this->nodeIndexer->setDimensions($dimensionsValues);
-            $this->logger->log(vsprintf('Refresh index %s', [$this->nodeIndexer->getIndexName()]), LOG_INFO);
-            $this->nodeIndexer->getIndex()->refresh();
-        };
-
-        $updateAliases = function (array $dimensionsValues) use ($update) {
-            if ($update === true) {
-                return;
-            }
-            $this->nodeIndexer->setDimensions($dimensionsValues);
-            $this->logger->log(vsprintf('Update alias for index %s', [$this->nodeIndexer->getIndexName()]), LOG_INFO);
-            $this->nodeIndexer->updateIndexAlias();
-        };
-
-        $combinations = new ArrayCollection($this->contentDimensionCombinator->getAllAllowedCombinations());
-        $combinations->map($create);
-        $combinations->map($build);
-        $combinations->map($refresh);
-        $combinations->map($updateAliases);
-
-        $this->logger->log('Update main alias alias', LOG_INFO);
-        $this->nodeIndexer->updateMainAlias();
+        $this->nodeIndexer->setIndexNamePostfix($postfix);
+        $this->nodeIndexer->setDimensions($dimensionsValues);
+        return $dimensionsValues;
     }
 
     /**
@@ -351,6 +491,49 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
+     * @param string $command
+     * @param array $arguments
+     * @throws Exception
+     */
+    protected function executeInternalCommand($command, array $arguments)
+    {
+        $this->outputLine();
+        $commandIdentifier = 'flowpack.elasticsearch.contentrepositoryadaptor:nodeindex:' . $command;
+        $status = Scripts::executeCommand($commandIdentifier, $this->flowSettings, true, $arguments);
+        if ($status !== true) {
+            throw new Exception(\vsprintf('Command: %s with parameters: %s', [$commandIdentifier, \json_encode($arguments)]), 1426767159);
+        }
+        $this->outputLine();
+    }
+
+    /**
+     * @param array $arguments
+     * @return int
+     * @throws Exception
+     */
+    protected function executeBuildWorkspaceCommand(array $arguments)
+    {
+        ob_start(NULL, 1<<20);
+        $commandIdentifier = 'flowpack.elasticsearch.contentrepositoryadaptor:nodeindex:buildworkspaceinternal';
+        $status = Scripts::executeCommand($commandIdentifier, $this->flowSettings, true, $arguments);
+        if ($status !== true) {
+            throw new Exception(\vsprintf('Command: %s with parameters: %s', [$commandIdentifier, \json_encode($arguments)]), 1426767159);
+        }
+        $output = explode(\PHP_EOL, ob_get_clean());
+        $count = (int)\array_pop($output);
+        if (count($output) > 0) {
+            foreach ($output as $line) {
+                $line = trim($line);
+                if ($line === '') {
+                    continue;
+                }
+                $this->outputLine('<info>+</info> %s', [$line]);
+            }
+        }
+        return $count < 1 ? 0 : $count;
+    }
+
+    /**
      * Create a ContentContext based on the given workspace name
      *
      * @param string $workspaceName Name of the workspace to set for the context
@@ -373,25 +556,6 @@ class NodeIndexCommandController extends CommandController
         }
 
         return $this->contextFactory->create($contextProperties);
-    }
-
-    /**
-     * Create a new index with the given $postfix.
-     *
-     * @param string $postfix
-     * @param array $dimensionHash
-     * @return void
-     */
-    protected function createNewIndex($postfix, array $dimensionValues = [])
-    {
-        $this->nodeIndexer->setIndexNamePostfix($postfix);
-        if ($this->nodeIndexer->getIndex()->exists() === true) {
-            $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
-            $this->nodeIndexer->getIndex()->delete();
-        }
-        $this->nodeIndexer->getIndex()->create();
-        $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
-        $this->logger->log('+ Dimensions: ' . \json_encode($dimensionValues), LOG_INFO);
     }
 
     /**
