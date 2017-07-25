@@ -76,8 +76,9 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
     /**
      * @param string $dimensionsHash
      */
-    public function setDimensions(array $dimensionValues = [])
+    public function setDimensions(array $dimensionValues = null)
     {
+        $dimensionValues = $dimensionValues === null ? [] : $dimensionValues;
         if ($dimensionValues === []) {
             $this->dimensions = [];
             $this->dimensionsHash = null;

@@ -13,6 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query\FilteredQuery;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Neos\Flow\Tests\UnitTestCase;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\Workspace;
@@ -86,6 +87,10 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
         $unsupportedFieldsInCountRequest = ['fields', 'sort', 'from', 'size', 'highlight', 'aggs', 'aggregations'];
 
         $this->inject($this->queryBuilder, 'request', new FilteredQuery($request, $unsupportedFieldsInCountRequest));
+
+        $mockElasticSearchClient = $this->getMockBuilder(ElasticSearchClient::class)->disableOriginalConstructor()->getMock();
+
+        $this->inject($this->queryBuilder, 'elasticSearchClient', $mockElasticSearchClient);
 
         $query = new FilteredQuery($this->queryBuilder->getRequest()->toArray(), []);
         $this->inject($this->queryBuilder, 'request', $query);
