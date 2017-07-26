@@ -20,8 +20,7 @@ _Currently the Driver interfaces is not marked as API, and can be changed to ada
 
 ## Relevant Packages
 
-* [Neos.ContentRepository.Search](https://www.neos.io/download-and-extend/packages/typo3/typo3-typo3cr-search.html): provides common functionality for searching Neos Content Repository nodes,
-  does not contain a search backend
+* [Neos.ContentRepository.Search](https://www.neos.io/download-and-extend/packages/neos/neos-content-repository-search.html): provides common functionality for searching Neos Content Repository nodes. Does not contain a search backend.
 * [Flowpack.ElasticSearch](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch.html): provides common code for working with Elasticsearch
 * [Flowpack.ElasticSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch-contentrepositoryadaptor.html): this package
 * [Flowpack.SimpleSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-simplesearch-contentrepositoryadaptor.html): an alternative search backend (to be used instead of this package); storing the search index in SQLite
@@ -34,15 +33,11 @@ composer require 'flowpack/elasticsearch-contentrepositoryadaptor'
 // Not required, but can be used to learn how to integration the flowpack/elasticsearch-contentrepositoryadaptor in your project
 composer require 'flowpack/searchplugin'
 ```
+Ensure to update `<your-elasticsearch>/config/elasticsearch.yml` as explained below; then start Elasticsearch.
 
-Now, add the routes as described in the [README of Flowpack.SearchPlugin](https://github.com/Flowpack/Flowpack.SearchPlugin)
-as the **first route** in Configuration/Routes.yaml.
+Then just run `./flow nodeindex:build` and add the search plugin to your page. It should "just work".
 
-Then, ensure to update `<your-elasticsearch>/config/elasticsearch.yml` as explained below; then start Elasticsearch.
-
-Finally, run `./flow nodeindex:build`, and add the search plugin to your page. It should "just work".
-
-## Elasticsearch Configuration file elasticsearch.yml
+## Elasticsearch Configuration file *elasticsearch.yml*
 
 There is a need, depending on your version of Elasticsearch, to add specific configuration to your
 Elasticsearch Configuration File `<your-elasticsearch>/config/elasticsearch.yml`.
@@ -78,24 +73,24 @@ Example is from the Documentation of the used *Flowpack.ElasticSearch* Package
 
 https://github.com/Flowpack/Flowpack.ElasticSearch/blob/master/Documentation/Indexer.rst
 
-```
+```yaml
 Flowpack:
-	ElasticSearch:
-		indexes:
-			default:
-				'twitter':
-					analysis:
-						filter:
-							elision:
-								type: 'elision'
-								articles: [ 'l', 'm', 't', 'qu', 'n', 's', 'j', 'd' ]
-					analyzer:
-						custom_french_analyzer:
-							tokenizer: 'letter'
-							filter: [ 'asciifolding', 'lowercase', 'french_stem', 'elision', 'stop' ]
-						tag_analyzer:
-							tokenizer: 'keyword'
-							filter: [ 'asciifolding', 'lowercase' ]
+  ElasticSearch:
+    indexes:
+      default:
+        twitter:
+          analysis:
+            filter:
+              elision:
+                type: elision
+                articles: [ 'l', 'm', 't', 'qu', 'n', 's', 'j', 'd' ]
+          analyzer:
+            custom_french_analyzer:
+              tokenizer: letter
+              filter: [ 'asciifolding', 'lowercase', 'french_stem', 'elision', 'stop' ]
+            tag_analyzer:
+              tokenizer: keyword
+              filter: [ 'asciifolding', 'lowercase' ]
 ```
 
 If you use multiple client configurations, please change the *default* key just below the *indexes*.
@@ -168,18 +163,18 @@ Fusion setup:
 ```
  # for "Tag" documents, replace the main content area.
 prototype(Neos.Neos:PrimaryContent).acmeBlogTag {
-	condition = ${q(node).is('[instanceof Acme.Blog:Tag]')}
-	type = 'Acme.Blog:TagPage'
+    condition = ${q(node).is('[instanceof Acme.Blog:Tag]')}
+    type = 'Acme.Blog:TagPage'
 }
 
  # The "TagPage"
 prototype(Acme.Blog:TagPage) < prototype(Neos.Fusion:Collection) {
-	collection = ${Search.query(site).nodeType('Acme.Blog:Post').exactMatch('tags', node).sortDesc('creationDate').execute()}
-	itemName = 'node'
-	itemRenderer = Acme.Blog:SingleTag
+    collection = ${Search.query(site).nodeType('Acme.Blog:Post').exactMatch('tags', node).sortDesc('creationDate').execute()}
+    itemName = 'node'
+    itemRenderer = Acme.Blog:SingleTag
 }
 prototype(Acme.Blog:SingleTag) < prototype(Neos.Neos:Template) {
-	...
+    ...
 }
 ```
 
@@ -189,9 +184,9 @@ There's no OR operator provided in this package, so you need to use a custom Ela
 
 ```
 ....queryFilter('bool', {should: [
-	{term: {tags: tagNode.identifier}},
-	{term: {places: tagNode.identifier}},
-	{term: {projects: tagNode.identifier}}
+    {term: {tags: tagNode.identifier}},
+    {term: {places: tagNode.identifier}},
+    {term: {projects: tagNode.identifier}}
 ]})
 ```
 
@@ -228,7 +223,7 @@ Now you can access your aggregations inside your fluid template with
 #### Create a nested aggregation
 
 In this scenario you could have a node that represents a product with the properties price and color. If you would like
-to know the average price for all your colors you just nest an aggregation in your TypoScript:
+to know the average price for all your colors you just nest an aggregation in your Fusion:
 ```
 nodes = ${Search.query(site)...fieldBasedAggregation("colors", "color").fieldBasedAggregation("avgprice", "price", "avg", "colors").execute()}
 ```
@@ -247,9 +242,9 @@ To add a custom aggregation you can use the `aggregation()` method. All you have
 aggregation definition. This example would do the same as the fieldBasedAggregation would do for you:
 ```
 aggregationDefinition = Neos.Fusion:RawArray {
-	terms = Neos.Fusion:RawArray {
-		field = "color"
-	}
+    terms = Neos.Fusion:RawArray {
+        field = "color"
+    }
 }
 nodes = ${Search.query(site)...aggregation("color", this.aggregationDefinition).execute()}
 ```
@@ -264,13 +259,13 @@ be a reference on other products.
 prototype(Vendor.Name:FilteredProductList) < prototype(Neos.Neos:Content)
 prototype(Vendor.Name:FilteredProductList) {
 
-	// Create SearchFilter for products
-	searchFilter = Neos.Fusion:RawArray {
-		sku = ${String.split(q(node).property("products"), ",")}
-	}
+    // Create SearchFilter for products
+    searchFilter = Neos.Fusion:RawArray {
+        sku = ${String.split(q(node).property("products"), ",")}
+    }
 
-	# Search for all products that matches your queryFilter and add aggregations
-	filter = ${Search.query(site).nodeType("Vendor.Name:Product").queryFilterMultiple(this.searchFilter, "must").fieldBasedAggregation("color", "color").fieldBasedAggregation("size", "size").execute()}
+    # Search for all products that matches your queryFilter and add aggregations
+    filter = ${Search.query(site).nodeType("Vendor.Name:Product").queryFilterMultiple(this.searchFilter, "must").fieldBasedAggregation("color", "color").fieldBasedAggregation("size", "size").execute()}
 
     # Add more filter if get/post params are set
     searchFilter.color = ${request.arguments.color}
@@ -282,13 +277,13 @@ prototype(Vendor.Name:FilteredProductList) {
     products = ${Search.query(site).nodeType("Vendor.Name:Product").queryFilterMultiple(this.searchFilter, "must").execute()}
 
     # don't cache this element
-	@cache {
-		mode = 'uncached'
-		context {
-			1 = 'node'
-			2 = 'site'
-		}
-	}
+    @cache {
+        mode = 'uncached'
+        context {
+            1 = 'node'
+            2 = 'site'
+        }
+    }
 ```
 
 In the first lines we will add a new searchFilter variable and add your selected sku's as a filter. Based on this selection
@@ -370,7 +365,7 @@ First of all you have to define a property in your NodeTypes.yaml for your node 
           type: "geo_point"
 ```
 
-Query your nodes in your TypoScript:
+Query your nodes in your Fusion:
 ```
 geoSorting = Neos.Fusion:RawArray {
     _geo_distance = Neos.Fusion:RawArray {
@@ -389,13 +384,14 @@ nodes = ${Search.query(site).nodeType('Vendor.Name:Retailer').sort(this.geoSorti
 Now you can paginate that nodes in your template. To get your actually distance for each node use
 the `GetHitArrayForNodeViewHelper`:
 ```
+{namespace cr=Neos\ContentRepository\ViewHelpers}
 {namespace es=Flowpack\ElasticSearch\ContentRepositoryAdaptor\ViewHelpers}
 
-<typo3cr:widget.paginate query="{nodes}" as="paginatedNodes">
+<cr:widget.paginate query="{nodes}" as="paginatedNodes">
     <f:for each="{paginatedNodes}" as="singleNode">
         {singleNode.name} - <es:getHitArrayForNode queryResultObject="{nodes}" node="{singleNode}" path="sort.0" />
     </f:for>
-</typo3cr:widget.paginate>
+</cr:widget.paginate>
 
 ```
 

@@ -74,7 +74,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
     /**
      * This (internal) array stores, for the last search request, a mapping from Node Identifiers
-     * to the full ElasticSearch Hit which was returned.
+     * to the full Elasticsearch Hit which was returned.
      *
      * This is needed to e.g. use result highlighting.
      *
@@ -83,7 +83,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     protected $elasticSearchHitsIndexedByNodeFromLastRequest;
 
     /**
-     * The ElasticSearch request, as it is being built up.
+     * The Elasticsearch request, as it is being built up.
      *
      * @var QueryInterface
      * @Flow\Inject
@@ -310,7 +310,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * Append $data to the given array at $path inside $this->request.
      *
-     * Low-level method to manipulate the ElasticSearch Query
+     * Low-level method to manipulate the Elasticsearch Query
      *
      * @param string $path
      * @param array $data
@@ -473,7 +473,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     }
 
     /**
-     * Get the ElasticSearch request as we need it
+     * Get the Elasticsearch request as we need it
      *
      * @return QueryInterface
      */
@@ -483,7 +483,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     }
 
     /**
-     * Log the current request to the ElasticSearch log for debugging after it has been executed.
+     * Log the current request to the Elasticsearch log for debugging after it has been executed.
      *
      * @param string $message an optional message to identify the log entry
      * @return $this
@@ -526,10 +526,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     }
 
     /**
-     * This low-level method can be used to look up the full ElasticSearch hit given a certain node.
+     * This low-level method can be used to look up the full Elasticsearch hit given a certain node.
      *
      * @param NodeInterface $node
-     * @return array the ElasticSearch hit for the node as array, or NULL if it does not exist.
+     * @return array the Elasticsearch hit for the node as array, or NULL if it does not exist.
      */
     public function getFullElasticSearchHitForNode(NodeInterface $node)
     {
