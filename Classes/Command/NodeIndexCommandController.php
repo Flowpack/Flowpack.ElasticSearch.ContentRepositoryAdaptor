@@ -11,8 +11,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
@@ -38,6 +40,12 @@ use Symfony\Component\Yaml\Yaml;
 class NodeIndexCommandController extends CommandController
 {
     use IndexWorkspaceTrait;
+
+    /**
+     * @Flow\Inject
+     * @var ErrorHandlingService
+     */
+    protected $errorHandlingService;
 
     /**
      * @Flow\Inject
@@ -258,7 +266,17 @@ class NodeIndexCommandController extends CommandController
 
         $this->nodeIndexingManager->flushQueues();
 
-        $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
+        if ($this->errorHandlingService->hasError()) {
+            $this->outputLine();
+            /** @var ErrorInterface $error */
+            foreach ($this->errorHandlingService as $error) {
+                $this->outputLine('<error>Error</error> ' . $error->message());
+            }
+            $this->outputLine();
+            $this->outputLine('<error>Check your logs for more information</error>');
+        } else {
+            $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
+        }
         $this->nodeIndexer->getIndex()->refresh();
 
         // TODO: smoke tests

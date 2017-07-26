@@ -18,7 +18,10 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterfac
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\BulkIndexingError;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\MalformedBulkRequestError;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
@@ -45,6 +48,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @var string
      */
     protected $indexNamePostfix = '';
+
+    /**
+     * @Flow\Inject
+     * @var ErrorHandlingService
+     */
+    protected $errorHandlingService;
 
     /**
      * @Flow\Inject
@@ -315,7 +324,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             foreach ($bulkRequestTuple as $bulkRequestItem) {
                 $itemAsJson = json_encode($bulkRequestItem);
                 if ($itemAsJson === false) {
-                    $this->logger->log('NodeIndexer: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), LOG_ERR, $bulkRequestItem, 'ElasticSearch (CR)');
+                    $this->errorHandlingService->log(
+                        new MalformedBulkRequestError('Indexing Error: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), $bulkRequestItem)
+                    );
                     continue 2;
                 }
                 $tupleAsJson .= $itemAsJson . chr(10);
@@ -327,7 +338,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             $response = $this->requestDriver->bulk($this->getIndex(), $content);
             foreach ($response as $responseLine) {
                 if (isset($response['errors']) && $response['errors'] !== false) {
-                    $this->logger->log('NodeIndexer: ' . json_encode($responseLine), LOG_ERR, null, 'ElasticSearch (CR)');
+                    $this->errorHandlingService->log(
+                        new BulkIndexingError($this->currentBulkRequest, $responseLine)
+                    );
                 }
             }
         }

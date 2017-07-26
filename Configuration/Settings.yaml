@@ -106,6 +106,7 @@ Flowpack:
 Neos:
   ContentRepository:
     Search:
+
       # API. If set to FALSE, only index the "live" workspace and not user workspaces.
       # If you only index the live workspace, Search will not work for your editors in the user workspaces.
       # Furthermore, if you heavily rely on Search for collecting content, this might be strange for editors to
@@ -132,32 +133,41 @@ Neos:
               disableAnsi: false
 
       defaultConfigurationPerType:
+
         string:
           elasticSearchMapping:
             type: string
             include_in_all: false
+
         boolean:
           elasticSearchMapping:
             type: boolean
+
         integer:
           elasticSearchMapping:
             type: integer
+
         DateTime:
           elasticSearchMapping:
             type: date
-            format: date_time_no_millis
+            format: 'date_time_no_millis'
             include_in_all: false
-        Neos\Media\Domain\Model\Asset:
+
+        'Neos\Media\Domain\Model\Asset':
           elasticSearchMapping: '' # deliberately don't map or index this
-        array<Neos\Media\Domain\Model\Asset>:
+
+        'array<Neos\Media\Domain\Model\Asset>':
           elasticSearchMapping: '' # deliberately don't map or index this
-        Neos\Media\Domain\Model\ImageInterface:
+
+        'Neos\Media\Domain\Model\ImageInterface':
           elasticSearchMapping: '' # deliberately don't map or index this
-        references:
+
+        'references':
           elasticSearchMapping:
             type: string # an array of strings, to be precise
             index: not_analyzed
-        reference:
+
+        'reference':
           elasticSearchMapping:
             type: string
             index: not_analyzed
