@@ -16,7 +16,7 @@ use Neos\Flow\Persistence\QueryInterface;
 
 /**
  * This ElasticSearchQuery object is just used inside ElasticSearchQueryResult->getQuery(), so that pagination
- * widgets etc work in the same manner for ElasticSearch results.
+ * widgets etc work in the same manner for Elasticsearch results.
  */
 class ElasticSearchQuery implements QueryInterface
 {

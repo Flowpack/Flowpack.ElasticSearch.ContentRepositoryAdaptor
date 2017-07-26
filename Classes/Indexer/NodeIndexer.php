@@ -110,7 +110,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     protected $systemDriver;
 
     /**
-     * The current ElasticSearch bulk request, in the format required by http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html
+     * The current Elasticsearch bulk request, in the format required by http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html
      *
      * @var array
      */

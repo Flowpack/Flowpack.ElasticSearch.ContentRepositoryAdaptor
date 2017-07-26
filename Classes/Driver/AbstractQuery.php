@@ -21,7 +21,7 @@ use Neos\Utility\Arrays;
 abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \ArrayAccess, ProtectedContextAwareInterface
 {
     /**
-     * The ElasticSearch request, as it is being built up.
+     * The Elasticsearch request, as it is being built up.
      *
      * @var array
      */

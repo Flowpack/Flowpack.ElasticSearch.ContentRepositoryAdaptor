@@ -2,7 +2,7 @@ Neos:
   ContentRepository:
     Search:
       elasticSearch:
-        indexName: typo3cr_testing
+        indexName: neoscr_testing
         log:
           backendOptions:
             fileBackend:
