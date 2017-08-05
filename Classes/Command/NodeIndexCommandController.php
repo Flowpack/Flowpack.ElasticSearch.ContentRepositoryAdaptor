@@ -15,6 +15,8 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
@@ -49,6 +51,12 @@ class NodeIndexCommandController extends CommandController
      * @var array
      */
     protected $flowSettings;
+
+    /**
+     * @Flow\Inject
+     * @var ErrorHandlingService
+     */
+    protected $errorHandlingService;
 
     /**
      * @Flow\Inject
@@ -341,7 +349,7 @@ class NodeIndexCommandController extends CommandController
         }
 
         $this->applyMapping();
-
+        $this->outputErrorHandling();
         $this->logger->log(vsprintf('+ Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]), LOG_INFO);
     }
 
@@ -383,7 +391,7 @@ class NodeIndexCommandController extends CommandController
         }
 
         $this->nodeIndexingManager->flushQueues();
-
+        $this->outputErrorHandling();
         $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
     }
 
@@ -408,6 +416,7 @@ class NodeIndexCommandController extends CommandController
         };
         $count = $this->indexWorkspaceWithDimensions($workspace, $dimensionsValues, $limit, $workspaceLogger);
         $this->logger->log(vsprintf('Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]), LOG_INFO);
+        $this->outputErrorHandling();
         $this->outputLine($count);
     }
 
@@ -422,7 +431,10 @@ class NodeIndexCommandController extends CommandController
 
         $this->logger->log(vsprintf('Refresh index %s', [$this->nodeIndexer->getIndexName()]), LOG_INFO);
         $this->logger->log(vsprintf('+ Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]), LOG_INFO);
+
         $this->nodeIndexer->getIndex()->refresh();
+
+        $this->outputErrorHandling();
     }
 
     /**
@@ -440,6 +452,7 @@ class NodeIndexCommandController extends CommandController
 
         $this->logger->log(vsprintf('Update alias for index %s', [$this->nodeIndexer->getIndexName()]), LOG_INFO);
         $this->nodeIndexer->updateIndexAlias();
+        $this->outputErrorHandling();
     }
 
     /**
@@ -488,6 +501,21 @@ class NodeIndexCommandController extends CommandController
         if ($removed === false) {
             $this->logger->log('Nothing to remove.');
         }
+    }
+
+    protected function outputErrorHandling()
+    {
+        if ($this->errorHandlingService->hasError() === false) {
+            return;
+        }
+
+        $this->outputLine();
+        /** @var ErrorInterface $error */
+        foreach ($this->errorHandlingService as $error) {
+            $this->outputLine('<error>Error</error> ' . $error->message());
+        }
+        $this->outputLine();
+        $this->outputLine('<error>Check your logs for more information</error>');
     }
 
     /**
