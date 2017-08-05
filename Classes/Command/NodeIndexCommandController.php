@@ -587,6 +587,25 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
+     * Create a new index with the given $postfix.
+     *
+     * @param string $postfix
+     * @param array $dimensionValues
+     * @return void
+     */
+    protected function createNewIndex($postfix, array $dimensionValues = [])
+    {
+        $this->nodeIndexer->setIndexNamePostfix($postfix);
+        if ($this->nodeIndexer->getIndex()->exists() === true) {
+            $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
+            $this->nodeIndexer->getIndex()->delete();
+        }
+        $this->nodeIndexer->getIndex()->create();
+        $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
+        $this->logger->log('+ Dimensions: ' . \json_encode($dimensionValues), LOG_INFO);
+    }
+
+    /**
      * Apply the mapping to the current index.
      *
      * @return void
