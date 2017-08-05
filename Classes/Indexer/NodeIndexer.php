@@ -382,7 +382,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     }
 
     /**
-     * @param array $targetDimensions
+     * @param NodeInterface $node
      * @return string
      */
     protected function computeTargetDimensionsHash(NodeInterface $node)
