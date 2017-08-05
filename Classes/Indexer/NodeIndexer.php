@@ -18,12 +18,14 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterfac
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\BulkIndexingError;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\MalformedBulkRequestError;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
-use Neos\ContentRepository\Utility;
 use Neos\Flow\Annotations as Flow;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
@@ -53,6 +55,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @Flow\Inject
      */
     protected $dimensionsService;
+
+    /**
+     * @Flow\Inject
+     * @var ErrorHandlingService
+     */
+    protected $errorHandlingService;
 
     /**
      * @Flow\Inject
@@ -109,7 +117,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     protected $systemDriver;
 
     /**
-     * The current ElasticSearch bulk request, in the format required by http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html
+     * The current Elasticsearch bulk request, in the format required by http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html
      *
      * @var array
      */
@@ -346,7 +354,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             foreach ($bulkRequestTuple['items'] as $bulkRequestItem) {
                 $itemAsJson = json_encode($bulkRequestItem);
                 if ($itemAsJson === false) {
-                    $this->logger->log('NodeIndexer: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), LOG_ERR, $bulkRequestItem, 'ElasticSearch (CR)');
+                    $this->errorHandlingService->log(new MalformedBulkRequestError('Indexing Error: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), $bulkRequestItem));
                     continue 2;
                 }
                 $tupleAsJson .= $itemAsJson . chr(10);
@@ -363,7 +371,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $response = $this->requestDriver->bulk($this->getIndex(), $payload[$hash]);
                 foreach ($response as $responseLine) {
                     if (isset($response['errors']) && $response['errors'] !== false) {
-                        $this->logger->log('NodeIndexer: ' . json_encode($responseLine), LOG_ERR, null, 'ElasticSearch (CR)');
+                        $this->errorHandlingService->log(new BulkIndexingError($this->currentBulkRequest, $responseLine));
                     }
                 }
             }, $dimensions);
@@ -374,7 +382,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     }
 
     /**
-     * @param array $targetDimensions
+     * @param NodeInterface $node
      * @return string
      */
     protected function computeTargetDimensionsHash(NodeInterface $node)
