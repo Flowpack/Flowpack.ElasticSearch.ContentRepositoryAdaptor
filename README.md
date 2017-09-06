@@ -66,7 +66,36 @@ changes the index alias.
 ./flow nodeindex:cleanup
 ```
 
+### Advanced Configuration
+
+By default the indexing process all Node Types, but you can change this configuration in your ```Settings.yaml```:
+
+```
+Flowpack:
+  ElasticSearch:
+    ContentRepositoryAdaptor:
+      configuration:
+        nodeTypes:
+          '*':
+            indexed: true
+          'Neos.Neos:FallbackNode':
+            indexed: false
+          'Neos.Neos:Shortcut':
+            indexed: false
+          'Neos.Neos:ContentCollection':
+            indexed: false
+```
+
+You need to configure explicitly the Node Types (this feature does not check the Super Type configuration). You 
+can use a special notation to configuration a full name space, ```Neos.NodeTypes:*``` will be applied for all node
+types in the given namespace. The most specific configuration is used in this order: 
+
+- Node Type name (```Neos.Neos:Shortcut```)
+- Full namespace notation (```Neos.Neos:*```)
+- Catch all (```*```)
+
 ### Advanced Index Settings
+
 If you need advanced settings you can define them in your *Settings.yaml*:
 
 Example is from the Documentation of the used *Flowpack.ElasticSearch* Package

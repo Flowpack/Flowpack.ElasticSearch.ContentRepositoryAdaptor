@@ -2,6 +2,10 @@
 Flowpack:
   ElasticSearch:
     ContentRepositoryAdaptor:
+      configuration:
+        nodeTypes:
+          '*':
+            indexed: true
       driver:
         version: 1.x
         mapping:

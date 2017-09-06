@@ -11,6 +11,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\NodeTypeIndexingConfiguration;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
@@ -51,6 +52,12 @@ class NodeTypeMappingBuilder
     protected $configurationManager;
 
     /**
+     * @var NodeTypeIndexingConfiguration
+     * @Flow\Inject
+     */
+    protected $nodeTypeIndexingConfiguration;
+
+    /**
      * Called by the Flow object framework after creating the object and resolving all dependencies.
      *
      * @param integer $cause Creation cause
@@ -89,6 +96,10 @@ class NodeTypeMappingBuilder
         /** @var NodeType $nodeType */
         foreach ($this->nodeTypeManager->getNodeTypes() as $nodeTypeName => $nodeType) {
             if ($nodeTypeName === 'unstructured' || $nodeType->isAbstract()) {
+                continue;
+            }
+
+            if ($this->nodeTypeIndexingConfiguration->isIndexable($nodeType) === false) {
                 continue;
             }
 
