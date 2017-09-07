@@ -68,7 +68,7 @@ changes the index alias.
 
 ### Advanced Configuration
 
-By default the indexing process all Node Types, but you can change this configuration in your ```Settings.yaml```:
+By default the indexing processes all NodeTypes, but you can change this in your *Settings.yaml*:
 
 ```
 Flowpack:
@@ -86,11 +86,11 @@ Flowpack:
             indexed: false
 ```
 
-You need to configure explicitly the Node Types (this feature does not check the Super Type configuration). You 
-can use a special notation to configuration a full name space, ```Neos.NodeTypes:*``` will be applied for all node
-types in the given namespace. The most specific configuration is used in this order: 
+You need to explicitly configure the individual NodeTypes (this feature does not check the Super Type configuration).
+But you  can use a special notation to configure a full namespace, ```Acme.AcmeCom:*``` will be applied for all node
+types in the ```Acme.AcmeCom``` namespace. The most specific configuration is used in this order: 
 
-- Node Type name (```Neos.Neos:Shortcut```)
+- NodeType name (```Neos.Neos:Shortcut```)
 - Full namespace notation (```Neos.Neos:*```)
 - Catch all (```*```)
 
