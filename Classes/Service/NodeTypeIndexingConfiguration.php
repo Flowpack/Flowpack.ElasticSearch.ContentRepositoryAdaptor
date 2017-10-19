@@ -22,7 +22,7 @@ final class NodeTypeIndexingConfiguration
 {
     /**
      * @var array
-     * @Flow\InjectConfiguration(path="configuration.nodeTypes", package="Neos.ContentRepository.Search")
+     * @Flow\InjectConfiguration(path="defaultConfigurationPerNodeType", package="Neos.ContentRepository.Search")
      */
     protected $settings;
 

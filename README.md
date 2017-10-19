@@ -71,19 +71,18 @@ changes the index alias.
 By default the indexing processes all NodeTypes, but you can change this in your *Settings.yaml*:
 
 ```
-Flowpack:
-  ElasticSearch:
-    ContentRepositoryAdaptor:
-      configuration:
-        nodeTypes:
-          '*':
-            indexed: true
-          'Neos.Neos:FallbackNode':
-            indexed: false
-          'Neos.Neos:Shortcut':
-            indexed: false
-          'Neos.Neos:ContentCollection':
-            indexed: false
+Neos:
+  ContentRepository:
+    Search:
+      defaultConfigurationPerNodeType:
+        '*':
+          indexed: true
+        'Neos.Neos:FallbackNode':
+          indexed: false
+        'Neos.Neos:Shortcut':
+          indexed: false
+        'Neos.Neos:ContentCollection':
+          indexed: false
 ```
 
 You need to explicitly configure the individual NodeTypes (this feature does not check the Super Type configuration).
