@@ -22,7 +22,7 @@ final class NodeTypeIndexingConfiguration
 {
     /**
      * @var array
-     * @Flow\InjectConfiguration(path="configuration")
+     * @Flow\InjectConfiguration(path="configuration.nodeTypes", package="Neos.ContentRepository.Search")
      */
     protected $settings;
 
@@ -33,27 +33,21 @@ final class NodeTypeIndexingConfiguration
      */
     public function isIndexable(NodeType $nodeType)
     {
-        if (!isset($this->settings['nodeTypes'])) {
+        if ($this->settings === null || !\is_array($this->settings)) {
             return true;
         }
 
-        if (!\is_array($this->settings['nodeTypes'])) {
-            throw new Exception('Check your configuration at indexingConfiguration.nodeTypes, this path must be an array', 1504721629);
-        }
-
-        $settings = $this->settings['nodeTypes'];
-
-        if (isset($settings[$nodeType->getName()]['indexed'])) {
-            return $settings[$nodeType->getName()]['indexed'];
+        if (isset($this->settings[$nodeType->getName()]['indexed'])) {
+            return (bool)$this->settings[$nodeType->getName()]['indexed'];
         }
 
         $nodeTypeParts = \explode(':', $nodeType->getName());
         $namespace = reset($nodeTypeParts) . ':*';
-        if (isset($settings[$namespace]['indexed'])) {
-            return $settings[$namespace]['indexed'];
+        if (isset($this->settings[$namespace]['indexed'])) {
+            return (bool)$this->settings[$namespace]['indexed'];
         }
-        if (isset($settings['*']['indexed'])) {
-            return $settings['*']['indexed'];
+        if (isset($this->settings['*']['indexed'])) {
+            return (bool)$this->settings['*']['indexed'];
         }
 
         return false;
