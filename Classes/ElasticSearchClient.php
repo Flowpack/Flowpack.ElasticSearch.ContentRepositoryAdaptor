@@ -12,9 +12,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameStrategyInterface;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Configuration\ConfigurationManager;
-use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 
 /**
  * The elasticsearch client to be used by the content repository adapter. Singleton, can be injected.
@@ -29,6 +28,7 @@ use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
 {
     /**
+<<<<<<< HEAD
      * @var DimensionsService
      * @Flow\Inject
      */
@@ -54,23 +54,10 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
     protected $dimensions = [];
 
     /**
+     * @var IndexNameStrategyInterface
      * @Flow\Inject
-     * @var ConfigurationManager
      */
-    protected $configurationManager;
-
-    /**
-     * Called by the Flow object framework after creating the object and resolving all dependencies.
-     *
-     * @param integer $cause Creation cause
-     */
-    public function initializeObject($cause)
-    {
-        if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-            $settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
-            $this->indexName = $settings['elasticSearch']['indexName'];
-        }
-    }
+    protected $indexNameStrategy;
 
     /**
      * @param string $dimensionsHash
@@ -110,18 +97,15 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      * Get the index name to be used
      *
      * @return string
+     * @throws Exception
      */
     public function getIndexName()
     {
-        return $this->dimensionsHash ? $this->indexName . '-' . $this->dimensionsHash : $this->indexName;
-    }
-
-    /**
-     * @return string
-     */
-    public function getIndexNamePrefix()
-    {
-        return $this->indexName;
+        $name = trim($this->indexNameStrategy->get());
+        if ($name === '') {
+            throw new Exception('Index name can not be null');
+        }
+        return $name;
     }
 
     /**

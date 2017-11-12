@@ -384,7 +384,7 @@ nodes = ${Search.query(site).nodeType('Vendor.Name:Retailer').sort(this.geoSorti
 Now you can paginate that nodes in your template. To get your actually distance for each node use
 the `GetHitArrayForNodeViewHelper`:
 ```
-{namespace cr=Neos\ContentRepository\ViewHelpers}
+{namespace cr=Neos\ContentRepository\Search\ViewHelpers}
 {namespace es=Flowpack\ElasticSearch\ContentRepositoryAdaptor\ViewHelpers}
 
 <cr:widget.paginate query="{nodes}" as="paginatedNodes">
