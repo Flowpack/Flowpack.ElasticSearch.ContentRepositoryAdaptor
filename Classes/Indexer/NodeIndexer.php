@@ -25,6 +25,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
+use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\Flow\Annotations as Flow;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
@@ -235,9 +236,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             if ($nodeFromContext instanceof NodeInterface) {
                 $indexer($nodeFromContext, $targetWorkspaceName);
             } else {
-                $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
+                $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName, $context);
                 if ($node->isRemoved()) {
-                    $this->removeNode($node, $context->getWorkspaceName());
+                    $this->removeNode($node, $context->getWorkspaceName(), $context);
                     $this->logger->log(sprintf('NodeIndexer (%s): Removed node with identifier %s, no longer in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
                 } else {
                     $this->logger->log(sprintf('NodeIndexer (%s): Could not index node with identifier %s, not found in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
@@ -263,15 +264,15 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      *
      * @param NodeInterface $node
      * @param string $targetWorkspaceName
+     * @param Context|null $context
      * @return string
      */
-    protected function calculateDocumentIdentifier(NodeInterface $node, $targetWorkspaceName = null)
+    protected function calculateDocumentIdentifier(NodeInterface $node, $targetWorkspaceName = null, Context $context = null)
     {
-        $contextPath = $node->getContextPath();
-
-        if ($targetWorkspaceName !== null) {
-            $contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
+        if (!$context) {
+            $context = $node->getContext();
         }
+        $contextPath = NodePaths::generateContextPath($node->getPath(), $targetWorkspaceName ?: $context->getWorkspaceName(), $context->getDimensions());
 
         return sha1($contextPath);
     }
@@ -281,10 +282,14 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      *
      * @param NodeInterface $node
      * @param string $targetWorkspaceName
+     * @param Context|null $context
      * @return void
      */
-    public function removeNode(NodeInterface $node, $targetWorkspaceName = null)
+    public function removeNode(NodeInterface $node, $targetWorkspaceName = null, Context $context = null)
     {
+        if (!$context) {
+            $context = $node->getContext();
+        }
         if ($this->settings['indexAllWorkspaces'] === false) {
             // we are only supposed to index the live workspace.
             // We need to check the workspace at two occasions; checking the
@@ -293,12 +298,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 return;
             }
 
-            if ($targetWorkspaceName === null && $node->getContext()->getWorkspaceName() !== 'live') {
+            if ($targetWorkspaceName === null && $context->getWorkspaceName() !== 'live') {
                 return;
             }
         }
 
-        $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
+        $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName, $context);
 
         $this->currentBulkRequest[] = $this->documentDriver->delete($node, $documentIdentifier);
         $this->currentBulkRequest[] = $this->indexerDriver->fulltext($node, [], $targetWorkspaceName);
