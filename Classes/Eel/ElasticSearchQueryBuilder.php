@@ -566,7 +566,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
                 $this->result['nodes'] = $this->convertHitsToNodes($this->result['hits']);
             }
         } catch (ApiException $exception) {
-            $this->logger->log('Error while fetching results: ' . $exception->getMessage(), LOG_ERR);
+            $this->logger->logException($exception);
             $this->result['nodes'] = [];
         }
 
