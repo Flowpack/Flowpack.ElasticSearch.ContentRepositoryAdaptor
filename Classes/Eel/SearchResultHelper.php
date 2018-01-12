@@ -12,7 +12,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  */
 
 use Neos\Eel\ProtectedContextAwareInterface;
-use Neos\Flow\Annotations as Flow;
 
 /**
  * Eel Helper to process the ElasticSearch Query Result

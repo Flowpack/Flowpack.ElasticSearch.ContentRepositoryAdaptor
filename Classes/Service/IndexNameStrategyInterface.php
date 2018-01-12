@@ -11,7 +11,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
  * source code.
  */
 
-
 /**
  * Get Index Name
  */
