@@ -87,7 +87,6 @@ class BulkIndexingError implements ErrorInterface
         return $this->message;
     }
 
-
     /**
      * @return string
      */
@@ -95,6 +94,7 @@ class BulkIndexingError implements ErrorInterface
     {
         $bulkRequest = json_encode($this->currentBulkRequest, JSON_PRETTY_PRINT);
         $errors = json_encode($this->errors, JSON_PRETTY_PRINT);
+
         return sprintf("Payload:\n========\n\n%s\n\nErrors:\n=======\n\n%s\n\n", $bulkRequest, $errors);
     }
 }

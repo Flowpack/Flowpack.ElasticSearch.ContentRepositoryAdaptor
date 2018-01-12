@@ -13,7 +13,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameStrategyInterface;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Configuration\ConfigurationManager;
 
 /**
  * The elasticsearch client to be used by the content repository adapter. Singleton, can be injected.
@@ -44,6 +43,7 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
         if ($name === '') {
             throw new Exception('Index name can not be null');
         }
+
         return $name;
     }
 

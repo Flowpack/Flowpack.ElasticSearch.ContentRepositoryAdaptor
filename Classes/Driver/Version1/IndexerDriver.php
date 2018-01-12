@@ -1,5 +1,4 @@
 <?php
-
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
 
 /*
@@ -16,8 +15,8 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractIndexerDriver
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
-use Neos\Flow\Annotations as Flow;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\Flow\Annotations as Flow;
 
 /**
  * Indexer driver for Elasticsearch version 1.x

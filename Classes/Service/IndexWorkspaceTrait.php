@@ -11,8 +11,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
  * source code.
  */
 
-use Neos\Flow\Annotations as Flow;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\Flow\Annotations as Flow;
 
 /**
  * Index Workspace Trait
