@@ -1,5 +1,4 @@
 <?php
-
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
 
 /*

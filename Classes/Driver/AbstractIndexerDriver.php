@@ -1,5 +1,4 @@
 <?php
-
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 /*
@@ -49,7 +48,7 @@ abstract class AbstractIndexerDriver extends AbstractDriver
             if ($closestFulltextNode === null) {
                 // root of hierarchy, no fulltext root found anymore, abort silently...
                 if ($node->getPath() !== '/' && $node->getPath() !== '/sites') {
-                    $this->logger->log(sprintf('NodeIndexer: No fulltext root found for node %s (%s)', $node->getPath(), $node->getIdentifier()), LOG_WARNING, null, 'ElasticSearch (CR)');
+                    $this->logger->log(sprintf('NodeIndexer: No fulltext root found for node %s (%s)', $node->getContextPath(), $node->getIdentifier()), LOG_WARNING, null, 'ElasticSearch (CR)');
                 }
 
                 return null;
