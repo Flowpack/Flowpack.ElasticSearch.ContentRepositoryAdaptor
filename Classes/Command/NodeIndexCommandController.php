@@ -11,9 +11,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
+use Doctrine\Common\Collections\ArrayCollection;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
@@ -102,6 +104,12 @@ class NodeIndexCommandController extends CommandController
     protected $contextFactory;
 
     /**
+     * @Flow\Inject
+     * @var DimensionsService
+     */
+    protected $dimensionsService;
+
+    /**
      * @var array
      */
     protected $settings;
@@ -115,6 +123,17 @@ class NodeIndexCommandController extends CommandController
     {
         if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
             $this->settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
+        }
+    }
+
+    /**
+     * Mapping between dimensions presets and index name
+     */
+    public function showDimensionsMappingCommand()
+    {
+        $indexName = $this->nodeIndexer->getIndexName();
+        foreach ($this->contentDimensionCombinator->getAllAllowedCombinations() as $dimensionValues) {
+            $this->outputLine('<info>%s-%s</info> %s', [$indexName, $this->dimensionsService->hash($dimensionValues), \json_encode($dimensionValues)]);
         }
     }
 
@@ -234,55 +253,87 @@ class NodeIndexCommandController extends CommandController
             $this->quit(1);
         }
 
-        if ($update === true) {
-            $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
-        } else {
-            $this->createNewIndex($postfix);
-        }
-        $this->applyMapping();
+        $postfix = $postfix ?: time();
 
-        $this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
+        $create = function (array $dimensionsValues) use ($update, $postfix) {
+            $this->nodeIndexer->setDimensions($dimensionsValues);
 
-        $count = 0;
+            if ($update === true) {
+                $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
+            } else {
+                $this->createNewIndex($postfix, $dimensionsValues);
+            }
 
-        if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
-            $workspace = 'live';
-        }
+            $this->applyMapping();
+        };
 
-        $callback = function ($workspaceName, $indexedNodes, $dimensions) {
+        $workspaceLogger = function ($workspaceName, $indexedNodes, $dimensions) {
             if ($dimensions === []) {
                 $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)');
             } else {
                 $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)');
             }
         };
-        if ($workspace === null) {
-            foreach ($this->workspaceRepository->findAll() as $workspace) {
-                $count += $this->indexWorkspace($workspace->getName(), $limit, $callback);
-            }
-        } else {
-            $count += $this->indexWorkspace($workspace, $limit, $callback);
-        }
 
-        $this->nodeIndexingManager->flushQueues();
+        $build = function (array $dimensionsValues) use ($workspace, $update, $limit, $workspaceLogger) {
+            $this->nodeIndexer->setDimensions($dimensionsValues);
+            $this->outputLine();
+            $this->logger->log(vsprintf('Indexing %snodes to %s', [($limit !== null ? 'the first ' . $limit . ' ' : ''), $this->nodeIndexer->getIndexName()]), LOG_INFO);
 
-        if ($this->errorHandlingService->hasError()) {
-            $this->outputLine();
-            /** @var ErrorInterface $error */
-            foreach ($this->errorHandlingService as $error) {
-                $this->outputLine('<error>Error</error> ' . $error->message());
+            $count = 0;
+
+            if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
+                $workspace = 'live';
             }
-            $this->outputLine();
-            $this->outputLine('<error>Check your logs for more information</error>');
-        } else {
-            $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
-        }
+
+            if ($workspace === null) {
+                foreach ($this->workspaceRepository->findAll() as $workspace) {
+                    $count += $this->indexWorkspaceWithDimensions($workspace->getName(), $dimensionsValues, $limit, $workspaceLogger);
+                }
+            } else {
+                $count += $this->indexWorkspaceWithDimensions($workspace, $dimensionsValues, $limit, $workspaceLogger);
+            }
+
+            $this->nodeIndexingManager->flushQueues();
+
+            if ($this->errorHandlingService->hasError()) {
+                $this->outputLine();
+                /** @var ErrorInterface $error */
+                foreach ($this->errorHandlingService as $error) {
+                    $this->outputLine('<error>Error</error> ' . $error->message());
+                }
+                $this->outputLine();
+                $this->outputLine('<error>Check your logs for more information</error>');
+            } else {
+                $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
+            }
+        };
+
+        $refresh = function (array $dimensionsValues) {
+            $this->nodeIndexer->setDimensions($dimensionsValues);
+            $this->logger->log(vsprintf('Refresh index %s', [$this->nodeIndexer->getIndexName()]), LOG_INFO);
+            $this->nodeIndexer->getIndex()->refresh();
+        };
+
         $this->nodeIndexer->getIndex()->refresh();
 
-        // TODO: smoke tests
-        if ($update === false) {
+        $updateAliases = function (array $dimensionsValues) use ($update) {
+            if ($update === true) {
+                return;
+            }
+            $this->nodeIndexer->setDimensions($dimensionsValues);
+            $this->logger->log(vsprintf('Update alias for index %s', [$this->nodeIndexer->getIndexName()]), LOG_INFO);
             $this->nodeIndexer->updateIndexAlias();
-        }
+        };
+
+        $combinations = new ArrayCollection($this->contentDimensionCombinator->getAllAllowedCombinations());
+        $combinations->map($create);
+        $combinations->map($build);
+        $combinations->map($refresh);
+        $combinations->map($updateAliases);
+
+        $this->logger->log('Update main alias alias', LOG_INFO);
+        $this->nodeIndexer->updateMainAlias();
     }
 
     /**
@@ -292,18 +343,30 @@ class NodeIndexCommandController extends CommandController
      */
     public function cleanupCommand()
     {
-        try {
-            $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
-            if (count($indicesToBeRemoved) > 0) {
-                foreach ($indicesToBeRemoved as $indexToBeRemoved) {
-                    $this->logger->log('Removing old index ' . $indexToBeRemoved);
+        $removed = false;
+        $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+        foreach ($combinations as $dimensionsValues) {
+            try {
+                $this->nodeIndexer->setDimensions($dimensionsValues);
+                $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
+                if (count($indicesToBeRemoved) > 0) {
+                    foreach ($indicesToBeRemoved as $indexToBeRemoved) {
+                        $removed = true;
+                        $this->logger->log('Removing old index ' . $indexToBeRemoved);
+                    }
                 }
-            } else {
-                $this->logger->log('Nothing to remove.');
+            } catch (ApiException $exception) {
+                $response = json_decode($exception->getResponse());
+                $message = \sprintf('Nothing removed. ElasticSearch responded with status %s', $response->status);
+                if (isset($response->error->type)) {
+                    $this->logger->log(sprintf('%s, saying "%s: %s"', $message, $response->error->type, $response->error->reason));
+                } else {
+                    $this->logger->log(sprintf('%s, saying "%s"', $message, $response->error));
+                }
             }
-        } catch (ApiException $exception) {
-            $response = json_decode($exception->getResponse());
-            $this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s: %s"', $response->status, $response->error->type, $response->error->reason));
+        }
+        if ($removed === false) {
+            $this->logger->log('Nothing to remove.');
         }
     }
 
@@ -336,17 +399,19 @@ class NodeIndexCommandController extends CommandController
      * Create a new index with the given $postfix.
      *
      * @param string $postfix
+     * @param array $dimensionValues
      * @return void
      */
-    protected function createNewIndex($postfix)
+    protected function createNewIndex($postfix, array $dimensionValues = [])
     {
-        $this->nodeIndexer->setIndexNamePostfix($postfix ?: time());
+        $this->nodeIndexer->setIndexNamePostfix($postfix);
         if ($this->nodeIndexer->getIndex()->exists() === true) {
             $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
             $this->nodeIndexer->getIndex()->delete();
         }
         $this->nodeIndexer->getIndex()->create();
         $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
+        $this->logger->log('+ Dimensions: ' . \json_encode($dimensionValues), LOG_INFO);
     }
 
     /**
@@ -361,6 +426,6 @@ class NodeIndexCommandController extends CommandController
             /** @var Mapping $mapping */
             $mapping->apply();
         }
-        $this->logger->log('Updated Mapping.', LOG_INFO);
+        $this->logger->log('+ Updated Mapping.', LOG_INFO);
     }
 }

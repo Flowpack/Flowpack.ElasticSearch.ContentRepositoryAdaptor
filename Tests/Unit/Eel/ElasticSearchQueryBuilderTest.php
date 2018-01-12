@@ -13,6 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query\FilteredQuery;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Neos\Flow\Tests\UnitTestCase;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\Workspace;
@@ -87,6 +88,10 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
 
         $this->inject($this->queryBuilder, 'request', new FilteredQuery($request, $unsupportedFieldsInCountRequest));
 
+        $mockElasticSearchClient = $this->getMockBuilder(ElasticSearchClient::class)->disableOriginalConstructor()->getMock();
+
+        $this->inject($this->queryBuilder, 'elasticSearchClient', $mockElasticSearchClient);
+
         $query = new FilteredQuery($this->queryBuilder->getRequest()->toArray(), []);
         $this->inject($this->queryBuilder, 'request', $query);
         $this->queryBuilder->query($node);
@@ -129,11 +134,6 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
                                 1 => [
                                     'terms' => [
                                         '__workspace' => ['live', 'user-foo']
-                                    ]
-                                ],
-                                2 => [
-                                    'term' => [
-                                        '__dimensionCombinationHash' => 'd751713988987e9331980363e24189ce'
                                     ]
                                 ]
                             ],
