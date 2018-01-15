@@ -47,7 +47,9 @@ abstract class AbstractIndexerDriver extends AbstractDriver
             $closestFulltextNode = $closestFulltextNode->getParent();
             if ($closestFulltextNode === null) {
                 // root of hierarchy, no fulltext root found anymore, abort silently...
-                $this->logger->log(sprintf('NodeIndexer: No fulltext root found for node %s (%s)', $node->getContextPath(), $node->getIdentifier()), LOG_WARNING, null, 'ElasticSearch (CR)');
+                if ($node->getPath() !== '/' && $node->getPath() !== '/sites') {
+                    $this->logger->log(sprintf('NodeIndexer: No fulltext root found for node %s (%s)', $node->getContextPath(), $node->getIdentifier()), LOG_WARNING, null, 'ElasticSearch (CR)');
+                }
 
                 return null;
             }
