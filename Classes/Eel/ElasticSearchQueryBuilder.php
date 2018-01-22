@@ -593,11 +593,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $timeBefore = microtime(true);
         $request = $this->getRequest()->getCountRequestAsJson();
 
-        $response = $this->elasticSearchClient->getIndex()->request('GET', '/_count', [], $request);
+        $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request);
         $timeAfterwards = microtime(true);
 
         $treatedContent = $response->getTreatedContent();
-        $count = $treatedContent['count'];
+        $count = $treatedContent['hits']['total'];
 
         if ($this->logThisQuery === true) {
             $this->logger->log('Count Query Log (' . $this->logMessage . '): ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
