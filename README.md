@@ -682,7 +682,7 @@ So `./flow nodeindex:build` or `./flow nodeindex:cleanup` won't overwrite your o
 
 ```
 TYPO3:
-  TYPO3CR:
+  ContentRepository:
     Search:
       elasticSearch:
         indexName: useMoreSpecificIndexName
