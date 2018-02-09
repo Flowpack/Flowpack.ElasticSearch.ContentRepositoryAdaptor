@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
 
 /*
@@ -12,9 +13,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameStrategy;
+use Flowpack\ElasticSearch\Domain\Model\Client;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Configuration\ConfigurationManager;
-use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 
 /**
  * The elasticsearch client to be used by the content repository adapter. Singleton, can be injected.
@@ -26,8 +27,14 @@ use Neos\Flow\ObjectManagement\ObjectManagerInterface;
  *
  * @Flow\Scope("singleton")
  */
-class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
+class ElasticSearchClient extends Client
 {
+    /**
+     * @var IndexNameStrategy
+     * @Flow\Inject
+     */
+    protected $indexNameStrategy;
+
     /**
      * @var DimensionsService
      * @Flow\Inject
@@ -35,54 +42,15 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
     protected $dimensionsService;
 
     /**
-     * The index name to be used for querying (by default "neoscr")
-     *
-     * @var string
-     */
-    protected $indexName;
-
-    /**
-     * MD5 hash of the content dimensions
-     *
      * @var string
      */
     protected $dimensionsHash;
 
     /**
-     * @var array
+     * @param array $dimensionValues
      */
-    protected $dimensions = [];
-
-    /**
-     * @Flow\Inject
-     * @var ConfigurationManager
-     */
-    protected $configurationManager;
-
-    /**
-     * Called by the Flow object framework after creating the object and resolving all dependencies.
-     *
-     * @param integer $cause Creation cause
-     */
-    public function initializeObject($cause)
+    public function setDimensions(array $dimensionValues = [])
     {
-        if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-            $settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
-            $this->indexName = $settings['elasticSearch']['indexName'];
-        }
-    }
-
-    /**
-     * @param string $dimensionsHash
-     */
-    public function setDimensions(array $dimensionValues = null)
-    {
-        $dimensionValues = $dimensionValues === null ? [] : $dimensionValues;
-        if ($dimensionValues === []) {
-            $this->dimensions = [];
-            $this->dimensionsHash = null;
-            return;
-        }
         $this->dimensionsHash = $this->dimensionsService->hash($dimensionValues);
     }
 
@@ -97,31 +65,37 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
     /**
      * @param \Closure $closure
      * @param array $dimensionValues
+     * @throws \Exception
      */
     public function withDimensions(\Closure $closure, array $dimensionValues = [])
     {
-        $previousDimensions = $this->dimensions;
-        $this->setDimensions($dimensionValues);
-        $closure();
-        $this->setDimensions($previousDimensions);
+        $previousDimensionHash = $this->dimensionsHash;
+        try {
+            $this->setDimensions($dimensionValues);
+            $closure();
+            $this->dimensionsHash = $previousDimensionHash;
+        } catch (\Exception $exception) {
+            $this->dimensionsHash = $previousDimensionHash;
+            throw $exception;
+        }
     }
 
     /**
      * Get the index name to be used
      *
      * @return string
+     * @throws Exception
      */
     public function getIndexName()
     {
-        return $this->dimensionsHash ? $this->indexName . '-' . $this->dimensionsHash : $this->indexName;
-    }
-
-    /**
-     * @return string
-     */
-    public function getIndexNamePrefix()
-    {
-        return $this->indexName;
+        $name = trim($this->indexNameStrategy->get());
+        if ($name === '') {
+            throw new Exception('Index name can not be null');
+        }
+        if ($this->dimensionsHash !== null) {
+            $name .= '@' . $this->dimensionsHash;
+        }
+        return $name;
     }
 
     /**
@@ -129,6 +103,7 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      * In Elasticsearch, this index is an *alias* to the currently used index.
      *
      * @return \Flowpack\ElasticSearch\Domain\Model\Index
+     * @throws Exception
      */
     public function getIndex()
     {

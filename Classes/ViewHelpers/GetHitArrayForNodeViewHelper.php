@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\ViewHelpers;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
 use Neos\FluidAdaptor\Core\ViewHelper\AbstractViewHelper;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\Utility\Arrays;
 
 /**
  * View helper to get the raw "hits" array of an ElasticSearchQueryResult for a
@@ -49,7 +50,7 @@ class GetHitArrayForNodeViewHelper extends AbstractViewHelper
         $hitArray = $queryResultObject->searchHitForNode($node);
 
         if (!empty($path)) {
-            return \Neos\Utility\Arrays::getValueByPath($hitArray, $path);
+            return Arrays::getValueByPath($hitArray, $path);
         }
 
         return $hitArray;

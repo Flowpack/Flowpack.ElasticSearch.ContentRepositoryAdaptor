@@ -12,18 +12,18 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  */
 
 use Doctrine\Common\Collections\ArrayCollection;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\WorkspaceIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
-use Neos\ContentRepository\Domain\Factory\NodeFactory;
 use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
 use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
+use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
 use Neos\ContentRepository\Domain\Service\ContentDimensionPresetSourceInterface;
 use Neos\ContentRepository\Domain\Service\Context;
 use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
@@ -44,8 +44,6 @@ use Symfony\Component\Yaml\Yaml;
  */
 class NodeIndexCommandController extends CommandController
 {
-    use IndexWorkspaceTrait;
-
     /**
      * @Flow\InjectConfiguration(package="Neos.Flow")
      * @var array
@@ -75,12 +73,6 @@ class NodeIndexCommandController extends CommandController
      * @var NodeDataRepository
      */
     protected $nodeDataRepository;
-
-    /**
-     * @Flow\Inject
-     * @var NodeFactory
-     */
-    protected $nodeFactory;
 
     /**
      * @Flow\Inject
@@ -117,6 +109,18 @@ class NodeIndexCommandController extends CommandController
      * @var DimensionsService
      */
     protected $dimensionsService;
+
+    /**
+     * @var ContentDimensionCombinator
+     * @Flow\Inject
+     */
+    protected $contentDimensionCombinator;
+
+    /**
+     * @var WorkspaceIndexer
+     * @Flow\Inject
+     */
+    protected $worksaceIndexer;
 
     /**
      * @var array
@@ -186,12 +190,17 @@ class NodeIndexCommandController extends CommandController
      *
      * @param string $identifier
      * @param string $workspace
+     * @param int $workspace
      * @return void
      */
-    public function indexNodeCommand($identifier, $workspace = null)
+    public function indexNodeCommand($identifier, $workspace = null, $postfix = null)
     {
         if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
             $workspace = 'live';
+        }
+
+        if ($postfix !== null) {
+            $this->nodeIndexer->setIndexNamePostfix($postfix);
         }
 
         $indexNode = function ($identifier, Workspace $workspace, array $dimensions) {
@@ -274,12 +283,7 @@ class NodeIndexCommandController extends CommandController
         };
 
         $build = function (array $dimensionsValues) use ($workspace, $limit, $update, $postfix) {
-            $this->executeInternalCommand('buildinternal', \array_filter([
-                'dimensionsValues' => \json_encode($dimensionsValues),
-                'workspace' => $workspace,
-                'postfix' => $postfix,
-                'limit' => $limit,
-            ]));
+            $this->build($dimensionsValues, $workspace, $postfix, $limit);
         };
 
         $refresh = function (array $dimensionsValues) use ($postfix) {
@@ -314,7 +318,7 @@ class NodeIndexCommandController extends CommandController
         $this->nodeIndexer->updateMainAlias();
 
         $this->outputLine();
-        $this->logger->log(vsprintf('+ Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]), LOG_INFO);
+        $this->outputMemoryUsage();
     }
 
     /**
@@ -350,47 +354,45 @@ class NodeIndexCommandController extends CommandController
 
         $this->applyMapping();
         $this->outputErrorHandling();
-        $this->logger->log(vsprintf('+ Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]), LOG_INFO);
+        $this->outputMemoryUsage();
     }
 
     /**
-     * @param string $dimensionsValues
+     * @param array $dimensionsValues
      * @param string $postfix
      * @param string $workspace
      * @param int $limit
      * @Flow\Internal
+     * @throws Exception
      */
-    public function buildInternalCommand($dimensionsValues, $workspace = null, $postfix = null, $limit = null)
+    public function build(array $dimensionsValues, $workspace = null, $postfix = null, $limit = null)
     {
         $dimensionsValues = $this->configureInternalCommand($dimensionsValues, $postfix);
 
         $this->logger->log(vsprintf('Indexing %snodes to %s', [($limit !== null ? 'the first ' . $limit . ' ' : ''), $this->nodeIndexer->getIndexName()]), LOG_INFO);
 
-        $count = 0;
-
         if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
             $workspace = 'live';
         }
 
-        if ($workspace === null) {
-            foreach ($this->workspaceRepository->findAll() as $workspace) {
-                $count += $this->executeBuildWorkspaceCommand(\array_filter([
-                    'workspace' => $workspace->getName(),
-                    'dimensionsValues' => \json_encode($dimensionsValues),
-                    'limit' => $limit,
-                    'postfix' => $postfix
-                ]));
-            }
-        } else {
-            $count += $this->executeBuildWorkspaceCommand(\array_filter([
-                'workspace' => $workspace,
+        $buildWorkspaceCommandOptions = function($workspace = null, array $dimensionsValues, $limit, $postfix) {
+            return \array_filter([
+                'workspace' => $workspace instanceof Workspace ? $workspace->getName() : $workspace,
                 'dimensionsValues' => \json_encode($dimensionsValues),
                 'limit' => $limit,
                 'postfix' => $postfix
-            ]));
+            ]);
+        };
+
+        $count = 0;
+        if ($workspace === null) {
+            foreach ($this->workspaceRepository->findAll() as $workspace) {
+                $count += $this->executeBuildWorkspaceCommand($buildWorkspaceCommandOptions($workspace, $dimensionsValues, $limit, $postfix));
+            }
+        } else {
+            $count += $this->executeBuildWorkspaceCommand($buildWorkspaceCommandOptions($workspace, $dimensionsValues, $limit, $postfix));
         }
 
-        $this->nodeIndexingManager->flushQueues();
         $this->outputErrorHandling();
         $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
     }
@@ -409,13 +411,19 @@ class NodeIndexCommandController extends CommandController
 
         $workspaceLogger = function ($workspaceName, $indexedNodes, $dimensions) {
             if ($dimensions === []) {
-                $this->outputLine('Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)');
+                $message = 'Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)';
             } else {
-                $this->outputLine('Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)');
+                $message = 'Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)';
             }
+            $this->outputLine($message);
         };
-        $count = $this->indexWorkspaceWithDimensions($workspace, $dimensionsValues, $limit, $workspaceLogger);
-        $this->logger->log(vsprintf('Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]), LOG_INFO);
+
+        \Neos\Flow\var_dump(__CLASS__);
+        \Neos\Flow\var_dump($this->nodeIndexer->getIndexName());
+        \Neos\Flow\var_dump(\spl_object_hash($this->nodeIndexer));
+        $count = $this->worksaceIndexer->indexWithDimensions($workspace, $dimensionsValues, $limit, $workspaceLogger);
+
+        $this->outputMemoryUsage();
         $this->outputErrorHandling();
         $this->outputLine($count);
     }
@@ -430,7 +438,7 @@ class NodeIndexCommandController extends CommandController
         $this->configureInternalCommand($dimensionsValues, $postfix);
 
         $this->logger->log(vsprintf('Refresh index %s', [$this->nodeIndexer->getIndexName()]), LOG_INFO);
-        $this->logger->log(vsprintf('+ Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]), LOG_INFO);
+        $this->outputMemoryUsage();
 
         $this->nodeIndexer->getIndex()->refresh();
 
@@ -456,13 +464,15 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
-     * @param string $dimensionsValues
+     * @param string|array $dimensionsValues
      * @param string $postfix
      * @return array
      */
     public function configureInternalCommand($dimensionsValues, $postfix)
     {
-        $dimensionsValues = \json_decode($dimensionsValues, true);
+        if (!\is_array($dimensionsValues)) {
+            $dimensionsValues = \json_decode($dimensionsValues, true);
+        }
 
         $this->nodeIndexer->setIndexNamePostfix($postfix);
         $this->nodeIndexer->setDimensions($dimensionsValues);
@@ -618,5 +628,10 @@ class NodeIndexCommandController extends CommandController
             $mapping->apply();
         }
         $this->logger->log('+ Updated Mapping.', LOG_INFO);
+    }
+
+    protected function outputMemoryUsage()
+    {
+        $this->logger->log(vsprintf('Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]), LOG_INFO);
     }
 }

@@ -164,6 +164,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      */
     public function setIndexNamePostfix($indexNamePostfix)
     {
+        \Neos\Flow\var_dump(__CLASS__);
+        \Neos\Flow\var_dump($indexNamePostfix);
         $this->indexNamePostfix = $indexNamePostfix;
     }
 

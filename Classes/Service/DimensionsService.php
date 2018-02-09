@@ -21,6 +21,9 @@ class DimensionsService
 {
     public function hash(array $dimensionValues)
     {
+        if ($dimensionValues === []) {
+            return null;
+        }
         $targetDimensions = array_map(function ($dimensionValues) {
             return [\is_array($dimensionValues) ? array_shift($dimensionValues) : $dimensionValues];
         }, $dimensionValues);

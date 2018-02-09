@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Client;
 
 /*
@@ -12,7 +13,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Client;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
-use Flowpack\ElasticSearch\Domain\Model\Client;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -31,10 +31,10 @@ class ClientFactory
     /**
      * Create a client
      *
-     * @return Client
+     * @return ElasticSearchClient
      */
     public function create()
     {
-        return $this->clientFactory->create(null, ElasticSearchClient::class);
+        return $this->clientFactory->create('default', ElasticSearchClient::class);
     }
 }
