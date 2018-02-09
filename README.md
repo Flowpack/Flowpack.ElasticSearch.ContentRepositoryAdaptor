@@ -681,8 +681,8 @@ If you need to run serveral (different) neos instances on the same elasticsearch
 So `./flow nodeindex:build` or `./flow nodeindex:cleanup` won't overwrite your other sites index.
 
 ```
-TYPO3:
-  TYPO3CR:
+Neos:
+  ContentRepository:
     Search:
       elasticSearch:
         indexName: useMoreSpecificIndexName
