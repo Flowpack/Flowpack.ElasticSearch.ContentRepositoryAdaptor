@@ -88,12 +88,22 @@ class ElasticSearchClient extends Client
      */
     public function getIndexName()
     {
+        $name = $this->getIndexNamePrefix();
+        if ($this->dimensionsHash !== null) {
+            $name .= '-' . $this->dimensionsHash;
+        }
+        return $name;
+    }
+
+    /**
+     * @return string
+     * @throws Exception
+     */
+    public function getIndexNamePrefix()
+    {
         $name = trim($this->indexNameStrategy->get());
         if ($name === '') {
             throw new Exception('Index name can not be null');
-        }
-        if ($this->dimensionsHash !== null) {
-            $name .= '@' . $this->dimensionsHash;
         }
         return $name;
     }

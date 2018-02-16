@@ -418,9 +418,6 @@ class NodeIndexCommandController extends CommandController
             $this->outputLine($message);
         };
 
-        \Neos\Flow\var_dump(__CLASS__);
-        \Neos\Flow\var_dump($this->nodeIndexer->getIndexName());
-        \Neos\Flow\var_dump(\spl_object_hash($this->nodeIndexer));
         $count = $this->worksaceIndexer->indexWithDimensions($workspace, $dimensionsValues, $limit, $workspaceLogger);
 
         $this->outputMemoryUsage();
