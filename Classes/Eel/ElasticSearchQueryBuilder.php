@@ -648,7 +648,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function query(NodeInterface $contextNode)
     {
-        $this->elasticSearchClient->setDimensions($contextNode->getContext()->getTargetDimensions());
+        $this->elasticSearchClient->setDimensions($contextNode->getContext()->getTargetDimensions() ?: []);
         
         // on indexing, the __parentPath is tokenized to contain ALL parent path parts,
         // e.g. /foo, /foo/bar/, /foo/bar/baz; to speed up matching.. That's why we use a simple "term" filter here.
