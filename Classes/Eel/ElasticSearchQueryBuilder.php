@@ -104,6 +104,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $nodeType the node type to filter for
      * @return ElasticSearchQueryBuilder
+     * @throws QueryBuildingException
      * @api
      */
     public function nodeType($nodeType)
@@ -224,14 +225,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param mixed $value Value for comparison
      * @return ElasticSearchQueryBuilder
      * @api
+     * @throws QueryBuildingException
      */
     public function exactMatch($propertyName, $value)
     {
-        if ($value instanceof NodeInterface) {
-            $value = $value->getIdentifier();
-        }
-
-        return $this->queryFilter('term', [$propertyName => $value]);
+        return $this->queryFilter('term', [$propertyName => $this->convertValue($value)]);
     }
 
     /**
@@ -241,10 +239,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param mixed $value Value for comparison
      * @return ElasticSearchQueryBuilder
      * @api
+     * @throws QueryBuildingException
      */
     public function greaterThan($propertyName, $value)
     {
-        return $this->queryFilter('range', [$propertyName => ['gt' => $value]]);
+        return $this->queryFilter('range', [$propertyName => ['gt' => $this->convertValue($value)]]);
     }
 
     /**
@@ -253,11 +252,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $propertyName Name of the property
      * @param mixed $value Value for comparison
      * @return ElasticSearchQueryBuilder
+     * @throws QueryBuildingException
      * @api
      */
     public function greaterThanOrEqual($propertyName, $value)
     {
-        return $this->queryFilter('range', [$propertyName => ['gte' => $value]]);
+        return $this->queryFilter('range', [$propertyName => ['gte' => $this->convertValue($value)]]);
     }
 
     /**
@@ -267,10 +267,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param mixed $value Value for comparison
      * @return ElasticSearchQueryBuilder
      * @api
+     * @throws QueryBuildingException
      */
     public function lessThan($propertyName, $value)
     {
-        return $this->queryFilter('range', [$propertyName => ['lt' => $value]]);
+        return $this->queryFilter('range', [$propertyName => ['lt' => $this->convertValue($value)]]);
     }
 
     /**
@@ -279,11 +280,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $propertyName Name of the property
      * @param mixed $value Value for comparison
      * @return ElasticSearchQueryBuilder
+     * @throws QueryBuildingException
      * @api
      */
     public function lessThanOrEqual($propertyName, $value)
     {
-        return $this->queryFilter('range', [$propertyName => ['lte' => $value]]);
+        return $this->queryFilter('range', [$propertyName => ['lte' => $this->convertValue($value)]]);
     }
 
     /**
@@ -774,5 +776,22 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         call_user_func_array([$this->request, $method], $arguments);
 
         return $this;
+    }
+
+    /**
+     * @param $value
+     * @return mixed
+     */
+    protected function convertValue($value)
+    {
+        if ($value instanceof NodeInterface) {
+            return $value->getIdentifier();
+        }
+
+        if ($value instanceof \DateTime) {
+            return $value->format('Y-m-d\TH:i:sP');
+        }
+
+        return $value;
     }
 }
