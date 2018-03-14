@@ -338,7 +338,6 @@ class NodeIndexCommandController extends CommandController
      */
     public function createInternalCommand($dimensionsValues, $update = false, $postfix = null)
     {
-
         if ($update === true) {
             $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
         } else {
@@ -375,7 +374,7 @@ class NodeIndexCommandController extends CommandController
             $workspace = 'live';
         }
 
-        $buildWorkspaceCommandOptions = function($workspace = null, array $dimensionsValues, $limit, $postfix) {
+        $buildWorkspaceCommandOptions = function ($workspace = null, array $dimensionsValues, $limit, $postfix) {
             return \array_filter([
                 'workspace' => $workspace instanceof Workspace ? $workspace->getName() : $workspace,
                 'dimensionsValues' => \json_encode($dimensionsValues),
@@ -548,7 +547,7 @@ class NodeIndexCommandController extends CommandController
      */
     protected function executeBuildWorkspaceCommand(array $arguments)
     {
-        ob_start(NULL, 1<<20);
+        ob_start(null, 1<<20);
         $commandIdentifier = 'flowpack.elasticsearch.contentrepositoryadaptor:nodeindex:buildworkspaceinternal';
         $status = Scripts::executeCommand($commandIdentifier, $this->flowSettings, true, $arguments);
         if ($status !== true) {
