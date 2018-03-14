@@ -57,6 +57,7 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
 
         // return empty array if content from response cannot be read as an array
         $treatedContent = $response->getTreatedContent();
+
         return is_array($treatedContent) ? array_keys($treatedContent) : [];
     }
 

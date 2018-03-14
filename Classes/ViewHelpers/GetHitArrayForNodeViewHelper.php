@@ -12,8 +12,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\ViewHelpers;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
-use Neos\FluidAdaptor\Core\ViewHelper\AbstractViewHelper;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\FluidAdaptor\Core\ViewHelper\AbstractViewHelper;
 use Neos\Utility\Arrays;
 
 /**

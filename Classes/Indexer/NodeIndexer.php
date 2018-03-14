@@ -26,13 +26,13 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
-use Neos\Flow\Annotations as Flow;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
 use Neos\ContentRepository\Domain\Service\Context;
 use Neos\ContentRepository\Domain\Service\ContextFactory;
 use Neos\ContentRepository\Search\Indexer\AbstractNodeIndexer;
 use Neos\ContentRepository\Search\Indexer\BulkNodeIndexerInterface;
+use Neos\Flow\Annotations as Flow;
 
 /**
  * Indexer for Content Repository Nodes. Triggered from the NodeIndexingManager.
@@ -137,6 +137,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * Returns the index name to be used for indexing, with optional indexNamePostfix appended.
      *
      * @return string
+     * @throws Exception
      */
     public function getIndexName()
     {
@@ -171,6 +172,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * Return the currently active index to be used for indexing
      *
      * @return Index
+     * @throws Exception
      */
     public function getIndex()
     {
@@ -186,7 +188,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param NodeInterface $node
      * @param string $targetWorkspaceName In case indexing is triggered during publishing, a target workspace name will be passed in
      * @return void
-     * @throws \Neos\ContentRepository\Search\Exception\IndexingException
      */
     public function indexNode(NodeInterface $node, $targetWorkspaceName = null)
     {
@@ -256,7 +257,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                     $this->removeNode($node, $context->getWorkspaceName());
                     $this->logger->log(sprintf('NodeIndexer (%s): Removed node with identifier %s, no longer in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
                 } else {
-                    $this->logger->log(sprintf('NodeIndexer (%s): Could not index node with identifier %s, not found in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+                    $this->logger->log(sprintf('NodeIndexer (%s): Could not index node with identifier %s, not found in workspace %s with dimensions %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName(), json_encode($context->getDimensions())), LOG_DEBUG, null, 'ElasticSearch (CR)');
                 }
             }
         };
@@ -340,6 +341,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * Perform the current bulk request
      *
      * @return void
+     * @throws Exception
      */
     public function flush()
     {
@@ -402,7 +404,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @return void
      * @throws Exception
      * @throws ApiException
-     * @throws \Exception
      */
     public function updateIndexAlias()
     {
@@ -520,6 +521,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * making the "old" index a stale one).
      *
      * @return array<string> a list of index names which were removed
+     * @throws Exception
      */
     public function removeOldIndices()
     {

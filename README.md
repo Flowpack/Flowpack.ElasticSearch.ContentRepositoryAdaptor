@@ -670,9 +670,16 @@ in the NodeTypes.yaml. Generally this works by defining the global mapping at `[
   search:
     elasticSearchMapping:
       _all:
-        index_analyzer: custom_french_analyzer
-        search_analyzer: custom_french_analyzer
+        analyzer: custom_french_analyzer
 ```
+
+Hint: If this leads to error message like:
+
+    mapper [_all] has different [analyzer], mapper [_all] is used by multiple types
+
+you have different (node) types that do not have the same analyzer. Internally Elasticsearch uses the same
+configuration for all fields of the same name, even if they are in different types. Use the `nodeindex:showmapping`
+command to check for any node type that does not have `\_all` configured as expected and adjust it as well.
 
 ## Change the default Elastic index name
 
@@ -681,8 +688,8 @@ If you need to run serveral (different) neos instances on the same elasticsearch
 So `./flow nodeindex:build` or `./flow nodeindex:cleanup` won't overwrite your other sites index.
 
 ```
-TYPO3:
-  TYPO3CR:
+Neos:
+  ContentRepository:
     Search:
       elasticSearch:
         indexName: useMoreSpecificIndexName

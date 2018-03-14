@@ -105,6 +105,7 @@ class ElasticSearchClient extends Client
         if ($name === '') {
             throw new Exception('Index name can not be null');
         }
+
         return $name;
     }
 

@@ -33,6 +33,7 @@ class IndexNameStrategy implements IndexNameStrategyInterface
         if ($name === '') {
             throw new Exception('Index name can not be null, check Settings at path: Neos.ContentRepository.Search.elasticSearch.indexName');
         }
+
         return $name;
     }
 }

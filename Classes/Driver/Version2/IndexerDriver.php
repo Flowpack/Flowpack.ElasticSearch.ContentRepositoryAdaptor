@@ -14,8 +14,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
-use Neos\Flow\Annotations as Flow;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\Flow\Annotations as Flow;
 
 /**
  * Indexer driver for Elasticsearch version 2.x
@@ -79,15 +79,9 @@ class IndexerDriver extends Version1\IndexerDriver
      */
     public function fulltext(NodeInterface $node, array $fulltextIndexOfNode, $targetWorkspaceName = null)
     {
-        $closestFulltextNode = $node;
-        while (!$this->isFulltextRoot($closestFulltextNode)) {
-            $closestFulltextNode = $closestFulltextNode->getParent();
-            if ($closestFulltextNode === null) {
-                // root of hierarchy, no fulltext root found anymore, abort silently...
-                $this->logger->log(sprintf('NodeIndexer: No fulltext root found for node %s (%)', $node->getPath(), $node->getIdentifier()), LOG_WARNING, null, 'ElasticSearch (CR)');
-
-                return null;
-            }
+        $closestFulltextNode = $this->findClosestFulltextRoot($node);
+        if ($closestFulltextNode === null) {
+            return null;
         }
 
         $closestFulltextNodeContextPath = $closestFulltextNode->getContextPath();
@@ -98,7 +92,7 @@ class IndexerDriver extends Version1\IndexerDriver
 
         if ($closestFulltextNode->isRemoved()) {
             // fulltext root is removed, abort silently...
-            $this->logger->log(sprintf('NodeIndexer (%s): Fulltext root found for %s (%s) not updated, it is removed', $closestFulltextNodeDocumentIdentifier, $node->getPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $this->logger->log(sprintf('NodeIndexer (%s): Fulltext root found for %s (%s) not updated, it is removed', $closestFulltextNodeDocumentIdentifier, $node->getContextPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
 
             return null;
         }

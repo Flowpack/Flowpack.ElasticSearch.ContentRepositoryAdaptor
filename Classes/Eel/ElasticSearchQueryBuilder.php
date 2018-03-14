@@ -16,11 +16,11 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
 use Neos\Eel\ProtectedContextAwareInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
 
 /**
  * Query Builder for ElasticSearch Queries
@@ -549,20 +549,25 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function fetch()
     {
-        $timeBefore = microtime(true);
-        $request = $this->request->getRequestAsJson();
-        $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request);
-        $timeAfterwards = microtime(true);
+        try {
+            $timeBefore = microtime(true);
+            $request = $this->request->getRequestAsJson();
+            $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request);
+            $timeAfterwards = microtime(true);
 
-        $this->result = $response->getTreatedContent();
+            $this->result = $response->getTreatedContent();
 
-        $this->result['nodes'] = [];
-        if ($this->logThisQuery === true) {
-            $this->logger->log(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s',
-                $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($this->result['hits']['hits']), $this->result['hits']['total']), LOG_DEBUG);
-        }
-        if (array_key_exists('hits', $this->result) && is_array($this->result['hits']) && count($this->result['hits']) > 0) {
-            $this->result['nodes'] = $this->convertHitsToNodes($this->result['hits']);
+            $this->result['nodes'] = [];
+            if ($this->logThisQuery === true) {
+                $this->logger->log(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s',
+                    $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($this->result['hits']['hits']), $this->result['hits']['total']), LOG_DEBUG);
+            }
+            if (array_key_exists('hits', $this->result) && is_array($this->result['hits']) && count($this->result['hits']) > 0) {
+                $this->result['nodes'] = $this->convertHitsToNodes($this->result['hits']);
+            }
+        } catch (ApiException $exception) {
+            $this->logger->logException($exception);
+            $this->result['nodes'] = [];
         }
 
         return $this->result;
