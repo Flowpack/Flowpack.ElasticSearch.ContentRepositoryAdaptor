@@ -208,6 +208,9 @@ class ElasticSearchQueryTest extends FunctionalTestCase
         $this->assertEquals($expectedChickenBucket, $result[$aggregationTitle]['buckets'][0]);
     }
 
+    /**
+     * @return array
+     */
     public function termSuggestionDataProvider()
     {
         return [
@@ -238,13 +241,13 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->termSuggestions($term, 'title')
+            ->termSuggestions($term, 'title_analyzed')
             ->execute()
             ->getSuggestions();
 
-        $this->assertArrayHasKey('suggestions', $result);
+        $this->assertArrayHasKey('suggestions', $result, 'The result should contain a key suggestions but looks like this ' . print_r($result, 1));
         $this->assertTrue(is_array($result['suggestions']), 'Suggestions must be an array.');
-        $this->assertCount(count($expectedBestSuggestions), $result['suggestions']);
+        $this->assertCount(count($expectedBestSuggestions), $result['suggestions'], sprintf('Expected %s suggestions "[%s]" but got %s suggestions', count($expectedBestSuggestions), implode(',', $expectedBestSuggestions), print_r($result['suggestions'], 1)));
 
         foreach ($expectedBestSuggestions as $key => $expectedBestSuggestion) {
             $suggestion = $result['suggestions'][$key];
@@ -325,12 +328,15 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         $newNode1 = $this->siteNode->createNode('test-node-1', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
         $newNode1->setProperty('title', 'chicken');
+        $newNode1->setProperty('title_analyzed', 'chicken');
 
         $newNode2 = $this->siteNode->createNode('test-node-2', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
         $newNode2->setProperty('title', 'chicken');
+        $newNode2->setProperty('title_analyzed', 'chicken');
 
         $newNode3 = $this->siteNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('TYPO3.Neos.NodeTypes:Page'));
         $newNode3->setProperty('title', 'egg');
+        $newNode3->setProperty('title_analyzed', 'egg');
 
         $dimensionContext = $this->contextFactory->create([
             'workspaceName' => 'live',

@@ -15,7 +15,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 
 /**
- * Default Filtered Query
+ * Filtered query for elastic version 5
  */
 class FilteredQuery extends Version1\Query\FilteredQuery
 {

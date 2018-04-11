@@ -21,6 +21,8 @@ Thus `string` has been split into the new types `text` and `keyword`. Here is a
 | "type": "string", "index": "not_analyzed" | "type": "keyword", "index": true |
 
 If no index configuration is set, the default `"type": "keyword", "index": true` is used.
+So if you upgrade from previous elasticsearch version, check your node type configurations
+if they are configured as expected.
 
 ## Conflicting field types
 
