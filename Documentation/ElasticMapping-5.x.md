@@ -17,8 +17,10 @@ Thus `string` has been split into the new types `text` and `keyword`. Here is a
 | 2.x                                       | 5.x                              |
 |-------------------------------------------|----------------------------------|
 | "type": "string", "index": "no"           | "type": "text", "index": false   |
-| "type": "string"[, "index": "analyzed"]   | "type": "text", "index": true    |
+| "type": "string", "index": "analyzed"     | "type": "text", "index": true    |
 | "type": "string", "index": "not_analyzed" | "type": "keyword", "index": true |
+
+If no index configuration is set, the default `"type": "keyword", "index": true` is used.
 
 ## Conflicting field types
 

@@ -11,18 +11,18 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Mappin
  * source code.
  */
 
+use TYPO3\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
-use TYPO3\Flow\Annotations as Flow;
 use TYPO3\Flow\Error\Result;
 use TYPO3\Flow\Error\Warning;
 use TYPO3\Flow\Object\ObjectManagerInterface;
 use TYPO3\TYPO3CR\Domain\Model\NodeType;
 
 /**
- * NodeTypeMappingBuilder for Elasticsearch version 2.x
+ * NodeTypeMappingBuilder for Elasticsearch version 5.x
  *
  * @Flow\Scope("singleton")
  */
@@ -111,7 +111,7 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
      * | 2.x                                       | 5.x                              |
      * |-------------------------------------------|----------------------------------|
      * | "type": "string", "index": "no"           | "type": "text", "index": false   |
-     * | "type": "string"[, "index": "analyzed"]   | "type": "text", "index": true    |
+     * | "type": "string", "index": "analyzed"     | "type": "text", "index": true    |
      * | "type": "string", "index": "not_analyzed" | "type": "keyword", "index": true |
      *
      * @param array &$mapping
@@ -132,8 +132,11 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
                 } elseif (isset($item['index']) && $item['index'] === 'no') {
                     $item['type'] = 'text';
                     $item['index'] = false;
-                } else {
+                } elseif (isset($item['index']) && $item['index'] === 'analyzed') {
                     $item['type'] = 'text';
+                    $item['index'] = true;
+                } else {
+                    $item['type'] = 'keyword';
                     $item['index'] = true;
                 }
             }
