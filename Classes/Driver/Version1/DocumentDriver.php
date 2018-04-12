@@ -13,7 +13,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DriverInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
@@ -27,14 +28,21 @@ use TYPO3\TYPO3CR\Domain\Model\NodeType;
 class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
 {
     /**
+     * @Flow\Inject
+     * @var NodeTypeMappingBuilderInterface
+     */
+    protected $nodeTypeMappingBuilder;
+
+    /**
      * {@inheritdoc}
      */
     public function delete(NodeInterface $node, $identifier)
     {
+        $nodeTypeMappingBuilder = $this->nodeTypeMappingBuilder;
         return [
             [
                 'delete' => [
-                    '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($node->getNodeType()),
+                    '_type' => $nodeTypeMappingBuilder::convertNodeTypeNameToMappingName($node->getNodeType()),
                     '_id' => $identifier
                 ]
             ]
@@ -46,6 +54,8 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
      */
     public function deleteDuplicateDocumentNotMatchingType(Index $index, $documentIdentifier, NodeType $nodeType)
     {
+        $nodeTypeMappingBuilder = $this->nodeTypeMappingBuilder;
+
         $index->request('DELETE', '/_query', [], json_encode([
             'query' => [
                 'bool' => [
@@ -56,7 +66,7 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
                     ],
                     'must_not' => [
                         'term' => [
-                            '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType->getName())
+                            '_type' => $nodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType->getName())
                         ]
                     ],
                 ]

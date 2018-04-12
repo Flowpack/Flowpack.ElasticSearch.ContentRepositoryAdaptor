@@ -733,7 +733,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
          * we might be able to use https://github.com/elasticsearch/elasticsearch/issues/3300 as soon as it is merged.
          */
         foreach ($hits['hits'] as $hit) {
-            $nodePath = current($hit['fields']['__path']);
+            $nodePath = $hit[isset($hit['fields']) ? 'fields' : '_source']['__path'];
+            if (is_array($nodePath)) {
+                $nodePath = current($nodePath);
+            }
             $node = $this->contextNode->getNode($nodePath);
             if ($node instanceof NodeInterface && !isset($nodes[$node->getIdentifier()])) {
                 $nodes[$node->getIdentifier()] = $node;

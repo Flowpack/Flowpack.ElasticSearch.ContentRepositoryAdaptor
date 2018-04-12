@@ -11,8 +11,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeType;
@@ -25,10 +25,18 @@ use TYPO3\TYPO3CR\Domain\Model\NodeType;
 class DocumentDriver extends Version1\DocumentDriver
 {
     /**
+     * @Flow\Inject
+     * @var NodeTypeMappingBuilderInterface
+     */
+    protected $nodeTypeMappingBuilder;
+
+    /**
      * {@inheritdoc}
      */
     public function deleteDuplicateDocumentNotMatchingType(Index $index, $documentIdentifier, NodeType $nodeType)
     {
+        $nodeTypeMappingBuilder = $this->nodeTypeMappingBuilder;
+
         $result = $index->request('GET', '/_search?scroll=1m', [], json_encode([
             'sort' => ['_doc'],
             'query' => [
@@ -40,7 +48,7 @@ class DocumentDriver extends Version1\DocumentDriver
                     ],
                     'must_not' => [
                         'term' => [
-                            '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType->getName())
+                            '_type' => $nodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType->getName())
                         ]
                     ]
                 ]

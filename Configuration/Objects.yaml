@@ -28,6 +28,11 @@ Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface:
   factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\DriverFactory'
   factoryMethodName: createSystemDriver
 
+Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface:
+  scope: singleton
+  factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\NodeTypeMappingBuilderFactory'
+  factoryMethodName: createNodeTypeMappingBuilder
+
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController:
   properties:
     logger:

@@ -14,11 +14,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
@@ -39,6 +39,12 @@ use TYPO3\TYPO3CR\Search\Indexer\BulkNodeIndexerInterface;
  */
 class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterface
 {
+    /**
+     * @Flow\Inject
+     * @var NodeTypeMappingBuilderInterface
+     */
+    protected $nodeTypeMappingBuilder;
+
     /**
      * Optional postfix for the index, e.g. to have different indexes by timestamp.
      *
@@ -184,7 +190,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
             $nodeType = $node->getNodeType();
 
-            $mappingType = $this->getIndex()->findType(NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
+            $nodeTypeMappingBuilder = $this->nodeTypeMappingBuilder;
+            $mappingType = $this->getIndex()->findType($nodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
 
             if ($this->bulkProcessing === false) {
                 // Remove document with the same contextPathHash but different NodeType, required after NodeType change

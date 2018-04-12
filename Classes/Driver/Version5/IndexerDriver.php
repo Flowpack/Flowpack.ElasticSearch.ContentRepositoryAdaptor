@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -11,25 +11,19 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractNodeTypeMappingBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use TYPO3\Flow\Annotations as Flow;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 
 /**
- * Indexer driver for Elasticsearch version 2.x
+ * Indexer driver for Elasticsearch version 5.x
  *
  * @Flow\Scope("singleton")
  */
-class IndexerDriver extends Version1\IndexerDriver
+class IndexerDriver extends Version2\IndexerDriver
 {
-    /**
-     * @Flow\Inject
-     * @var NodeTypeMappingBuilderInterface
-     */
-    protected $nodeTypeMappingBuilder;
-
     /**
      * {@inheritdoc}
      */
@@ -48,22 +42,21 @@ class IndexerDriver extends Version1\IndexerDriver
                         '_retry_on_conflict' => 3
                     ]
                 ],
-                // http://www.elasticsearch.org/guide/en/elasticsearch/reference/2.4/docs-update.html
+                // http://www.elasticsearch.org/guide/en/elasticsearch/reference/5.0/docs-update.html
                 [
                     'script' => [
+                        'lang' => 'painless',
                         'inline' => '
-                                fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new HashMap());
-                                fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new HashMap());
-                                ctx._source = newData;
-                                ctx._source.__fulltext = fulltext;
-                                ctx._source.__fulltextParts = fulltextParts
-                            ',
+                            HashMap fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new HashMap());
+                            HashMap fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new HashMap());
+                            ctx._source = params.newData;
+                            ctx._source.__fulltext = fulltext;
+                            ctx._source.__fulltextParts = fulltextParts',
                         'params' => [
                             'newData' => $documentData
                         ]
                     ],
-                    'upsert' => $documentData,
-                    'lang' => 'groovy'
+                    'upsert' => $documentData
                 ]
             ];
         }
@@ -116,11 +109,10 @@ class IndexerDriver extends Version1\IndexerDriver
             $upsertFulltextParts[$node->getIdentifier()] = $fulltextIndexOfNode;
         }
 
-        $nodeTypeMappingBuilder = $this->nodeTypeMappingBuilder;
         return [
             [
                 'update' => [
-                    '_type' => $nodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
+                    '_type' => AbstractNodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
                     '_id' => $closestFulltextNodeDocumentIdentifier
                 ]
             ],
@@ -128,31 +120,32 @@ class IndexerDriver extends Version1\IndexerDriver
             [
                 // first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
                 'script' => [
+                    'lang' => 'painless',
                     'inline' => '
                         ctx._source.__fulltext = new HashMap();
-
-                        if (!(ctx._source.containsKey("__fulltextParts") && ctx._source.__fulltextParts instanceof Map)) {
+                        if (!ctx._source.containsKey("__fulltextParts")) {
                             ctx._source.__fulltextParts = new HashMap();
                         }
 
-                        if (nodeIsRemoved || nodeIsHidden || fulltext.size() == 0) {
-                            if (ctx._source.__fulltextParts.containsKey(identifier)) {
-                                ctx._source.__fulltextParts.remove(identifier);
+                        if (params.nodeIsRemoved || params.nodeIsHidden || params.fulltext.size() == 0) {
+                            if (ctx._source.__fulltextParts.containsKey(params.identifier)) {
+                                ctx._source.__fulltextParts.remove(params.identifier);
                             }
                         } else {
-                            ctx._source.__fulltextParts.put(identifier, fulltext);
+                            ctx._source.__fulltextParts.put(params.identifier, params.fulltext);
                         }
 
-                        ctx._source.__fulltextParts.each { originNodeIdentifier, partContent -> partContent.each { bucketKey, content ->
-                                if (ctx._source.__fulltext.containsKey(bucketKey)) {
-                                    value = ctx._source.__fulltext[bucketKey] + " " + content.trim();
+                        for (fulltextPart in ctx._source.__fulltextParts.entrySet()) {
+                            for (entry in fulltextPart.getValue().entrySet()) {
+                                def value = "";
+                                if (ctx._source.__fulltext.containsKey(entry.getKey())) {
+                                    value = ctx._source.__fulltext[entry.getKey()] + " " + entry.getValue().trim();
                                 } else {
-                                    value = content.trim();
+                                    value = entry.getValue().trim();
                                 }
-                                ctx._source.__fulltext[bucketKey] = value;
+                                ctx._source.__fulltext[entry.getKey()] = value;
                             }
-                        }
-                    ',
+                        }',
                     'params' => [
                         'identifier' => $node->getIdentifier(),
                         'nodeIsRemoved' => $node->isRemoved(),
@@ -163,8 +156,7 @@ class IndexerDriver extends Version1\IndexerDriver
                 'upsert' => [
                     '__fulltext' => $fulltextIndexOfNode,
                     '__fulltextParts' => $upsertFulltextParts
-                ],
-                'lang' => 'groovy'
+                ]
             ]
         ];
     }

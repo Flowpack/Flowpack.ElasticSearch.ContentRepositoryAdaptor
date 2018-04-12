@@ -8,16 +8,6 @@ main functionalities:
 * finding Nodes in TypoScript / Eel by arbitrary queries
 * Full-Text Indexing of Pages and other Documents (of course including the full content)
 
-## Elastic version support
-
-You can switch the Elastic driver by editing ```Settings.yaml```
-(```Flowpack.ElasticSearch.ContentRepositoryAdaptor.driver.version```) with the following value:
-
-* ```1.x``` to support Elastic 1.2 to 1.7
-* ```2.x``` to support Elastic 2.x
-
-_Currently the Driver interfaces as not marked as API, and can be changed to adapt to future needs (especially the support of Elastic v5)._
-
 ## Relevant Packages
 
 * [TYPO3.TYPO3CR.Search](https://www.neos.io/download-and-extend/packages/typo3/typo3-typo3cr-search.html): provides common functionality for searching TYPO3CR nodes,
@@ -43,11 +33,26 @@ Then, ensure to update `<your-elasticsearch>/config/elasticsearch.yml` as explai
 
 Finally, run `./flow nodeindex:build`, and add the search plugin to your page. It should "just work".
 
-## Elasticsearch Configuration file elasticsearch.yml
+## Elastic version support
+
+You can switch the Elastic driver by editing ```Settings.yaml```
+(```Flowpack.ElasticSearch.ContentRepositoryAdaptor.driver.version```) with the following value:
+
+* ```1.x``` to support Elastic 1.2 to 1.7
+* ```2.x``` to support Elastic 2.x
+* ```5.x``` to support Elastic 5.x
+
+_Currently the Driver interfaces are not marked as API, and can be changed to adapt to future needs._
+
+**Note:** When using Elasticsearch 5.x changes to the types may need to be done in your mapping.
+More information on the [mapping in ElasticSearch 5.x](Documentation/ElasticMapping-5.x.md).
+
+### Elasticsearch Configuration file elasticsearch.yml
 
 There is a need, depending on your version of Elasticsearch, to add specific configuration to your
 Elasticsearch Configuration File `<your-elasticsearch>/config/elasticsearch.yml`.
 
+- [ElasticSearch 5.x](Documentation/ElasticConfiguration-5.x.md)
 - [ElasticSearch 2.x](Documentation/ElasticConfiguration-2.x.md)
 - [ElasticSearch 1.6 to 1.7](Documentation/ElasticConfiguration-1.6-1.7.md)
 - [ElasticSearch 1.4 to 1.5](Documentation/ElasticConfiguration-1.4-1.5.md)
@@ -317,6 +322,9 @@ for all your filterable properties, or else filtering won't work on them properl
           index: 'not_analyzed'
 ```
 
+**Note:** When using Elasticsearch 5.x the mapping needs to be adjusted in a different way.
+More information on the [mapping in ElasticSearch 5.x](Documentation/ElasticMapping-5.x.md).
+
 ## Sorting
 
 This package adapts Elasticsearchs sorting capabilities. You can add multiple sort operations to your query.
@@ -486,6 +494,9 @@ suggestions = ${Search.query(site)...suggestions('my_suggestions', this.suggesti
 
 **The default configuration supports most usecases and often may not need to be touched, as this package comes
 with sane defaults for all Neos data types.**
+
+**Note:** When using Elasticsearch 5.x changes to the your mapping may be needed. More information
+on the [mapping in ElasticSearch 5.x](Documentation/ElasticMapping-5.x.md).
 
 Indexing of properties is configured at two places. The defaults per-data-type are configured
 inside `TYPO3.TYPO3CR.Search.defaultConfigurationPerType` of `Settings.yaml`.
