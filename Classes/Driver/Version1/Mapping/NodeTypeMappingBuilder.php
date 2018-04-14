@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Mapping;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -11,20 +11,22 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractNodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
 use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
+use Neos\Error\Messages\Result;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Configuration\ConfigurationManager;
 
 /**
+ * NodeTypeMappingBuilder for Elasticsearch version 1.x
  * Builds the mapping information for ContentRepository Node Types in Elasticsearch
- *
  * @Flow\Scope("singleton")
  */
-class NodeTypeMappingBuilder
+class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
 {
     /**
      * The default configuration for a given property type in NodeTypes.yaml, if no explicit elasticSearch section defined there.
@@ -40,7 +42,7 @@ class NodeTypeMappingBuilder
     protected $nodeTypeManager;
 
     /**
-     * @var \Neos\Error\Messages\Result
+     * @var Result
      */
     protected $lastMappingErrors;
 
@@ -77,12 +79,12 @@ class NodeTypeMappingBuilder
     /**
      * Builds a Mapping Collection from the configured node types
      *
-     * @param \Flowpack\ElasticSearch\Domain\Model\Index $index
-     * @return \Flowpack\ElasticSearch\Mapping\MappingCollection<\Flowpack\ElasticSearch\Domain\Model\Mapping>
+     * @param Index $index
+     * @return MappingCollection<\Flowpack\ElasticSearch\Domain\Model\Mapping>
      */
     public function buildMappingInformation(Index $index)
     {
-        $this->lastMappingErrors = new \Neos\Error\Messages\Result();
+        $this->lastMappingErrors = new Result();
 
         $mappings = new MappingCollection(MappingCollection::TYPE_ENTITY);
 
@@ -99,7 +101,7 @@ class NodeTypeMappingBuilder
                 $mapping->setFullMapping($fullConfiguration['search']['elasticSearchMapping']);
             }
 
-            // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/mapping-root-object-type.html#_dynamic_templates
+            // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/dynamic-templates.html
             // 'not_analyzed' is necessary
             $mapping->addDynamicTemplate('dimensions', [
                 'path_match' => '__dimensionCombinations.*',
@@ -135,7 +137,7 @@ class NodeTypeMappingBuilder
     }
 
     /**
-     * @return \Neos\Error\Messages\Result
+     * @return Result
      */
     public function getLastMappingErrors()
     {
