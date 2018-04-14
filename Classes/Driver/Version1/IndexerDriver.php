@@ -13,7 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractIndexerDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Flow\Annotations as Flow;
@@ -25,6 +25,12 @@ use Neos\Flow\Annotations as Flow;
  */
 class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterface
 {
+    /**
+     * @Flow\Inject
+     * @var NodeTypeMappingBuilderInterface
+     */
+    protected $nodeTypeMappingBuilder;
+
     /**
      * {@inheritdoc}
      */
@@ -96,10 +102,11 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
 
         $this->logger->log(sprintf('NodeIndexer (%s): Updated fulltext index for %s (%s)', $closestFulltextNodeDocumentIdentifier, $closestFulltextNodeContextPath, $closestFulltextNode->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
 
+        $nodeTypeMappingBuilder = $this->nodeTypeMappingBuilder;
         return [
             [
                 'update' => [
-                    '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
+                    '_type' => $nodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
                     '_id' => $closestFulltextNodeDocumentIdentifier
                 ]
             ],
