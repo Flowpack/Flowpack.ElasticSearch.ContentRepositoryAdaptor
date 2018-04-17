@@ -18,8 +18,11 @@ use Flowpack\ElasticSearch\Mapping\MappingCollection;
 use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\Error\Messages\Result;
+use Neos\Error\Messages\Warning;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Configuration\ConfigurationManager;
+use Neos\Flow\Configuration\Exception\InvalidConfigurationTypeException;
+use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 
 /**
  * NodeTypeMappingBuilder for Elasticsearch version 1.x
@@ -42,11 +45,6 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
     protected $nodeTypeManager;
 
     /**
-     * @var Result
-     */
-    protected $lastMappingErrors;
-
-    /**
      * @Flow\Inject
      * @var ConfigurationManager
      */
@@ -56,11 +54,12 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
      * Called by the Flow object framework after creating the object and resolving all dependencies.
      *
      * @param integer $cause Creation cause
+     * @throws InvalidConfigurationTypeException
      */
     public function initializeObject($cause)
     {
-        if ($cause === \Neos\Flow\ObjectManagement\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-            $settings = $this->configurationManager->getConfiguration(\Neos\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
+        if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
+            $settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
             $this->defaultConfigurationPerType = $settings['defaultConfigurationPerType'];
         }
     }
@@ -126,7 +125,7 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
                         $mapping->setPropertyByPath($propertyName, $this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping']);
                     }
                 } else {
-                    $this->lastMappingErrors->addWarning(new \Neos\Error\Messages\Warning('Node Type "' . $nodeTypeName . '" - property "' . $propertyName . '": No ElasticSearch Mapping found.'));
+                    $this->lastMappingErrors->addWarning(new Warning('Node Type "' . $nodeTypeName . '" - property "' . $propertyName . '": No ElasticSearch Mapping found.'));
                 }
             }
 
@@ -134,13 +133,5 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
         }
 
         return $mappings;
-    }
-
-    /**
-     * @return Result
-     */
-    public function getLastMappingErrors()
-    {
-        return $this->lastMappingErrors;
     }
 }
