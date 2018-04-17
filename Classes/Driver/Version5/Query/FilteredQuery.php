@@ -23,12 +23,10 @@ class FilteredQuery extends Version1\Query\FilteredQuery
     /**
      * {@inheritdoc}
      */
-    public function fulltext($searchWord)
+    public function fulltext(string $searchWord, ?array $options = [])
     {
         $this->appendAtPath('query.bool.must', [
-            'query_string' => [
-                'query' => $searchWord
-            ]
+            'query_string' => array_merge($options, ['query' => $searchWord])
         ]);
     }
 
