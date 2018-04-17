@@ -128,8 +128,8 @@ search underneath the current site node (like in the example above).
 
 Furthermore, the following operators are supported:
 
-* `nodeType("Your.Node:Type")`
-* `exactMatch('propertyName', value)`; supports simple types: `exactMatch('tag', 'foo')`, or node references: `exactMatch('author', authorNode)`
+* `nodeType('Your.Node:Type')`
+* `exactMatch('propertyName', value)` -- supports simple types: `exactMatch('tag', 'foo')`, or node references: `exactMatch('author', authorNode)`
 * `greaterThan('propertyName', value)` -- range filter with property values greater than the given value
 * `greaterThanOrEqual('propertyName', value)` -- range filter with property values greater than or equal to the given value
 * `lessThan('propertyName', value)` -- range filter with property values less than the given value
@@ -138,7 +138,7 @@ Furthermore, the following operators are supported:
    will first sort by tag ascending, and then by date descending.
 * `limit(5)` -- only return five results. If not specified, the default limit by Elasticsearch applies (which is at 10 by default)
 * `from(5)` -- return the results starting from the 6th one
-* `fulltext(...)` -- do a query_string query on the Fulltext Index
+* `fulltext('searchWord', options)` -- do a query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-query-string-query.html) to the query_string
 
 Furthermore, there is a more low-level operator which can be used to add arbitrary Elasticsearch filters:
 

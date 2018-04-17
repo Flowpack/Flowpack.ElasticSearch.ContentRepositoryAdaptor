@@ -617,13 +617,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * Match the searchword against the fulltext index
      *
      * @param string $searchWord
+     * @param array|null $options Options to configure the query_string, see https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-query-string-query.html
      * @return QueryBuilderInterface
      * @api
      */
-    public function fulltext($searchWord)
+    public function fulltext($searchWord, ?array $options = [])
     {
         // We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
-        $this->request->fulltext(trim(json_encode($searchWord), '"'));
+        $this->request->fulltext(trim(json_encode($searchWord), '"'), $options);
         $this->request->highlight(150, 2);
 
         return $this;
