@@ -38,11 +38,10 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
      */
     public function delete(NodeInterface $node, $identifier)
     {
-        $nodeTypeMappingBuilder = $this->nodeTypeMappingBuilder;
         return [
             [
                 'delete' => [
-                    '_type' => $nodeTypeMappingBuilder::convertNodeTypeNameToMappingName($node->getNodeType()),
+                    '_type' => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($node->getNodeType()),
                     '_id' => $identifier
                 ]
             ]
@@ -54,8 +53,6 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
      */
     public function deleteDuplicateDocumentNotMatchingType(Index $index, $documentIdentifier, NodeType $nodeType)
     {
-        $nodeTypeMappingBuilder = $this->nodeTypeMappingBuilder;
-
         $index->request('DELETE', '/_query', [], json_encode([
             'query' => [
                 'bool' => [
@@ -66,7 +63,7 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
                     ],
                     'must_not' => [
                         'term' => [
-                            '_type' => $nodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType->getName())
+                            '_type' => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($nodeType->getName())
                         ]
                     ],
                 ]

@@ -201,8 +201,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
             $nodeType = $node->getNodeType();
 
-            $nodeTypeMappingBuilder = $this->nodeTypeMappingBuilder;
-            $mappingType = $this->getIndex()->findType($nodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType));
+            $mappingType = $this->getIndex()->findType($this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($nodeType));
 
             if ($this->bulkProcessing === false) {
                 // Remove document with the same contextPathHash but different NodeType, required after NodeType change

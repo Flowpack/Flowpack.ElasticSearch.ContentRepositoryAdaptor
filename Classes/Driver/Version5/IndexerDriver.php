@@ -113,7 +113,7 @@ class IndexerDriver extends Version2\IndexerDriver
         return [
             [
                 'update' => [
-                    '_type' => AbstractNodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
+                    '_type' => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
                     '_id' => $closestFulltextNodeDocumentIdentifier
                 ]
             ],

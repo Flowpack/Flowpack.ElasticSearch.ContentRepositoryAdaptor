@@ -110,11 +110,10 @@ class IndexerDriver extends Version1\IndexerDriver
             $upsertFulltextParts[$node->getIdentifier()] = $fulltextIndexOfNode;
         }
 
-        $nodeTypeMappingBuilder = $this->nodeTypeMappingBuilder;
         return [
             [
                 'update' => [
-                    '_type' => $nodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
+                    '_type' => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
                     '_id' => $closestFulltextNodeDocumentIdentifier
                 ]
             ],
