@@ -35,8 +35,6 @@ class DocumentDriver extends Version1\DocumentDriver
      */
     public function deleteDuplicateDocumentNotMatchingType(Index $index, $documentIdentifier, NodeType $nodeType)
     {
-        $nodeTypeMappingBuilder = $this->nodeTypeMappingBuilder;
-
         $result = $index->request('GET', '/_search?scroll=1m', [], json_encode([
             'sort' => ['_doc'],
             'query' => [
@@ -48,7 +46,7 @@ class DocumentDriver extends Version1\DocumentDriver
                     ],
                     'must_not' => [
                         'term' => [
-                            '_type' => $nodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType->getName())
+                            '_type' => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($nodeType->getName())
                         ]
                     ]
                 ]

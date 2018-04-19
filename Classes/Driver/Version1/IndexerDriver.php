@@ -108,11 +108,10 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
 
         $this->logger->log(sprintf('NodeIndexer (%s): Updated fulltext index for %s (%s)', $closestFulltextNodeDocumentIdentifier, $closestFulltextNodeContextPath, $closestFulltextNode->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
 
-        $nodeTypeMappingBuilder = $this->nodeTypeMappingBuilder;
         return [
             [
                 'update' => [
-                    '_type' => $nodeTypeMappingBuilder::convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
+                    '_type' => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
                     '_id' => $closestFulltextNodeDocumentIdentifier
                 ]
             ],
