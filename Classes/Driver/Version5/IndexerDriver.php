@@ -17,7 +17,6 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractNodeTypeMappi
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 
-
 /**
  * Indexer driver for Elasticsearch version 5.x
  *
