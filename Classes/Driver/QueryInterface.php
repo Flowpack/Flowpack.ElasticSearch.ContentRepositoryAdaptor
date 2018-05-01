@@ -72,7 +72,7 @@ interface QueryInterface
      * Match the search word against the fulltext index
      *
      * @param string $searchWord
-     * @param array|null $options Options to configure the query_string
+     * @param array $options Options to configure the query_string
      * @return void
      * @api
      */
