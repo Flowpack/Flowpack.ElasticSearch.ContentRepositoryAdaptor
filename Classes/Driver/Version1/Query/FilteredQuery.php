@@ -53,7 +53,7 @@ class FilteredQuery extends AbstractQuery
     /**
      * {@inheritdoc}
      */
-    public function fulltext(string $searchWord, ?array $options = [])
+    public function fulltext(string $searchWord, array $options = [])
     {
         $this->appendAtPath('query.filtered.query.bool.must', [
             'query_string' => array_merge($options, ['query' => $searchWord])
