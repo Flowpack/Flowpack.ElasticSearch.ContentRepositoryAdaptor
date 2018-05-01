@@ -157,11 +157,7 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
      */
     protected function adjustStringTypeMapping(array &$mapping)
     {
-        foreach ($mapping as &$item) {
-            if (!is_array($item)) {
-                continue;
-            }
-
+        $adjustStringTypeMapping = function (&$item) {
             if (isset($item['type']) && $item['type'] === 'string') {
                 if (isset($item['index']) && $item['index'] === 'not_analyzed') {
                     $item['type'] = 'keyword';
@@ -178,8 +174,15 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
                     $item['index'] = true;
                 }
             }
+        };
 
-            $this->adjustStringTypeMapping($item);
+        $adjustStringTypeMapping($mapping);
+
+        foreach ($mapping as &$item) {
+            if (is_array($item)) {
+                $adjustStringTypeMapping($mapping);
+                $this->adjustStringTypeMapping($item);
+            }
         }
     }
 }
