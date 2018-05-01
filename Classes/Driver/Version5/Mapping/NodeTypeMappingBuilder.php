@@ -37,7 +37,7 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
     {
         parent::initializeObject($cause);
         if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-            $this->adjustStringTypeMapping($this->defaultConfigurationPerType);
+            $this->migrateConfigurationForElasticVersion5($this->defaultConfigurationPerType);
         }
     }
 
@@ -64,7 +64,7 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
             $fullConfiguration = $nodeType->getFullConfiguration();
             if (isset($fullConfiguration['search']['elasticSearchMapping'])) {
                 $fullMapping = $fullConfiguration['search']['elasticSearchMapping'];
-                $this->adjustStringTypeMapping($fullMapping);
+                $this->migrateConfigurationForElasticVersion5($fullMapping);
                 $mapping->setFullMapping($fullMapping);
             }
 
@@ -84,7 +84,7 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
                 if (isset($propertyConfiguration['search']) && isset($propertyConfiguration['search']['elasticSearchMapping'])) {
                     if (is_array($propertyConfiguration['search']['elasticSearchMapping'])) {
                         $propertyMapping = $propertyConfiguration['search']['elasticSearchMapping'];
-                        $this->adjustStringTypeMapping($propertyMapping);
+                        $this->migrateConfigurationForElasticVersion5($propertyMapping);
                         $mapping->setPropertyByPath($propertyName, $propertyMapping);
                     }
                 } elseif (isset($propertyConfiguration['type']) && isset($this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping'])) {
@@ -100,6 +100,45 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
         }
 
         return $mappings;
+    }
+
+    /**
+     * @param array $mapping
+     */
+    protected function migrateConfigurationForElasticVersion5(array &$mapping)
+    {
+        $this->migrateIncludeInAllToCopyTo($mapping);
+        $this->adjustStringTypeMapping($mapping);
+    }
+
+    /**
+     * include_in_all is deprecated with elasticsearch 5.x and raises
+     * warnings on index creation
+     *
+     * @param array $mapping
+     */
+    protected function migrateIncludeInAllToCopyTo(array &$mapping)
+    {
+        $migrateIncludeInAll = function (&$mapping) {
+            if (isset($mapping['include_in_all'])) {
+                if ((bool)$mapping['include_in_all'] === true) {
+                    $mapping['copy_to'] = '_all';
+                }
+                unset($mapping['include_in_all']);
+            }
+        };
+
+        $migrateIncludeInAll($mapping);
+
+        foreach ($mapping as &$item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $migrateIncludeInAll($mapping);
+
+            $this->migrateIncludeInAllToCopyTo($item);
+        }
     }
 
     /**
