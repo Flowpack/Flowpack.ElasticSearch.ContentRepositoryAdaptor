@@ -107,7 +107,8 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function fullTextSearchReturnsTheDocumentNode() {
+    public function fullTextSearchReturnsTheDocumentNode()
+    {
         /** @var ElasticSearchQueryResult $result */
         $result = $this->getQueryBuilder()
             ->fulltext('circum*')
@@ -125,7 +126,8 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function fullTextHighlighting() {
+    public function fullTextHighlighting()
+    {
         $queryBuilder = $this->getQueryBuilder();
 
         /** @var NodeInterface $resultNode */
