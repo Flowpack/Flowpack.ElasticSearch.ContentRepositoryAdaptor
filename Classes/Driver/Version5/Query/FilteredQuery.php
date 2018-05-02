@@ -27,7 +27,8 @@ class FilteredQuery extends Version1\Query\FilteredQuery
     {
         $this->appendAtPath('query.bool.must', [
             'query_string' => [
-                'query' => $searchWord
+                'query' => $searchWord,
+                'fields' => ['__fulltext*']
             ]
         ]);
     }
