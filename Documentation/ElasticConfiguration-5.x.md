@@ -12,4 +12,4 @@ network.host: 127.0.0.1
 ```
 
 **Note:** When using Elasticsearch 5.x changes to the mapping may be needed.
-More information on the [mapping in ElasticSearch 5.x](Documentation/ElasticMapping-5.x.md).
+More information on the [mapping in ElasticSearch 5.x](ElasticMapping-5.x.md).
