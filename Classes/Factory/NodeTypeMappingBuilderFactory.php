@@ -11,9 +11,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
  * source code.
  */
 
-use Neos\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\DriverConfigurationException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
+use Neos\Flow\Annotations as Flow;
 
 /**
  * A factory for creating the NodeTypeMappingBuilder

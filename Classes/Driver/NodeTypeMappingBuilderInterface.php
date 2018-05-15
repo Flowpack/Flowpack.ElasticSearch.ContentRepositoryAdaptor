@@ -13,7 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
-use Neos\Flow\Error\Result;
+use Neos\Error\Messages\Result;
 
 /**
  * NodeTypeMappingBuilder Interface

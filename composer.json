@@ -6,6 +6,7 @@
     "license": ["LGPL-3.0-only"],
     "require": {
         "php": ">=7.0",
+
         "flowpack/elasticsearch": "^2.0 || dev-master",
         "neos/content-repository": "^3.0 || ^4.0 || dev-master",
         "neos/content-repository-search": "^3.0 || ^4.0 || dev-master",

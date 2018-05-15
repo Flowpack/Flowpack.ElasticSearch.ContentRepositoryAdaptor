@@ -11,12 +11,12 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  * source code.
  */
 
+use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\Error\Messages\Result;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Configuration\Exception\InvalidConfigurationTypeException;
 use Neos\Flow\Configuration\ConfigurationManager;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
-use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 
 /**
  * Builds the mapping information for Content Repository Node Types in Elasticsearch
@@ -39,15 +39,15 @@ abstract class AbstractNodeTypeMappingBuilder implements NodeTypeMappingBuilderI
     protected $nodeTypeManager;
 
     /**
+     * @var Result
+     */
+    protected $lastMappingErrors;
+
+    /**
      * @Flow\Inject
      * @var ConfigurationManager
      */
     protected $configurationManager;
-
-    /**
-     * @var Result
-     */
-    protected $lastMappingErrors;
 
     /**
      * Called by the Flow object framework after creating the object and resolving all dependencies.

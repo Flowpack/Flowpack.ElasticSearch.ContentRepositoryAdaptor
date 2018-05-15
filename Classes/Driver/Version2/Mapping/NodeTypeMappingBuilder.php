@@ -11,8 +11,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\Mappin
  * source code.
  */
 
-use Neos\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
+use Neos\Flow\Annotations as Flow;
 
 /**
  * NodeTypeMappingBuilder for Elasticsearch version 2.x

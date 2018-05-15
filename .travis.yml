@@ -18,7 +18,6 @@ matrix:
 
 before_install:
   - export NEOS_TARGET_VERSION=3.0
-  - export JAVA_HOME=/usr/lib/jvm/java-8-oracle
   - cd ..
   - if [ "$ES" = 1 ]; then wget --no-check-certificate https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.6.zip && unzip elasticsearch-1.7.6.zip && mv elasticsearch-1.7.6 elasticsearch; fi
   - if [ "$ES" = 2 ]; then wget --no-check-certificate https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-2.4.6.zip && unzip elasticsearch-2.4.6.zip && mv elasticsearch-2.4.6 elasticsearch; fi

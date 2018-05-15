@@ -8,9 +8,9 @@ main functionalities:
 * finding Nodes in Fusion / Eel by arbitrary queries
 * Full-Text Indexing of Pages and other Documents (of course including the full content)
 
-_Currently the Driver interfaces is not marked as API, and can be changed to adapt to future needs (especially the support of Elastic v5)._
-
 ## Relevant Packages
+
+* [Neos.ContentRepository.Search](https://www.neos.io/download-and-extend/packages/neos/neos-content-repository-search.html): provides common functionality for searching Neos Content Repository nodes. Does not contain a search backend.
 * [Flowpack.ElasticSearch](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch.html): provides common code for working with Elasticsearch
 * [Flowpack.ElasticSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch-contentrepositoryadaptor.html): this package
 * [Flowpack.SimpleSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-simplesearch-contentrepositoryadaptor.html): an alternative search backend (to be used instead of this package); storing the search index in SQLite
@@ -24,11 +24,6 @@ composer require 'flowpack/elasticsearch-contentrepositoryadaptor'
 composer require 'flowpack/searchplugin'
 ```
 Ensure to update `<your-elasticsearch>/config/elasticsearch.yml` as explained below; then start Elasticsearch.
-
-Then just run `./flow nodeindex:build` and add the search plugin to your page. It should "just work".
-
-## Elasticsearch Configuration file *elasticsearch.yml*
-Then, ensure to update `<your-elasticsearch>/config/elasticsearch.yml` as explained below; then start Elasticsearch.
 
 Finally, run `./flow nodeindex:build`, and add the search plugin to your page. It should "just work".
 
@@ -45,6 +40,8 @@ _Currently the Driver interfaces are not marked as API, and can be changed to ad
 
 **Note:** When using Elasticsearch 5.x changes to the types may need to be done in your mapping.
 More information on the [mapping in ElasticSearch 5.x](Documentation/ElasticMapping-5.x.md).
+
+### Elasticsearch Configuration file elasticsearch.yml
 
 There is a need, depending on your version of Elasticsearch, to add specific configuration to your
 Elasticsearch Configuration File `<your-elasticsearch>/config/elasticsearch.yml`.

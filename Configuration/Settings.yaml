@@ -2,13 +2,13 @@ Flowpack:
   ElasticSearch:
     ContentRepositoryAdaptor:
       driver:
-        version: 1.x
+        version: '1.x'
         mapping:
-          1.x:
+          '1.x':
             query:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query\FilteredQuery
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query\FilteredQuery'
               arguments:
-                request:
+                request: &request_version1
                   query:
                     filtered:
                       query:
@@ -34,75 +34,45 @@ Flowpack:
                                   lt: now
                   fields:
                     - __path
-                unsupportedFieldsInCountRequest:
-                  - fields
-                  - sort
-                  - from
-                  - size
-                  - highlight
-                  - aggs
-                  - aggregations
-                  - suggest
+                unsupportedFieldsInCountRequest: &unsupportedFieldsInCountRequest_version1
+                  - 'fields'
+                  - 'sort'
+                  - 'from'
+                  - 'size'
+                  - 'highlight'
+                  - 'aggs'
+                  - 'aggregations'
+                  - 'suggest'
+
             document:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\DocumentDriver
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\DocumentDriver'
             indexer:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexerDriver
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexerDriver'
             indexManagement:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexDriver
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexDriver'
             request:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\RequestDriver
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\RequestDriver'
             system:
               className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\SystemDriver
             nodeTypeMappingBuilder:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Mapping\NodeTypeMappingBuilder'
 
-          2.x:
+          '2.x':
             query:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\Query\FilteredQuery
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\Query\FilteredQuery'
               arguments:
                 request:
-                  query:
-                    filtered:
-                      query:
-                        bool:
-                          must:
-                            -
-                              match_all: {  }
-                      filter:
-                        bool:
-                          must: {  }
-                          should: {  }
-                          must_not:
-                            -
-                              term:
-                                _hidden: true
-                            -
-                              range:
-                                _hiddenBeforeDateTime:
-                                  gt: now
-                            -
-                              range:
-                                _hiddenAfterDateTime:
-                                  lt: now
-                  fields:
-                    - __path
+                  <<: *request_version1
                 unsupportedFieldsInCountRequest:
-                  - fields
-                  - sort
-                  - from
-                  - size
-                  - highlight
-                  - aggs
-                  - aggregations
-                  - suggest
+                  <<: *unsupportedFieldsInCountRequest_version1
             document:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\DocumentDriver
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\DocumentDriver'
             indexer:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexerDriver
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexerDriver'
             indexManagement:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexDriver
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexDriver'
             request:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\RequestDriver
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\RequestDriver'
             system:
               className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\SystemDriver
             nodeTypeMappingBuilder:

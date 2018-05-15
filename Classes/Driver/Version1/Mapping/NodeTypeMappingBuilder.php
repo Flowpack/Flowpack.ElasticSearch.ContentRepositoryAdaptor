@@ -16,65 +16,17 @@ use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
 use Neos\ContentRepository\Domain\Model\NodeType;
-use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\Error\Messages\Result;
 use Neos\Error\Messages\Warning;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Configuration\ConfigurationManager;
-use Neos\Flow\Configuration\Exception\InvalidConfigurationTypeException;
-use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 
 /**
  * NodeTypeMappingBuilder for Elasticsearch version 1.x
- * Builds the mapping information for ContentRepository Node Types in Elasticsearch
+ *
  * @Flow\Scope("singleton")
  */
 class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
 {
-    /**
-     * The default configuration for a given property type in NodeTypes.yaml, if no explicit elasticSearch section defined there.
-     *
-     * @var array
-     */
-    protected $defaultConfigurationPerType;
-
-    /**
-     * @Flow\Inject
-     * @var NodeTypeManager
-     */
-    protected $nodeTypeManager;
-
-    /**
-     * @Flow\Inject
-     * @var ConfigurationManager
-     */
-    protected $configurationManager;
-
-    /**
-     * Called by the Flow object framework after creating the object and resolving all dependencies.
-     *
-     * @param integer $cause Creation cause
-     * @throws InvalidConfigurationTypeException
-     */
-    public function initializeObject($cause)
-    {
-        if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-            $settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
-            $this->defaultConfigurationPerType = $settings['defaultConfigurationPerType'];
-        }
-    }
-
-    /**
-     * Converts a ContentRepository Node Type name into a name which can be used for an Elasticsearch Mapping
-     *
-     * @param string $nodeTypeName
-     * @return string
-     */
-    public function convertNodeTypeNameToMappingName($nodeTypeName)
-    {
-        return str_replace('.', '-', $nodeTypeName);
-    }
-
     /**
      * Builds a Mapping Collection from the configured node types
      *
