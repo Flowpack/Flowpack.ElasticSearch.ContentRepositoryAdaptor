@@ -9,3 +9,12 @@
   superTypes:
     'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Type1': true
     'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Type2': true
+
+'Neos.Neos:Document':
+  properties:
+    title_analyzed:
+      type: string
+      search:
+        elasticSearchMapping:
+          type: string
+          index: analyzed

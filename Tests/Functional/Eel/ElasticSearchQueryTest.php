@@ -121,17 +121,6 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     }
 
     /**
-     * @return QueryBuilderInterface
-     */
-    protected function getQueryBuilder()
-    {
-        /** @var ElasticSearchQueryBuilder $query */
-        $query = $this->objectManager->get(ElasticSearchQueryBuilder::class);
-
-        return $query->query($this->siteNode);
-    }
-
-    /**
      * @test
      */
     public function filterByNodeType()
@@ -208,6 +197,9 @@ class ElasticSearchQueryTest extends FunctionalTestCase
         $this->assertEquals($expectedChickenBucket, $result[$aggregationTitle]['buckets'][0]);
     }
 
+    /**
+     * @return array
+     */
     public function termSuggestionDataProvider()
     {
         return [
@@ -238,13 +230,13 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->termSuggestions($term, 'title')
+            ->termSuggestions($term, 'title_analyzed')
             ->execute()
             ->getSuggestions();
 
-        $this->assertArrayHasKey('suggestions', $result);
+        $this->assertArrayHasKey('suggestions', $result, 'The result should contain a key suggestions but looks like this ' . print_r($result, 1));
         $this->assertTrue(is_array($result['suggestions']), 'Suggestions must be an array.');
-        $this->assertCount(count($expectedBestSuggestions), $result['suggestions']);
+        $this->assertCount(count($expectedBestSuggestions), $result['suggestions'], sprintf('Expected %s suggestions "[%s]" but got %s suggestions', count($expectedBestSuggestions), implode(',', $expectedBestSuggestions), print_r($result['suggestions'], 1)));
 
         foreach ($expectedBestSuggestions as $key => $expectedBestSuggestion) {
             $suggestion = $result['suggestions'][$key];
@@ -323,20 +315,26 @@ class ElasticSearchQueryTest extends FunctionalTestCase
      */
     protected function createNodesForNodeSearchTest()
     {
-        $newNode1 = $this->siteNode->createNode('test-node-1', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
-        $newNode1->setProperty('title', 'chicken');
+        $newDocumentNode1 = $this->siteNode->createNode('test-node-1', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
+        $newDocumentNode1->setProperty('title', 'chicken');
+        $newDocumentNode1->setProperty('title_analyzed', 'chicken');
 
-        $newNode2 = $this->siteNode->createNode('test-node-2', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
-        $newNode2->setProperty('title', 'chicken');
+        $newContentNode = $newDocumentNode1->getNode('main')->createNode('document-1-text-1', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Text'));
+        $newContentNode->setProperty('text', 'A Scout smiles and whistles under all circumstances.');
 
-        $newNode3 = $this->siteNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
-        $newNode3->setProperty('title', 'egg');
+        $newDocumentNode2 = $this->siteNode->createNode('test-node-2', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
+        $newDocumentNode2->setProperty('title', 'chicken');
+        $newDocumentNode2->setProperty('title_analyzed', 'chicken');
+
+        $newDocumentNode3 = $this->siteNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
+        $newDocumentNode3->setProperty('title', 'egg');
+        $newDocumentNode3->setProperty('title_analyzed', 'egg');
 
         $dimensionContext = $this->contextFactory->create([
             'workspaceName' => 'live',
             'dimensions' => ['language' => ['de']]
         ]);
-        $translatedNode3 = $dimensionContext->adoptNode($newNode3, true);
+        $translatedNode3 = $dimensionContext->adoptNode($newDocumentNode3, true);
         $translatedNode3->setProperty('title', 'De');
 
         $this->persistenceManager->persistAll();
@@ -349,5 +347,16 @@ class ElasticSearchQueryTest extends FunctionalTestCase
 
         $this->nodeIndexCommandController->buildCommand(null, false, null, 'functionaltest');
         self::$indexInitialized = true;
+    }
+
+    /**
+     * @return QueryBuilderInterface
+     */
+    protected function getQueryBuilder()
+    {
+        /** @var ElasticSearchQueryBuilder $query */
+        $query = $this->objectManager->get(ElasticSearchQueryBuilder::class);
+
+        return $query->query($this->siteNode);
     }
 }

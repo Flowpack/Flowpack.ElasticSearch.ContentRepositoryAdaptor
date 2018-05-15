@@ -11,8 +11,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\Flow\Annotations as Flow;
@@ -24,6 +24,12 @@ use Neos\Flow\Annotations as Flow;
  */
 class DocumentDriver extends Version1\DocumentDriver
 {
+    /**
+     * @Flow\Inject
+     * @var NodeTypeMappingBuilderInterface
+     */
+    protected $nodeTypeMappingBuilder;
+
     /**
      * {@inheritdoc}
      */
@@ -40,7 +46,7 @@ class DocumentDriver extends Version1\DocumentDriver
                     ],
                     'must_not' => [
                         'term' => [
-                            '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType->getName())
+                            '_type' => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($nodeType->getName())
                         ]
                     ]
                 ]

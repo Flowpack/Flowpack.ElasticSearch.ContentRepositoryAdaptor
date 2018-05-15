@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Mapping;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -11,78 +11,31 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractNodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
 use Neos\ContentRepository\Domain\Model\NodeType;
-use Neos\ContentRepository\Domain\Service\NodeTypeManager;
+use Neos\Error\Messages\Result;
+use Neos\Error\Messages\Warning;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Configuration\ConfigurationManager;
 
 /**
- * Builds the mapping information for ContentRepository Node Types in Elasticsearch
+ * NodeTypeMappingBuilder for Elasticsearch version 1.x
  *
  * @Flow\Scope("singleton")
  */
-class NodeTypeMappingBuilder
+class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
 {
-    /**
-     * The default configuration for a given property type in NodeTypes.yaml, if no explicit elasticSearch section defined there.
-     *
-     * @var array
-     */
-    protected $defaultConfigurationPerType;
-
-    /**
-     * @Flow\Inject
-     * @var NodeTypeManager
-     */
-    protected $nodeTypeManager;
-
-    /**
-     * @var \Neos\Error\Messages\Result
-     */
-    protected $lastMappingErrors;
-
-    /**
-     * @Flow\Inject
-     * @var ConfigurationManager
-     */
-    protected $configurationManager;
-
-    /**
-     * Called by the Flow object framework after creating the object and resolving all dependencies.
-     *
-     * @param integer $cause Creation cause
-     */
-    public function initializeObject($cause)
-    {
-        if ($cause === \Neos\Flow\ObjectManagement\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-            $settings = $this->configurationManager->getConfiguration(\Neos\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
-            $this->defaultConfigurationPerType = $settings['defaultConfigurationPerType'];
-        }
-    }
-
-    /**
-     * Converts a ContentRepository Node Type name into a name which can be used for an Elasticsearch Mapping
-     *
-     * @param string $nodeTypeName
-     * @return string
-     */
-    public static function convertNodeTypeNameToMappingName($nodeTypeName)
-    {
-        return str_replace('.', '-', $nodeTypeName);
-    }
-
     /**
      * Builds a Mapping Collection from the configured node types
      *
-     * @param \Flowpack\ElasticSearch\Domain\Model\Index $index
-     * @return \Flowpack\ElasticSearch\Mapping\MappingCollection<\Flowpack\ElasticSearch\Domain\Model\Mapping>
+     * @param Index $index
+     * @return MappingCollection<\Flowpack\ElasticSearch\Domain\Model\Mapping>
      */
     public function buildMappingInformation(Index $index)
     {
-        $this->lastMappingErrors = new \Neos\Error\Messages\Result();
+        $this->lastMappingErrors = new Result();
 
         $mappings = new MappingCollection(MappingCollection::TYPE_ENTITY);
 
@@ -92,14 +45,14 @@ class NodeTypeMappingBuilder
                 continue;
             }
 
-            $type = $index->findType(self::convertNodeTypeNameToMappingName($nodeTypeName));
+            $type = $index->findType($this->convertNodeTypeNameToMappingName($nodeTypeName));
             $mapping = new Mapping($type);
             $fullConfiguration = $nodeType->getFullConfiguration();
             if (isset($fullConfiguration['search']['elasticSearchMapping'])) {
                 $mapping->setFullMapping($fullConfiguration['search']['elasticSearchMapping']);
             }
 
-            // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/mapping-root-object-type.html#_dynamic_templates
+            // https://www.elastic.co/guide/en/elasticsearch/reference/2.4/dynamic-templates.html
             // 'not_analyzed' is necessary
             $mapping->addDynamicTemplate('dimensions', [
                 'path_match' => '__dimensionCombinations.*',
@@ -124,7 +77,7 @@ class NodeTypeMappingBuilder
                         $mapping->setPropertyByPath($propertyName, $this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping']);
                     }
                 } else {
-                    $this->lastMappingErrors->addWarning(new \Neos\Error\Messages\Warning('Node Type "' . $nodeTypeName . '" - property "' . $propertyName . '": No ElasticSearch Mapping found.'));
+                    $this->lastMappingErrors->addWarning(new Warning('Node Type "' . $nodeTypeName . '" - property "' . $propertyName . '": No ElasticSearch Mapping found.'));
                 }
             }
 
@@ -132,13 +85,5 @@ class NodeTypeMappingBuilder
         }
 
         return $mappings;
-    }
-
-    /**
-     * @return \Neos\Error\Messages\Result
-     */
-    public function getLastMappingErrors()
-    {
-        return $this->lastMappingErrors;
     }
 }
