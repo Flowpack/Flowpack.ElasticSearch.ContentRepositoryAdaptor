@@ -7,15 +7,14 @@ sudo: false
 before_install:
   - export NEOS_TARGET_VERSION=2.3
   - cd ..
-  - wget --no-check-certificate https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.5.zip && unzip elasticsearch-1.7.5.zip
-  - mv elasticsearch-1.7.5 elasticsearch
+  - wget --no-check-certificate https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.6.zip && unzip elasticsearch-1.7.6.zip
+  - mv elasticsearch-1.7.6 elasticsearch
   - cd elasticsearch
   - bin/elasticsearch -d
   - cd ..
   - git clone https://github.com/neos/neos-base-distribution.git -b ${NEOS_TARGET_VERSION}
   - cd neos-base-distribution
-  - composer require flowpack/elasticsearch-contentrepositoryadaptor
-  - composer require typo3/typo3cr-search
+  - composer require flowpack/elasticsearch-contentrepositoryadaptor:2.0.x-dev
 install:
   - composer install
   - cd ..
