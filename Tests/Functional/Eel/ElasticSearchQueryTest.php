@@ -122,7 +122,6 @@ class ElasticSearchQueryTest extends FunctionalTestCase
         $this->assertEquals('test-node-1', $node->getName());
     }
 
-
     /**
      * @test
      */
@@ -143,7 +142,6 @@ class ElasticSearchQueryTest extends FunctionalTestCase
 
         $this->assertEquals($expected, $highlightedText);
     }
-
 
     /**
      * @test
