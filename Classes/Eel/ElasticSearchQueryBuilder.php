@@ -776,7 +776,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     }
 
     /**
-     * @param $value
+     * @param mixed $value
      * @return mixed
      */
     protected function convertValue($value)
