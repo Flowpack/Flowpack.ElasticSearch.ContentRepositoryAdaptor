@@ -104,6 +104,7 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
 
     /**
      * @param array $mapping
+     * @return void
      */
     protected function migrateConfigurationForElasticVersion5(array &$mapping)
     {
@@ -116,6 +117,7 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
      * warnings on index creation
      *
      * @param array $mapping
+     * @return void
      */
     protected function migrateIncludeInAllToCopyTo(array &$mapping)
     {
@@ -129,15 +131,12 @@ class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
         };
 
         $migrateIncludeInAll($mapping);
-
+        
         foreach ($mapping as &$item) {
-            if (!is_array($item)) {
-                continue;
+            if (is_array($item)) {
+                $migrateIncludeInAll($mapping);
+                $this->migrateIncludeInAllToCopyTo($item);
             }
-
-            $migrateIncludeInAll($mapping);
-
-            $this->migrateIncludeInAllToCopyTo($item);
         }
     }
 
