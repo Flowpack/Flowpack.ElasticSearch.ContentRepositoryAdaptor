@@ -8,8 +8,8 @@ But the following can make your life easier:
 # the following settings secure your cluster
 cluster.name: [PUT_YOUR_CUSTOM_NAME_HERE]
 node.name: [PUT_YOUR_CUSTOM_NAME_HERE]
-network.host: 127.0.0.1
+network.host: _local_
 ```
 
 **Note:** When using Elasticsearch 5.x changes to the mapping may be needed.
-More information on the [mapping in ElasticSearch 5.x](Documentation/ElasticMapping-5.x.md).
+More information on the [mapping in ElasticSearch 5.x](ElasticMapping-5.x.md).
