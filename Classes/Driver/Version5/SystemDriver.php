@@ -11,7 +11,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
 use TYPO3\Flow\Annotations as Flow;
 
 /**
@@ -19,13 +19,6 @@ use TYPO3\Flow\Annotations as Flow;
  *
  * @Flow\Scope("singleton")
  */
-class SystemDriver extends Version1\SystemDriver
+class SystemDriver extends Version2\SystemDriver
 {
-    /**
-     * {@inheritdoc}
-     */
-    public function status()
-    {
-        return $this->searchClient->request('GET', '/_stats')->getTreatedContent();
-    }
 }
