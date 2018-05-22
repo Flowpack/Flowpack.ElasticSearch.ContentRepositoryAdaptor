@@ -46,8 +46,8 @@ class IndexerDriver extends Version2\IndexerDriver
                     'script' => [
                         'lang' => 'painless',
                         'inline' => '
-                            HashMap fulltext = (ctx._source.containsKey("__fulltext") ? ctx._source.__fulltext : new HashMap());
-                            HashMap fulltextParts = (ctx._source.containsKey("__fulltextParts") ? ctx._source.__fulltextParts : new HashMap());
+                            HashMap fulltext = (ctx._source.containsKey("__fulltext") && ctx._source.__fulltext instanceof Map ? ctx._source.__fulltext : new HashMap());
+                            HashMap fulltextParts = (ctx._source.containsKey("__fulltextParts") && ctx._source.__fulltextParts instanceof Map ? ctx._source.__fulltextParts : new HashMap());
                             ctx._source = params.newData;
                             ctx._source.__fulltext = fulltext;
                             ctx._source.__fulltextParts = fulltextParts',
@@ -122,7 +122,7 @@ class IndexerDriver extends Version2\IndexerDriver
                     'lang' => 'painless',
                     'inline' => '
                         ctx._source.__fulltext = new HashMap();
-                        if (!ctx._source.containsKey("__fulltextParts")) {
+                        if (!ctx._source.containsKey("__fulltextParts") || !(ctx._source.__fulltextParts instanceof Map)) {
                             ctx._source.__fulltextParts = new HashMap();
                         }
 
