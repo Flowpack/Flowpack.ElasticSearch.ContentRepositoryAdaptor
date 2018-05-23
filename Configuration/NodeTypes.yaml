@@ -140,30 +140,37 @@
             'h1':
               type: string
               include_in_all: true
+              index: analyzed
               boost: 20
             'h2':
               type: string
               include_in_all: true
+              index: analyzed
               boost: 12
             'h3':
               type: string
               include_in_all: true
+              index: analyzed
               boost: 10
             'h4':
               type: string
               include_in_all: true
+              index: analyzed
               boost: 5
             'h5':
               type: string
               include_in_all: true
+              index: analyzed
               boost: 3
             'h6':
               type: string
               include_in_all: true
+              index: analyzed
               boost: 2
             'text':
               type: string
               include_in_all: true
+              index: analyzed
               boost: 1
     '_hiddenInIndex':
       search:
