@@ -18,4 +18,29 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
  */
 class FilteredQuery extends Version1\Query\FilteredQuery
 {
+    /**
+     * @param $fragmentSize
+     * @param null $fragmentCount
+     */
+    public function highlight($fragmentSize, $fragmentCount = null)
+    {
+        if ($fragmentSize === false) {
+            // Highlighting is disabled.
+            unset($this->request['highlight']);
+        } else {
+            $highlightQuery = $this->request['query'];
+            $highlightQuery['filtered']['query']['bool']['must'][1]['query_string']['fields'] = ['__fulltext*'];
+
+            $this->request['highlight'] = [
+                'fields' => [
+                    '__fulltext*' => [
+                        'fragment_size' => $fragmentSize,
+                        'no_match_size' => $fragmentSize,
+                        'number_of_fragments' => $fragmentCount,
+                        'highlight_query' => $highlightQuery
+                    ]
+                ]
+            ];
+        }
+    }
 }

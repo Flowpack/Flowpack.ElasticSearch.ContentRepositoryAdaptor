@@ -123,6 +123,52 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      */
+    public function fullTextSearchReturnsTheDocumentNode()
+    {
+        /** @var ElasticSearchQueryResult $result */
+        $result = $this->getQueryBuilder()
+            ->nodeType('TYPO3.Neos.NodeTypes:Page')
+            ->fulltext('circum*')
+            ->execute();
+
+        $this->assertEquals(1, $result->count());
+
+        /** @var NodeInterface $node */
+        $node = $result->current();
+        $this->assertEquals('TYPO3.Neos.NodeTypes:Page', $node->getNodeType()->getName());
+        $this->assertEquals('test-node-1', $node->getName());
+    }
+
+    /**
+     * @test
+     */
+    public function fullTextHighlighting()
+    {
+        /** @var ElasticSearchQueryBuilder $queryBuilder */
+        $queryBuilder = $this->getQueryBuilder();
+
+        /** @var NodeInterface $resultNode */
+        $resultNode = $queryBuilder
+            ->fulltext('whistles')
+            ->highlight(150, 5)
+            ->log($this->getLogMessagePrefix(__METHOD__))
+            ->execute()
+            ->current();
+
+        $searchHitForNode = $queryBuilder->getFullElasticSearchHitForNode($resultNode);
+
+        $this->assertArrayHasKey('highlight', $searchHitForNode);
+
+        $highlightedText = current($searchHitForNode['highlight']['__fulltext.text']);
+
+        $expected = 'A Scout smiles and <em>whistles</em> under all circumstances.';
+
+        $this->assertEquals($expected, $highlightedText);
+    }
+
+    /**
+     * @test
+     */
     public function filterByNodeType()
     {
         $resultCount = $this->getQueryBuilder()
