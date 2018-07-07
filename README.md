@@ -305,7 +305,6 @@ for all your filterable properties, or else filtering won't work on them properl
       search:
         elasticSearchMapping:
           type: "string"
-          include_in_all: false
           index: 'not_analyzed'
 ```
 
@@ -421,11 +420,7 @@ Furthermore, we want that a fulltext match e.g. inside a headline is seen as *mo
 a match inside the normal body text. That's why the `Document` node not only contains one field with
 all the texts, but multiple "buckets" where text is added to: One field which contains everything
 deemed as "very important" (`__fulltext.h1`), one which is "less important" (`__fulltext.h2`),
-and finally one for the plain text (`__fulltext.text`). All of these fields add themselves to the
-Elasticsearch `_all` field, and are configured with different `boost` values.
-
-In order to search this index, you can just search inside the `_all` field with an additional limitation
-of `__typeAndSupertypes` containing `Neos.Neos:Document`.
+and finally one for the plain text (`__fulltext.text`). All of these fields are configured with different `boost` values.
 
 **For a search user interface, checkout the Flowpack.SearchPlugin package**
 
@@ -505,12 +500,10 @@ Neos:
     Search:
       defaultConfigurationPerType:
 
-        # strings should, by default, not be included in the _all field; and
-        # indexing should just use their simple value.
+        # strings should just be indexed with their simple value.
         string:
           elasticSearchMapping:
             type: string
-            include_in_all: false
           indexing: '${value}'
 ```
 
@@ -525,7 +518,6 @@ Neos:
         # Elasticsearch understands
         elasticSearchMapping:
           type: DateTime
-          include_in_all: false
           format: 'date_time_no_millis'
         indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:sP") : null)}'
 ```
@@ -628,13 +620,11 @@ Neos:
         'Neos\Media\Domain\Model\Asset':
           elasticSearchMapping:
             type: attachment
-            include_in_all: true
           indexing: ${Indexing.indexAsset(value)}
 
         'array<Neos\Media\Domain\Model\Asset>':
           elasticSearchMapping:
             type: attachment
-            include_in_all: true
           indexing: ${Indexing.indexAsset(value)}
 ```
 

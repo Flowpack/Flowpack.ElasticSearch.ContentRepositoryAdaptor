@@ -110,36 +110,7 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
      */
     protected function migrateConfigurationForElasticVersion5(array &$mapping)
     {
-        $this->migrateIncludeInAllToCopyTo($mapping);
         $this->adjustStringTypeMapping($mapping);
-    }
-
-    /**
-     * include_in_all is deprecated with elasticsearch 5.x and raises
-     * warnings on index creation
-     *
-     * @param array $mapping
-     * @return void
-     */
-    protected function migrateIncludeInAllToCopyTo(array &$mapping)
-    {
-        $migrateIncludeInAll = function (&$mapping) {
-            if (isset($mapping['include_in_all'])) {
-                if ((bool)$mapping['include_in_all'] === true) {
-                    $mapping['copy_to'] = '_all';
-                }
-                unset($mapping['include_in_all']);
-            }
-        };
-
-        $migrateIncludeInAll($mapping);
-        
-        foreach ($mapping as &$item) {
-            if (is_array($item)) {
-                $migrateIncludeInAll($mapping);
-                $this->migrateIncludeInAllToCopyTo($item);
-            }
-        }
     }
 
     /**

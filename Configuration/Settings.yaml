@@ -86,7 +86,6 @@ Neos:
         string:
           elasticSearchMapping:
             type: string
-            include_in_all: false
 
         boolean:
           elasticSearchMapping:
@@ -100,7 +99,6 @@ Neos:
           elasticSearchMapping:
             type: date
             format: 'date_time_no_millis'
-            include_in_all: false
 
         'Neos\Media\Domain\Model\Asset':
           elasticSearchMapping: '' # deliberately don't map or index this
