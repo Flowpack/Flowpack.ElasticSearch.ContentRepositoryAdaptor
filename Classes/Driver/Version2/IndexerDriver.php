@@ -33,7 +33,7 @@ class IndexerDriver extends Version1\IndexerDriver
     /**
      * {@inheritdoc}
      */
-    public function document($indexName, NodeInterface $node, ElasticSearchDocument $document, array $documentData)
+    public function document(string $indexName, NodeInterface $node, ElasticSearchDocument $document, array $documentData)
     {
         if ($this->isFulltextRoot($node)) {
             // for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the

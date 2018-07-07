@@ -50,6 +50,7 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
 
     /**
      * {@inheritdoc}
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function deleteDuplicateDocumentNotMatchingType(Index $index, $documentIdentifier, NodeType $nodeType)
     {

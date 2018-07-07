@@ -27,6 +27,8 @@ use Neos\ContentRepository\Search\Indexer\NodeIndexerInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 use Neos\Flow\Configuration\ConfigurationManager;
+use Neos\Flow\Configuration\Exception\InvalidConfigurationTypeException;
+use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 use Neos\Neos\Controller\CreateContentContextTrait;
 use Symfony\Component\Yaml\Yaml;
@@ -105,6 +107,7 @@ class NodeIndexCommandController extends CommandController
      * Called by the Flow object framework after creating the object and resolving all dependencies.
      *
      * @param integer $cause Creation cause
+     * @throws InvalidConfigurationTypeException
      */
     public function initializeObject($cause)
     {
@@ -154,6 +157,7 @@ class NodeIndexCommandController extends CommandController
      * @param string $identifier
      * @param string $workspace
      * @return void
+     * @throws StopActionException
      */
     public function indexNodeCommand($identifier, $workspace = null)
     {
@@ -221,6 +225,7 @@ class NodeIndexCommandController extends CommandController
      * @param string $workspace name of the workspace which should be indexed
      * @param string $postfix Index postfix, index with the same postfix will be deleted if exist
      * @return void
+     * @throws StopActionException
      */
     public function buildCommand($limit = null, $update = false, $workspace = null, $postfix = null)
     {
@@ -312,7 +317,7 @@ class NodeIndexCommandController extends CommandController
      * @param string $postfix
      * @return void
      */
-    protected function createNewIndex($postfix)
+    protected function createNewIndex(string $postfix)
     {
         $this->nodeIndexer->setIndexNamePostfix($postfix ?: time());
         if ($this->nodeIndexer->getIndex()->exists() === true) {

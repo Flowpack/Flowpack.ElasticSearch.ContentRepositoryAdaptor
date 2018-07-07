@@ -45,7 +45,7 @@ class AbstractDriverSpecificObjectFactory
      * @return mixed
      * @throws DriverConfigurationException
      */
-    protected function resolve($type)
+    protected function resolve(string $type)
     {
         $version = trim($this->driverVersion);
         if (trim($this->driverVersion) === '' || !isset($this->mapping[$version][$type]['className'])) {

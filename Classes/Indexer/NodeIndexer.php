@@ -133,7 +133,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @return string
      * @throws Exception
      */
-    public function getIndexName()
+    public function getIndexName(): string
     {
         $indexName = $this->searchClient->getIndexName();
         if (strlen($this->indexNamePostfix) > 0) {
@@ -149,7 +149,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param string $indexNamePostfix
      * @return void
      */
-    public function setIndexNamePostfix($indexNamePostfix)
+    public function setIndexNamePostfix(string $indexNamePostfix)
     {
         $this->indexNamePostfix = $indexNamePostfix;
     }

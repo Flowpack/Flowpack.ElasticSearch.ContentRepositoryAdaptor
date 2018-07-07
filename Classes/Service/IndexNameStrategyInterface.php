@@ -16,5 +16,5 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
  */
 interface IndexNameStrategyInterface
 {
-    public function get();
+    public function get(): string;
 }
