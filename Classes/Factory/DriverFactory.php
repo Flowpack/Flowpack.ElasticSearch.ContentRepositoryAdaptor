@@ -13,6 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\DriverConfigurationException;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -22,6 +23,7 @@ class DriverFactory extends AbstractDriverSpecificObjectFactory
 {
     /**
      * @return DocumentDriverInterface
+     * @throws DriverConfigurationException
      */
     public function createDocumentDriver()
     {
@@ -30,6 +32,7 @@ class DriverFactory extends AbstractDriverSpecificObjectFactory
 
     /**
      * @return IndexerDriverInterface
+     * @throws DriverConfigurationException
      */
     public function createIndexerDriver()
     {
@@ -38,6 +41,7 @@ class DriverFactory extends AbstractDriverSpecificObjectFactory
 
     /**
      * @return IndexerDriverInterface
+     * @throws DriverConfigurationException
      */
     public function createIndexManagementDriver()
     {
@@ -46,6 +50,7 @@ class DriverFactory extends AbstractDriverSpecificObjectFactory
 
     /**
      * @return IndexerDriverInterface
+     * @throws DriverConfigurationException
      */
     public function createRequestDriver()
     {
@@ -54,6 +59,7 @@ class DriverFactory extends AbstractDriverSpecificObjectFactory
 
     /**
      * @return IndexerDriverInterface
+     * @throws DriverConfigurationException
      */
     public function createSystemDriver()
     {

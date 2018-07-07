@@ -16,6 +16,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
+use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
 use Neos\Eel\ProtectedContextAwareInterface;
@@ -345,6 +346,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $clauseType one of must, should, must_not
      * @return ElasticSearchQueryBuilder
      * @api
+     * @throws QueryBuildingException
      */
     public function queryFilterMultiple($data, $clauseType = 'must')
     {
@@ -376,6 +378,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $parentPath
      * @param int $size The amount of buckets to return
      * @return $this
+     * @throws QueryBuildingException
      */
     public function fieldBasedAggregation($name, $field, $type = 'terms', $parentPath = '', $size = 10)
     {
@@ -548,6 +551,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * This method is rather internal; just to be called from the ElasticSearchQueryResult. For the public API, please use execute()
      *
      * @return array<\Neos\ContentRepository\Domain\Model\NodeInterface>
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function fetch()
     {
@@ -594,6 +598,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @return integer
      * @api
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function count()
     {
@@ -653,6 +658,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param NodeInterface $contextNode
      * @return QueryBuilderInterface
      * @api
+     * @throws QueryBuildingException
      */
     public function query(NodeInterface $contextNode)
     {

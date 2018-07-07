@@ -52,6 +52,7 @@ class FilteredQuery extends AbstractQuery
 
     /**
      * {@inheritdoc}
+     * @throws Exception\QueryBuildingException
      */
     public function fulltext(string $searchWord, array $options = [])
     {

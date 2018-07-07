@@ -25,6 +25,7 @@ class RequestDriver extends AbstractDriver implements RequestDriverInterface
 {
     /**
      * {@inheritdoc}
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function bulk(Index $index, $request)
     {

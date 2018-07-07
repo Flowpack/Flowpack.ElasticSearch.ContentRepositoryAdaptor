@@ -69,7 +69,7 @@ abstract class AbstractNodeTypeMappingBuilder implements NodeTypeMappingBuilderI
      * @param string $nodeTypeName
      * @return string
      */
-    public function convertNodeTypeNameToMappingName($nodeTypeName)
+    public function convertNodeTypeNameToMappingName(string $nodeTypeName): string
     {
         return str_replace('.', '-', $nodeTypeName);
     }

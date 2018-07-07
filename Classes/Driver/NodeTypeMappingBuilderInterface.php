@@ -27,7 +27,7 @@ interface NodeTypeMappingBuilderInterface
      * @param string $nodeTypeName
      * @return string
      */
-    public function convertNodeTypeNameToMappingName($nodeTypeName);
+    public function convertNodeTypeNameToMappingName(string $nodeTypeName): string;
 
     /**
      * Builds a Mapping Collection from the configured node types

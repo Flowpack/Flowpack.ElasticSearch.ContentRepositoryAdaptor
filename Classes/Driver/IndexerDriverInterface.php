@@ -28,7 +28,7 @@ interface IndexerDriverInterface
      * @param array $documentData
      * @return array
      */
-    public function document($indexName, NodeInterface $node, ElasticSearchDocument $document, array $documentData);
+    public function document(string $indexName, NodeInterface $node, ElasticSearchDocument $document, array $documentData);
 
     /**
      * Generate the query to index the fulltext of the document

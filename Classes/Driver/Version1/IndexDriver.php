@@ -33,8 +33,9 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
-    public function deleteIndex($index)
+    public function deleteIndex(string $index)
     {
         $response = $this->searchClient->request('HEAD', '/' . $index);
         if ($response->getStatusCode() === 200) {
@@ -47,8 +48,9 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
-    public function indexesByAlias($alias)
+    public function indexesByAlias(string $alias)
     {
         $response = $this->searchClient->request('GET', '/_alias/' . $alias);
         if ($response->getStatusCode() !== 200 && $response->getStatusCode() !== 404) {
