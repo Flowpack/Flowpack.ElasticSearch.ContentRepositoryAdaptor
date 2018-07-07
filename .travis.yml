@@ -9,11 +9,11 @@ addons:
       - oracle-java8-set-default
 matrix:
   include:
-    - php: 7.1
+    - php: 7.2
       env: ES=1
-    - php: 7.1
+    - php: 7.2
       env: ES=2
-    - php: 7.1
+    - php: 7.2
       env: ES=5
 
 before_install:
