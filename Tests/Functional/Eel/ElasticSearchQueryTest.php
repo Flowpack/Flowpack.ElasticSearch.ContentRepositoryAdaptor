@@ -123,6 +123,43 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      */
+    public function fullTextSearchReturnsTheDocumentNode()
+    {
+        /** @var ElasticSearchQueryResult $result */
+        $result = $this->getQueryBuilder()
+            ->fulltext('circum*')
+            ->execute();
+        $this->assertEquals(1, $result->count());
+
+        /** @var NodeInterface $node */
+        $node = $result->current();
+        $this->assertEquals('Neos.NodeTypes:Page', $node->getNodeType()->getName());
+        $this->assertEquals('test-node-1', $node->getName());
+    }
+
+    /**
+     * @test
+     */
+    public function fullTextHighlighting()
+    {
+        /** @var ElasticSearchQueryBuilder $queryBuilder */
+        $queryBuilder = $this->getQueryBuilder();
+
+        /** @var NodeInterface $resultNode */
+        $resultNode = $queryBuilder
+            ->fulltext('whistles')
+            ->log($this->getLogMessagePrefix(__METHOD__))
+            ->execute()
+            ->current();
+        $searchHitForNode = $queryBuilder->getFullElasticSearchHitForNode($resultNode);
+        $highlightedText = current($searchHitForNode['highlight']['__fulltext.text']);
+        $expected = 'A Scout smiles and <em>whistles</em> under all circumstances.';
+        $this->assertEquals($expected, $highlightedText);
+    }
+
+    /**
+     * @test
+     */
     public function filterByNodeType()
     {
         $resultCount = $this->getQueryBuilder()
