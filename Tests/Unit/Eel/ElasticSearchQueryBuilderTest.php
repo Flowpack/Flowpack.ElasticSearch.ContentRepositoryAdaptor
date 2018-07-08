@@ -11,7 +11,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query\FilteredQuery;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Query\FilteredQuery;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Neos\Flow\Tests\UnitTestCase;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
@@ -45,42 +45,38 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
         $this->queryBuilder = new ElasticSearchQueryBuilder();
 
         $request = [
-           'query' => [
-               'filtered' => [
-                   'query' => [
-                       'bool' => [
-                           'must' => [
-                               ['match_all' => []]
-                           ]
-                       ]
-                   ],
-                   'filter' => [
-                       'bool' => [
-                           'must' => [],
-                           'should' => [],
-                           'must_not' => [
-                               [
-                                   'term' => ['_hidden' => true]
-                               ],
-                               [
-                                   'range' => [
-                                       '_hiddenBeforeDateTime' => [
-                                           'gt' => 'now'
-                                       ]
-                                   ]
-                               ],
-                               [
-                                   'range' => [
-                                       '_hiddenAfterDateTime' => [
-                                           'lt' => 'now'
-                                       ]
-                                   ]
-                               ]
-                           ]
-                       ]
-                   ]
-               ]
-           ],
+            'query' => [
+                'bool' => [
+                    'must' => [
+                        ['match_all' => []]
+                    ],
+                    'filter' => [
+                        'bool' => [
+                            'must' => [],
+                            'should' => [],
+                            'must_not' => [
+                                [
+                                    'term' => ['_hidden' => true]
+                                ],
+                                [
+                                    'range' => [
+                                        '_hiddenBeforeDateTime' => [
+                                            'gt' => 'now'
+                                        ]
+                                    ]
+                                ],
+                                [
+                                    'range' => [
+                                        '_hiddenAfterDateTime' => [
+                                            'lt' => 'now'
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ],
             'fields' => ['__path']
         ];
         $unsupportedFieldsInCountRequest = ['fields', 'sort', 'from', 'size', 'highlight', 'aggs', 'aggregations'];
@@ -99,13 +95,9 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
     {
         $expected = [
             'query' => [
-                'filtered' => [
-                    'query' => [
-                        'bool' => [
-                            'must' => [
-                                ['match_all' => []]
-                            ]
-                        ]
+                'bool' => [
+                    'must' => [
+                        ['match_all' => []]
                     ],
                     'filter' => [
                         'bool' => [
@@ -191,7 +183,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
             ]
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertInArray($expected, $actual['query']['filtered']['filter']['bool']['must']);
+        $this->assertInArray($expected, $actual['query']['bool']['filter']['bool']['must']);
     }
 
     /**
@@ -281,7 +273,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
             ]
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertInArray($expected, $actual['query']['filtered']['filter']['bool']['must']);
+        $this->assertInArray($expected, $actual['query']['bool']['filter']['bool']['must']);
     }
 
     /**
@@ -306,6 +298,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
      * @param string $name
      * @param string $field
      * @param integer size
+     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
      */
     public function anSimpleAggregationCanBeAddedToTheRequest($type, $name, $field, $size)
     {
@@ -368,8 +361,8 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
      */
     public function ifTheParentPathDoesNotExistAnExceptionisThrown()
     {
-        $this->queryBuilder->fieldBasedAggregation("foo", "bar");
-        $this->queryBuilder->fieldBasedAggregation("bar", "bar", "terms", "doesNotExist");
+        $this->queryBuilder->fieldBasedAggregation('foo', 'bar');
+        $this->queryBuilder->fieldBasedAggregation('bar', 'bar', 'terms', 'doesNotExist');
     }
 
     /**
@@ -378,8 +371,8 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
      */
     public function ifSubbedParentPathDoesNotExistAnExceptionisThrown()
     {
-        $this->queryBuilder->fieldBasedAggregation("foo", "bar");
-        $this->queryBuilder->fieldBasedAggregation("bar", "bar", "terms", "foo.doesNotExist");
+        $this->queryBuilder->fieldBasedAggregation('foo', 'bar');
+        $this->queryBuilder->fieldBasedAggregation('bar', 'bar', 'terms', 'foo.doesNotExist');
     }
 
     /**
@@ -388,14 +381,14 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
     public function aCustomAggregationDefinitionCanBeApplied()
     {
         $expected = [
-            "foo" => [
-                "some" => ["field" => "bar"],
-                "custom" => ["field" => "bar"],
-                "arrays" => ["field" => "bar"]
+            'foo' => [
+                'some' => ['field' => 'bar'],
+                'custom' => ['field' => 'bar'],
+                'arrays' => ['field' => 'bar']
             ]
         ];
 
-        $this->queryBuilder->aggregation("foo", $expected['foo']);
+        $this->queryBuilder->aggregation('foo', $expected['foo']);
         $actual = $this->queryBuilder->getRequest()->toArray();
 
         $this->assertInArray($expected, $actual);
