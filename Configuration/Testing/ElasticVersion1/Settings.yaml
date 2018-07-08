@@ -1,5 +1,0 @@
-Flowpack:
-  ElasticSearch:
-    ContentRepositoryAdaptor:
-      driver:
-        version: '1.x'

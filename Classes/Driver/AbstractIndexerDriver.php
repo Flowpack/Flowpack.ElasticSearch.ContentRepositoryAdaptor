@@ -11,6 +11,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  * source code.
  */
 
+use Neos\Flow\Annotations as Flow;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 /**
@@ -18,6 +19,12 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
  */
 abstract class AbstractIndexerDriver extends AbstractDriver
 {
+    /**
+     * @Flow\Inject
+     * @var NodeTypeMappingBuilderInterface
+     */
+    protected $nodeTypeMappingBuilder;
+
     /**
      * Whether the node is configured as fulltext root.
      *

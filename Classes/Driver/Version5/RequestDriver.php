@@ -11,14 +11,35 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
 use Neos\Flow\Annotations as Flow;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterface;
+use Flowpack\ElasticSearch\Domain\Model\Index;
 
 /**
  * Request driver for Elasticsearch version 5.x
  *
  * @Flow\Scope("singleton")
  */
-class RequestDriver extends Version1\RequestDriver
+class RequestDriver extends AbstractDriver implements RequestDriverInterface
 {
+    /**
+     * {@inheritdoc}
+     * @throws \Flowpack\ElasticSearch\Exception
+     */
+    public function bulk(Index $index, $request)
+    {
+        if (is_array($request)) {
+            $request = json_encode($request);
+        }
+
+        // Bulk request MUST end with line return
+        $request = trim($request) . "\n";
+
+        $response = $index->request('POST', '/_bulk', [], $request)->getOriginalResponse()->getContent();
+
+        return array_map(function ($line) {
+            return json_decode($line);
+        }, explode("\n", $response));
+    }
 }
