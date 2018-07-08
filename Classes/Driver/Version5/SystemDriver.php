@@ -11,14 +11,22 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
 use Neos\Flow\Annotations as Flow;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface;
 
 /**
  * System driver for Elasticsearch version 5.x
  *
  * @Flow\Scope("singleton")
  */
-class SystemDriver extends Version2\SystemDriver
+class SystemDriver extends AbstractDriver implements SystemDriverInterface
 {
+    /**
+     * @inheritDoc
+     */
+    public function status()
+    {
+        return $this->searchClient->request('GET', '/_stats')->getTreatedContent();
+    }
 }

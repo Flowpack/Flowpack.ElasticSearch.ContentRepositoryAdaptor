@@ -11,14 +11,14 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Mappin
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
+use Neos\Flow\Annotations as Flow;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractNodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
 use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\Error\Messages\Result;
 use Neos\Error\Messages\Warning;
-use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Configuration\Exception\InvalidConfigurationTypeException;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 
@@ -27,7 +27,7 @@ use Neos\Flow\ObjectManagement\ObjectManagerInterface;
  *
  * @Flow\Scope("singleton")
  */
-class NodeTypeMappingBuilder extends Version2\Mapping\NodeTypeMappingBuilder
+class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
 {
     /**
      * Called by the Flow object framework after creating the object and resolving all dependencies.

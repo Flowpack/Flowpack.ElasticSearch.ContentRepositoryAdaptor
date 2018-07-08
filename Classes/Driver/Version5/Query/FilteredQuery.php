@@ -11,14 +11,45 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Query;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractQuery;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 
 /**
  * Filtered query for elastic version 5
  */
-class FilteredQuery extends Version1\Query\FilteredQuery
+class FilteredQuery extends AbstractQuery
 {
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getCountRequestAsJson()
+    {
+        $request = $this->request;
+        foreach ($this->unsupportedFieldsInCountRequest as $field) {
+            if (isset($request[$field])) {
+                unset($request[$field]);
+            }
+        }
+
+        return json_encode($request);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function size($size)
+    {
+        $this->request['size'] = (integer)$size;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function from($size)
+    {
+        $this->request['from'] = (integer)$size;
+    }
 
     /**
      * {@inheritdoc}

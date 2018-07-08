@@ -32,8 +32,6 @@ Finally, run `./flow nodeindex:build`, and add the search plugin to your page. I
 You can switch the Elastic driver by editing ```Settings.yaml```
 (```Flowpack.ElasticSearch.ContentRepositoryAdaptor.driver.version```) with the following value:
 
-* ```1.x``` to support Elastic 1.2 to 1.7
-* ```2.x``` to support Elastic 2.x
 * ```5.x``` to support Elastic 5.x
 
 _Currently the Driver interfaces are not marked as API, and can be changed to adapt to future needs._
@@ -47,11 +45,6 @@ There is a need, depending on your version of Elasticsearch, to add specific con
 Elasticsearch Configuration File `<your-elasticsearch>/config/elasticsearch.yml`.
 
 - [ElasticSearch 5.x](Documentation/ElasticConfiguration-5.x.md)
-- [ElasticSearch 2.x](Documentation/ElasticConfiguration-2.x.md)
-- [ElasticSearch 1.6 to 1.7](Documentation/ElasticConfiguration-1.6-1.7.md)
-- [ElasticSearch 1.4 to 1.5](Documentation/ElasticConfiguration-1.4-1.5.md)
-- [ElasticSearch 1.3](Documentation/ElasticConfiguration-1.3.md)
-- [ElasticSearch 1.2](Documentation/ElasticConfiguration-1.2.md)
 
 ## Building up the Index
 
@@ -713,16 +706,6 @@ In order to understand what's going on, the following commands are helpful:
 * use `./flow nodeindex:showMapping` to show the currently defined Elasticsearch Mapping
 * use the `.log()` statement inside queries to dump them to the Elasticsearch Log
 * the logfile `Data/Logs/ElasticSearch.log` contains loads of helpful information.
-
-
-## Version 2 vs Version 1
-
-* Version 1 is the initial, productive version of the Neos Elasticsearch adapter.
-* Version 2 has a dependency on Neos.ContentRepository.Search; which contains base functionality
-  which is also relevant for other search implementations (like the SQLite based SimpleSearch).
-
-The configuration from Version 1 to Version 2 has changed; here's what to change:
-
 
 **Settings.yaml**
 
