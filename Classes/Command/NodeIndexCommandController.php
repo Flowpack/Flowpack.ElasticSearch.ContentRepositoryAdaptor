@@ -227,7 +227,7 @@ class NodeIndexCommandController extends CommandController
      * @return void
      * @throws StopActionException
      */
-    public function buildCommand($limit = null, $update = false, $workspace = null, $postfix = null)
+    public function buildCommand($limit = null, $update = false, $workspace = null, $postfix = '')
     {
         if ($workspace !== null && $this->workspaceRepository->findByIdentifier($workspace) === null) {
             $this->logger->log('The given workspace (' . $workspace . ') does not exist.', LOG_ERR);
