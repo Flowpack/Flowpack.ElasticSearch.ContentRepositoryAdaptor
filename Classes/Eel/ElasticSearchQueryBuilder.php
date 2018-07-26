@@ -22,6 +22,8 @@ use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
 use Neos\Eel\ProtectedContextAwareInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
+use Neos\Flow\Utility\Now;
+use Neos\Utility\Arrays;
 
 /**
  * Query Builder for ElasticSearch Queries
@@ -72,6 +74,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @var integer
      */
     protected $from;
+
+    /**
+     * @Flow\Inject(lazy=false)
+     * @var Now
+     */
+    protected $now;
 
     /**
      * This (internal) array stores, for the last search request, a mapping from Node Identifiers
@@ -181,7 +189,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function limit($limit)
     {
-        if (!$limit) {
+        if ($limit === null) {
             return $this;
         }
 
@@ -419,7 +427,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @return $this
      * @throws QueryBuildingException
      */
-    public function aggregation($name, array $aggregationDefinition, $parentPath = '')
+    public function aggregation(string $name, array $aggregationDefinition, $parentPath = ''): ElasticSearchQueryBuilder
     {
         $this->request->aggregation($name, $aggregationDefinition, $parentPath);
 
@@ -767,6 +775,68 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
 
         return array_values($nodes);
+    }
+
+    /**
+     * This method will get the minimum of all allowed cache lifetimes for the
+     * nodes that would result from the current defined query. This means it will evaluate to the nearest future value of the
+     * hiddenBeforeDateTime or hiddenAfterDateTime properties of all nodes in the result.
+     *
+     * @return int
+     * @throws QueryBuildingException
+     * @throws \Flowpack\ElasticSearch\Exception
+     */
+    public function cacheLifetime(): int
+    {
+        $this->request->aggregation('minHiddenBeforeDateTime', [
+            'min' => [
+                'field' => '_hiddenBeforeDateTime'
+            ]
+        ]);
+
+        $this->request->aggregation('minHiddenAfterDateTime', [
+            'min' => [
+                'field' => '_hiddenAfterDateTime'
+            ]
+        ]);
+
+        $this->request->size(0);
+
+        $requestArray = $this->request->toArray();
+
+        $mustNot = Arrays::getValueByPath($requestArray, 'query.bool.filter.bool.must_not');
+
+        /* Remove exclusion of not yet visible nodes
+        - range:
+          _hiddenBeforeDateTime:
+            gt: now
+        */
+        unset($mustNot[1]);
+
+        $requestArray = Arrays::setValueByPath($requestArray, 'query.bool.filter.bool.must_not', array_values($mustNot));
+        $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $requestArray);
+
+        $result = $response->getTreatedContent();
+
+        $convertDateResultToTimestamp = function (array $dateResult): int {
+            if (!isset($dateResult['value_as_string'])) {
+                return 0;
+            }
+            return (new \DateTime($dateResult['value_as_string']))->getTimestamp();
+        };
+
+        $minTimestamps = array_filter([
+            $convertDateResultToTimestamp(Arrays::getValueByPath($result, 'aggregations.minHiddenBeforeDateTime')),
+            $convertDateResultToTimestamp(Arrays::getValueByPath($result, 'aggregations.minHiddenAfterDateTime'))
+        ]);
+
+        if (empty($minTimestamps)) {
+            return 0;
+        }
+
+        $minTimestamp = min($minTimestamps);
+
+        return $minTimestamp > $this->now->getTimestamp() ? $minTimestamp - $this->now->getTimestamp() : 0;
     }
 
     /**

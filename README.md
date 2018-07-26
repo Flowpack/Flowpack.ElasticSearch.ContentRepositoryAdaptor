@@ -402,7 +402,7 @@ of an array or a string. Check the documentation \Neos\Utility\Arrays::getValueB
 
 **Important notice**
 
-The ViewHelper GetHitArrayForNode will return the raw hit result array. The path poperty allows you to access some
+The ViewHelper GetHitArrayForNode will return the raw hit result array. The path property allows you to access some
 specific data like the the sort data. If there is only one value for your path the value will be returned.
 If there is more data the full array will be returned by GetHitArrayForNode-VH. So you might have to use the
 ForViewHelper to access your sort values.
@@ -474,6 +474,29 @@ suggestionsQueryDefinition = Neos.Fusion:RawArray {
 }
 suggestions = ${Search.query(site)...suggestions('my_suggestions', this.suggestionsQueryDefinition)}
 ```
+
+## Calculate the maximum cache time
+
+In order to set the maximum cache time of a fusion prototype that renders nodes fetched by `Search()`,
+the nearest future value of the hiddenBeforeDateTime or hiddenAfterDateTime properties of all nodes in the result needs to be calculated.
+
+	prototype(Acme.Blog:Listing) < prototype(Neos.Fusion:Collection) {
+		@context.searchQuery = ${Search.query(site).nodeType('Acme.Blog:Post')}
+	
+	    collection = ${searchQuery.execute()}
+	    itemName = 'node'
+	    itemRenderer = Acme.Blog:Post
+	    
+	     @cache {
+        	mode = 'cached'
+			maximumLifetime = ${searchQuery.cacheLifetime()}
+			
+        	entryTags {
+          	map = ${'NodeType_Acme.Blog:Post'}
+        	}
+    	}
+	}
+
 
 ## Advanced: Configuration of Indexing
 
