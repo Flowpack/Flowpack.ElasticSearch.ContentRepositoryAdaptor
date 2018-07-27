@@ -238,13 +238,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $propertyName Name of the property
      * @param mixed $value Value for comparison
+     * @param string $clauseType one of must, should, must_not
      * @return ElasticSearchQueryBuilder
-     * @api
      * @throws QueryBuildingException
+     * @api
      */
-    public function greaterThan($propertyName, $value)
+    public function greaterThan($propertyName, $value, string $clauseType = 'must')
     {
-        return $this->queryFilter('range', [$propertyName => ['gt' => $this->convertValue($value)]]);
+        return $this->queryFilter('range', [$propertyName => ['gt' => $this->convertValue($value)]], $clauseType);
     }
 
     /**
@@ -252,13 +253,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $propertyName Name of the property
      * @param mixed $value Value for comparison
+     * @param string $clauseType one of must, should, must_not
      * @return ElasticSearchQueryBuilder
      * @throws QueryBuildingException
      * @api
      */
-    public function greaterThanOrEqual($propertyName, $value)
+    public function greaterThanOrEqual($propertyName, $value, string $clauseType = 'must')
     {
-        return $this->queryFilter('range', [$propertyName => ['gte' => $this->convertValue($value)]]);
+        return $this->queryFilter('range', [$propertyName => ['gte' => $this->convertValue($value)]], $clauseType);
     }
 
     /**
@@ -266,13 +268,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $propertyName Name of the property
      * @param mixed $value Value for comparison
+     * @param string $clauseType one of must, should, must_not
      * @return ElasticSearchQueryBuilder
      * @api
      * @throws QueryBuildingException
      */
-    public function lessThan($propertyName, $value)
+    public function lessThan($propertyName, $value, string $clauseType = 'must')
     {
-        return $this->queryFilter('range', [$propertyName => ['lt' => $this->convertValue($value)]]);
+        return $this->queryFilter('range', [$propertyName => ['lt' => $this->convertValue($value)]], $clauseType);
     }
 
     /**
@@ -280,13 +283,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $propertyName Name of the property
      * @param mixed $value Value for comparison
+     * @param string $clauseType one of must, should, must_not
      * @return ElasticSearchQueryBuilder
      * @throws QueryBuildingException
      * @api
      */
-    public function lessThanOrEqual($propertyName, $value)
+    public function lessThanOrEqual($propertyName, $value, string $clauseType = 'must')
     {
-        return $this->queryFilter('range', [$propertyName => ['lte' => $this->convertValue($value)]]);
+        return $this->queryFilter('range', [$propertyName => ['lte' => $this->convertValue($value)]], $clauseType);
     }
 
     /**
@@ -299,11 +303,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $filterType
      * @param mixed $filterOptions
      * @param string $clauseType one of must, should, must_not
-     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
+     * @throws QueryBuildingException
      * @return ElasticSearchQueryBuilder
      * @api
      */
-    public function queryFilter($filterType, $filterOptions, $clauseType = 'must')
+    public function queryFilter($filterType, $filterOptions, string $clauseType = 'must')
     {
         $this->request->queryFilter($filterType, $filterOptions, $clauseType);
 
@@ -317,7 +321,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $path
      * @param array $data
-     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
+     * @throws QueryBuildingException
      * @return ElasticSearchQueryBuilder
      */
     public function appendAtPath($path, array $data)
