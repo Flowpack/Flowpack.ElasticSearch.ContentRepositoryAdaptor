@@ -828,7 +828,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $minTimestamps = array_filter([
             $convertDateResultToTimestamp(Arrays::getValueByPath($result, 'aggregations.minHiddenBeforeDateTime')),
             $convertDateResultToTimestamp(Arrays::getValueByPath($result, 'aggregations.minHiddenAfterDateTime'))
-        ]);
+        ], function ($value, $_) {
+            return $value != 0 || $value > $this->now->getTimestamp();
+        }, ARRAY_FILTER_USE_BOTH);
 
         if (empty($minTimestamps)) {
             return 0;
@@ -836,7 +838,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
         $minTimestamp = min($minTimestamps);
 
-        return $minTimestamp > $this->now->getTimestamp() ? $minTimestamp - $this->now->getTimestamp() : 0;
+        return $minTimestamp - $this->now->getTimestamp();
     }
 
     /**
