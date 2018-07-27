@@ -123,10 +123,10 @@ Furthermore, the following operators are supported:
 
 * `nodeType('Your.Node:Type')`
 * `exactMatch('propertyName', value)` -- supports simple types: `exactMatch('tag', 'foo')`, or node references: `exactMatch('author', authorNode)`
-* `greaterThan('propertyName', value)` -- range filter with property values greater than the given value
-* `greaterThanOrEqual('propertyName', value)` -- range filter with property values greater than or equal to the given value
-* `lessThan('propertyName', value)` -- range filter with property values less than the given value
-* `lessThanOrEqual('propertyName', value)` -- range filter with property values less than or equal to the given value
+* `greaterThan('propertyName', value, [clauseType])` -- range filter with property values greater than the given value
+* `greaterThanOrEqual('propertyName', value, [clauseType])` -- range filter with property values greater than or equal to the given value
+* `lessThan('propertyName', value, [clauseType])` -- range filter with property values less than the given value
+* `lessThanOrEqual('propertyName', value, [clauseType])` -- range filter with property values less than or equal to the given value
 * `sortAsc('propertyName')` and `sortDesc('propertyName')` -- can also be used multiple times, e.g. `sortAsc('tag').sortDesc(`date')`
    will first sort by tag ascending, and then by date descending.
 * `limit(5)` -- only return five results. If not specified, the default limit by Elasticsearch applies (which is at 10 by default)
@@ -135,7 +135,9 @@ Furthermore, the following operators are supported:
 
 Furthermore, there is a more low-level operator which can be used to add arbitrary Elasticsearch filters:
 
-* `queryFilter("filterType", {option1: "value1"})`
+* `queryFilter("filterType", {option1: "value1"}, [clauseType])`
+
+The optional argument `clauseType` defaults to "must" and can be used to specify the boolean operator of the [bool query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-bool-query.html). It has to be one of `must`, `should`, `must_not` or `filter`.	
 
 At lowest level, there is the `request` operator which allows to modify the request in arbitrary manner. Note that the existing request is merged with the passed-in type in case it is an array:
 
