@@ -356,7 +356,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
             ->sortAsc('title')
             ->cacheLifetime();
 
-        $this->assertEquals(3600, $cacheLifetime);
+        $this->assertEquals(600, $cacheLifetime);
     }
 
     /**
@@ -388,11 +388,11 @@ class ElasticSearchQueryTest extends FunctionalTestCase
 
         // Nodes for cacheLifetime test
         $newContentNode2 = $newDocumentNode2->getNode('main')->createNode('document-2-text-1', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Text'));
-        $newContentNode2->setProperty('text', 'Hidden after 2030-01-01');
-        $newContentNode2->setHiddenAfterDateTime(new \DateTime('@1532635200'));
+        $newContentNode2->setProperty('text', 'Hidden after 2025-01-01');
+        $newContentNode2->setHiddenAfterDateTime(new \DateTime('@1735686000'));
         $newContentNode3 = $newDocumentNode2->getNode('main')->createNode('document-2-text-2', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Text'));
         $newContentNode3->setProperty('text', 'Hidden before 2018-07-18');
-        $newContentNode3->setHiddenBeforeDateTime(new \DateTime('@1532631600'));
+        $newContentNode3->setHiddenBeforeDateTime(new \DateTime('@1531864800'));
 
         $newDocumentNode3 = $this->siteNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
         $newDocumentNode3->setProperty('title', 'egg');
@@ -426,7 +426,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     protected function getQueryBuilder(): ElasticSearchQueryBuilder
     {
         $elasticSearchQueryBuilder = $this->objectManager->get(ElasticSearchQueryBuilder::class);
-        $this->inject($elasticSearchQueryBuilder, 'now', new \DateTimeImmutable('@1532628000'));
+        $this->inject($elasticSearchQueryBuilder, 'now', new \DateTimeImmutable('@1735685400')); // Dec. 31, 2024 23:50:00
 
         return $elasticSearchQueryBuilder->query($this->siteNode);
     }
