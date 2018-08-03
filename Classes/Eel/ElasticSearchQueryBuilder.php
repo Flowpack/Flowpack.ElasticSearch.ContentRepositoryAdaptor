@@ -784,15 +784,42 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function cacheLifetime(): int
     {
-        $this->request->aggregation('minHiddenBeforeDateTime', [
-            'min' => [
-                'field' => '_hiddenBeforeDateTime'
-            ]
-        ]);
+        $minTimestamps = array_filter([
+            $this->getNearestFutureDate('_hiddenBeforeDateTime'),
+            $this->getNearestFutureDate('_hiddenAfterDateTime')
+        ], function ($value) {
+            return $value != 0;
+        });
 
-        $this->request->aggregation('minHiddenAfterDateTime', [
+        if (empty($minTimestamps)) {
+            return 0;
+        }
+
+        $minTimestamp = min($minTimestamps);
+
+        return $minTimestamp - $this->now->getTimestamp();
+    }
+
+    /**
+     * @param string $dateField
+     * @return mixed
+     * @throws QueryBuildingException
+     * @throws \Flowpack\ElasticSearch\Exception
+     */
+    protected function getNearestFutureDate(string $dateField)
+    {
+
+        $convertDateResultToTimestamp = function (array $dateResult): int {
+            if (!isset($dateResult['value_as_string'])) {
+                return 0;
+            }
+            return (new \DateTime($dateResult['value_as_string']))->getTimestamp();
+        };
+
+        $this->request->queryFilter('range', [$dateField => ['gt' => 'now']], 'must');
+        $this->request->aggregation('min' . $dateField, [
             'min' => [
-                'field' => '_hiddenAfterDateTime'
+                'field' => $dateField
             ]
         ]);
 
@@ -810,31 +837,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         unset($mustNot[1]);
 
         $requestArray = Arrays::setValueByPath($requestArray, 'query.bool.filter.bool.must_not', array_values($mustNot));
-        $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $requestArray);
 
-        $result = $response->getTreatedContent();
+        $result = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $requestArray)->getTreatedContent();
 
-        $convertDateResultToTimestamp = function (array $dateResult): int {
-            if (!isset($dateResult['value_as_string'])) {
-                return 0;
-            }
-            return (new \DateTime($dateResult['value_as_string']))->getTimestamp();
-        };
-
-        $minTimestamps = array_filter([
-            $convertDateResultToTimestamp(Arrays::getValueByPath($result, 'aggregations.minHiddenBeforeDateTime')),
-            $convertDateResultToTimestamp(Arrays::getValueByPath($result, 'aggregations.minHiddenAfterDateTime'))
-        ], function ($value, $_) {
-            return $value != 0 || $value > $this->now->getTimestamp();
-        }, ARRAY_FILTER_USE_BOTH);
-
-        if (empty($minTimestamps)) {
-            return 0;
-        }
-
-        $minTimestamp = min($minTimestamps);
-
-        return $minTimestamp - $this->now->getTimestamp();
+        return $convertDateResultToTimestamp(Arrays::getValueByPath($result, 'aggregations.min' . $dateField));
     }
 
     /**
