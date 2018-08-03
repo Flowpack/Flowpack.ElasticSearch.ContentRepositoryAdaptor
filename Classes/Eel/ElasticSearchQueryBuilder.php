@@ -812,6 +812,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     protected function getNearestFutureDate(string $dateField)
     {
+        $request = clone $this->request;
 
         $convertDateResultToTimestamp = function (array $dateResult): int {
             if (!isset($dateResult['value_as_string'])) {
@@ -820,16 +821,16 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             return (new \DateTime($dateResult['value_as_string']))->getTimestamp();
         };
 
-        $this->request->queryFilter('range', [$dateField => ['gt' => 'now']], 'must');
-        $this->request->aggregation('min' . $dateField, [
+        $request->queryFilter('range', [$dateField => ['gt' => 'now']], 'must');
+        $request->aggregation('minTime', [
             'min' => [
                 'field' => $dateField
             ]
         ]);
 
-        $this->request->size(0);
+        $request->size(0);
 
-        $requestArray = $this->request->toArray();
+        $requestArray = $request->toArray();
 
         $mustNot = Arrays::getValueByPath($requestArray, 'query.bool.filter.bool.must_not');
 
@@ -844,7 +845,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
         $result = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $requestArray)->getTreatedContent();
 
-        return $convertDateResultToTimestamp(Arrays::getValueByPath($result, 'aggregations.min' . $dateField));
+        return $convertDateResultToTimestamp(Arrays::getValueByPath($result, 'aggregations.minTime'));
     }
 
     /**
