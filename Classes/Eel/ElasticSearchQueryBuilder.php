@@ -16,6 +16,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
+use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
 use Neos\Eel\ProtectedContextAwareInterface;
@@ -104,6 +105,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $nodeType the node type to filter for
      * @return ElasticSearchQueryBuilder
+     * @throws QueryBuildingException
      * @api
      */
     public function nodeType($nodeType)
@@ -224,14 +226,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param mixed $value Value for comparison
      * @return ElasticSearchQueryBuilder
      * @api
+     * @throws QueryBuildingException
      */
     public function exactMatch($propertyName, $value)
     {
-        if ($value instanceof NodeInterface) {
-            $value = $value->getIdentifier();
-        }
-
-        return $this->queryFilter('term', [$propertyName => $value]);
+        return $this->queryFilter('term', [$propertyName => $this->convertValue($value)]);
     }
 
     /**
@@ -241,10 +240,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param mixed $value Value for comparison
      * @return ElasticSearchQueryBuilder
      * @api
+     * @throws QueryBuildingException
      */
     public function greaterThan($propertyName, $value)
     {
-        return $this->queryFilter('range', [$propertyName => ['gt' => $value]]);
+        return $this->queryFilter('range', [$propertyName => ['gt' => $this->convertValue($value)]]);
     }
 
     /**
@@ -253,11 +253,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $propertyName Name of the property
      * @param mixed $value Value for comparison
      * @return ElasticSearchQueryBuilder
+     * @throws QueryBuildingException
      * @api
      */
     public function greaterThanOrEqual($propertyName, $value)
     {
-        return $this->queryFilter('range', [$propertyName => ['gte' => $value]]);
+        return $this->queryFilter('range', [$propertyName => ['gte' => $this->convertValue($value)]]);
     }
 
     /**
@@ -267,10 +268,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param mixed $value Value for comparison
      * @return ElasticSearchQueryBuilder
      * @api
+     * @throws QueryBuildingException
      */
     public function lessThan($propertyName, $value)
     {
-        return $this->queryFilter('range', [$propertyName => ['lt' => $value]]);
+        return $this->queryFilter('range', [$propertyName => ['lt' => $this->convertValue($value)]]);
     }
 
     /**
@@ -279,11 +281,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $propertyName Name of the property
      * @param mixed $value Value for comparison
      * @return ElasticSearchQueryBuilder
+     * @throws QueryBuildingException
      * @api
      */
     public function lessThanOrEqual($propertyName, $value)
     {
-        return $this->queryFilter('range', [$propertyName => ['lte' => $value]]);
+        return $this->queryFilter('range', [$propertyName => ['lte' => $this->convertValue($value)]]);
     }
 
     /**
@@ -343,6 +346,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $clauseType one of must, should, must_not
      * @return ElasticSearchQueryBuilder
      * @api
+     * @throws QueryBuildingException
      */
     public function queryFilterMultiple($data, $clauseType = 'must')
     {
@@ -374,6 +378,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $parentPath
      * @param int $size The amount of buckets to return
      * @return $this
+     * @throws QueryBuildingException
      */
     public function fieldBasedAggregation($name, $field, $type = 'terms', $parentPath = '', $size = 10)
     {
@@ -546,6 +551,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * This method is rather internal; just to be called from the ElasticSearchQueryResult. For the public API, please use execute()
      *
      * @return array<\Neos\ContentRepository\Domain\Model\NodeInterface>
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function fetch()
     {
@@ -592,6 +598,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @return integer
      * @api
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function count()
     {
@@ -615,13 +622,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * Match the searchword against the fulltext index
      *
      * @param string $searchWord
+     * @param array $options Options to configure the query_string, see https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-query-string-query.html
      * @return QueryBuilderInterface
      * @api
      */
-    public function fulltext($searchWord)
+    public function fulltext($searchWord, array $options = [])
     {
         // We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
-        $this->request->fulltext(trim(json_encode($searchWord), '"'));
+        $this->request->fulltext(trim(json_encode($searchWord), '"'), $options);
         $this->request->highlight(150, 2);
 
         return $this;
@@ -650,6 +658,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param NodeInterface $contextNode
      * @return QueryBuilderInterface
      * @api
+     * @throws QueryBuildingException
      */
     public function query(NodeInterface $contextNode)
     {
@@ -729,7 +738,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
          * we might be able to use https://github.com/elasticsearch/elasticsearch/issues/3300 as soon as it is merged.
          */
         foreach ($hits['hits'] as $hit) {
-            $nodePath = current($hit['fields']['__path']);
+            $nodePath = $hit[isset($hit['fields']) ? 'fields' : '_source']['__path'];
+            if (is_array($nodePath)) {
+                $nodePath = current($nodePath);
+            }
             $node = $this->contextNode->getNode($nodePath);
             if ($node instanceof NodeInterface && !isset($nodes[$node->getIdentifier()])) {
                 $nodes[$node->getIdentifier()] = $node;
@@ -767,5 +779,22 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         call_user_func_array([$this->request, $method], $arguments);
 
         return $this;
+    }
+
+    /**
+     * @param mixed $value
+     * @return mixed
+     */
+    protected function convertValue($value)
+    {
+        if ($value instanceof NodeInterface) {
+            return $value->getIdentifier();
+        }
+
+        if ($value instanceof \DateTime) {
+            return $value->format('Y-m-d\TH:i:sP');
+        }
+
+        return $value;
     }
 }

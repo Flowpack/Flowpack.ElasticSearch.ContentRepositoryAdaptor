@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -11,13 +11,13 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
  * source code.
  */
 
+use Neos\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterface;
 use Flowpack\ElasticSearch\Domain\Model\Index;
-use Neos\Flow\Annotations as Flow;
 
 /**
- * Request driver for Elasticsearch version 1.x
+ * Request driver for Elasticsearch version 5.x
  *
  * @Flow\Scope("singleton")
  */
@@ -25,6 +25,7 @@ class RequestDriver extends AbstractDriver implements RequestDriverInterface
 {
     /**
      * {@inheritdoc}
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function bulk(Index $index, $request)
     {

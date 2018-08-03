@@ -69,13 +69,14 @@ interface QueryInterface
     public function from($size);
 
     /**
-     * Match the searchword against the fulltext index
+     * Match the search word against the fulltext index
      *
      * @param string $searchWord
+     * @param array $options Options to configure the query_string
      * @return void
      * @api
      */
-    public function fulltext($searchWord);
+    public function fulltext(string $searchWord, array $options = []);
 
     /**
      * Configure Result Highlighting. Only makes sense in combination with fulltext(). By default, highlighting is enabled.

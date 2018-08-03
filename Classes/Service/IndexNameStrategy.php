@@ -27,7 +27,11 @@ class IndexNameStrategy implements IndexNameStrategyInterface
      */
     protected $indexName;
 
-    public function get()
+    /**
+     * @return string
+     * @throws Exception
+     */
+    public function get(): string
     {
         $name = $this->indexName;
         if ($name === '') {

@@ -51,7 +51,7 @@ final class WorkspaceIndexer
 
     /**
      * @param string $workspaceName
-     * @param integer $limit
+     * @param int $limit
      * @param callable $callback
      * @return integer
      */
@@ -73,7 +73,7 @@ final class WorkspaceIndexer
     /**
      * @param string $workspaceName
      * @param array $dimensions
-     * @param integer $limit
+     * @param int $limit
      * @param callable $callback
      * @return integer
      */

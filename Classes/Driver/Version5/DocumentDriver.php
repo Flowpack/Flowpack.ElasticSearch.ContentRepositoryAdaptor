@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -11,21 +11,45 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
-use Flowpack\ElasticSearch\Domain\Model\Index;
-use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\Flow\Annotations as Flow;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
+use Flowpack\ElasticSearch\Domain\Model\Index;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Model\NodeType;
 
 /**
- * Document driver for Elasticsearch version 2.x
+ * Document driver for Elasticsearch version 5.x
  *
  * @Flow\Scope("singleton")
  */
-class DocumentDriver extends Version1\DocumentDriver
+class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
 {
     /**
+     * @Flow\Inject
+     * @var NodeTypeMappingBuilderInterface
+     */
+    protected $nodeTypeMappingBuilder;
+
+    /**
      * {@inheritdoc}
+     */
+    public function delete(NodeInterface $node, $identifier)
+    {
+        return [
+            [
+                'delete' => [
+                    '_type' => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($node->getNodeType()),
+                    '_id' => $identifier
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function deleteDuplicateDocumentNotMatchingType(Index $index, $documentIdentifier, NodeType $nodeType)
     {
@@ -40,7 +64,7 @@ class DocumentDriver extends Version1\DocumentDriver
                     ],
                     'must_not' => [
                         'term' => [
-                            '_type' => NodeTypeMappingBuilder::convertNodeTypeNameToMappingName($nodeType->getName())
+                            '_type' => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($nodeType->getName())
                         ]
                     ]
                 ]

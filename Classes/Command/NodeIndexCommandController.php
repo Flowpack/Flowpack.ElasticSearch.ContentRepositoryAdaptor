@@ -12,11 +12,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  */
 
 use Doctrine\Common\Collections\ArrayCollection;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\WorkspaceIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Mapping\NodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
@@ -25,15 +25,16 @@ use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
 use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
 use Neos\ContentRepository\Domain\Service\ContentDimensionPresetSourceInterface;
-use Neos\ContentRepository\Domain\Service\Context;
-use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\ContentRepository\Search\Indexer\NodeIndexerInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 use Neos\Flow\Configuration\ConfigurationManager;
+use Neos\Flow\Configuration\Exception\InvalidConfigurationTypeException;
 use Neos\Flow\Core\Booting\Scripts;
 use Neos\Flow\Exception;
+use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
+use Neos\Neos\Controller\CreateContentContextTrait;
 use Neos\Utility\Files;
 use Symfony\Component\Yaml\Yaml;
 
@@ -49,6 +50,8 @@ class NodeIndexCommandController extends CommandController
      * @var array
      */
     protected $flowSettings;
+
+    use CreateContentContextTrait;
 
     /**
      * @Flow\Inject
@@ -82,7 +85,7 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @Flow\Inject
-     * @var NodeTypeMappingBuilder
+     * @var NodeTypeMappingBuilderInterface
      */
     protected $nodeTypeMappingBuilder;
 
@@ -131,6 +134,7 @@ class NodeIndexCommandController extends CommandController
      * Called by the Flow object framework after creating the object and resolving all dependencies.
      *
      * @param integer $cause Creation cause
+     * @throws InvalidConfigurationTypeException
      */
     public function initializeObject($cause)
     {
@@ -192,6 +196,7 @@ class NodeIndexCommandController extends CommandController
      * @param string $workspace
      * @param int $workspace
      * @return void
+     * @throws StopActionException
      */
     public function indexNodeCommand($identifier, $workspace = null, $postfix = null)
     {
@@ -263,8 +268,9 @@ class NodeIndexCommandController extends CommandController
      * @param string $workspace name of the workspace which should be indexed
      * @param string $postfix Index postfix, index with the same postfix will be deleted if exist
      * @return void
+     * @throws StopActionException
      */
-    public function buildCommand($limit = null, $update = false, $workspace = null, $postfix = null)
+    public function buildCommand($limit = null, $update = false, $workspace = null, $postfix = '')
     {
         if ($workspace !== null && $this->workspaceRepository->findByIdentifier($workspace) === null) {
             $this->logger->log('The given workspace (' . $workspace . ') does not exist.', LOG_ERR);
@@ -565,31 +571,6 @@ class NodeIndexCommandController extends CommandController
             }
         }
         return $count < 1 ? 0 : $count;
-    }
-
-    /**
-     * Create a ContentContext based on the given workspace name
-     *
-     * @param string $workspaceName Name of the workspace to set for the context
-     * @param array $dimensions Optional list of dimensions and their values which should be set
-     * @return Context
-     */
-    protected function createContentContext($workspaceName, array $dimensions = [])
-    {
-        $contextProperties = [
-            'workspaceName' => $workspaceName,
-            'invisibleContentShown' => true,
-            'inaccessibleContentShown' => true
-        ];
-
-        if ($dimensions !== []) {
-            $contextProperties['dimensions'] = $dimensions;
-            $contextProperties['targetDimensions'] = array_map(function ($dimensionValues) {
-                return array_shift($dimensionValues);
-            }, $dimensions);
-        }
-
-        return $this->contextFactory->create($contextProperties);
     }
 
     /**

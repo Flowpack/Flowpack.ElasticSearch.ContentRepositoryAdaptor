@@ -115,6 +115,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function setOrderings(array $orderings)
     {
@@ -123,6 +124,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function getOrderings()
     {
@@ -131,6 +133,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function matching($constraint)
     {
@@ -139,6 +142,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function getConstraint()
     {
@@ -147,6 +151,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function logicalAnd($constraint1)
     {
@@ -155,6 +160,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function logicalOr($constraint1)
     {
@@ -163,6 +169,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function logicalNot($constraint)
     {
@@ -171,6 +178,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function equals($propertyName, $operand, $caseSensitive = true)
     {
@@ -179,6 +187,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function like($propertyName, $operand, $caseSensitive = true)
     {
@@ -187,6 +196,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function contains($propertyName, $operand)
     {
@@ -195,6 +205,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function isEmpty($propertyName)
     {
@@ -203,6 +214,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function in($propertyName, $operand)
     {
@@ -211,6 +223,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function lessThan($propertyName, $operand)
     {
@@ -219,6 +232,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function lessThanOrEqual($propertyName, $operand)
     {
@@ -227,6 +241,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function greaterThan($propertyName, $operand)
     {
@@ -235,6 +250,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function greaterThanOrEqual($propertyName, $operand)
     {
@@ -243,6 +259,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function setDistinct($distinct = true)
     {
@@ -251,6 +268,7 @@ class ElasticSearchQuery implements QueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     public function isDistinct()
     {

@@ -19,10 +19,10 @@ interface IndexDriverInterface
     /**
      * Get the list of Indexes attached to the given alias
      *
-     * @param $alias
+     * @param string $alias
      * @return array
      */
-    public function indexesByAlias($alias);
+    public function indexesByAlias(string $alias);
 
     /**
      * Get the list of Indexes attached to the given alias prefix
@@ -38,7 +38,7 @@ interface IndexDriverInterface
      * @param string $index
      * @return void
      */
-    public function deleteIndex($index);
+    public function deleteIndex(string $index);
 
     /**
      * Execute batch aliases actions

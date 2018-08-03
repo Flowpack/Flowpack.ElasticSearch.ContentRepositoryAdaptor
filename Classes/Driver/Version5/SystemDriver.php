@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -11,22 +11,22 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
  * source code.
  */
 
+use Neos\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface;
-use Neos\Flow\Annotations as Flow;
 
 /**
- * System driver for Elasticsearch version 1.x
+ * System driver for Elasticsearch version 5.x
  *
  * @Flow\Scope("singleton")
  */
 class SystemDriver extends AbstractDriver implements SystemDriverInterface
 {
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function status()
     {
-        return $this->searchClient->request('GET', '/_status')->getTreatedContent();
+        return $this->searchClient->request('GET', '/_stats')->getTreatedContent();
     }
 }

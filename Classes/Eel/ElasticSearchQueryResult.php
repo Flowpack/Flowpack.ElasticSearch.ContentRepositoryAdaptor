@@ -173,6 +173,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 
     /**
      * {@inheritdoc}
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function count()
     {
