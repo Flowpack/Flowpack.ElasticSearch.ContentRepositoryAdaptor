@@ -47,7 +47,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                 [
                     'script' => [
                         'lang' => 'painless',
-                        'inline' => '
+                        'source' => '
                             HashMap fulltext = (ctx._source.containsKey("__fulltext") && ctx._source.__fulltext instanceof Map ? ctx._source.__fulltext : new HashMap());
                             HashMap fulltextParts = (ctx._source.containsKey("__fulltextParts") && ctx._source.__fulltextParts instanceof Map ? ctx._source.__fulltextParts : new HashMap());
                             ctx._source = params.newData;
@@ -116,7 +116,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                 // first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
                 'script' => [
                     'lang' => 'painless',
-                    'inline' => '
+                    'source' => '
                         ctx._source.__fulltext = new HashMap();
                         if (!ctx._source.containsKey("__fulltextParts") || !(ctx._source.__fulltextParts instanceof Map)) {
                             ctx._source.__fulltextParts = new HashMap();
