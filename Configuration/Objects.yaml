@@ -1,3 +1,6 @@
+Neos\ContentRepository\Search\Search\QueryBuilderInterface:
+  className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder
+
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface:
   scope: prototype
   factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\QueryFactory'
