@@ -12,6 +12,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Dto\SearchResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
@@ -503,15 +504,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     }
 
     /**
-     * @return integer
+     * @return int
      */
-    public function getTotalItems()
+    public function getTotalItems(): int
     {
-        if (isset($this->result['hits']['total'])) {
-            return (int)$this->result['hits']['total'];
-        }
-
-        return 0;
+        return $this->evaluateResult($this->result)->getTotal();
     }
 
     /**
@@ -562,21 +559,36 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             $timeAfterwards = microtime(true);
 
             $this->result = $response->getTreatedContent();
+            $searchResult = $this->evaluateResult($this->result);
 
             $this->result['nodes'] = [];
             if ($this->logThisQuery === true) {
                 $this->logger->log(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s',
-                    $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($this->result['hits']['hits']), $this->result['hits']['total']), LOG_DEBUG);
+                    $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($searchResult->getHits()), $searchResult->getTotal()), LOG_DEBUG);
             }
-            if (array_key_exists('hits', $this->result) && is_array($this->result['hits']) && count($this->result['hits']) > 0) {
-                $this->result['nodes'] = $this->convertHitsToNodes($this->result['hits']);
+
+            if (count($searchResult->getHits()) > 0) {
+                $this->result['nodes'] = $this->convertHitsToNodes($searchResult->getHits());
             }
+
         } catch (ApiException $exception) {
             $this->logger->logException($exception);
             $this->result['nodes'] = [];
         }
 
         return $this->result;
+    }
+
+    /**
+     * @param array $result
+     * @return SearchResult
+     */
+    protected function evaluateResult(array $result): SearchResult
+    {
+        return new SearchResult(
+            $hits = $result['hits']['hits'] ?? [],
+            $total = $result['hits']['total'] ?? 0
+        );
     }
 
     /**
@@ -722,7 +734,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param array $hits
      * @return array Array of Node objects
      */
-    protected function convertHitsToNodes(array $hits)
+    protected function convertHitsToNodes(array $hits): array
     {
         $nodes = [];
         $elasticSearchHitPerNode = [];
@@ -741,7 +753,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
          * which *do exist in the user workspace but do NOT match the current query*. This has to be done somehow "recursively"; and later
          * we might be able to use https://github.com/elasticsearch/elasticsearch/issues/3300 as soon as it is merged.
          */
-        foreach ($hits['hits'] as $hit) {
+        foreach ($hits as $hit) {
             $nodePath = $hit[isset($hit['fields']) ? 'fields' : '_source']['__path'];
             if (is_array($nodePath)) {
                 $nodePath = current($nodePath);
