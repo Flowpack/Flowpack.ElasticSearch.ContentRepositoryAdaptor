@@ -562,15 +562,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             $searchResult = $this->evaluateResult($this->result);
 
             $this->result['nodes'] = [];
-            if ($this->logThisQuery === true) {
-                $this->logger->log(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s',
-                    $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($searchResult->getHits()), $searchResult->getTotal()), LOG_DEBUG);
-            }
+
+            $this->logThisQuery && $this->logger->log(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s', $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($searchResult->getHits()), $searchResult->getTotal()), LOG_DEBUG);
 
             if (count($searchResult->getHits()) > 0) {
                 $this->result['nodes'] = $this->convertHitsToNodes($searchResult->getHits());
             }
-
         } catch (ApiException $exception) {
             $this->logger->logException($exception);
             $this->result['nodes'] = [];
@@ -623,9 +620,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $treatedContent = $response->getTreatedContent();
         $count = $treatedContent['count'];
 
-        if ($this->logThisQuery === true) {
-            $this->logger->log('Count Query Log (' . $this->logMessage . '): ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
-        }
+        $this->logThisQuery && $this->logger->log('Count Query Log (' . $this->logMessage . '): ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
 
         return $count;
     }
@@ -768,9 +763,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             }
         }
 
-        if ($this->logThisQuery === true) {
-            $this->logger->log('Returned nodes (' . $this->logMessage . '): ' . count($nodes), LOG_DEBUG);
-        }
+        $this->logThisQuery && $this->logger->log('Returned nodes (' . $this->logMessage . '): ' . count($nodes), LOG_DEBUG);
 
         $this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
 
