@@ -243,6 +243,17 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     }
 
     /**
+     * @param string $propertyName
+     * @param $value
+     * @return ElasticSearchQueryBuilder
+     * @throws QueryBuildingException
+     */
+    public function exclude(string $propertyName, $value)
+    {
+        return $this->queryFilter('term', [$propertyName => $this->convertValue($value)], 'must_not');
+    }
+
+    /**
      * add a range filter (gt) for the given property
      *
      * @param string $propertyName Name of the property

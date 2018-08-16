@@ -121,8 +121,11 @@ search underneath the current site node (like in the example above).
 
 Furthermore, the following operators are supported:
 
+As **value**, the following methods accept a simple type, a node object or a DateTime object.
+
 * `nodeType('Your.Node:Type')`
 * `exactMatch('propertyName', value)` -- supports simple types: `exactMatch('tag', 'foo')`, or node references: `exactMatch('author', authorNode)`
+* `exclude('propertyName', value)` -- excludes results by property - the negation of exactMatch.
 * `greaterThan('propertyName', value, [clauseType])` -- range filter with property values greater than the given value
 * `greaterThanOrEqual('propertyName', value, [clauseType])` -- range filter with property values greater than or equal to the given value
 * `lessThan('propertyName', value, [clauseType])` -- range filter with property values less than the given value
