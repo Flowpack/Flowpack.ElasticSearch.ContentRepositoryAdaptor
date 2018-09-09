@@ -11,6 +11,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  * source code.
  */
 
+use Neos\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Dto\SearchResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
@@ -21,7 +22,6 @@ use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
 use Neos\Eel\ProtectedContextAwareInterface;
-use Neos\Flow\Annotations as Flow;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 use Neos\Flow\Utility\Now;
 use Neos\Utility\Arrays;
@@ -567,6 +567,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         try {
             $timeBefore = microtime(true);
             $request = $this->request->getRequestAsJson();
+
             $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request);
             $timeAfterwards = microtime(true);
 
@@ -669,6 +670,48 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
         return $this;
     }
+
+    /**
+     * This method is used to define a more like this query.
+     * The More Like This Query (MLT Query) finds documents that are "like" a given set of documents.
+     * See: https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-mlt-query.html
+     *
+     * @param array $like An array of strings or documents
+     * @param array $fields Fields to compare other docs with
+     * @param array $options Additional options for the more_like_this quey
+     * @return ElasticSearchQueryBuilder
+     */
+    public function moreLikeThis($like, array $fields = [], array $options = [])
+    {
+        $like = is_array($like) ? $like : [$like];
+
+        $getDocumentDefinitionByNode = function (QueryInterface $request, NodeInterface $node): array {
+            $request->queryFilter('term', ['__identifier' => $node->getIdentifier()]);
+            $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request->toArray())->getTreatedContent();
+
+            $respondedDocuments = Arrays::getValueByPath($response, 'hits.hits');
+            if (count($respondedDocuments) === 0) {
+                throw new Exception(sprintf('The node with identifier %s was not found in the elasticsearch index', $node->getIdentifier()), 1536485615);
+            }
+            $respondedDocument = current($respondedDocuments);
+            return [
+                '_id' => $respondedDocument['_id'],
+                '_type' => $respondedDocument['_type'],
+                '_index' => $respondedDocument['_index'],
+            ];
+        };
+
+        foreach ($like as $key => $likeElement) {
+            if ($likeElement instanceof NodeInterface) {
+                $like[$key] = $getDocumentDefinitionByNode(clone $this->request, $likeElement);
+            }
+        }
+
+        $this->request->moreLikeThis($like, $fields, $options);
+
+        return $this;
+    }
+
 
     /**
      * Sets the starting point for this query. Search result should only contain nodes that

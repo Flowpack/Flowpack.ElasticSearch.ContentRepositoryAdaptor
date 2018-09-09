@@ -133,6 +133,14 @@ Furthermore, the following operators are supported:
 * `from(5)` -- return the results starting from the 6th one
 * `fulltext('searchWord', options)` -- do a query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-query-string-query.html) to the query_string
 
+#### moreLikeThis(like, fields, options)
+
+The More Like This Query (MLT Query) finds documents that are "like" a given text or a given set of documents.
+
+* `like` Single value or an array of strings or nodes.
+* `fields` An array of fields which are used to compare other docs with the given "like" definition.
+* `options` Additional options for the `more_like_this` query. See the [elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-mlt-query.html) for what is possible.
+
 Furthermore, there is a more low-level operator which can be used to add arbitrary Elasticsearch filters:
 
 * `queryFilter("filterType", {option1: "value1"}, [clauseType])`

@@ -112,6 +112,18 @@ interface QueryInterface
     public function suggestions($name, array $suggestionDefinition);
 
     /**
+     * This method is used to define a more like this query.
+     * The More Like This Query (MLT Query) finds documents that are "like" a given text
+     * or a given set of documents
+     *
+     * @param array $like An array of strings or documents
+     * @param array $fields Fields to compare other docs with
+     * @param array $options Additional options for the more_like_this quey
+     * @return void
+     */
+    public function moreLikeThis(array $like, array $fields = [], array $options = []);
+
+    /**
      * Add a query filter
      *
      * @param string $filterType
