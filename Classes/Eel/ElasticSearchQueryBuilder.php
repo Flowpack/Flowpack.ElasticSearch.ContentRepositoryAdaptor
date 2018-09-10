@@ -588,6 +588,20 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     }
 
     /**
+     * Get a uncached query result object for lazy execution of the query
+     *
+     * @return \Traversable<\Neos\Flow\Persistence\QueryResultInterface>
+     * @api
+     */
+    public function executeUncached()
+    {
+        $elasticSearchQuery = new ElasticSearchQuery($this);
+        $result = $elasticSearchQuery->execute(false);
+
+        return $result;
+    }
+
+    /**
      * Return the total number of hits for the query.
      *
      * @return integer
