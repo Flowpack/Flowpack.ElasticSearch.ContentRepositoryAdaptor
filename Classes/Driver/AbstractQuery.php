@@ -135,6 +135,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
      * @param string $parentPath The parent path to add the sub aggregation to
      * @param string $name The name to identify the resulting aggregation
      * @param array $aggregationConfiguration
+     * @return void
      * @throws Exception\QueryBuildingException
      */
     protected function addSubAggregation($parentPath, $name, $aggregationConfiguration)
