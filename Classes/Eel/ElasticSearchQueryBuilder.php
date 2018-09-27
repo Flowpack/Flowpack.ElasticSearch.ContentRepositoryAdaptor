@@ -576,14 +576,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * Get a query result object for lazy execution of the query
      *
-     * @param boolean $cacheResult
      * @return \Traversable<\Neos\Flow\Persistence\QueryResultInterface>
      * @api
      */
-    public function execute($cacheResult = true)
+    public function execute()
     {
         $elasticSearchQuery = new ElasticSearchQuery($this);
-        $result = $elasticSearchQuery->execute($cacheResult);
+        $result = $elasticSearchQuery->execute(true);
 
         return $result;
     }
