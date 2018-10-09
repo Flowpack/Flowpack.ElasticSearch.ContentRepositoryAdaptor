@@ -715,9 +715,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request->toArray())->getTreatedContent();
 
             $respondedDocuments = Arrays::getValueByPath($response, 'hits.hits');
+
             if (count($respondedDocuments) === 0) {
-                throw new Exception(sprintf('The node with identifier %s was not found in the elasticsearch index', $node->getIdentifier()), 1536485615);
+                $this->logger->log(sprintf('The node with identifier %s was not found in the elasticsearch index.', $node->getIdentifier()), LOG_INFO);
+                return [];
             }
+
             $respondedDocument = current($respondedDocuments);
             return [
                 '_id' => $respondedDocument['_id'],
@@ -726,17 +729,27 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             ];
         };
 
+        $processedLike = [];
+
         foreach ($like as $key => $likeElement) {
             if ($likeElement instanceof NodeInterface) {
-                $like[$key] = $getDocumentDefinitionByNode(clone $this->request, $likeElement);
+                $documentDefinition = $getDocumentDefinitionByNode(clone $this->request, $likeElement);
+                if (!empty($documentDefinition)) {
+                    $processedLike[] = $documentDefinition;
+                }
+            } else {
+                $processedLike[] = $likeElement;
             }
         }
 
-        $this->request->moreLikeThis($like, $fields, $options);
+        $processedLike = array_filter($processedLike);
+
+        if (!empty($processedLike)) {
+            $this->request->moreLikeThis($processedLike, $fields, $options);
+        }
 
         return $this;
     }
-
 
     /**
      * Sets the starting point for this query. Search result should only contain nodes that
