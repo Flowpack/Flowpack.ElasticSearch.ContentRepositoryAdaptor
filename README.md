@@ -459,7 +459,7 @@ awesome TS search query.
 Simple suggestion that returns a suggestion based on the sent term
 
 ```
-suggestions = $(Search.query(site)...termSuggestions('someTerm')}
+suggestions = ${Search.query(site)...termSuggestions('someTerm')}
 ```
 You can access your suggestions inside your fluid template with
 ```
