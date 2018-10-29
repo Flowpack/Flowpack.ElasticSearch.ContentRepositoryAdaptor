@@ -39,6 +39,8 @@ _Currently the Driver interfaces are not marked as API, and can be changed to ad
 **Note:** When using Elasticsearch 5.x changes to the types may need to be done in your mapping.
 More information on the [mapping in ElasticSearch 5.x](Documentation/ElasticMapping-5.x.md).
 
+**IMPORTATN:** When using Elasticsearch 5.x the suggest and autocomplete feature is actually not working.
+
 ### Elasticsearch Configuration file elasticsearch.yml
 
 There is a need, depending on your version of Elasticsearch, to add specific configuration to your
