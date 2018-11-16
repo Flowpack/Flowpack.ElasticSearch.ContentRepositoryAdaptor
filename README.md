@@ -29,6 +29,8 @@ Finally, run `./flow nodeindex:build`, and add the search plugin to your page. I
 
 ## Elastic version support
 
+**HINT: the Master of this package only supports modern versions of ES. If you need ES 1.x or 2.x support, please [see the 4.x branch of this repository](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/tree/4.0#elastic-version-support).**
+
 You can switch the Elastic driver by editing ```Settings.yaml```
 (```Flowpack.ElasticSearch.ContentRepositoryAdaptor.driver.version```) with the following value:
 
