@@ -607,7 +607,7 @@ An example:
   properties:
     title:
       search:
-        fulltextExtractor: ${Indexing.extractInto('h1', value)}
+        fulltextExtractor: '${Indexing.extractInto("h1", value)}'
 ```
 
 
