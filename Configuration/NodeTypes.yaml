@@ -6,29 +6,33 @@
     '__identifier':
       search:
         elasticSearchMapping:
-          type: string
-          index: not_analyzed
+          type: keyword
+          index: true
+          include_in_all: false
         indexing: '${node.identifier}'
 
     '__workspace':
       search:
         elasticSearchMapping:
-          type: string
-          index: not_analyzed
+          type: keyword
+          index: true
+          include_in_all: false
         indexing: '${node.context.workspace.name}'
 
     '__path':
       search:
         elasticSearchMapping:
-          type: string
-          index: not_analyzed
+          type: keyword
+          index: true
+          include_in_all: false
         indexing: '${node.path}'
 
     '__parentPath':
       search:
         elasticSearchMapping:
-          type: string
-          index: not_analyzed
+          type: keyword
+          index: true
+          include_in_all: false
         # we index *all* parent paths as separate tokens to allow for efficient searching without a prefix query
         indexing: '${Indexing.buildAllPathPrefixes(node.parentPath)}'
 
@@ -36,6 +40,7 @@
       search:
         elasticSearchMapping:
           type: integer
+          include_in_all: false
         indexing: '${node.index}'
 
     '_removed':
@@ -47,14 +52,16 @@
     '__typeAndSupertypes':
       search:
         elasticSearchMapping:
-          type: string
-          index: not_analyzed
+          type: keyword
+          index: true
+          include_in_all: false
         indexing: '${Indexing.extractNodeTypeNamesAndSupertypes(node.nodeType)}'
 
     '_lastModificationDateTime':
       search:
         elasticSearchMapping:
           type: date
+          include_in_all: false
           format: 'date_time_no_millis'
         indexing: '${(node.lastModificationDateTime ? Date.format(node.lastModificationDateTime, "Y-m-d\TH:i:sP") : null)}'
 
@@ -62,6 +69,7 @@
       search:
         elasticSearchMapping:
           type: date
+          include_in_all: false
           format: 'date_time_no_millis'
         indexing: '${(node.lastPublicationDateTime ? Date.format(node.lastPublicationDateTime, "Y-m-d\TH:i:sP") : null)}'
 
@@ -69,6 +77,7 @@
       search:
         elasticSearchMapping:
           type: date
+          include_in_all: false
           format: 'date_time_no_millis'
         indexing: '${(node.creationDateTime ? Date.format(node.creationDateTime, "Y-m-d\TH:i:sP") : null)}'
 
@@ -86,6 +95,7 @@
       search:
         elasticSearchMapping:
           type: date
+          include_in_all: false
           format: 'date_time_no_millis'
         indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:sP") : null)}'
 
@@ -93,6 +103,7 @@
       search:
         elasticSearchMapping:
           type: date
+          include_in_all: false
           format: 'date_time_no_millis'
         indexing: '${(node.hiddenAfterDateTime ? Date.format(node.hiddenAfterDateTime, "Y-m-d\TH:i:sP") : null)}'
 
@@ -105,8 +116,8 @@
     'uriPathSegment':
       search:
         elasticSearchMapping:
-          type: string
-          index: not_analyzed
+          type: keyword
+          index: true
     title:
       search:
         fulltextExtractor: ${Indexing.extractInto('h1', value)}
@@ -114,6 +125,7 @@
       search:
         elasticSearchMapping:
           type: object
+          include_in_all: false
           enabled: false
         indexing: ''
     '__fulltext':
@@ -123,32 +135,32 @@
           type: object
           properties:
             'h1':
-              type: string
-              index: analyzed
+              type: text
+              include_in_all: true
               boost: 20
             'h2':
-              type: string
-              index: analyzed
+              type: text
+              include_in_all: true
               boost: 12
             'h3':
-              type: string
-              index: analyzed
+              type: text
+              include_in_all: true
               boost: 10
             'h4':
-              type: string
-              index: analyzed
+              type: text
+              include_in_all: true
               boost: 5
             'h5':
-              type: string
-              index: analyzed
+              type: text
+              include_in_all: true
               boost: 3
             'h6':
-              type: string
-              index: analyzed
+              type: text
+              include_in_all: true
               boost: 2
             'text':
-              type: string
-              index: analyzed
+              type: text
+              include_in_all: true
               boost: 1
     '_hiddenInIndex':
       search:
