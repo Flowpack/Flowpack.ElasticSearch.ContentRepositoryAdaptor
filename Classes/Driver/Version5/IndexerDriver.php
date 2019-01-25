@@ -83,7 +83,7 @@ class IndexerDriver extends Version2\IndexerDriver
             $closestFulltextNode = $closestFulltextNode->getParent();
             if ($closestFulltextNode === null) {
                 // root of hierarchy, no fulltext root found anymore, abort silently...
-                $this->logger->log(sprintf('NodeIndexer: No fulltext root found for node %s (%)', $node->getPath(), $node->getIdentifier()), LOG_WARNING, null, 'ElasticSearch (CR)');
+                $this->logger->log(sprintf('NodeIndexer: No fulltext root found for node %s (%s)', $node->getPath(), $node->getIdentifier()), LOG_WARNING, null, 'ElasticSearch (CR)');
 
                 return null;
             }
