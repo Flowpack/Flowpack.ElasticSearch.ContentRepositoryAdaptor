@@ -227,11 +227,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function exactMatch($propertyName, $value)
     {
-        if ($value instanceof NodeInterface) {
-            $value = $value->getIdentifier();
-        }
-
-        return $this->queryFilter('term', [$propertyName => $value]);
+        return $this->queryFilter('term', [$propertyName => $this->convertValue($value)]);
     }
 
     /**
@@ -244,7 +240,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function greaterThan($propertyName, $value)
     {
-        return $this->queryFilter('range', [$propertyName => ['gt' => $value]]);
+        return $this->queryFilter('range', [$propertyName => ['gt' => $this->convertValue($value)]]);
     }
 
     /**
@@ -257,7 +253,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function greaterThanOrEqual($propertyName, $value)
     {
-        return $this->queryFilter('range', [$propertyName => ['gte' => $value]]);
+        return $this->queryFilter('range', [$propertyName => ['gte' => $this->convertValue($value)]]);
     }
 
     /**
@@ -270,7 +266,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function lessThan($propertyName, $value)
     {
-        return $this->queryFilter('range', [$propertyName => ['lt' => $value]]);
+        return $this->queryFilter('range', [$propertyName => ['lt' => $this->convertValue($value)]]);
     }
 
     /**
@@ -283,7 +279,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function lessThanOrEqual($propertyName, $value)
     {
-        return $this->queryFilter('range', [$propertyName => ['lte' => $value]]);
+        return $this->queryFilter('range', [$propertyName => ['lte' => $this->convertValue($value)]]);
     }
 
     /**
@@ -615,13 +611,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * Match the searchword against the fulltext index
      *
      * @param string $searchWord
+     * @param array $options Options to configure the query_string, see https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-query-string-query.html
      * @return QueryBuilderInterface
      * @api
      */
-    public function fulltext($searchWord)
+    public function fulltext($searchWord, array $options = [])
     {
         // We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
-        $this->request->fulltext(trim(json_encode($searchWord), '"'));
+        $this->request->fulltext(trim(json_encode($searchWord), '"'), $options);
         $this->request->highlight(150, 2);
 
         return $this;
@@ -774,5 +771,22 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         call_user_func_array([$this->request, $method], $arguments);
 
         return $this;
+    }
+
+    /**
+     * @param mixed $value
+     * @return mixed
+     */
+    protected function convertValue($value)
+    {
+        if ($value instanceof NodeInterface) {
+            return $value->getIdentifier();
+        }
+
+        if ($value instanceof \DateTime) {
+            return $value->format('Y-m-d\TH:i:sP');
+        }
+
+        return $value;
     }
 }
