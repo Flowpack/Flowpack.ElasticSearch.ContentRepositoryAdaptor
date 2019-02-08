@@ -252,6 +252,18 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
+     * Update the Elasticsearch Mapping, without indexing anything.
+     */
+    public function updateMappingCommand() {
+        $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
+        foreach ($nodeTypeMappingCollection as $mapping) {
+            /** @var \Flowpack\ElasticSearch\Domain\Model\Mapping $mapping */
+            $mapping->apply();
+        }
+        $this->logger->log('Updated Mapping.', LOG_INFO);
+    }
+
+    /**
      * Clean up old indexes (i.e. all but the current one)
      *
      * @return void
