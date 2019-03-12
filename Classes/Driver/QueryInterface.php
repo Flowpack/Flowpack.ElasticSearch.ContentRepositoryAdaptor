@@ -96,8 +96,8 @@ interface QueryInterface
      * @param array $aggregationDefinition
      * @param string $parentPath ParentPath to define the parent of a sub aggregation
      * @return void
-     * @api
      * @throws Exception\QueryBuildingException
+     * @api
      */
     public function aggregation($name, array $aggregationDefinition, $parentPath = '');
 

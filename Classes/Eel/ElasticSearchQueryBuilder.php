@@ -11,7 +11,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  * source code.
  */
 
-use Neos\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Dto\SearchResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
@@ -22,6 +21,7 @@ use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
 use Neos\Eel\ProtectedContextAwareInterface;
+use Neos\Flow\Annotations as Flow;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 use Neos\Flow\Utility\Now;
 use Neos\Utility\Arrays;
@@ -234,8 +234,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $propertyName Name of the property
      * @param mixed $value Value for comparison
      * @return ElasticSearchQueryBuilder
-     * @api
      * @throws QueryBuildingException
+     * @api
      */
     public function exactMatch($propertyName, $value)
     {
@@ -290,8 +290,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param mixed $value Value for comparison
      * @param string $clauseType one of must, should, must_not
      * @return ElasticSearchQueryBuilder
-     * @api
      * @throws QueryBuildingException
+     * @api
      */
     public function lessThan($propertyName, $value, string $clauseType = 'must')
     {
@@ -323,8 +323,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $filterType
      * @param mixed $filterOptions
      * @param string $clauseType one of must, should, must_not
-     * @throws QueryBuildingException
      * @return ElasticSearchQueryBuilder
+     * @throws QueryBuildingException
      * @api
      */
     public function queryFilter($filterType, $filterOptions, string $clauseType = 'must')
@@ -341,8 +341,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $path
      * @param array $data
-     * @throws QueryBuildingException
      * @return ElasticSearchQueryBuilder
+     * @throws QueryBuildingException
      */
     public function appendAtPath($path, array $data)
     {
@@ -369,8 +369,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param array $data An associative array of keys as variable names and values as variable values
      * @param string $clauseType one of must, should, must_not
      * @return ElasticSearchQueryBuilder
-     * @api
      * @throws QueryBuildingException
+     * @api
      */
     public function queryFilterMultiple($data, $clauseType = 'must')
     {
@@ -644,8 +644,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * Return the total number of hits for the query.
      *
      * @return integer
-     * @api
      * @throws \Flowpack\ElasticSearch\Exception
+     * @api
      */
     public function count()
     {
@@ -757,8 +757,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param NodeInterface $contextNode
      * @return QueryBuilderInterface
-     * @api
      * @throws QueryBuildingException
+     * @api
      */
     public function query(NodeInterface $contextNode)
     {

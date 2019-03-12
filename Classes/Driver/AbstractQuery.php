@@ -121,7 +121,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
         if (!empty($fields)) {
             $moreLikeThis['fields'] = $fields;
         }
-        
+
         $this->appendAtPath('query.bool.filter.bool.must', ['more_like_this' => $moreLikeThis]);
     }
 

@@ -15,11 +15,6 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandCont
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
-use Neos\ContentRepository\Exception\NodeExistsException;
-use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
-use Neos\Flow\Mvc\Exception\StopActionException;
-use Neos\Flow\Persistence\QueryResultInterface;
-use Neos\Flow\Tests\FunctionalTestCase;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
@@ -27,7 +22,11 @@ use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Service\Context;
 use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
-use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
+use Neos\ContentRepository\Exception\NodeExistsException;
+use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
+use Neos\Flow\Mvc\Exception\StopActionException;
+use Neos\Flow\Persistence\QueryResultInterface;
+use Neos\Flow\Tests\FunctionalTestCase;
 
 class ElasticSearchQueryTest extends FunctionalTestCase
 {
@@ -369,6 +368,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
 
     /**
      * Creates some sample nodes to run tests against
+     *
      * @throws NodeExistsException
      * @throws NodeTypeNotFoundException
      * @throws StopActionException
@@ -397,7 +397,6 @@ class ElasticSearchQueryTest extends FunctionalTestCase
         $newDocumentNode3 = $this->siteNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
         $newDocumentNode3->setProperty('title', 'egg');
         $newDocumentNode3->setProperty('title_analyzed', 'egg');
-
 
         $dimensionContext = $this->contextFactory->create([
             'workspaceName' => 'live',
