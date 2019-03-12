@@ -110,6 +110,22 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     }
 
     /**
+     * {@inheritdoc}
+     * @throws Exception\QueryBuildingException
+     */
+    public function moreLikeThis(array $like, array $fields = [], $options = [])
+    {
+        $moreLikeThis = $options;
+        $moreLikeThis['like'] = $like;
+
+        if (!empty($fields)) {
+            $moreLikeThis['fields'] = $fields;
+        }
+        
+        $this->appendAtPath('query.bool.filter.bool.must', ['more_like_this' => $moreLikeThis]);
+    }
+
+    /**
      * This is an low level method for internal usage.
      *
      * You can add a custom $aggregationConfiguration under a given $parentPath. The $parentPath foo.bar would
@@ -119,7 +135,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
      * @param string $parentPath The parent path to add the sub aggregation to
      * @param string $name The name to identify the resulting aggregation
      * @param array $aggregationConfiguration
-     * @return QueryInterface
+     * @return void
      * @throws Exception\QueryBuildingException
      */
     protected function addSubAggregation($parentPath, $name, $aggregationConfiguration)

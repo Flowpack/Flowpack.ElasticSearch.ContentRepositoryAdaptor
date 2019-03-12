@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -11,13 +11,13 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
  * source code.
  */
 
+use Neos\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
-use Neos\Flow\Annotations as Flow;
 
 /**
- * Index Management driver for Elasticsearch version 1.x
+ * Index management driver for Elasticsearch version 5.x
  *
  * @Flow\Scope("singleton")
  */
@@ -33,8 +33,9 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
-    public function deleteIndex($index)
+    public function deleteIndex(string $index)
     {
         $response = $this->searchClient->request('HEAD', '/' . $index);
         if ($response->getStatusCode() === 200) {
@@ -47,8 +48,9 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
-    public function indexesByAlias($alias)
+    public function indexesByAlias(string $alias)
     {
         $response = $this->searchClient->request('GET', '/_alias/' . $alias);
         if ($response->getStatusCode() !== 200 && $response->getStatusCode() !== 404) {
@@ -57,6 +59,7 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
 
         // return empty array if content from response cannot be read as an array
         $treatedContent = $response->getTreatedContent();
+
         return is_array($treatedContent) ? array_keys($treatedContent) : [];
     }
 }

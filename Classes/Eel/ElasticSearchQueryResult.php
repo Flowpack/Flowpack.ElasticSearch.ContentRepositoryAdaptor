@@ -11,9 +11,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  * source code.
  */
 
+use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Eel\ProtectedContextAwareInterface;
 use Neos\Flow\Persistence\QueryResultInterface;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContextAwareInterface
 {
@@ -173,6 +173,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 
     /**
      * {@inheritdoc}
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function count()
     {

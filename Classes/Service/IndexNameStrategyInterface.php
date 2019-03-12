@@ -1,5 +1,5 @@
 <?php
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -11,14 +11,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1;
-use Neos\Flow\Annotations as Flow;
-
 /**
- * Request driver for Elasticsearch version 2.x
- *
- * @Flow\Scope("singleton")
+ * Get Index Name
  */
-class RequestDriver extends Version1\RequestDriver
+interface IndexNameStrategyInterface
 {
+    public function get(): string;
 }

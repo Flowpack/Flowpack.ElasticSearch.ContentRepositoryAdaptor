@@ -1,3 +1,6 @@
+Neos\ContentRepository\Search\Search\QueryBuilderInterface:
+  className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder
+
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface:
   scope: prototype
   factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\QueryFactory'
@@ -27,6 +30,11 @@ Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface:
   scope: singleton
   factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\DriverFactory'
   factoryMethodName: createSystemDriver
+
+Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface:
+  scope: singleton
+  factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\NodeTypeMappingBuilderFactory'
+  factoryMethodName: createNodeTypeMappingBuilder
 
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController:
   properties:

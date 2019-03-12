@@ -11,23 +11,23 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\DriverConfigurationException;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
 use Neos\Flow\Annotations as Flow;
 
 /**
- * A factory for creating the ElasticSearch Query
+ * A factory for creating the NodeTypeMappingBuilder
  *
  * @Flow\Scope("singleton")
  */
-class QueryFactory extends AbstractDriverSpecificObjectFactory
+class NodeTypeMappingBuilderFactory extends AbstractDriverSpecificObjectFactory
 {
     /**
-     * @return QueryInterface
+     * @return NodeTypeMappingBuilderInterface
      * @throws DriverConfigurationException
      */
-    public function createQuery()
+    public function createNodeTypeMappingBuilder()
     {
-        return $this->resolve('query');
+        return $this->resolve('nodeTypeMappingBuilder');
     }
 }

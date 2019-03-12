@@ -11,8 +11,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameStrategyInterface;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Configuration\ConfigurationManager;
 
 /**
  * The elasticsearch client to be used by the content repository adapter. Singleton, can be injected.
@@ -27,30 +27,10 @@ use Neos\Flow\Configuration\ConfigurationManager;
 class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
 {
     /**
-     * The index name to be used for querying (by default "neoscr")
-     *
-     * @var string
-     */
-    protected $indexName;
-
-    /**
+     * @var IndexNameStrategyInterface
      * @Flow\Inject
-     * @var ConfigurationManager
      */
-    protected $configurationManager;
-
-    /**
-     * Called by the Flow object framework after creating the object and resolving all dependencies.
-     *
-     * @param integer $cause Creation cause
-     */
-    public function initializeObject($cause)
-    {
-        if ($cause === \Neos\Flow\ObjectManagement\ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-            $settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
-            $this->indexName = $settings['elasticSearch']['indexName'];
-        }
-    }
+    protected $indexNameStrategy;
 
     /**
      * Get the index name to be used
@@ -59,7 +39,12 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      */
     public function getIndexName()
     {
-        return $this->indexName;
+        $name = trim($this->indexNameStrategy->get());
+        if ($name === '') {
+            throw new Exception('Index name can not be null');
+        }
+
+        return $name;
     }
 
     /**
@@ -70,6 +55,6 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      */
     public function getIndex()
     {
-        return $this->findIndex($this->indexName);
+        return $this->findIndex($this->getIndexName());
     }
 }

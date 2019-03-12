@@ -11,6 +11,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  * source code.
  */
 
+use Neos\Flow\Annotations as Flow;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 /**
@@ -19,12 +20,18 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
 abstract class AbstractIndexerDriver extends AbstractDriver
 {
     /**
+     * @Flow\Inject
+     * @var NodeTypeMappingBuilderInterface
+     */
+    protected $nodeTypeMappingBuilder;
+
+    /**
      * Whether the node is configured as fulltext root.
      *
      * @param NodeInterface $node
-     * @return boolean
+     * @return bool
      */
-    protected function isFulltextRoot(NodeInterface $node)
+    protected function isFulltextRoot(NodeInterface $node): bool
     {
         if ($node->getNodeType()->hasConfiguration('search')) {
             $elasticSearchSettingsForNode = $node->getNodeType()->getConfiguration('search');
@@ -34,5 +41,27 @@ abstract class AbstractIndexerDriver extends AbstractDriver
         }
 
         return false;
+    }
+
+    /**
+     * @param NodeInterface $node
+     * @return NodeInterface|null
+     */
+    protected function findClosestFulltextRoot(NodeInterface $node)
+    {
+        $closestFulltextNode = $node;
+        while (!$this->isFulltextRoot($closestFulltextNode)) {
+            $closestFulltextNode = $closestFulltextNode->getParent();
+            if ($closestFulltextNode === null) {
+                // root of hierarchy, no fulltext root found anymore, abort silently...
+                if ($node->getPath() !== '/' && $node->getPath() !== '/sites') {
+                    $this->logger->log(sprintf('NodeIndexer: No fulltext root found for node %s (%s)', $node->getIdentifier(), $node->getContextPath()), LOG_WARNING, null, 'ElasticSearch (CR)');
+                }
+
+                return null;
+            }
+        }
+
+        return $closestFulltextNode;
     }
 }

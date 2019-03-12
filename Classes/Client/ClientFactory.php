@@ -32,6 +32,7 @@ class ClientFactory
      * Create a client
      *
      * @return Client
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function create()
     {

@@ -1,4 +1,3 @@
-
 Flowpack:
   ElasticSearch:
     ContentRepositoryAdaptor:
@@ -7,106 +6,56 @@ Flowpack:
           '*':
             indexed: true
       driver:
-        version: 1.x
+        version: '5.x'
         mapping:
-          1.x:
+          5.x:
             query:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\Query\FilteredQuery
+              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Query\FilteredQuery
               arguments:
                 request:
                   query:
-                    filtered:
-                      query:
-                        bool:
-                          must:
-                            -
-                              match_all: {  }
+                    bool:
+                      must:
+                      - match_all:
+                          boost: 1.0 # force match_all to be an object
                       filter:
                         bool:
-                          must: {  }
-                          should: {  }
+                          must: []
+                          should: []
                           must_not:
-                            -
-                              term:
-                                _hidden: true
-                            -
-                              range:
-                                _hiddenBeforeDateTime:
-                                  gt: now
-                            -
-                              range:
-                                _hiddenAfterDateTime:
-                                  lt: now
-                  fields:
-                    - __path
+                          - term:
+                              _hidden: true
+                          - range:
+                              _hiddenBeforeDateTime:
+                                gt: now
+                          - range:
+                              _hiddenAfterDateTime:
+                                lt: now
+                  _source:
+                    - '__path'
                 unsupportedFieldsInCountRequest:
-                  - fields
-                  - sort
-                  - from
-                  - size
-                  - highlight
-                  - aggs
-                  - aggregations
-                  - suggest
+                  - '_source'
+                  - 'sort'
+                  - 'from'
+                  - 'size'
+                  - 'highlight'
+                  - 'aggs'
+                  - 'aggregations'
+                  - 'suggest'
             document:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\DocumentDriver
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\DocumentDriver'
             indexer:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexerDriver
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\IndexerDriver'
             indexManagement:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\IndexDriver
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\IndexDriver'
             request:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\RequestDriver
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\RequestDriver'
             system:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version1\SystemDriver
-          2.x:
-            query:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\Query\FilteredQuery
-              arguments:
-                request:
-                  query:
-                    filtered:
-                      query:
-                        bool:
-                          must:
-                            -
-                              match_all: {  }
-                      filter:
-                        bool:
-                          must: {  }
-                          should: {  }
-                          must_not:
-                            -
-                              term:
-                                _hidden: true
-                            -
-                              range:
-                                _hiddenBeforeDateTime:
-                                  gt: now
-                            -
-                              range:
-                                _hiddenAfterDateTime:
-                                  lt: now
-                  fields:
-                    - __path
-                unsupportedFieldsInCountRequest:
-                  - fields
-                  - sort
-                  - from
-                  - size
-                  - highlight
-                  - aggs
-                  - aggregations
-                  - suggest
-            document:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\DocumentDriver
-            indexer:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexerDriver
-            indexManagement:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\IndexDriver
-            request:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\RequestDriver
-            system:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version2\SystemDriver
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\SystemDriver'
+            nodeTypeMappingBuilder:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Mapping\NodeTypeMappingBuilder'
+
+
 Neos:
   ContentRepository:
     Search:
@@ -141,7 +90,6 @@ Neos:
         string:
           elasticSearchMapping:
             type: string
-            include_in_all: false
 
         boolean:
           elasticSearchMapping:
@@ -155,7 +103,6 @@ Neos:
           elasticSearchMapping:
             type: date
             format: 'date_time_no_millis'
-            include_in_all: false
 
         'Neos\Media\Domain\Model\Asset':
           elasticSearchMapping: '' # deliberately don't map or index this

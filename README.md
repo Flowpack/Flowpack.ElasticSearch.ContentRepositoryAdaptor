@@ -1,22 +1,12 @@
-[![Build Status](https://travis-ci.org/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor.svg)](https://travis-ci.org/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor)
+[![Build Status](https://travis-ci.org/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor.svg)](https://travis-ci.org/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor) [![Latest Stable Version](https://poser.pugx.org/flowpack/elasticsearch-contentrepositoryadaptor/v/stable)](https://packagist.org/packages/flowpack/elasticsearch-contentrepositoryadaptor) [![Total Downloads](https://poser.pugx.org/flowpack/elasticsearch-contentrepositoryadaptor/downloads)](https://packagist.org/packages/flowpack/elasticsearch-contentrepositoryadaptor)
 
 # Neos Elasticsearch Adapter
 
-This project connects the Neos Content Repository (TYPO3CR) to Elasticsearch; enabling two
+This project connects the Neos Content Repository to Elasticsearch; enabling two
 main functionalities:
 
 * finding Nodes in Fusion / Eel by arbitrary queries
 * Full-Text Indexing of Pages and other Documents (of course including the full content)
-
-## Elastic version support
-
-You can switch the Elastic driver by editing ```Settings.yaml```
-(```Flowpack.ElasticSearch.ContentRepositoryAdaptor.driver.version```) with the following value:
-
-* ```1.x``` to support Elastic 1.2 to 1.7
-* ```2.x``` to support Elastic 2.x
-
-_Currently the Driver interfaces is not marked as API, and can be changed to adapt to future needs (especially the support of Elastic v5)._
 
 ## Relevant Packages
 
@@ -35,18 +25,28 @@ composer require 'flowpack/searchplugin'
 ```
 Ensure to update `<your-elasticsearch>/config/elasticsearch.yml` as explained below; then start Elasticsearch.
 
-Then just run `./flow nodeindex:build` and add the search plugin to your page. It should "just work".
+Finally, run `./flow nodeindex:build`, and add the search plugin to your page. It should "just work".
 
-## Elasticsearch Configuration file *elasticsearch.yml*
+## Elastic version support
+
+**HINT: the Master of this package only supports modern versions of ES. If you need ES 1.x or 2.x support, please [see the 4.x branch of this repository](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/tree/4.0#elastic-version-support).**
+
+You can switch the Elastic driver by editing ```Settings.yaml```
+(```Flowpack.ElasticSearch.ContentRepositoryAdaptor.driver.version```) with the following value:
+
+* ```5.x``` to support Elastic 5.x
+
+_Currently the Driver interfaces are not marked as API, and can be changed to adapt to future needs._
+
+**Note:** When using Elasticsearch 5.x changes to the types may need to be done in your mapping.
+More information on the [mapping in ElasticSearch 5.x](Documentation/ElasticMapping-5.x.md).
+
+### Elasticsearch Configuration file elasticsearch.yml
 
 There is a need, depending on your version of Elasticsearch, to add specific configuration to your
 Elasticsearch Configuration File `<your-elasticsearch>/config/elasticsearch.yml`.
 
-- [ElasticSearch 2.x](Documentation/ElasticConfiguration-2.x.md)
-- [ElasticSearch 1.6 to 1.7](Documentation/ElasticConfiguration-1.6-1.7.md)
-- [ElasticSearch 1.4 to 1.5](Documentation/ElasticConfiguration-1.4-1.5.md)
-- [ElasticSearch 1.3](Documentation/ElasticConfiguration-1.3.md)
-- [ElasticSearch 1.2](Documentation/ElasticConfiguration-1.2.md)
+- [ElasticSearch 5.x](Documentation/ElasticConfiguration-5.x.md)
 
 ## Building up the Index
 
@@ -151,21 +151,34 @@ search underneath the current site node (like in the example above).
 
 Furthermore, the following operators are supported:
 
-* `nodeType("Your.Node:Type")`
-* `exactMatch('propertyName', value)`; supports simple types: `exactMatch('tag', 'foo')`, or node references: `exactMatch('author', authorNode)`
-* `greaterThan('propertyName', value)` -- range filter with property values greater than the given value
-* `greaterThanOrEqual('propertyName', value)` -- range filter with property values greater than or equal to the given value
-* `lessThan('propertyName', value)` -- range filter with property values less than the given value
-* `lessThanOrEqual('propertyName', value)` -- range filter with property values less than or equal to the given value
+As **value**, the following methods accept a simple type, a node object or a DateTime object.
+
+* `nodeType('Your.Node:Type')`
+* `exactMatch('propertyName', value)` -- supports simple types: `exactMatch('tag', 'foo')`, or node references: `exactMatch('author', authorNode)`
+* `exclude('propertyName', value)` -- excludes results by property - the negation of exactMatch.
+* `greaterThan('propertyName', value, [clauseType])` -- range filter with property values greater than the given value
+* `greaterThanOrEqual('propertyName', value, [clauseType])` -- range filter with property values greater than or equal to the given value
+* `lessThan('propertyName', value, [clauseType])` -- range filter with property values less than the given value
+* `lessThanOrEqual('propertyName', value, [clauseType])` -- range filter with property values less than or equal to the given value
 * `sortAsc('propertyName')` and `sortDesc('propertyName')` -- can also be used multiple times, e.g. `sortAsc('tag').sortDesc(`date')`
    will first sort by tag ascending, and then by date descending.
 * `limit(5)` -- only return five results. If not specified, the default limit by Elasticsearch applies (which is at 10 by default)
 * `from(5)` -- return the results starting from the 6th one
-* `fulltext(...)` -- do a query_string query on the Fulltext Index
+* `fulltext('searchWord', options)` -- do a query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-query-string-query.html) to the query_string
+
+#### moreLikeThis(like, fields, options)
+
+The More Like This Query (MLT Query) finds documents that are "like" a given text or a given set of documents.
+
+* `like` Single value or an array of strings or nodes.
+* `fields` An array of fields which are used to compare other docs with the given "like" definition.
+* `options` Additional options for the `more_like_this` query. See the [elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-mlt-query.html) for what is possible.
 
 Furthermore, there is a more low-level operator which can be used to add arbitrary Elasticsearch filters:
 
-* `queryFilter("filterType", {option1: "value1"})`
+* `queryFilter("filterType", {option1: "value1"}, [clauseType])`
+
+The optional argument `clauseType` defaults to "must" and can be used to specify the boolean operator of the [bool query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-bool-query.html). It has to be one of `must`, `should`, `must_not` or `filter`.	
 
 At lowest level, there is the `request` operator which allows to modify the request in arbitrary manner. Note that the existing request is merged with the passed-in type in case it is an array:
 
@@ -335,9 +348,11 @@ for all your filterable properties, or else filtering won't work on them properl
       search:
         elasticSearchMapping:
           type: "string"
-          include_in_all: false
           index: 'not_analyzed'
 ```
+
+**Note:** When using Elasticsearch 5.x the mapping needs to be adjusted in a different way.
+More information on the [mapping in ElasticSearch 5.x](Documentation/ElasticMapping-5.x.md).
 
 ## Sorting
 
@@ -412,7 +427,7 @@ nodes = ${Search.query(site).nodeType('Vendor.Name:Retailer').sort(this.geoSorti
 Now you can paginate that nodes in your template. To get your actually distance for each node use
 the `GetHitArrayForNodeViewHelper`:
 ```
-{namespace cr=Neos\ContentRepository\ViewHelpers}
+{namespace cr=Neos\ContentRepository\Search\ViewHelpers}
 {namespace es=Flowpack\ElasticSearch\ContentRepositoryAdaptor\ViewHelpers}
 
 <cr:widget.paginate query="{nodes}" as="paginatedNodes">
@@ -428,7 +443,7 @@ of an array or a string. Check the documentation \Neos\Utility\Arrays::getValueB
 
 **Important notice**
 
-The ViewHelper GetHitArrayForNode will return the raw hit result array. The path poperty allows you to access some
+The ViewHelper GetHitArrayForNode will return the raw hit result array. The path property allows you to access some
 specific data like the the sort data. If there is only one value for your path the value will be returned.
 If there is more data the full array will be returned by GetHitArrayForNode-VH. So you might have to use the
 ForViewHelper to access your sort values.
@@ -448,11 +463,7 @@ Furthermore, we want that a fulltext match e.g. inside a headline is seen as *mo
 a match inside the normal body text. That's why the `Document` node not only contains one field with
 all the texts, but multiple "buckets" where text is added to: One field which contains everything
 deemed as "very important" (`__fulltext.h1`), one which is "less important" (`__fulltext.h2`),
-and finally one for the plain text (`__fulltext.text`). All of these fields add themselves to the
-Elasticsearch `_all` field, and are configured with different `boost` values.
-
-In order to search this index, you can just search inside the `_all` field with an additional limitation
-of `__typeAndSupertypes` containing `Neos.Neos:Document`.
+and finally one for the plain text (`__fulltext.text`). All of these fields are configured with different `boost` values.
 
 **For a search user interface, checkout the Flowpack.SearchPlugin package**
 
@@ -478,7 +489,7 @@ awesome TS search query.
 Simple suggestion that returns a suggestion based on the sent term
 
 ```
-suggestions = $(Search.query(site)...termSuggestions('someTerm')}
+suggestions = ${Search.query(site)...termSuggestions('someTerm')}
 ```
 You can access your suggestions inside your fluid template with
 ```
@@ -505,10 +516,36 @@ suggestionsQueryDefinition = Neos.Fusion:RawArray {
 suggestions = ${Search.query(site)...suggestions('my_suggestions', this.suggestionsQueryDefinition)}
 ```
 
+## Calculate the maximum cache time
+
+In order to set the maximum cache time of a fusion prototype that renders nodes fetched by `Search()`,
+the nearest future value of the hiddenBeforeDateTime or hiddenAfterDateTime properties of all nodes in the result needs to be calculated.
+
+	prototype(Acme.Blog:Listing) < prototype(Neos.Fusion:Collection) {
+		@context.searchQuery = ${Search.query(site).nodeType('Acme.Blog:Post')}
+	
+	    collection = ${searchQuery.execute()}
+	    itemName = 'node'
+	    itemRenderer = Acme.Blog:Post
+	    
+	     @cache {
+        	mode = 'cached'
+			maximumLifetime = ${searchQuery.cacheLifetime()}
+			
+        	entryTags {
+          	map = ${'NodeType_Acme.Blog:Post'}
+        	}
+    	}
+	}
+
+
 ## Advanced: Configuration of Indexing
 
 **The default configuration supports most usecases and often may not need to be touched, as this package comes
 with sane defaults for all Neos data types.**
+
+**Note:** When using Elasticsearch 5.x changes to the your mapping may be needed. More information
+on the [mapping in ElasticSearch 5.x](Documentation/ElasticMapping-5.x.md).
 
 Indexing of properties is configured at two places. The defaults per-data-type are configured
 inside `Neos.ContentRepository.Search.defaultConfigurationPerType` of `Settings.yaml`.
@@ -529,12 +566,10 @@ Neos:
     Search:
       defaultConfigurationPerType:
 
-        # strings should, by default, not be included in the _all field; and
-        # indexing should just use their simple value.
+        # strings should just be indexed with their simple value.
         string:
           elasticSearchMapping:
             type: string
-            include_in_all: false
           indexing: '${value}'
 ```
 
@@ -549,7 +584,6 @@ Neos:
         # Elasticsearch understands
         elasticSearchMapping:
           type: DateTime
-          include_in_all: false
           format: 'date_time_no_millis'
         indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:sP") : null)}'
 ```
@@ -601,7 +635,7 @@ An example:
   properties:
     title:
       search:
-        fulltextExtractor: ${Indexing.extractInto('h1', value)}
+        fulltextExtractor: '${Indexing.extractInto("h1", value)}'
 ```
 
 
@@ -652,13 +686,11 @@ Neos:
         'Neos\Media\Domain\Model\Asset':
           elasticSearchMapping:
             type: attachment
-            include_in_all: true
           indexing: ${Indexing.indexAsset(value)}
 
         'array<Neos\Media\Domain\Model\Asset>':
           elasticSearchMapping:
             type: attachment
-            include_in_all: true
           indexing: ${Indexing.indexAsset(value)}
 ```
 
@@ -698,9 +730,16 @@ in the NodeTypes.yaml. Generally this works by defining the global mapping at `[
   search:
     elasticSearchMapping:
       _all:
-        index_analyzer: custom_french_analyzer
-        search_analyzer: custom_french_analyzer
+        analyzer: custom_french_analyzer
 ```
+
+Hint: If this leads to error message like:
+
+    mapper [_all] has different [analyzer], mapper [_all] is used by multiple types
+
+you have different (node) types that do not have the same analyzer. Internally Elasticsearch uses the same
+configuration for all fields of the same name, even if they are in different types. Use the `nodeindex:showmapping`
+command to check for any node type that does not have `\_all` configured as expected and adjust it as well.
 
 ## Change the default Elastic index name
 
@@ -709,8 +748,8 @@ If you need to run serveral (different) neos instances on the same elasticsearch
 So `./flow nodeindex:build` or `./flow nodeindex:cleanup` won't overwrite your other sites index.
 
 ```
-TYPO3:
-  TYPO3CR:
+Neos:
+  ContentRepository:
     Search:
       elasticSearch:
         indexName: useMoreSpecificIndexName
@@ -723,16 +762,6 @@ In order to understand what's going on, the following commands are helpful:
 * use `./flow nodeindex:showMapping` to show the currently defined Elasticsearch Mapping
 * use the `.log()` statement inside queries to dump them to the Elasticsearch Log
 * the logfile `Data/Logs/ElasticSearch.log` contains loads of helpful information.
-
-
-## Version 2 vs Version 1
-
-* Version 1 is the initial, productive version of the Neos Elasticsearch adapter.
-* Version 2 has a dependency on Neos.ContentRepository.Search; which contains base functionality
-  which is also relevant for other search implementations (like the SQLite based SimpleSearch).
-
-The configuration from Version 1 to Version 2 has changed; here's what to change:
-
 
 **Settings.yaml**
 

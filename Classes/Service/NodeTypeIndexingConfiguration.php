@@ -33,7 +33,7 @@ final class NodeTypeIndexingConfiguration
      */
     public function isIndexable(NodeType $nodeType)
     {
-        if ($this->settings === null || !\is_array($this->settings)) {
+        if ($this->settings === null || !is_array($this->settings)) {
             return true;
         }
 
@@ -41,7 +41,7 @@ final class NodeTypeIndexingConfiguration
             return (bool)$this->settings[$nodeType->getName()]['indexed'];
         }
 
-        $nodeTypeParts = \explode(':', $nodeType->getName());
+        $nodeTypeParts = explode(':', $nodeType->getName());
         $namespace = reset($nodeTypeParts) . ':*';
         if (isset($this->settings[$namespace]['indexed'])) {
             return (bool)$this->settings[$namespace]['indexed'];

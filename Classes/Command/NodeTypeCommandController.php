@@ -11,6 +11,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * source code.
  */
 
+use Neos\ContentRepository\Domain\Service\NodeTypeManager;
+use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 
@@ -25,7 +27,7 @@ class NodeTypeCommandController extends CommandController
 {
     /**
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Domain\Service\NodeTypeManager
+     * @var NodeTypeManager
      */
     protected $nodeTypeManager;
 
@@ -34,6 +36,7 @@ class NodeTypeCommandController extends CommandController
      *
      * @param string $nodeType the node type to optionally filter for
      * @return void
+     * @throws NodeTypeNotFoundException
      */
     public function showCommand($nodeType = null)
     {

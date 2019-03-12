@@ -14,6 +14,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Eel;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
+use Neos\ContentRepository\Exception\NodeExistsException;
+use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
+use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Flow\Persistence\QueryResultInterface;
 use Neos\Flow\Tests\FunctionalTestCase;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
@@ -121,14 +125,40 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     }
 
     /**
-     * @return QueryBuilderInterface
+     * @test
      */
-    protected function getQueryBuilder()
+    public function fullTextSearchReturnsTheDocumentNode()
     {
-        /** @var ElasticSearchQueryBuilder $query */
-        $query = $this->objectManager->get(ElasticSearchQueryBuilder::class);
+        /** @var ElasticSearchQueryResult $result */
+        $result = $this->getQueryBuilder()
+            ->fulltext('circum*')
+            ->execute();
+        $this->assertEquals(1, $result->count());
 
-        return $query->query($this->siteNode);
+        /** @var NodeInterface $node */
+        $node = $result->current();
+        $this->assertEquals('Neos.NodeTypes:Page', $node->getNodeType()->getName());
+        $this->assertEquals('test-node-1', $node->getName());
+    }
+
+    /**
+     * @test
+     */
+    public function fullTextHighlighting()
+    {
+        /** @var ElasticSearchQueryBuilder $queryBuilder */
+        $queryBuilder = $this->getQueryBuilder();
+
+        /** @var NodeInterface $resultNode */
+        $resultNode = $queryBuilder
+            ->fulltext('whistles')
+            ->log($this->getLogMessagePrefix(__METHOD__))
+            ->execute()
+            ->current();
+        $searchHitForNode = $queryBuilder->getFullElasticSearchHitForNode($resultNode);
+        $highlightedText = current($searchHitForNode['highlight']['__fulltext.text']);
+        $expected = 'A Scout smiles and <em>whistles</em> under all circumstances.';
+        $this->assertEquals($expected, $highlightedText);
     }
 
     /**
@@ -208,6 +238,9 @@ class ElasticSearchQueryTest extends FunctionalTestCase
         $this->assertEquals($expectedChickenBucket, $result[$aggregationTitle]['buckets'][0]);
     }
 
+    /**
+     * @return array
+     */
     public function termSuggestionDataProvider()
     {
         return [
@@ -238,13 +271,13 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->termSuggestions($term, 'title')
+            ->termSuggestions($term, 'title_analyzed')
             ->execute()
             ->getSuggestions();
 
-        $this->assertArrayHasKey('suggestions', $result);
+        $this->assertArrayHasKey('suggestions', $result, 'The result should contain a key suggestions but looks like this ' . print_r($result, 1));
         $this->assertTrue(is_array($result['suggestions']), 'Suggestions must be an array.');
-        $this->assertCount(count($expectedBestSuggestions), $result['suggestions']);
+        $this->assertCount(count($expectedBestSuggestions), $result['suggestions'], sprintf('Expected %s suggestions "[%s]" but got %s suggestions', count($expectedBestSuggestions), implode(',', $expectedBestSuggestions), print_r($result['suggestions'], 1)));
 
         foreach ($expectedBestSuggestions as $key => $expectedBestSuggestion) {
             $suggestion = $result['suggestions'][$key];
@@ -311,6 +344,22 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     }
 
     /**
+     * @test
+     * @throws QueryBuildingException
+     * @throws \Flowpack\ElasticSearch\Exception
+     */
+    public function cacheLifetimeIsCalculatedCorrectly()
+    {
+        $cacheLifetime = $this->getQueryBuilder()
+            ->log($this->getLogMessagePrefix(__METHOD__))
+            ->nodeType('Neos.NodeTypes:Text')
+            ->sortAsc('title')
+            ->cacheLifetime();
+
+        $this->assertEquals(600, $cacheLifetime);
+    }
+
+    /**
      * @return string
      */
     protected function getLogMessagePrefix($method)
@@ -320,23 +369,41 @@ class ElasticSearchQueryTest extends FunctionalTestCase
 
     /**
      * Creates some sample nodes to run tests against
+     * @throws NodeExistsException
+     * @throws NodeTypeNotFoundException
+     * @throws StopActionException
      */
     protected function createNodesForNodeSearchTest()
     {
-        $newNode1 = $this->siteNode->createNode('test-node-1', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
-        $newNode1->setProperty('title', 'chicken');
+        $newDocumentNode1 = $this->siteNode->createNode('test-node-1', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
+        $newDocumentNode1->setProperty('title', 'chicken');
+        $newDocumentNode1->setProperty('title_analyzed', 'chicken');
 
-        $newNode2 = $this->siteNode->createNode('test-node-2', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
-        $newNode2->setProperty('title', 'chicken');
+        $newContentNode1 = $newDocumentNode1->getNode('main')->createNode('document-1-text-1', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Text'));
+        $newContentNode1->setProperty('text', 'A Scout smiles and whistles under all circumstances.');
 
-        $newNode3 = $this->siteNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
-        $newNode3->setProperty('title', 'egg');
+        $newDocumentNode2 = $this->siteNode->createNode('test-node-2', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
+        $newDocumentNode2->setProperty('title', 'chicken');
+        $newDocumentNode2->setProperty('title_analyzed', 'chicken');
+
+        // Nodes for cacheLifetime test
+        $newContentNode2 = $newDocumentNode2->getNode('main')->createNode('document-2-text-1', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Text'));
+        $newContentNode2->setProperty('text', 'Hidden after 2025-01-01');
+        $newContentNode2->setHiddenAfterDateTime(new \DateTime('@1735686000'));
+        $newContentNode3 = $newDocumentNode2->getNode('main')->createNode('document-2-text-2', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Text'));
+        $newContentNode3->setProperty('text', 'Hidden before 2018-07-18');
+        $newContentNode3->setHiddenBeforeDateTime(new \DateTime('@1531864800'));
+
+        $newDocumentNode3 = $this->siteNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
+        $newDocumentNode3->setProperty('title', 'egg');
+        $newDocumentNode3->setProperty('title_analyzed', 'egg');
+
 
         $dimensionContext = $this->contextFactory->create([
             'workspaceName' => 'live',
             'dimensions' => ['language' => ['de']]
         ]);
-        $translatedNode3 = $dimensionContext->adoptNode($newNode3, true);
+        $translatedNode3 = $dimensionContext->adoptNode($newDocumentNode3, true);
         $translatedNode3->setProperty('title', 'De');
 
         $this->persistenceManager->persistAll();
@@ -349,5 +416,18 @@ class ElasticSearchQueryTest extends FunctionalTestCase
 
         $this->nodeIndexCommandController->buildCommand(null, false, null, 'functionaltest');
         self::$indexInitialized = true;
+    }
+
+    /**
+     * @return ElasticSearchQueryBuilder
+     * @throws QueryBuildingException
+     * @throws \Exception
+     */
+    protected function getQueryBuilder(): ElasticSearchQueryBuilder
+    {
+        $elasticSearchQueryBuilder = $this->objectManager->get(ElasticSearchQueryBuilder::class);
+        $this->inject($elasticSearchQueryBuilder, 'now', new \DateTimeImmutable('@1735685400')); // Dec. 31, 2024 23:50:00
+
+        return $elasticSearchQueryBuilder->query($this->siteNode);
     }
 }
