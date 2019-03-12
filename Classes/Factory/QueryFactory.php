@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
 
 /*
@@ -26,7 +29,7 @@ class QueryFactory extends AbstractDriverSpecificObjectFactory
      * @return QueryInterface
      * @throws DriverConfigurationException
      */
-    public function createQuery()
+    public function createQuery(): QueryInterface
     {
         return $this->resolve('query');
     }

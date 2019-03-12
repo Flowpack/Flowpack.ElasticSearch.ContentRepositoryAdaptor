@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 
 /*
@@ -13,6 +16,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Neos\Flow\Persistence\QueryInterface;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 /**
  * This ElasticSearchQuery object is just used inside ElasticSearchQueryResult->getQuery(), so that pagination
@@ -41,7 +45,11 @@ class ElasticSearchQuery implements QueryInterface
     }
 
     /**
-     * {@inheritdoc}
+     * Executes the query and returns the result.
+     *
+     * @param bool $cacheResult If the result cache should be used
+     * @return ElasticSearchQueryResult The query result
+     * @api
      */
     public function execute($cacheResult = false)
     {
@@ -110,7 +118,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function getType()
     {
-        return 'Neos\ContentRepository\Domain\Model\NodeInterface';
+        return NodeInterface::class;
     }
 
     /**
@@ -278,7 +286,7 @@ class ElasticSearchQuery implements QueryInterface
     /**
      * @return ElasticSearchQueryBuilder
      */
-    public function getQueryBuilder()
+    public function getQueryBuilder(): ElasticSearchQueryBuilder
     {
         return $this->queryBuilder;
     }

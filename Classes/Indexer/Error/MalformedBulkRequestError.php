@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error;
 
 /*
@@ -50,7 +53,7 @@ class MalformedBulkRequestError implements ErrorInterface
      *
      * @return void
      */
-    public function log()
+    public function log(): void
     {
         $this->logger->log($this->message(), LOG_ERR, $this->tuple);
     }
@@ -60,7 +63,7 @@ class MalformedBulkRequestError implements ErrorInterface
      *
      * @return string
      */
-    public function message()
+    public function message(): string
     {
         return $this->message;
     }

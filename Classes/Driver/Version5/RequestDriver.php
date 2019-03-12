@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
 
 /*
@@ -27,7 +30,7 @@ class RequestDriver extends AbstractDriver implements RequestDriverInterface
      * {@inheritdoc}
      * @throws \Flowpack\ElasticSearch\Exception
      */
-    public function bulk(Index $index, $request)
+    public function bulk(Index $index, $request): array
     {
         if (is_array($request)) {
             $request = json_encode($request);
@@ -38,8 +41,6 @@ class RequestDriver extends AbstractDriver implements RequestDriverInterface
 
         $response = $index->request('POST', '/_bulk', [], $request)->getOriginalResponse()->getContent();
 
-        return array_map(function ($line) {
-            return json_decode($line);
-        }, explode("\n", $response));
+        return array_map('json_decode', explode("\n", $response));
     }
 }

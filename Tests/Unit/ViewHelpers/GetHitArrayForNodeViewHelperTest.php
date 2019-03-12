@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
 
 /*
@@ -14,11 +17,12 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ViewHelpers\GetHitArrayForNodeViewHelper;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\Flow\Tests\UnitTestCase;
 
 /**
  * Testcase for ElasticSearchQueryBuilder
  */
-class GetHitArrayForNodeViewHelperTest extends \Neos\Flow\Tests\UnitTestCase
+class GetHitArrayForNodeViewHelperTest extends UnitTestCase
 {
     /**
      * @var GetHitArrayForNodeViewHelper
@@ -35,7 +39,7 @@ class GetHitArrayForNodeViewHelperTest extends \Neos\Flow\Tests\UnitTestCase
      */
     protected $mockQueryResult;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->viewHelper = new GetHitArrayForNodeViewHelper();
         $this->mockNode = $this->createMock(NodeInterface::class);
@@ -45,7 +49,7 @@ class GetHitArrayForNodeViewHelperTest extends \Neos\Flow\Tests\UnitTestCase
     /**
      * @test
      */
-    public function ifNoPathIsSetTheFullHitArrayWillBeReturned()
+    public function ifNoPathIsSetTheFullHitArrayWillBeReturned(): void
     {
         $hitArray = [
             'sort' => [
@@ -62,7 +66,7 @@ class GetHitArrayForNodeViewHelperTest extends \Neos\Flow\Tests\UnitTestCase
     /**
      * @test
      */
-    public function viewHelperWillReturnAPathFromHitArray()
+    public function viewHelperWillReturnAPathFromHitArray(): void
     {
         $path = 'sort';
         $hitArray = [
@@ -82,7 +86,7 @@ class GetHitArrayForNodeViewHelperTest extends \Neos\Flow\Tests\UnitTestCase
     /**
      * @test
      */
-    public function aSingleValueWillBeReturnedForADottedPath()
+    public function aSingleValueWillBeReturnedForADottedPath(): void
     {
         $singleValue = 'bar';
         $hitArray = [
@@ -90,7 +94,6 @@ class GetHitArrayForNodeViewHelperTest extends \Neos\Flow\Tests\UnitTestCase
                 0 => $singleValue
             ],
             'sort' => [
-                0 => '14',
                 0 => '14',
                 1 => '18'
             ]

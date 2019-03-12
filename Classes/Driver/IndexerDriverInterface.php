@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 /*
@@ -28,7 +31,7 @@ interface IndexerDriverInterface
      * @param array $documentData
      * @return array
      */
-    public function document(string $indexName, NodeInterface $node, ElasticSearchDocument $document, array $documentData);
+    public function document(string $indexName, NodeInterface $node, ElasticSearchDocument $document, array $documentData): array;
 
     /**
      * Generate the query to index the fulltext of the document
@@ -38,5 +41,5 @@ interface IndexerDriverInterface
      * @param string $targetWorkspaceName
      * @return array
      */
-    public function fulltext(NodeInterface $node, array $fulltextIndexOfNode, $targetWorkspaceName = null);
+    public function fulltext(NodeInterface $node, array $fulltextIndexOfNode, string $targetWorkspaceName = null): array;
 }

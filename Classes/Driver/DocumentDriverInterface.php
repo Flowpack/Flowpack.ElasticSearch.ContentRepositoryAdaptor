@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 /*
@@ -24,10 +27,10 @@ interface DocumentDriverInterface
      * Generate the query to delete Elastic document for the give node
      *
      * @param NodeInterface $node
-     * @param $identifier
+     * @param string $identifier
      * @return array
      */
-    public function delete(NodeInterface $node, $identifier);
+    public function delete(NodeInterface $node, string $identifier): array;
 
     /**
      * Generate the query to delete Elastic Document by Document Identifier but skip Document with the same Node Type
@@ -37,5 +40,5 @@ interface DocumentDriverInterface
      * @param NodeType $nodeType
      * @return array
      */
-    public function deleteDuplicateDocumentNotMatchingType(Index $index, $documentIdentifier, NodeType $nodeType);
+    public function deleteDuplicateDocumentNotMatchingType(Index $index, string $documentIdentifier, NodeType $nodeType): array;
 }

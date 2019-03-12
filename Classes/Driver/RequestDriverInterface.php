@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 /*
@@ -24,5 +27,5 @@ interface RequestDriverInterface
      * @param array|string $request an array or a raw JSON request payload
      * @return array
      */
-    public function bulk(Index $index, $request);
+    public function bulk(Index $index, $request): array;
 }

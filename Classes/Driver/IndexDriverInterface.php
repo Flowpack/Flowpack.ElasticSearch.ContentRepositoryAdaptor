@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 /*
@@ -22,7 +25,7 @@ interface IndexDriverInterface
      * @param string $alias
      * @return array
      */
-    public function indexesByAlias(string $alias);
+    public function indexesByAlias(string $alias): array;
 
     /**
      * Remove alias by name
@@ -30,7 +33,7 @@ interface IndexDriverInterface
      * @param string $index
      * @return void
      */
-    public function deleteIndex(string $index);
+    public function deleteIndex(string $index): void;
 
     /**
      * Execute batch aliases actions

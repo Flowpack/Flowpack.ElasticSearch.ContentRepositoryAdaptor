@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error;
 
 /*
@@ -69,7 +72,7 @@ class BulkIndexingError implements ErrorInterface
      *
      * @return void
      */
-    public function log()
+    public function log(): void
     {
         if (file_exists(FLOW_PATH_DATA . 'Logs/Elasticsearch') && is_dir(FLOW_PATH_DATA . 'Logs/Elasticsearch') && is_writable(FLOW_PATH_DATA . 'Logs/Elasticsearch')) {
             file_put_contents($this->filename, $this->renderErrors());
@@ -82,7 +85,7 @@ class BulkIndexingError implements ErrorInterface
     /**
      * @return string
      */
-    public function message()
+    public function message(): string
     {
         return $this->message;
     }
@@ -90,7 +93,7 @@ class BulkIndexingError implements ErrorInterface
     /**
      * @return string
      */
-    protected function renderErrors()
+    protected function renderErrors(): string
     {
         $bulkRequest = json_encode($this->currentBulkRequest, JSON_PRETTY_PRINT);
         $errors = json_encode($this->errors, JSON_PRETTY_PRINT);

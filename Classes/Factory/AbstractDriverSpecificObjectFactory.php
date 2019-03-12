@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
 
 /*
@@ -48,7 +51,7 @@ class AbstractDriverSpecificObjectFactory
     protected function resolve(string $type)
     {
         $version = trim($this->driverVersion);
-        if (trim($this->driverVersion) === '' || !isset($this->mapping[$version][$type]['className'])) {
+        if (!isset($this->mapping[$version][$type]['className']) || trim($this->driverVersion) === '') {
             throw new DriverConfigurationException(sprintf('Missing or wrongly configured driver type "%s" with the given version: %s', $type, $version ?: '[missing]'), 1485933538);
         }
 

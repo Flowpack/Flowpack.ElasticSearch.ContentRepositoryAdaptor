@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
 
 /*
@@ -136,7 +139,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     public function getIndexName(): string
     {
         $indexName = $this->searchClient->getIndexName();
-        if (strlen($this->indexNamePostfix) > 0) {
+        if ($this->indexNamePostfix !== '') {
             $indexName .= '-' . $this->indexNamePostfix;
         }
 
@@ -149,7 +152,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param string $indexNamePostfix
      * @return void
      */
-    public function setIndexNamePostfix(string $indexNamePostfix)
+    public function setIndexNamePostfix(string $indexNamePostfix): void
     {
         $this->indexNamePostfix = $indexNamePostfix;
     }
@@ -160,7 +163,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @return Index
      * @throws Exception
      */
-    public function getIndex()
+    public function getIndex(): Index
     {
         $index = $this->searchClient->findIndex($this->getIndexName());
         $index->setSettingsKey($this->searchClient->getIndexName());
@@ -200,7 +203,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
             $nodeType = $node->getNodeType();
 
-            $mappingType = $this->getIndex()->findType($this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($nodeType));
+            $mappingType = $this->getIndex()->findType($this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($nodeType->getName()));
 
             if ($this->bulkProcessing === false) {
                 // Remove document with the same contextPathHash but different NodeType, required after NodeType change
@@ -271,8 +274,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param NodeInterface $node
      * @param string $targetWorkspaceName
      * @return string
+     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
      */
-    protected function calculateDocumentIdentifier(NodeInterface $node, $targetWorkspaceName = null)
+    protected function calculateDocumentIdentifier(NodeInterface $node, $targetWorkspaceName = null): string
     {
         $contextPath = $node->getContextPath();
 
@@ -289,8 +293,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param NodeInterface $node
      * @param string $targetWorkspaceName
      * @return void
+     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
      */
-    public function removeNode(NodeInterface $node, $targetWorkspaceName = null)
+    public function removeNode(NodeInterface $node, string $targetWorkspaceName = null)
     {
         if ($this->settings['indexAllWorkspaces'] === false) {
             // we are only supposed to index the live workspace.
@@ -363,7 +368,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @throws Exception
      * @throws ApiException
      */
-    public function updateIndexAlias()
+    public function updateIndexAlias(): void
     {
         $aliasName = $this->searchClient->getIndexName(); // The alias name is the unprefixed index name
         if ($this->getIndexName() === $aliasName) {
@@ -415,7 +420,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @return array<string> a list of index names which were removed
      * @throws Exception
      */
-    public function removeOldIndices()
+    public function removeOldIndices(): array
     {
         $aliasName = $this->searchClient->getIndexName(); // The alias name is the unprefixed index name
 
@@ -432,7 +437,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 continue;
             }
 
-            if (array_search($indexName, $currentlyLiveIndices) !== false) {
+            if (in_array($indexName, $currentlyLiveIndices, true)) {
                 // skip the currently live index names from deletion
                 continue;
             }

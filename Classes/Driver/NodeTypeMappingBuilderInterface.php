@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 /*
@@ -35,10 +38,10 @@ interface NodeTypeMappingBuilderInterface
      * @param Index $index
      * @return MappingCollection<\Flowpack\ElasticSearch\Domain\Model\Mapping>
      */
-    public function buildMappingInformation(Index $index);
+    public function buildMappingInformation(Index $index): MappingCollection;
 
     /**
      * @return Result
      */
-    public function getLastMappingErrors();
+    public function getLastMappingErrors(): Result;
 }
