@@ -277,9 +277,9 @@ class ElasticSearchQueryTest extends FunctionalTestCase
             ->execute()
             ->getSuggestions();
 
-        $this->assertArrayHasKey('suggestions', $result, 'The result should contain a key suggestions but looks like this ' . print_r($result, 1));
+        $this->assertArrayHasKey('suggestions', $result, 'The result should contain a key suggestions but looks like this ' . print_r($result, true));
         $this->assertIsArray($result['suggestions']);
-        $this->assertCount(count($expectedBestSuggestions), $result['suggestions'], sprintf('Expected %s suggestions "[%s]" but got %s suggestions', count($expectedBestSuggestions), implode(',', $expectedBestSuggestions), print_r($result['suggestions'], 1)));
+        $this->assertCount(count($expectedBestSuggestions), $result['suggestions'], sprintf('Expected %s suggestions "[%s]" but got %s suggestions', count($expectedBestSuggestions), implode(',', $expectedBestSuggestions), print_r($result['suggestions'], true)));
 
         foreach ($expectedBestSuggestions as $key => $expectedBestSuggestion) {
             $suggestion = $result['suggestions'][$key];
