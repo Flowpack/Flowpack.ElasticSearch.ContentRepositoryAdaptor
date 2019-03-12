@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
 /*
@@ -11,8 +14,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception as CRAException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
@@ -51,8 +56,7 @@ class NodeIndexCommandController extends CommandController
     protected $errorHandlingService;
 
     /**
-     * @Flow\Inject
-     * @var NodeIndexerInterface
+     * @var NodeIndexer
      */
     protected $nodeIndexer;
 
@@ -104,12 +108,21 @@ class NodeIndexCommandController extends CommandController
     protected $settings;
 
     /**
+     * @param NodeIndexerInterface $nodeIndexer
+     * @return void
+     */
+    public function injectNodeIndexer(NodeIndexerInterface $nodeIndexer): void
+    {
+        $this->nodeIndexer = $nodeIndexer;
+    }
+
+    /**
      * Called by the Flow object framework after creating the object and resolving all dependencies.
      *
      * @param integer $cause Creation cause
      * @throws InvalidConfigurationTypeException
      */
-    public function initializeObject($cause)
+    public function initializeObject(int $cause): void
     {
         if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
             $this->settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
@@ -120,8 +133,9 @@ class NodeIndexCommandController extends CommandController
      * Show the mapping which would be sent to the ElasticSearch server
      *
      * @return void
+     * @throws CRAException
      */
-    public function showMappingCommand()
+    public function showMappingCommand(): void
     {
         $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
         foreach ($nodeTypeMappingCollection as $mapping) {
@@ -159,7 +173,7 @@ class NodeIndexCommandController extends CommandController
      * @return void
      * @throws StopActionException
      */
-    public function indexNodeCommand($identifier, $workspace = null)
+    public function indexNodeCommand(string $identifier, string $workspace = null): void
     {
         if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
             $workspace = 'live';
@@ -201,8 +215,8 @@ class NodeIndexCommandController extends CommandController
         };
 
         if ($workspace === null) {
-            foreach ($this->workspaceRepository->findAll() as $workspace) {
-                $indexInWorkspace($identifier, $workspace);
+            foreach ($this->workspaceRepository->findAll() as $workspaceToIndex) {
+                $indexInWorkspace($identifier, $workspaceToIndex);
             }
         } else {
             /** @var Workspace $workspaceInstance */
@@ -220,14 +234,16 @@ class NodeIndexCommandController extends CommandController
      *
      * This command (re-)indexes all nodes contained in the content repository and sets the schema beforehand.
      *
-     * @param integer $limit Amount of nodes to index at maximum
-     * @param boolean $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
+     * @param int $limit Amount of nodes to index at maximum
+     * @param bool $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
      * @param string $workspace name of the workspace which should be indexed
      * @param string $postfix Index postfix, index with the same postfix will be deleted if exist
      * @return void
+     * @throws ApiException
      * @throws StopActionException
+     * @throws CRAException
      */
-    public function buildCommand($limit = null, $update = false, $workspace = null, $postfix = '')
+    public function buildCommand(int $limit = null, bool $update = false, string $workspace = null, string $postfix = ''): void
     {
         if ($workspace !== null && $this->workspaceRepository->findByIdentifier($workspace) === null) {
             $this->logger->log('The given workspace (' . $workspace . ') does not exist.', LOG_ERR);
@@ -235,13 +251,13 @@ class NodeIndexCommandController extends CommandController
         }
 
         if ($update === true) {
-            $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
+            $this->logger->log('!!! Update Mode (Development) active!');
         } else {
             $this->createNewIndex($postfix);
         }
         $this->applyMapping();
 
-        $this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
+        $this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')));
 
         $count = 0;
 
@@ -257,8 +273,8 @@ class NodeIndexCommandController extends CommandController
             }
         };
         if ($workspace === null) {
-            foreach ($this->workspaceRepository->findAll() as $workspace) {
-                $count += $this->indexWorkspace($workspace->getName(), $limit, $callback);
+            foreach ($this->workspaceRepository->findAll() as $workspaceToIndex) {
+                $count += $this->indexWorkspace($workspaceToIndex->getName(), $limit, $callback);
             }
         } else {
             $count += $this->indexWorkspace($workspace, $limit, $callback);
@@ -289,8 +305,9 @@ class NodeIndexCommandController extends CommandController
      * Clean up old indexes (i.e. all but the current one)
      *
      * @return void
+     * @throws CRAException
      */
-    public function cleanupCommand()
+    public function cleanupCommand(): void
     {
         try {
             $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
@@ -316,30 +333,32 @@ class NodeIndexCommandController extends CommandController
      *
      * @param string $postfix
      * @return void
+     * @throws CRAException
      */
-    protected function createNewIndex(string $postfix)
+    protected function createNewIndex(string $postfix): void
     {
-        $this->nodeIndexer->setIndexNamePostfix($postfix ?: time());
+        $this->nodeIndexer->setIndexNamePostfix($postfix ?: (string)time());
         if ($this->nodeIndexer->getIndex()->exists() === true) {
             $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
             $this->nodeIndexer->getIndex()->delete();
         }
         $this->nodeIndexer->getIndex()->create();
-        $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
+        $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName());
     }
 
     /**
      * Apply the mapping to the current index.
      *
      * @return void
+     * @throws CRAException
      */
-    protected function applyMapping()
+    protected function applyMapping(): void
     {
         $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
         foreach ($nodeTypeMappingCollection as $mapping) {
             /** @var Mapping $mapping */
             $mapping->apply();
         }
-        $this->logger->log('Updated Mapping.', LOG_INFO);
+        $this->logger->log('Updated Mapping.');
     }
 }

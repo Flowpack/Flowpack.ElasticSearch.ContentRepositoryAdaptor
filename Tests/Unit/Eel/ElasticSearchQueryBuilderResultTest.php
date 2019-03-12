@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
 
 /*
@@ -14,24 +17,25 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQuery;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
+use Neos\Flow\Tests\UnitTestCase;
 
 /**
  * Testcase for ElasticSearchQueryBuilder
  */
-class ElasticSearchQueryBuilderResultTest extends \Neos\Flow\Tests\UnitTestCase
+class ElasticSearchQueryBuilderResultTest extends UnitTestCase
 {
 
     /**
      * @test
      */
-    public function ifNoAggregationsAreSetInTheQueyBuilderResultAnEmptyArrayWillBeReturnedIfYouFetchTheAggregations()
+    public function ifNoAggregationsAreSetInTheQueyBuilderResultAnEmptyArrayWillBeReturnedIfYouFetchTheAggregations(): void
     {
         $resultArrayWithoutAggregations = [
-            "nodes" => ["some", "nodes"]
+            'nodes' => ['some', 'nodes']
         ];
 
-        $queryBuilder = $this->getMockBuilder(ElasticSearchQueryBuilder::class)->setMethods(["fetch"])->getMock();
-        $queryBuilder->method("fetch")->will($this->returnValue($resultArrayWithoutAggregations));
+        $queryBuilder = $this->getMockBuilder(ElasticSearchQueryBuilder::class)->setMethods(['fetch'])->getMock();
+        $queryBuilder->method('fetch')->willReturn($resultArrayWithoutAggregations);
 
         $esQuery = new ElasticSearchQuery($queryBuilder);
 
@@ -39,7 +43,7 @@ class ElasticSearchQueryBuilderResultTest extends \Neos\Flow\Tests\UnitTestCase
 
         $actual = $queryResult->getAggregations();
 
-        $this->assertTrue(is_array($actual));
+        $this->assertIsArray($actual);
         $this->assertEmpty($actual);
     }
 }

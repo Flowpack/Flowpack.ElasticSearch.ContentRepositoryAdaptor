@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 /*
@@ -55,7 +58,7 @@ abstract class AbstractNodeTypeMappingBuilder implements NodeTypeMappingBuilderI
      * @param integer $cause Creation cause
      * @throws InvalidConfigurationTypeException
      */
-    public function initializeObject($cause)
+    public function initializeObject($cause): void
     {
         if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
             $settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
@@ -77,7 +80,7 @@ abstract class AbstractNodeTypeMappingBuilder implements NodeTypeMappingBuilderI
     /**
      * @return Result
      */
-    public function getLastMappingErrors()
+    public function getLastMappingErrors(): Result
     {
         return $this->lastMappingErrors;
     }

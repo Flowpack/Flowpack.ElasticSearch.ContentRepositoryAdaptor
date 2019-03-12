@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Mapping;
 
 /*
@@ -35,7 +38,7 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
      * @param integer $cause Creation cause
      * @throws InvalidConfigurationTypeException
      */
-    public function initializeObject($cause)
+    public function initializeObject($cause): void
     {
         parent::initializeObject($cause);
         if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
@@ -49,7 +52,7 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
      * @param Index $index
      * @return MappingCollection<\Flowpack\ElasticSearch\Domain\Model\Mapping>
      */
-    public function buildMappingInformation(Index $index)
+    public function buildMappingInformation(Index $index): MappingCollection
     {
         $this->lastMappingErrors = new Result();
 
@@ -83,13 +86,13 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
             ]);
 
             foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {
-                if (isset($propertyConfiguration['search']) && isset($propertyConfiguration['search']['elasticSearchMapping'])) {
+                if (isset($propertyConfiguration['search']['elasticSearchMapping'])) {
                     if (is_array($propertyConfiguration['search']['elasticSearchMapping'])) {
                         $propertyMapping = $propertyConfiguration['search']['elasticSearchMapping'];
                         $this->migrateConfigurationForElasticVersion5($propertyMapping);
                         $mapping->setPropertyByPath($propertyName, $propertyMapping);
                     }
-                } elseif (isset($propertyConfiguration['type']) && isset($this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping'])) {
+                } elseif (isset($propertyConfiguration['type'], $this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping'])) {
                     if (is_array($this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping'])) {
                         $mapping->setPropertyByPath($propertyName, $this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping']);
                     }
@@ -108,7 +111,7 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
      * @param array $mapping
      * @return void
      */
-    protected function migrateConfigurationForElasticVersion5(array &$mapping)
+    protected function migrateConfigurationForElasticVersion5(array &$mapping): void
     {
         $this->adjustStringTypeMapping($mapping);
     }
@@ -128,20 +131,22 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
      * @param array &$mapping
      * @return void
      */
-    protected function adjustStringTypeMapping(array &$mapping)
+    protected function adjustStringTypeMapping(array &$mapping): void
     {
         $adjustStringTypeMapping = function (&$item) {
             if (isset($item['type']) && $item['type'] === 'string') {
-                if (isset($item['index']) && $item['index'] === 'not_analyzed') {
-                    $item['type'] = 'keyword';
-                    $item['index'] = true;
-                    unset($item['analyzer']);
-                } elseif (isset($item['index']) && $item['index'] === 'no') {
-                    $item['type'] = 'text';
-                    $item['index'] = false;
-                } elseif (isset($item['index']) && $item['index'] === 'analyzed') {
-                    $item['type'] = 'text';
-                    $item['index'] = true;
+                if (isset($item['index'])) {
+                    if ($item['index'] === 'not_analyzed') {
+                        $item['type'] = 'keyword';
+                        $item['index'] = true;
+                        unset($item['analyzer']);
+                    } elseif ($item['index'] === 'no') {
+                        $item['type'] = 'text';
+                        $item['index'] = false;
+                    } elseif ($item['index'] === 'analyzed') {
+                        $item['type'] = 'text';
+                        $item['index'] = true;
+                    }
                 } else {
                     $item['type'] = 'keyword';
                     $item['index'] = true;

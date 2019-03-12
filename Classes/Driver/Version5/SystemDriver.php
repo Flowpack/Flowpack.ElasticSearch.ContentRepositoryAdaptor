@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
 
 /*
@@ -25,7 +28,7 @@ class SystemDriver extends AbstractDriver implements SystemDriverInterface
     /**
      * @inheritDoc
      */
-    public function status()
+    public function status(): array
     {
         return $this->searchClient->request('GET', '/_stats')->getTreatedContent();
     }

@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error;
 
 /*
@@ -21,12 +24,12 @@ interface ErrorInterface
      *
      * @return void
      */
-    public function log();
+    public function log(): void;
 
     /**
      * Get a short log message for reporting
      *
      * @return string
      */
-    public function message();
+    public function message(): string;
 }

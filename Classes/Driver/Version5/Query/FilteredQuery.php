@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Query;
 
 /*
@@ -23,9 +26,8 @@ class FilteredQuery extends AbstractQuery
 
     /**
      * {@inheritdoc}
-     * @throws QueryBuildingException
      */
-    public function getCountRequestAsJson()
+    public function getCountRequestAsJson(): string
     {
         $request = $this->request;
         foreach ($this->unsupportedFieldsInCountRequest as $field) {
@@ -40,23 +42,23 @@ class FilteredQuery extends AbstractQuery
     /**
      * {@inheritdoc}
      */
-    public function size($size)
+    public function size(int $size): void
     {
-        $this->request['size'] = (integer)$size;
+        $this->request['size'] = $size;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function from($size)
+    public function from(int $size): void
     {
-        $this->request['from'] = (integer)$size;
+        $this->request['from'] = $size;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function fulltext(string $searchWord, array $options = [])
+    public function fulltext(string $searchWord, array $options = []): void
     {
         $this->appendAtPath('query.bool.must', [
             'query_string' => array_merge($options, [
@@ -69,7 +71,7 @@ class FilteredQuery extends AbstractQuery
     /**
      * {@inheritdoc}
      */
-    public function queryFilter($filterType, $filterOptions, $clauseType = 'must')
+    public function queryFilter(string $filterType, $filterOptions, string $clauseType = 'must'): void
     {
         if (!in_array($clauseType, ['must', 'should', 'must_not'])) {
             throw new QueryBuildingException('The given clause type "' . $clauseType . '" is not supported. Must be one of "must", "should", "must_not".', 1383716082);

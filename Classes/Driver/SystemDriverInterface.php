@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 /*
@@ -21,5 +24,5 @@ interface SystemDriverInterface
      *
      * @return array
      */
-    public function status();
+    public function status(): array;
 }

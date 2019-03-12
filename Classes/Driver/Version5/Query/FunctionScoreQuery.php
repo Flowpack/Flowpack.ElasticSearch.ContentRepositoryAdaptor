@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Query;
 
 /*
@@ -27,7 +30,7 @@ class FunctionScoreQuery extends FilteredQuery
      * @param array $functions
      * @return void
      */
-    public function functions(array $functions)
+    public function functions(array $functions): void
     {
         if (isset($functions['functions'])) {
             $this->functionScoreRequest = $functions;
@@ -41,7 +44,7 @@ class FunctionScoreQuery extends FilteredQuery
      * @return void
      * @throws Exception\QueryBuildingException
      */
-    public function scoreMode($scoreMode)
+    public function scoreMode(string $scoreMode): void
     {
         if (!in_array($scoreMode, ['multiply', 'first', 'sum', 'avg', 'max', 'min'])) {
             throw new Exception\QueryBuildingException('Invalid score mode', 1454016230);
@@ -54,7 +57,7 @@ class FunctionScoreQuery extends FilteredQuery
      * @return void
      * @throws Exception\QueryBuildingException
      */
-    public function boostMode($boostMode)
+    public function boostMode(string $boostMode): void
     {
         if (!in_array($boostMode, ['multiply', 'replace', 'sum', 'avg', 'max', 'min'])) {
             throw new Exception\QueryBuildingException('Invalid boost mode', 1454016229);
@@ -67,7 +70,7 @@ class FunctionScoreQuery extends FilteredQuery
      * @return void
      * @throws Exception\QueryBuildingException
      */
-    public function maxBoost($boost)
+    public function maxBoost($boost): void
     {
         if (!is_numeric($boost)) {
             throw new Exception\QueryBuildingException('Invalid max boost', 1454016230);
@@ -80,7 +83,7 @@ class FunctionScoreQuery extends FilteredQuery
      * @return void
      * @throws Exception\QueryBuildingException
      */
-    public function minScore($score)
+    public function minScore($score): void
     {
         if (!is_numeric($score)) {
             throw new Exception\QueryBuildingException('Invalid max boost', 1454016230);
@@ -91,7 +94,7 @@ class FunctionScoreQuery extends FilteredQuery
     /**
      * {@inheritdoc}
      */
-    protected function prepareRequest()
+    protected function prepareRequest(): array
     {
         if ($this->functionScoreRequest['functions'] === []) {
             return parent::prepareRequest();
