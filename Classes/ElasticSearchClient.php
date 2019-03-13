@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
 
 /*
@@ -12,6 +15,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameStrategyInterface;
+use Flowpack\ElasticSearch\Domain\Model\Client;
+use Flowpack\ElasticSearch\Domain\Model\Index;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -24,7 +29,7 @@ use Neos\Flow\Annotations as Flow;
  *
  * @Flow\Scope("singleton")
  */
-class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
+class ElasticSearchClient extends Client
 {
     /**
      * @var IndexNameStrategyInterface
@@ -36,8 +41,9 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      * Get the index name to be used
      *
      * @return string
+     * @throws Exception
      */
-    public function getIndexName()
+    public function getIndexName(): string
     {
         $name = trim($this->indexNameStrategy->get());
         if ($name === '') {
@@ -51,9 +57,10 @@ class ElasticSearchClient extends \Flowpack\ElasticSearch\Domain\Model\Client
      * Retrieve the index to be used for querying or on-the-fly indexing.
      * In Elasticsearch, this index is an *alias* to the currently used index.
      *
-     * @return \Flowpack\ElasticSearch\Domain\Model\Index
+     * @return Index
+     * @throws Exception
      */
-    public function getIndex()
+    public function getIndex(): Index
     {
         return $this->findIndex($this->getIndexName());
     }

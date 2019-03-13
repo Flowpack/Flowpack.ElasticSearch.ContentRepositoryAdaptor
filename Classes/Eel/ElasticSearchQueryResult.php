@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 
 /*
@@ -25,17 +28,17 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     /**
      * @var array
      */
-    protected $result = null;
+    protected $result;
 
     /**
      * @var array
      */
-    protected $nodes = null;
+    protected $nodes;
 
     /**
      * @var integer
      */
-    protected $count = null;
+    protected $count;
 
     public function __construct(ElasticSearchQuery $elasticSearchQuery)
     {
@@ -44,8 +47,10 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 
     /**
      * Initialize the results by really executing the query
+     *
+     * @return void
      */
-    protected function initialize()
+    protected function initialize(): void
     {
         if ($this->result === null) {
             $queryBuilder = $this->elasticSearchQuery->getQueryBuilder();
@@ -185,10 +190,10 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     }
 
     /**
-     * @return integer the current number of results which can be iterated upon
+     * @return int the current number of results which can be iterated upon
      * @api
      */
-    public function getAccessibleCount()
+    public function getAccessibleCount(): int
     {
         $this->initialize();
 
@@ -198,7 +203,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     /**
      * @return array
      */
-    public function getAggregations()
+    public function getAggregations(): array
     {
         $this->initialize();
         if (array_key_exists('aggregations', $this->result)) {
@@ -227,7 +232,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
      *
      * @return array
      */
-    public function getSuggestions()
+    public function getSuggestions(): array
     {
         $this->initialize();
         if (array_key_exists('suggest', $this->result)) {
@@ -247,7 +252,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
      * @return array the Elasticsearch hit, or NULL if it does not exist.
      * @api
      */
-    public function searchHitForNode(NodeInterface $node)
+    public function searchHitForNode(NodeInterface $node): array
     {
         return $this->elasticSearchQuery->getQueryBuilder()->getFullElasticSearchHitForNode($node);
     }
@@ -259,7 +264,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
      * @param NodeInterface $node
      * @return array
      */
-    public function getSortValuesForNode(NodeInterface $node)
+    public function getSortValuesForNode(NodeInterface $node): array
     {
         $hit = $this->searchHitForNode($node);
         if (is_array($hit) && array_key_exists('sort', $hit)) {

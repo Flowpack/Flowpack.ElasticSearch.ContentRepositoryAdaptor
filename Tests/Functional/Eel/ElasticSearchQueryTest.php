@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Eel;
 
 /*
@@ -75,7 +78,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
      */
     protected static $indexInitialized = false;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
         $this->workspaceRepository = $this->objectManager->get(WorkspaceRepository::class);
@@ -101,7 +104,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
         $this->createNodesForNodeSearchTest();
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         parent::tearDown();
         $this->inject($this->contextFactory, 'contextInstances', []);
@@ -110,7 +113,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function elasticSearchQueryBuilderStartsClean()
+    public function elasticSearchQueryBuilderStartsClean(): void
     {
         /** @var ElasticSearchQueryBuilder $query */
         $query = $this->objectManager->get(ElasticSearchQueryBuilder::class);
@@ -126,7 +129,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function fullTextSearchReturnsTheDocumentNode()
+    public function fullTextSearchReturnsTheDocumentNode(): void
     {
         /** @var ElasticSearchQueryResult $result */
         $result = $this->getQueryBuilder()
@@ -143,7 +146,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function fullTextHighlighting()
+    public function fullTextHighlighting(): void
     {
         /** @var ElasticSearchQueryBuilder $queryBuilder */
         $queryBuilder = $this->getQueryBuilder();
@@ -163,7 +166,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function filterByNodeType()
+    public function filterByNodeType(): void
     {
         $resultCount = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
@@ -175,7 +178,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function filterNodeByProperty()
+    public function filterNodeByProperty(): void
     {
         $resultCount = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
@@ -187,7 +190,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function limitDoesNotImpactCount()
+    public function limitDoesNotImpactCount(): void
     {
         $query = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
@@ -201,7 +204,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function limitImpactGetAccessibleCount()
+    public function limitImpactGetAccessibleCount(): void
     {
         $query = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
@@ -216,7 +219,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function fieldBasedAggregations()
+    public function fieldBasedAggregations(): void
     {
         $aggregationTitle = 'titleagg';
         $result = $this->getQueryBuilder()
@@ -240,7 +243,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @return array
      */
-    public function termSuggestionDataProvider()
+    public function termSuggestionDataProvider(): array
     {
         return [
             'singleWord' => [
@@ -266,7 +269,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
      * @param string $term
      * @param array $expectedBestSuggestions
      */
-    public function termSuggestion($term, $expectedBestSuggestions)
+    public function termSuggestion(string $term, array $expectedBestSuggestions): void
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
@@ -274,9 +277,9 @@ class ElasticSearchQueryTest extends FunctionalTestCase
             ->execute()
             ->getSuggestions();
 
-        $this->assertArrayHasKey('suggestions', $result, 'The result should contain a key suggestions but looks like this ' . print_r($result, 1));
-        $this->assertTrue(is_array($result['suggestions']), 'Suggestions must be an array.');
-        $this->assertCount(count($expectedBestSuggestions), $result['suggestions'], sprintf('Expected %s suggestions "[%s]" but got %s suggestions', count($expectedBestSuggestions), implode(',', $expectedBestSuggestions), print_r($result['suggestions'], 1)));
+        $this->assertArrayHasKey('suggestions', $result, 'The result should contain a key suggestions but looks like this ' . print_r($result, true));
+        $this->assertIsArray($result['suggestions']);
+        $this->assertCount(count($expectedBestSuggestions), $result['suggestions'], sprintf('Expected %s suggestions "[%s]" but got %s suggestions', count($expectedBestSuggestions), implode(',', $expectedBestSuggestions), print_r($result['suggestions'], true)));
 
         foreach ($expectedBestSuggestions as $key => $expectedBestSuggestion) {
             $suggestion = $result['suggestions'][$key];
@@ -289,7 +292,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function nodesWillBeSortedDesc()
+    public function nodesWillBeSortedDesc(): void
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
@@ -312,7 +315,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function nodesWillBeSortedAsc()
+    public function nodesWillBeSortedAsc(): void
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
@@ -329,7 +332,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function sortValuesAreReturned()
+    public function sortValuesAreReturned(): void
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
@@ -347,7 +350,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
      * @throws QueryBuildingException
      * @throws \Flowpack\ElasticSearch\Exception
      */
-    public function cacheLifetimeIsCalculatedCorrectly()
+    public function cacheLifetimeIsCalculatedCorrectly(): void
     {
         $cacheLifetime = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
@@ -359,9 +362,10 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     }
 
     /**
+     * @param string $method
      * @return string
      */
-    protected function getLogMessagePrefix($method)
+    protected function getLogMessagePrefix(string $method): string
     {
         return substr(strrchr($method, '\\'), 1);
     }
@@ -372,8 +376,10 @@ class ElasticSearchQueryTest extends FunctionalTestCase
      * @throws NodeExistsException
      * @throws NodeTypeNotFoundException
      * @throws StopActionException
+     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws \Flowpack\ElasticSearch\Transfer\Exception\ApiException
      */
-    protected function createNodesForNodeSearchTest()
+    protected function createNodesForNodeSearchTest(): void
     {
         $newDocumentNode1 = $this->siteNode->createNode('test-node-1', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
         $newDocumentNode1->setProperty('title', 'chicken');
@@ -419,14 +425,16 @@ class ElasticSearchQueryTest extends FunctionalTestCase
 
     /**
      * @return ElasticSearchQueryBuilder
-     * @throws QueryBuildingException
-     * @throws \Exception
      */
     protected function getQueryBuilder(): ElasticSearchQueryBuilder
     {
-        $elasticSearchQueryBuilder = $this->objectManager->get(ElasticSearchQueryBuilder::class);
-        $this->inject($elasticSearchQueryBuilder, 'now', new \DateTimeImmutable('@1735685400')); // Dec. 31, 2024 23:50:00
+        try {
+            $elasticSearchQueryBuilder = $this->objectManager->get(ElasticSearchQueryBuilder::class);
+            $this->inject($elasticSearchQueryBuilder, 'now', new \DateTimeImmutable('@1735685400')); // Dec. 31, 2024 23:50:00
 
-        return $elasticSearchQueryBuilder->query($this->siteNode);
+            return $elasticSearchQueryBuilder->query($this->siteNode);
+        } catch (\Exception $exception) {
+            $this->fail('Setting up the QueryBuilder failed: ' . $exception->getMessage());
+        }
     }
 }

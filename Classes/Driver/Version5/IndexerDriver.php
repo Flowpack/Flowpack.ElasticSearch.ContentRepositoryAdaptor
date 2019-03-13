@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
 
 /*
@@ -28,7 +31,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
     /**
      * {@inheritdoc}
      */
-    public function document(string $indexName, NodeInterface $node, ElasticSearchDocument $document, array $documentData)
+    public function document(string $indexName, NodeInterface $node, ElasticSearchDocument $document, array $documentData): array
     {
         if ($this->isFulltextRoot($node)) {
             // for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
@@ -76,12 +79,13 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
 
     /**
      * {@inheritdoc}
+     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
      */
-    public function fulltext(NodeInterface $node, array $fulltextIndexOfNode, $targetWorkspaceName = null)
+    public function fulltext(NodeInterface $node, array $fulltextIndexOfNode, string $targetWorkspaceName = null): array
     {
         $closestFulltextNode = $this->findClosestFulltextRoot($node);
         if ($closestFulltextNode === null) {
-            return null;
+            return [];
         }
 
         $closestFulltextNodeContextPath = $closestFulltextNode->getContextPath();
@@ -94,7 +98,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
             // fulltext root is removed, abort silently...
             $this->logger->log(sprintf('NodeIndexer (%s): Fulltext root found for %s (%s) not updated, it is removed', $closestFulltextNodeDocumentIdentifier, $node->getPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
 
-            return null;
+            return [];
         }
 
         $this->logger->log(sprintf('NodeIndexer (%s): Updated fulltext index for %s (%s)', $closestFulltextNodeDocumentIdentifier, $closestFulltextNodeContextPath, $closestFulltextNode->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');

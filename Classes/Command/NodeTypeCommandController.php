@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
 /*
@@ -11,10 +14,12 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * source code.
  */
 
+use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Provides CLI features for debugging the node types.
@@ -38,20 +43,20 @@ class NodeTypeCommandController extends CommandController
      * @return void
      * @throws NodeTypeNotFoundException
      */
-    public function showCommand($nodeType = null)
+    public function showCommand(string $nodeType = null): void
     {
         if ($nodeType !== null) {
-            /** @var \Neos\ContentRepository\Domain\Model\NodeType $nodeType */
+            /** @var NodeType $nodeType */
             $nodeType = $this->nodeTypeManager->getNodeType($nodeType);
             $configuration = $nodeType->getFullConfiguration();
         } else {
             $nodeTypes = $this->nodeTypeManager->getNodeTypes();
             $configuration = [];
-            /** @var \Neos\ContentRepository\Domain\Model\NodeType $nodeType */
+            /** @var NodeType $nodeType */
             foreach ($nodeTypes as $nodeTypeName => $nodeType) {
                 $configuration[$nodeTypeName] = $nodeType->getFullConfiguration();
             }
         }
-        $this->output(\Symfony\Component\Yaml\Yaml::dump($configuration, 5, 2));
+        $this->output(Yaml::dump($configuration, 5, 2));
     }
 }

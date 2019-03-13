@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
 
 /*
@@ -35,12 +38,12 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
     /**
      * {@inheritdoc}
      */
-    public function delete(NodeInterface $node, $identifier)
+    public function delete(NodeInterface $node, string $identifier): array
     {
         return [
             [
                 'delete' => [
-                    '_type' => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($node->getNodeType()),
+                    '_type' => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($node->getNodeType()->getName()),
                     '_id' => $identifier
                 ]
             ]
@@ -51,7 +54,7 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
      * {@inheritdoc}
      * @throws \Flowpack\ElasticSearch\Exception
      */
-    public function deleteDuplicateDocumentNotMatchingType(Index $index, $documentIdentifier, NodeType $nodeType)
+    public function deleteDuplicateDocumentNotMatchingType(Index $index, string $documentIdentifier, NodeType $nodeType): array
     {
         $result = $index->request('GET', '/_search?scroll=1m', [], json_encode([
             'sort' => ['_doc'],

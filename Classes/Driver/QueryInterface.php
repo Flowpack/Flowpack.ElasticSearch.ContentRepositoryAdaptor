@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 /*
@@ -23,14 +26,14 @@ interface QueryInterface
      *
      * @return array
      */
-    public function toArray();
+    public function toArray(): array;
 
     /**
      * Get the current request as JSON string
      *
      * @return string
      */
-    public function getRequestAsJson();
+    public function getRequestAsJson(): string;
 
     /**
      * Get the current count request as JSON string
@@ -39,7 +42,7 @@ interface QueryInterface
      *
      * @return string
      */
-    public function getCountRequestAsJson();
+    public function getCountRequestAsJson(): string;
 
     /**
      * Add a sort filter to the request
@@ -48,7 +51,7 @@ interface QueryInterface
      * @return void
      * @api
      */
-    public function addSortFilter($configuration);
+    public function addSortFilter(array $configuration): void;
 
     /**
      * Set the size (limit) of the request
@@ -57,7 +60,7 @@ interface QueryInterface
      * @return void
      * @api
      */
-    public function size($size);
+    public function size(int $size): void;
 
     /**
      * Set the from (offset) of the request
@@ -66,7 +69,7 @@ interface QueryInterface
      * @return void
      * @api
      */
-    public function from($size);
+    public function from(int $size): void;
 
     /**
      * Match the search word against the fulltext index
@@ -76,7 +79,7 @@ interface QueryInterface
      * @return void
      * @api
      */
-    public function fulltext(string $searchWord, array $options = []);
+    public function fulltext(string $searchWord, array $options = []): void;
 
     /**
      * Configure Result Highlighting. Only makes sense in combination with fulltext(). By default, highlighting is enabled.
@@ -87,7 +90,7 @@ interface QueryInterface
      * @return void
      * @api
      */
-    public function highlight($fragmentSize, $fragmentCount = null);
+    public function highlight($fragmentSize, int $fragmentCount = null): void;
 
     /**
      * This method is used to create any kind of aggregation.
@@ -99,7 +102,7 @@ interface QueryInterface
      * @throws Exception\QueryBuildingException
      * @api
      */
-    public function aggregation($name, array $aggregationDefinition, $parentPath = '');
+    public function aggregation(string $name, array $aggregationDefinition, string $parentPath = ''): void;
 
     /**
      * This method is used to create any kind of suggestion.
@@ -109,7 +112,7 @@ interface QueryInterface
      * @return void
      * @api
      */
-    public function suggestions($name, array $suggestionDefinition);
+    public function suggestions(string $name, array $suggestionDefinition): void;
 
     /**
      * This method is used to define a more like this query.
@@ -121,7 +124,7 @@ interface QueryInterface
      * @param array $options Additional options for the more_like_this quey
      * @return void
      */
-    public function moreLikeThis(array $like, array $fields = [], array $options = []);
+    public function moreLikeThis(array $like, array $fields = [], array $options = []): void;
 
     /**
      * Add a query filter
@@ -133,14 +136,14 @@ interface QueryInterface
      * @throws Exception\QueryBuildingException
      * @api
      */
-    public function queryFilter($filterType, $filterOptions, $clauseType = 'must');
+    public function queryFilter(string $filterType, $filterOptions, string $clauseType = 'must'): void;
 
     /**
      * @param string $path
      * @param string $value
      * @return void
      */
-    public function setValueByPath($path, $value);
+    public function setValueByPath(string $path, string $value): void;
 
     /**
      * Append $data to the given array at $path inside $this->request.
@@ -152,7 +155,7 @@ interface QueryInterface
      * @return void
      * @throws Exception\QueryBuildingException
      */
-    public function appendAtPath($path, array $data);
+    public function appendAtPath(string $path, array $data): void;
 
     /**
      * Modify a part of the Elasticsearch Request denoted by $path, merging together
@@ -162,11 +165,11 @@ interface QueryInterface
      * @param mixed $requestPart
      * @return $this
      */
-    public function setByPath($path, $requestPart);
+    public function setByPath(string $path, $requestPart): QueryInterface;
 
     /**
      * @param array $request
      * @return void
      */
-    public function replaceRequest(array $request);
+    public function replaceRequest(array $request): void;
 }
