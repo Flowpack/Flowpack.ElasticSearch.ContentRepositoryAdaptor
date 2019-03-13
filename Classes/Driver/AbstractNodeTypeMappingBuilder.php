@@ -17,8 +17,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\Error\Messages\Result;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Configuration\Exception\InvalidConfigurationTypeException;
 use Neos\Flow\Configuration\ConfigurationManager;
+use Neos\Flow\Configuration\Exception\InvalidConfigurationTypeException;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 
 /**

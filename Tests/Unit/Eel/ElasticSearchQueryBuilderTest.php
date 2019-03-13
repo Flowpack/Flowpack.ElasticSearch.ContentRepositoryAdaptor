@@ -21,7 +21,7 @@ use Neos\Flow\Tests\UnitTestCase;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Domain\Service\Context;
-use PHPUnit_Framework_MockObject_MockObject;
+use PHPUnit\Framework\MockObject\MockObject;
 
 /**
  * Testcase for ElasticSearchQueryBuilder
@@ -35,17 +35,17 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
 
     public function setUp(): void
     {
-        /** @var NodeInterface|PHPUnit_Framework_MockObject_MockObject $node */
+        /** @var NodeInterface|MockObject $node */
         $node = $this->createMock(NodeInterface::class);
-        $node->expects($this->any())->method('getPath')->willReturn('/foo/bar');
+        $node->expects(self::any())->method('getPath')->willReturn('/foo/bar');
         $mockContext = $this->getMockBuilder(Context::class)->disableOriginalConstructor()->getMock();
-        $mockContext->expects($this->any())->method('getDimensions')->willReturn([]);
-        $node->expects($this->any())->method('getContext')->willReturn($mockContext);
+        $mockContext->expects(self::any())->method('getDimensions')->willReturn([]);
+        $node->expects(self::any())->method('getContext')->willReturn($mockContext);
 
         $mockWorkspace = $this->getMockBuilder(Workspace::class)->disableOriginalConstructor()->getMock();
-        $mockContext->expects($this->any())->method('getWorkspace')->willReturn($mockWorkspace);
+        $mockContext->expects(self::any())->method('getWorkspace')->willReturn($mockWorkspace);
 
-        $mockWorkspace->expects($this->any())->method('getName')->willReturn('user-foo');
+        $mockWorkspace->expects(self::any())->method('getName')->willReturn('user-foo');
 
         $this->queryBuilder = new ElasticSearchQueryBuilder();
 
@@ -164,7 +164,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
             'fields' => ['__path']
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertEquals($expected, $actual);
+        self::assertEquals($expected, $actual);
     }
 
     /**
@@ -188,7 +188,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
             ]
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertInArray($expected, $actual['query']['bool']['filter']['bool']['must']);
+        self::assertInArray($expected, $actual['query']['bool']['filter']['bool']['must']);
     }
 
     /**
@@ -203,7 +203,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
             ]
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertSame($expected, $actual['sort']);
+        self::assertSame($expected, $actual['sort']);
     }
 
     /**
@@ -224,7 +224,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
             ]
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertSame($expected, $actual['sort']);
+        self::assertSame($expected, $actual['sort']);
     }
 
     /**
@@ -234,7 +234,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
     {
         $this->queryBuilder->limit(2);
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertSame(2, $actual['size']);
+        self::assertSame(2, $actual['size']);
     }
 
     /**
@@ -249,7 +249,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
             ]
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertSame($expected, $actual['sort']);
+        self::assertSame($expected, $actual['sort']);
     }
 
     /**
@@ -281,7 +281,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
             ]
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertInArray($expected, $actual['query']['bool']['filter']['bool']['must']);
+        self::assertInArray($expected, $actual['query']['bool']['filter']['bool']['must']);
     }
 
     /**
@@ -322,7 +322,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
         $this->queryBuilder->fieldBasedAggregation($name, $field, $type, '', $size);
         $actual = $this->queryBuilder->getRequest()->toArray();
 
-        $this->assertInArray($expected, $actual);
+        self::assertInArray($expected, $actual);
     }
 
     /**
@@ -360,7 +360,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
         ];
 
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertInArray($expected, $actual);
+        self::assertInArray($expected, $actual);
     }
 
     /**
@@ -399,7 +399,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
         $this->queryBuilder->aggregation('foo', $expected['foo']);
         $actual = $this->queryBuilder->getRequest()->toArray();
 
-        $this->assertInArray($expected, $actual);
+        self::assertInArray($expected, $actual);
     }
 
     /**
@@ -412,7 +412,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
             'bar' => ['field' => 'x']
         ];
         $actual = $this->queryBuilder->getRequest();
-        $this->assertEquals($expected, $actual['foo']);
+        self::assertEquals($expected, $actual['foo']);
     }
 
     /**
@@ -424,7 +424,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
         $this->queryBuilder->request('limit', 10);
         $expected = 10;
         $actual = $this->queryBuilder->getRequest();
-        $this->assertEquals($expected, $actual['limit']);
+        self::assertEquals($expected, $actual['limit']);
     }
 
     /**
@@ -432,7 +432,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
      */
     public function getTotalItemsReturnsZeroByDefault(): void
     {
-        $this->assertSame(0, $this->queryBuilder->getTotalItems());
+        self::assertSame(0, $this->queryBuilder->getTotalItems());
     }
 
     /**
@@ -441,7 +441,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
     public function getTotalItemsReturnsTotalHitsIfItExists(): void
     {
         $this->inject($this->queryBuilder, 'result', ['hits' => ['total' => 123]]);
-        $this->assertSame(123, $this->queryBuilder->getTotalItems());
+        self::assertSame(123, $this->queryBuilder->getTotalItems());
     }
 
     /**
@@ -451,17 +451,17 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
      * @param $actual
      * @return void
      */
-    protected function assertInArray($expected, $actual): void
+    protected static function assertInArray($expected, $actual): void
     {
         foreach ($actual as $actualElement) {
             if ($actualElement === $expected) {
-                $this->assertTrue(true);
+                self::assertTrue(true);
 
                 return;
             }
         }
 
         // because $expected !== $actual ALWAYS, this will NEVER match but display a nice error message.
-        $this->assertSame($expected, $actual, 'The $expected array was not found inside $actual.');
+        self::assertSame($expected, $actual, 'The $expected array was not found inside $actual.');
     }
 }

@@ -15,7 +15,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Query;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractQuery;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 
 /**

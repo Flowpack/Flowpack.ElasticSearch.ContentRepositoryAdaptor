@@ -14,10 +14,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
  * source code.
  */
 
-use Neos\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
+use Neos\Flow\Annotations as Flow;
 
 /**
  * Index management driver for Elasticsearch version 5.x

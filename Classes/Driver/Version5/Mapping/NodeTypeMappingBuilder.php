@@ -14,7 +14,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Mappin
  * source code.
  */
 
-use Neos\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractNodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
@@ -22,6 +21,7 @@ use Flowpack\ElasticSearch\Mapping\MappingCollection;
 use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\Error\Messages\Result;
 use Neos\Error\Messages\Warning;
+use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Configuration\Exception\InvalidConfigurationTypeException;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 

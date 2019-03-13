@@ -12,21 +12,21 @@ Flowpack:
                   query:
                     bool:
                       must:
-                      - match_all:
-                          boost: 1.0 # force match_all to be an object
+                        - match_all:
+                            boost: 1.0 # force match_all to be an object
                       filter:
                         bool:
                           must: []
                           should: []
                           must_not:
-                          - term:
-                              _hidden: true
-                          - range:
-                              _hiddenBeforeDateTime:
-                                gt: now
-                          - range:
-                              _hiddenAfterDateTime:
-                                lt: now
+                            - term:
+                                _hidden: true
+                            - range:
+                                _hiddenBeforeDateTime:
+                                  gt: now
+                            - range:
+                                _hiddenAfterDateTime:
+                                  lt: now
                   _source:
                     - '__path'
                 unsupportedFieldsInCountRequest:
