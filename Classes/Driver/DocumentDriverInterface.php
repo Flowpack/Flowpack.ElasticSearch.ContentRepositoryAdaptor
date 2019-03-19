@@ -33,12 +33,12 @@ interface DocumentDriverInterface
     public function delete(NodeInterface $node, string $identifier): array;
 
     /**
-     * Generate the query to delete Elastic Document by Document Identifier but skip Document with the same Node Type
+     * Delete documents by $documentIdentifier not having the given $nodeType
      *
      * @param Index $index
      * @param string $documentIdentifier
      * @param NodeType $nodeType
-     * @return array
+     * @return void
      */
-    public function deleteDuplicateDocumentNotMatchingType(Index $index, string $documentIdentifier, NodeType $nodeType): array;
+    public function deleteDuplicateDocumentNotMatchingType(Index $index, string $documentIdentifier, NodeType $nodeType): void;
 }
