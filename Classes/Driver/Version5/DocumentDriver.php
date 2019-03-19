@@ -54,7 +54,7 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
      * {@inheritdoc}
      * @throws \Flowpack\ElasticSearch\Exception
      */
-    public function deleteDuplicateDocumentNotMatchingType(Index $index, string $documentIdentifier, NodeType $nodeType): array
+    public function deleteDuplicateDocumentNotMatchingType(Index $index, string $documentIdentifier, NodeType $nodeType): void
     {
         $result = $index->request('GET', '/_search?scroll=1m', [], json_encode([
             'sort' => ['_doc'],
