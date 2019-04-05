@@ -777,12 +777,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-terms-filter.html
         $this->queryFilter('terms', ['__workspace' => array_unique(['live', $contextNode->getContext()->getWorkspace()->getName()])]);
 
-        // match exact dimension values for each dimension, this works because the indexing flattens the node variants for all dimension preset combinations
-        $dimensionCombinations = $contextNode->getContext()->getDimensions();
-        if (is_array($dimensionCombinations)) {
-            $this->queryFilter('term', ['__dimensionCombinationHash' => md5(json_encode($dimensionCombinations))]);
-        }
-
         $this->contextNode = $contextNode;
 
         return $this;
