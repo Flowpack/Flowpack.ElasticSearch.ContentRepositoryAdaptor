@@ -131,6 +131,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      */
     protected $bulkProcessing = false;
 
+    /**
+     * @var array
+     */
+    protected $dimensionsRegistry = [];
+
     public function setDimensions(array $dimensionsValues): void
     {
         $this->searchClient->setDimensions($dimensionsValues);
@@ -233,14 +238,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
 
             if ($this->isFulltextEnabled($node)) {
-                $this->currentBulkRequest[] = new BulkRequestPart(
-                    $node->getContext()->getTargetDimensions(),
-                    $this->indexerDriver->document($this->getIndexName(), $node, $document, $documentData)
-                );
-                $this->currentBulkRequest[] = new BulkRequestPart(
-                    $node->getContext()->getTargetDimensions(),
-                    $this->indexerDriver->document($this->getIndexName(), $node, $document, $documentData)
-                );
+                $this->toBulkRequest($node, $this->indexerDriver->document($this->getIndexName(), $node, $document, $documentData));
+                $this->toBulkRequest($node, $this->indexerDriver->fulltext($node, $fulltextIndexOfNode, $targetWorkspaceName));
             }
 
             $this->logger->log(sprintf('NodeIndexer (%s): Indexed node %s.', $documentIdentifier, $contextPath), LOG_DEBUG, null, 'ElasticSearch (CR)');
@@ -272,6 +271,33 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'invisibleContentShown' => true]);
             $handleNode($node, $context);
         }
+    }
+
+    protected function toBulkRequest(NodeInterface $node, array $tuple = null)
+    {
+        if ($tuple === null) {
+            return;
+        }
+
+        $this->currentBulkRequest[] = new BulkRequestPart($this->computeTargetDimensionsHash($node), $tuple);
+    }
+
+    /**
+     * @param array $targetDimensions
+     * @return string
+     */
+    protected function computeTargetDimensionsHash(NodeInterface $node): string
+    {
+        $dimensions = array_map(function ($dimensionValues) {
+            return [$dimensionValues];
+        }, $node->getContext()->getTargetDimensions());
+        $hash = Utility::sortDimensionValueArrayAndReturnDimensionsHash($dimensions);
+
+        if (!isset($this->dimensionsRegistry[$hash])) {
+            $this->dimensionsRegistry[$hash] = $dimensions;
+        }
+
+        return $hash;
     }
 
     /**
@@ -318,14 +344,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
 
-        $this->currentBulkRequest[] = new BulkRequestPart(
-            $node->getContext()->getTargetDimensions(),
-            $this->documentDriver->delete($node, $documentIdentifier)
-        );
-        $this->currentBulkRequest[] = new BulkRequestPart(
-            $node->getContext()->getTargetDimensions(),
-            $this->indexerDriver->fulltext($node, [], $targetWorkspaceName)
-        );
+        $this->toBulkRequest($node, $this->documentDriver->delete($node, $documentIdentifier));
+        $this->toBulkRequest($node, $this->indexerDriver->fulltext($node, [], $targetWorkspaceName));
 
         $this->logger->log(sprintf('NodeIndexer (%s): Removed node %s (%s) from index.', $documentIdentifier, $node->getContextPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
     }
@@ -338,12 +358,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      */
     public function flush(): void
     {
-        $bulkRequest = array_filter($this->currentBulkRequest);
+        $bulkRequest = $this->currentBulkRequest;
         if (count($bulkRequest) === 0) {
             return;
         }
 
-        $dimensionRegistry = $bulkRequests = [];
+        $bulkRequests = [];
         /** @var BulkRequestPart $bulkRequestPart */
         foreach ($bulkRequest as $bulkRequestPart) {
             if (!$bulkRequestPart instanceof BulkRequestPart) {
@@ -361,24 +381,21 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $tupleAsJson .= $itemAsJson . chr(10);
             }
 
-            $targetDimensions = array_map(function ($dimensionValues) {
-                return [$dimensionValues];
-            }, $bulkRequestPart->getTargetDimensions());
+            $targetDimensions = $bulkRequestPart->getTargetDimensionsHash();
 
             $hash = Utility::sortDimensionValueArrayAndReturnDimensionsHash($targetDimensions);
             if (!isset($bulkRequests[$hash])) {
                 $bulkRequests[$hash] = '';
             }
-            $dimensionsRegistry[$hash] = $targetDimensions;
             $bulkRequests[$hash] .= $tupleAsJson;
         }
 
         if ($bulkRequests === []) {
-            $this->currentBulkRequest = [];
+            $this->reset();
             return;
         }
 
-        foreach ($dimensionsRegistry as $hash => $dimensions) {
+        foreach ($this->dimensionsRegistry as $hash => $dimensions) {
             $this->searchClient->setDimensions($dimensions);
             $response = $this->requestDriver->bulk($this->getIndex(), $bulkRequests[$hash]);
             foreach ($response as $responseLine) {
@@ -390,6 +407,13 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
         }
 
+
+        $this->reset();
+    }
+
+    protected function reset()
+    {
+        $this->dimensionsRegistry = [];
         $this->currentBulkRequest = [];
     }
 
