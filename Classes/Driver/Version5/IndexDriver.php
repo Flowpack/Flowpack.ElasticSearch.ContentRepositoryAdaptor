@@ -66,4 +66,22 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
 
         return is_array($treatedContent) ? array_keys($treatedContent) : [];
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function indexesByPrefix($prefix)
+    {
+        $response = $this->searchClient->request('GET', '/_alias/');
+
+        // return empty array if content from response cannot be read as an array
+        $treatedContent = $response->getTreatedContent();
+        if (!\is_array($treatedContent)) {
+            return [];
+        }
+        return \array_filter(\array_keys($treatedContent), function ($indexName) use ($prefix) {
+            $prefix = $prefix . '-';
+            return substr($indexName, 0, strlen($prefix)) === $prefix;
+        });
+    }
 }

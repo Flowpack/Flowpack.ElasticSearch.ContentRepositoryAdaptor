@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameStrategyInterface;
 use Flowpack\ElasticSearch\Domain\Model\Client;
 use Flowpack\ElasticSearch\Domain\Model\Index;
@@ -38,12 +39,70 @@ class ElasticSearchClient extends Client
     protected $indexNameStrategy;
 
     /**
+     * @var DimensionsService
+     * @Flow\Inject
+     */
+    protected $dimensionsService;
+
+    /**
+     * @var string
+     */
+    protected $dimensionsHash;
+
+    /**
+     * @param array $dimensionValues
+     */
+    public function setDimensions(array $dimensionValues = []): void
+    {
+        $this->dimensionsHash = $this->dimensionsService->hash($dimensionValues);
+    }
+
+    /**
+     * @return string
+     */
+    public function getDimensionsHash(): string
+    {
+        return $this->dimensionsHash;
+    }
+
+    /**
+     * @param \Closure $closure
+     * @param array $dimensionValues
+     * @throws \Exception
+     */
+    public function withDimensions(\Closure $closure, array $dimensionValues = []): array
+    {
+        $previousDimensionHash = $this->dimensionsHash;
+        try {
+            $this->setDimensions($dimensionValues);
+            $closure();
+            $this->dimensionsHash = $previousDimensionHash;
+        } catch (\Exception $exception) {
+            $this->dimensionsHash = $previousDimensionHash;
+            throw $exception;
+        }
+    }
+
+    /**
      * Get the index name to be used
      *
      * @return string
      * @throws Exception
      */
     public function getIndexName(): string
+    {
+        $name = $this->getIndexNamePrefix();
+        if ($this->dimensionsHash !== null) {
+            $name .= '-' . $this->dimensionsHash;
+        }
+        return $name;
+    }
+
+    /**
+     * @return string
+     * @throws Exception
+     */
+    public function getIndexNamePrefix(): string
     {
         $name = trim($this->indexNameStrategy->get());
         if ($name === '') {
@@ -57,7 +116,7 @@ class ElasticSearchClient extends Client
      * Retrieve the index to be used for querying or on-the-fly indexing.
      * In Elasticsearch, this index is an *alias* to the currently used index.
      *
-     * @return Index
+     * @return \Flowpack\ElasticSearch\Domain\Model\Index
      * @throws Exception
      */
     public function getIndex(): Index

@@ -34,6 +34,7 @@ use Neos\ContentRepository\Domain\Service\Context;
 use Neos\ContentRepository\Domain\Service\ContextFactory;
 use Neos\ContentRepository\Search\Indexer\AbstractNodeIndexer;
 use Neos\ContentRepository\Search\Indexer\BulkNodeIndexerInterface;
+use Neos\ContentRepository\Utility;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -130,6 +131,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      */
     protected $bulkProcessing = false;
 
+    public function setDimensions(array $dimensionsValues): void
+    {
+        $this->searchClient->setDimensions($dimensionsValues);
+    }
+
     /**
      * Returns the index name to be used for indexing, with optional indexNamePostfix appended.
      *
@@ -178,7 +184,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param string $targetWorkspaceName In case indexing is triggered during publishing, a target workspace name will be passed in
      * @return void
      */
-    public function indexNode(NodeInterface $node, $targetWorkspaceName = null)
+    public function indexNode(NodeInterface $node, $targetWorkspaceName = null): void
     {
         $indexer = function (NodeInterface $node, $targetWorkspaceName = null) {
             $contextPath = $node->getContextPath();
@@ -226,15 +232,15 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $documentData['__workspace'] = $targetWorkspaceName;
             }
 
-            $dimensionCombinations = $node->getContext()->getDimensions();
-            if (is_array($dimensionCombinations)) {
-                $documentData['__dimensionCombinations'] = $dimensionCombinations;
-                $documentData['__dimensionCombinationHash'] = md5(json_encode($dimensionCombinations));
-            }
-
             if ($this->isFulltextEnabled($node)) {
-                $this->currentBulkRequest[] = $this->indexerDriver->document($this->getIndexName(), $node, $document, $documentData);
-                $this->currentBulkRequest[] = $this->indexerDriver->fulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
+                $this->currentBulkRequest[] = new BulkRequestPart(
+                    $node->getContext()->getTargetDimensions(),
+                    $this->indexerDriver->document($this->getIndexName(), $node, $document, $documentData)
+                );
+                $this->currentBulkRequest[] = new BulkRequestPart(
+                    $node->getContext()->getTargetDimensions(),
+                    $this->indexerDriver->document($this->getIndexName(), $node, $document, $documentData)
+                );
             }
 
             $this->logger->log(sprintf('NodeIndexer (%s): Indexed node %s.', $documentIdentifier, $contextPath), LOG_DEBUG, null, 'ElasticSearch (CR)');
@@ -295,7 +301,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @return void
      * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
      */
-    public function removeNode(NodeInterface $node, string $targetWorkspaceName = null)
+    public function removeNode(NodeInterface $node, string $targetWorkspaceName = null): void
     {
         if ($this->settings['indexAllWorkspaces'] === false) {
             // we are only supposed to index the live workspace.
@@ -312,8 +318,14 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
 
-        $this->currentBulkRequest[] = $this->documentDriver->delete($node, $documentIdentifier);
-        $this->currentBulkRequest[] = $this->indexerDriver->fulltext($node, [], $targetWorkspaceName);
+        $this->currentBulkRequest[] = new BulkRequestPart(
+            $node->getContext()->getTargetDimensions(),
+            $this->documentDriver->delete($node, $documentIdentifier)
+        );
+        $this->currentBulkRequest[] = new BulkRequestPart(
+            $node->getContext()->getTargetDimensions(),
+            $this->indexerDriver->fulltext($node, [], $targetWorkspaceName)
+        );
 
         $this->logger->log(sprintf('NodeIndexer (%s): Removed node %s (%s) from index.', $documentIdentifier, $node->getContextPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
     }
@@ -324,17 +336,21 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @return void
      * @throws Exception
      */
-    public function flush()
+    public function flush(): void
     {
         $bulkRequest = array_filter($this->currentBulkRequest);
         if (count($bulkRequest) === 0) {
             return;
         }
 
-        $content = '';
-        foreach ($bulkRequest as $bulkRequestTuple) {
+        $dimensionRegistry = $bulkRequests = [];
+        /** @var BulkRequestPart $bulkRequestPart */
+        foreach ($bulkRequest as $bulkRequestPart) {
+            if (!$bulkRequestPart instanceof BulkRequestPart) {
+                throw new \RuntimeException('Invalid bulk request part');
+            }
             $tupleAsJson = '';
-            foreach ($bulkRequestTuple as $bulkRequestItem) {
+            foreach ($bulkRequestPart->getItems() as $bulkRequestItem) {
                 $itemAsJson = json_encode($bulkRequestItem);
                 if ($itemAsJson === false) {
                     $this->errorHandlingService->log(
@@ -344,11 +360,27 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 }
                 $tupleAsJson .= $itemAsJson . chr(10);
             }
-            $content .= $tupleAsJson;
+
+            $targetDimensions = array_map(function ($dimensionValues) {
+                return [$dimensionValues];
+            }, $bulkRequestPart->getTargetDimensions());
+
+            $hash = Utility::sortDimensionValueArrayAndReturnDimensionsHash($targetDimensions);
+            if (!isset($bulkRequests[$hash])) {
+                $bulkRequests[$hash] = '';
+            }
+            $dimensionsRegistry[$hash] = $targetDimensions;
+            $bulkRequests[$hash] .= $tupleAsJson;
         }
 
-        if ($content !== '') {
-            $response = $this->requestDriver->bulk($this->getIndex(), $content);
+        if ($bulkRequests === []) {
+            $this->currentBulkRequest = [];
+            return;
+        }
+
+        foreach ($dimensionsRegistry as $hash => $dimensions) {
+            $this->searchClient->setDimensions($dimensions);
+            $response = $this->requestDriver->bulk($this->getIndex(), $bulkRequests[$hash]);
             foreach ($response as $responseLine) {
                 if (isset($response['errors']) && $response['errors'] !== false) {
                     $this->errorHandlingService->log(
@@ -409,6 +441,72 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 'alias' => $aliasName
             ]
         ];
+
+        $this->indexDriver->aliasActions($aliasActions);
+    }
+
+    /**
+     * Update the main alias to allow to query all indices at once
+     */
+    public function updateMainAlias()
+    {
+        $aliasActions = [];
+        $aliasNamePrefix = $this->searchClient->getIndexNamePrefix(); // The alias name is the unprefixed index name
+
+        $indexNames = $this->indexDriver->indexesByPrefix($aliasNamePrefix);
+        $indexNames = \array_values(\array_filter($indexNames, function ($indexName) {
+            $suffix = '-' . $this->indexNamePostfix;
+            $indexNameParts = \explode('-', $indexName);
+            return substr($indexName, 0 - strlen($suffix)) === $suffix && count($indexNameParts) === 3;
+        }));
+
+        $cleanupAlias = function ($alias) use (&$aliasActions) {
+            try {
+                $indexNames = $this->indexDriver->indexesByAlias($alias);
+                if ($indexNames === []) {
+                    // if there is an actual index with the name we want to use as alias, remove it now
+                    $this->indexDriver->deleteIndex($alias);
+                } else {
+                    foreach ($indexNames as $indexName) {
+                        $aliasActions[] = [
+                            'remove' => [
+                                'index' => $indexName,
+                                'alias' => $alias
+                            ]
+                        ];
+                    }
+                }
+            } catch (ApiException $exception) {
+                // in case of 404, do not throw an error...
+                if ($exception->getResponse()->getStatusCode() !== 404) {
+                    throw $exception;
+                }
+            }
+        };
+
+        $postfix = function ($alias) {
+            return $alias . '-' . $this->indexNamePostfix;
+        };
+
+        if (\count($indexNames) > 0) {
+            $cleanupAlias($aliasNamePrefix);
+            $cleanupAlias($postfix($aliasNamePrefix));
+
+            foreach ($indexNames as $indexName) {
+                $aliasActions[] = [
+                    'add' => [
+                        'index' => $indexName,
+                        'alias' => $aliasNamePrefix
+                    ]
+                ];
+                $aliasActions[] = [
+                    'add' => [
+                        'index' => $indexName,
+                        'alias' => $postfix($aliasNamePrefix)
+                    ]
+                ];
+            }
+        }
 
         $this->indexDriver->aliasActions($aliasActions);
     }
