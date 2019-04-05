@@ -70,7 +70,7 @@ class ElasticSearchClient extends Client
      * @param array $dimensionValues
      * @throws \Exception
      */
-    public function withDimensions(\Closure $closure, array $dimensionValues = []): array
+    public function withDimensions(\Closure $closure, array $dimensionValues = []): void
     {
         $previousDimensionHash = $this->dimensionsHash;
         try {

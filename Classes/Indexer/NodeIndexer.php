@@ -36,6 +36,7 @@ use Neos\ContentRepository\Search\Indexer\AbstractNodeIndexer;
 use Neos\ContentRepository\Search\Indexer\BulkNodeIndexerInterface;
 use Neos\ContentRepository\Utility;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 
 /**
  * Indexer for Content Repository Nodes. Triggered from the NodeIndexingManager.
@@ -285,7 +286,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     }
 
     /**
-     * @param array $targetDimensions
+     * @param NodeInterface $node
      * @return string
      */
     protected function computeTargetDimensionsHash(NodeInterface $node): string
@@ -308,7 +309,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param NodeInterface $node
      * @param string $targetWorkspaceName
      * @return string
-     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
+     * @throws IllegalObjectTypeException
      */
     protected function calculateDocumentIdentifier(NodeInterface $node, $targetWorkspaceName = null): string
     {
@@ -327,7 +328,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param NodeInterface $node
      * @param string $targetWorkspaceName
      * @return void
-     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
+     * @throws IllegalObjectTypeException
      */
     public function removeNode(NodeInterface $node, string $targetWorkspaceName = null): void
     {
@@ -365,7 +366,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             return;
         }
 
-        $bulkRequests = [];
+        $payload = [];
         /** @var BulkRequestPart $bulkRequestPart */
         foreach ($bulkRequest as $bulkRequestPart) {
             if (!$bulkRequestPart instanceof BulkRequestPart) {
@@ -383,23 +384,22 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $tupleAsJson .= $itemAsJson . chr(10);
             }
 
-            $targetDimensions = $bulkRequestPart->getTargetDimensionsHash();
+            $hash = $bulkRequestPart->getTargetDimensionsHash();
 
-            $hash = Utility::sortDimensionValueArrayAndReturnDimensionsHash($targetDimensions);
-            if (!isset($bulkRequests[$hash])) {
-                $bulkRequests[$hash] = '';
+            if (!isset($payload[$hash])) {
+                $payload[$hash] = '';
             }
-            $bulkRequests[$hash] .= $tupleAsJson;
+            $payload[$hash] .= $tupleAsJson;
         }
 
-        if ($bulkRequests === []) {
+        if ($payload === []) {
             $this->reset();
             return;
         }
 
         foreach ($this->dimensionsRegistry as $hash => $dimensions) {
             $this->searchClient->setDimensions($dimensions);
-            $response = $this->requestDriver->bulk($this->getIndex(), $bulkRequests[$hash]);
+            $response = $this->requestDriver->bulk($this->getIndex(), $payload[$hash]);
             foreach ($response as $responseLine) {
                 if (isset($response['errors']) && $response['errors'] !== false) {
                     $this->errorHandlingService->log(
@@ -440,7 +440,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $aliasActions = [];
         try {
             $indexNames = $this->indexDriver->indexesByAlias($aliasName);
-
             if ($indexNames === []) {
                 // if there is an actual index with the name we want to use as alias, remove it now
                 $this->indexDriver->deleteIndex($aliasName);

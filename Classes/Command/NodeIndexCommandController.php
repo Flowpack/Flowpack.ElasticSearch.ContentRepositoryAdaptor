@@ -319,6 +319,7 @@ class NodeIndexCommandController extends CommandController
         $this->outputSection('Update aliases ...');
         $combinations->map($updateAliases);
 
+        $this->outputSection('Update main alias');
         $this->nodeIndexer->updateMainAlias();
 
         $this->outputLine();
@@ -397,6 +398,7 @@ class NodeIndexCommandController extends CommandController
         }
 
         $this->outputErrorHandling();
+        $this->outputMemoryUsage();
     }
 
     /**
@@ -631,6 +633,6 @@ class NodeIndexCommandController extends CommandController
 
     protected function outputMemoryUsage()
     {
-        $this->logger->log(vsprintf('Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]), LOG_INFO);
+        $this->logger->log(vsprintf('! Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]), LOG_INFO);
     }
 }

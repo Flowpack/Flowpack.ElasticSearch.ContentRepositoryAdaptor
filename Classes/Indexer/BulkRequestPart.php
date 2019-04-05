@@ -7,7 +7,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
 class BulkRequestPart
 {
     /**
-     * @var array
+     * @var string
      */
     protected $targetDimensionsHash;
 
@@ -18,14 +18,14 @@ class BulkRequestPart
 
     public function __construct(string $targetDimensionsHash, array $items)
     {
-        $this->targetDimensions = $targetDimensionsHash;
+        $this->targetDimensionsHash = $targetDimensionsHash;
         $this->items = $items;
     }
 
     /**
      * @return array
      */
-    public function getTargetDimensionsHash(): array
+    public function getTargetDimensionsHash(): string
     {
         return $this->targetDimensionsHash;
     }
