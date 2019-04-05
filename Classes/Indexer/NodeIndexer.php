@@ -248,7 +248,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $handleNode = function (NodeInterface $node, Context $context) use ($targetWorkspaceName, $indexer) {
             $nodeFromContext = $context->getNodeByIdentifier($node->getIdentifier());
             if ($nodeFromContext instanceof NodeInterface) {
-                $indexer($nodeFromContext, $targetWorkspaceName);
+                $this->searchClient->withDimensions(function () use ($indexer, $nodeFromContext, $targetWorkspaceName) {
+                    $indexer($nodeFromContext, $targetWorkspaceName);
+                }, $nodeFromContext->getContext()->getTargetDimensions());
             } else {
                 $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
                 if ($node->isRemoved()) {
