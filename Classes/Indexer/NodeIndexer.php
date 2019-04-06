@@ -267,13 +267,23 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $dimensionCombinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
         if ($dimensionCombinations !== []) {
             foreach ($dimensionCombinations as $combination) {
-                $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'dimensions' => $combination, 'invisibleContentShown' => true]);
-                $handleNode($node, $context);
+                $handleNode($node, $this->createContentContext($workspaceName, $combination));
             }
         } else {
-            $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'invisibleContentShown' => true]);
-            $handleNode($node, $context);
+            $handleNode($node, $this->createContentContext($workspaceName));
         }
+    }
+
+    protected function createContentContext(string $workspaceName, array $dimensions = []): array
+    {
+        $configuration = [
+            'workspaceName' => $workspaceName,
+            'invisibleContentShown' => true
+        ];
+        if ($dimensions !== []) {
+            $configuration['dimensions'] = $dimensions;
+        }
+        return $configuration;
     }
 
     protected function toBulkRequest(NodeInterface $node, array $tuple = null)
