@@ -20,7 +20,6 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\WorkspaceIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
@@ -31,13 +30,11 @@ use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
 use Neos\ContentRepository\Domain\Service\ContentDimensionPresetSourceInterface;
 use Neos\ContentRepository\Domain\Service\Context;
 use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
-use Neos\ContentRepository\Search\Indexer\NodeIndexerInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 use Neos\Flow\Configuration\ConfigurationManager;
 use Neos\Flow\Core\Booting\Scripts;
 use Neos\Flow\Exception;
-use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 use Neos\Utility\Files;
 use Symfony\Component\Yaml\Yaml;
 
@@ -109,12 +106,6 @@ class NodeIndexCommandController extends CommandController
     protected $contextFactory;
 
     /**
-     * @Flow\Inject
-     * @var DimensionsService
-     */
-    protected $dimensionsService;
-
-    /**
      * @var ContentDimensionCombinator
      * @Flow\Inject
      */
@@ -131,52 +122,6 @@ class NodeIndexCommandController extends CommandController
      * @Flow\InjectConfiguration(package="Neos.ContentRepository.Search")
      */
     protected $settings;
-
-    /**
-     * Mapping between dimensions presets and index name
-     */
-    public function showDimensionsMappingCommand()
-    {
-        $indexName = $this->nodeIndexer->getIndexName();
-        foreach ($this->contentDimensionCombinator->getAllAllowedCombinations() as $dimensionValues) {
-            $this->outputLine('<info>%s-%s</info> %s', [$indexName, $this->dimensionsService->hash($dimensionValues), \json_encode($dimensionValues)]);
-        }
-    }
-
-    /**
-     * Show the mapping which would be sent to the ElasticSearch server
-     *
-     * @return void
-     */
-    public function showMappingCommand()
-    {
-        $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
-        foreach ($nodeTypeMappingCollection as $mapping) {
-            /** @var Mapping $mapping */
-            $this->output(Yaml::dump($mapping->asArray(), 5, 2));
-            $this->outputLine();
-        }
-        $this->outputLine('------------');
-
-        $mappingErrors = $this->nodeTypeMappingBuilder->getLastMappingErrors();
-        if ($mappingErrors->hasErrors()) {
-            $this->outputLine('<b>Mapping Errors</b>');
-            foreach ($mappingErrors->getFlattenedErrors() as $errors) {
-                foreach ($errors as $error) {
-                    $this->outputLine($error);
-                }
-            }
-        }
-
-        if ($mappingErrors->hasWarnings()) {
-            $this->outputLine('<b>Mapping Warnings</b>');
-            foreach ($mappingErrors->getFlattenedWarnings() as $warnings) {
-                foreach ($warnings as $warning) {
-                    $this->outputLine($warning);
-                }
-            }
-        }
-    }
 
     /**
      * Index a single node by the given identifier and workspace name
@@ -458,7 +403,7 @@ class NodeIndexCommandController extends CommandController
      * @param string $postfix
      * @return array
      */
-    public function configureInternalCommand($dimensionsValues, $postfix)
+    protected function configureInternalCommand($dimensionsValues, $postfix)
     {
         if (!\is_array($dimensionsValues)) {
             $dimensionsValues = \json_decode($dimensionsValues, true);
