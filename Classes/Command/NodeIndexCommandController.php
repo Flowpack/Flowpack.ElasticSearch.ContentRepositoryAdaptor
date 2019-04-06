@@ -128,20 +128,9 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @var array
+     * @Flow\InjectConfiguration(package="Neos.ContentRepository.Search")
      */
     protected $settings;
-
-    /**
-     * Called by the Flow object framework after creating the object and resolving all dependencies.
-     *
-     * @param integer $cause Creation cause
-     */
-    public function initializeObject($cause)
-    {
-        if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-            $this->settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
-        }
-    }
 
     /**
      * Mapping between dimensions presets and index name
