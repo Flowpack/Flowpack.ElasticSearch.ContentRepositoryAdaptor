@@ -274,7 +274,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         }
     }
 
-    protected function createContentContext(string $workspaceName, array $dimensions = []): array
+    protected function createContentContext(string $workspaceName, array $dimensions = []): Context
     {
         $configuration = [
             'workspaceName' => $workspaceName,
@@ -283,7 +283,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         if ($dimensions !== []) {
             $configuration['dimensions'] = $dimensions;
         }
-        return $configuration;
+        return $this->contextFactory->create($configuration);
     }
 
     protected function toBulkRequest(NodeInterface $node, array $tuple = null)
