@@ -18,10 +18,11 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameStrategyInterface;
 use Flowpack\ElasticSearch\Domain\Model\Client;
 use Flowpack\ElasticSearch\Domain\Model\Index;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Flow\Annotations as Flow;
 
 /**
- * The elasticsearch client to be used by the content repository adapter. Singleton, can be injected.
+ * The elasticsearch client to be used by the content repository adapter.
  *
  * Used to:
  *
@@ -48,6 +49,28 @@ class ElasticSearchClient extends Client
      * @var string
      */
     protected $dimensionsHash;
+
+    /**
+     * @var NodeInterface
+     */
+    protected $contextNode;
+
+    /**
+     * @return NodeInterface
+     */
+    public function getContextNode(): NodeInterface
+    {
+        return $this->contextNode;
+    }
+
+    /**
+     * @param NodeInterface $contextNode
+     */
+    public function setContextNode(NodeInterface $contextNode): void
+    {
+        $this->setDimensions($contextNode->getContext()->getTargetDimensions());
+        $this->contextNode = $contextNode;
+    }
 
     /**
      * @param array $dimensionValues
@@ -88,6 +111,7 @@ class ElasticSearchClient extends Client
      *
      * @return string
      * @throws Exception
+     * @todo Add a contraints, if the system use content dimensions, the dimensionsHash MUST be set
      */
     public function getIndexName(): string
     {
