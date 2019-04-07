@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\TargetContextPath;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractIndexerDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
@@ -90,7 +91,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
 
         $closestFulltextNodeContextPath = $closestFulltextNode->getContextPath();
         if ($targetWorkspaceName !== null) {
-            $closestFulltextNodeContextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $closestFulltextNodeContextPath);
+            $closestFulltextNodeContextPath = (string)(new TargetContextPath($node, $targetWorkspaceName, $closestFulltextNodeContextPath));
         }
         $closestFulltextNodeDocumentIdentifier = sha1($closestFulltextNodeContextPath);
 

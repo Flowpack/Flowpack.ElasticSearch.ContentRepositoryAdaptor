@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\TargetContextPath;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
@@ -209,7 +210,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
 
             if ($targetWorkspaceName !== null) {
-                $contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
+                $contextPath = (string)(new TargetContextPath($node, $targetWorkspaceName, $contextPath));
             }
 
             $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
@@ -326,7 +327,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $contextPath = $node->getContextPath();
 
         if ($targetWorkspaceName !== null) {
-            $contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
+            $contextPath = (string)(new TargetContextPath($node, $targetWorkspaceName, $contextPath));
         }
 
         return sha1($contextPath);
