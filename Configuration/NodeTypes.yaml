@@ -154,21 +154,14 @@
       search:
         indexing: '${node.hiddenInIndex}'
 
-'Neos.NodeTypes:Text':
+'Neos.NodeTypes.BaseMixins:TextMixin':
   properties:
     'text':
       search:
         fulltextExtractor: '${Indexing.extractHtmlTags(value)}'
 
-'Neos.NodeTypes:Headline':
+'Neos.NodeTypes.BaseMixins:TitleMixin':
   properties:
     'title':
-      search:
-        fulltextExtractor: '${Indexing.extractHtmlTags(value)}'
-
-
-'Neos.NodeTypes:TextWithImage':
-  properties:
-    'text':
       search:
         fulltextExtractor: '${Indexing.extractHtmlTags(value)}'
