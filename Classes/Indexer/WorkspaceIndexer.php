@@ -57,7 +57,7 @@ final class WorkspaceIndexer
      * @param callable $callback
      * @return integer
      */
-    public function index($workspaceName, $limit = null, callable $callback = null)
+    public function index(string $workspaceName, $limit = null, callable $callback = null): int
     {
         $count = 0;
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
