@@ -57,7 +57,7 @@ class NodeIndexMappingCommandController extends CommandController
     /**
      * Mapping between dimensions presets and index name
      */
-    public function indicesCommand()
+    public function indicesCommand(): void
     {
         $indexName = $this->nodeIndexer->getIndexName();
         foreach ($this->contentDimensionCombinator->getAllAllowedCombinations() as $dimensionValues) {
@@ -70,7 +70,7 @@ class NodeIndexMappingCommandController extends CommandController
      *
      * @return void
      */
-    public function mappingCommand()
+    public function mappingCommand(): void
     {
         try {
             $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());

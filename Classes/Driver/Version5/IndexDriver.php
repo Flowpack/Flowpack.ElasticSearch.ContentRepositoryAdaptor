@@ -70,7 +70,7 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
     /**
      * {@inheritdoc}
      */
-    public function indexesByPrefix($prefix)
+    public function indexesByPrefix(string $prefix): array
     {
         $response = $this->searchClient->request('GET', '/_alias/');
 

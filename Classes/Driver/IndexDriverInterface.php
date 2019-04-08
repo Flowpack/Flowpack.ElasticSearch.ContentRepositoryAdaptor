@@ -30,10 +30,10 @@ interface IndexDriverInterface
     /**
      * Get the list of Indexes attached to the given alias prefix
      *
-     * @param $alias
+     * @param string $prefix
      * @return array
      */
-    public function indexesByPrefix($prefix);
+    public function indexesByPrefix(string $prefix): array;
 
     /**
      * Remove alias by name

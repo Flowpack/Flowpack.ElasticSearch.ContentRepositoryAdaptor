@@ -75,9 +75,9 @@ final class WorkspaceIndexer
     /**
      * @param string $workspaceName
      * @param array $dimensions
-     * @param integer $limit
+     * @param int $limit
      * @param callable $callback
-     * @return integer
+     * @return int
      */
     public function indexWithDimensions(string $workspaceName, array $dimensions = [], $limit = null, callable $callback = null): int
     {

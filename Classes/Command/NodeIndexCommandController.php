@@ -29,6 +29,7 @@ use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
 use Neos\ContentRepository\Domain\Service\ContentDimensionPresetSourceInterface;
 use Neos\ContentRepository\Domain\Service\Context;
+use Neos\ContentRepository\Domain\Service\ContextFactory;
 use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
@@ -196,8 +197,8 @@ class NodeIndexCommandController extends CommandController
      *
      * This command (re-)indexes all nodes contained in the content repository and sets the schema beforehand.
      *
-     * @param integer $limit Amount of nodes to index at maximum
-     * @param boolean $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
+     * @param int $limit Amount of nodes to index at maximum
+     * @param bool $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
      * @param string $workspace name of the workspace which should be indexed
      * @param string $postfix Index postfix, index with the same postfix will be deleted if exist
      * @return void
@@ -209,7 +210,7 @@ class NodeIndexCommandController extends CommandController
             $this->quit(1);
         }
 
-        $postfix = $postfix ?: time();
+        $postfix = (string)($postfix ?: time());
         $this->nodeIndexer->setIndexNamePostfix((string)$postfix);
 
         $create = function (array $dimensionsValues) use ($update, $postfix) {
@@ -275,7 +276,7 @@ class NodeIndexCommandController extends CommandController
      * @param int $postfix
      * @Flow\Internal
      */
-    public function createInternalCommand($dimensionsValues, $update = false, $postfix = null)
+    public function createInternalCommand(string $dimensionsValues, bool $update = false, ?string $postfix = null): void
     {
         if ($update === true) {
             $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
@@ -303,7 +304,7 @@ class NodeIndexCommandController extends CommandController
      * @Flow\Internal
      * @throws Exception
      */
-    public function build(array $dimensionsValues, $workspace = null, $postfix = null, $limit = null)
+    public function build(array $dimensionsValues, ?string $workspace = null, ?string $postfix = null, ?int $limit = null):void
     {
         $dimensionsValues = $this->configureInternalCommand($dimensionsValues, $postfix);
 
@@ -314,7 +315,7 @@ class NodeIndexCommandController extends CommandController
             $workspace = 'live';
         }
 
-        $buildWorkspaceCommandOptions = function ($workspace = null, array $dimensionsValues, $limit, $postfix) {
+        $buildWorkspaceCommandOptions = function ($workspace = null, array $dimensionsValues, ?int $limit, ?string $postfix) {
             return \array_filter([
                 'workspace' => $workspace instanceof Workspace ? $workspace->getName() : $workspace,
                 'dimensionsValues' => \json_encode($dimensionsValues),
@@ -343,7 +344,7 @@ class NodeIndexCommandController extends CommandController
      * @return int
      * @Flow\Internal
      */
-    public function buildWorkspaceInternalCommand($workspace, $dimensionsValues, $postfix, $limit = null)
+    public function buildWorkspaceInternalCommand(string $workspace, string $dimensionsValues, string $postfix, int $limit = null): void
     {
         $dimensionsValues = $this->configureInternalCommand($dimensionsValues, $postfix);
 
@@ -368,7 +369,7 @@ class NodeIndexCommandController extends CommandController
      * @param int $postfix
      * @Flow\Internal
      */
-    public function refreshInternalCommand($dimensionsValues, $postfix)
+    public function refreshInternalCommand(string $dimensionsValues, string $postfix): void
     {
         $this->configureInternalCommand($dimensionsValues, $postfix);
 
@@ -382,11 +383,11 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @param string $dimensionsValues
-     * @param int $postfix
+     * @param string $postfix
      * @param bool $update
      * @Flow\Internal
      */
-    public function aliasInternalCommand($dimensionsValues, $postfix, $update = false)
+    public function aliasInternalCommand(string $dimensionsValues, string $postfix, bool $update = false): void
     {
         if ($update === true) {
             return;
@@ -419,7 +420,7 @@ class NodeIndexCommandController extends CommandController
      *
      * @return void
      */
-    public function cleanupCommand()
+    public function cleanupCommand(): void
     {
         $removed = false;
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
@@ -468,7 +469,7 @@ class NodeIndexCommandController extends CommandController
      * @param array $arguments
      * @throws Exception
      */
-    protected function executeInternalCommand($command, array $arguments)
+    protected function executeInternalCommand(string $command, array $arguments): void
     {
         $this->outputLine();
         $commandIdentifier = 'flowpack.elasticsearch.contentrepositoryadaptor:nodeindex:' . $command;
@@ -484,7 +485,7 @@ class NodeIndexCommandController extends CommandController
      * @return int
      * @throws Exception
      */
-    protected function executeBuildWorkspaceCommand(array $arguments)
+    protected function executeBuildWorkspaceCommand(array $arguments): int
     {
         ob_start(null, 1<<20);
         $commandIdentifier = 'flowpack.elasticsearch.contentrepositoryadaptor:nodeindex:buildworkspaceinternal';
@@ -513,7 +514,7 @@ class NodeIndexCommandController extends CommandController
      * @param array $dimensions Optional list of dimensions and their values which should be set
      * @return Context
      */
-    protected function createContentContext($workspaceName, array $dimensions = [])
+    protected function createContentContext(string $workspaceName, array $dimensions = []): Context
     {
         $contextProperties = [
             'workspaceName' => $workspaceName,
@@ -538,7 +539,7 @@ class NodeIndexCommandController extends CommandController
      * @param array $dimensionValues
      * @return void
      */
-    protected function createNewIndex($postfix, array $dimensionValues = [])
+    protected function createNewIndex(string $postfix, array $dimensionValues = []): void
     {
         $this->nodeIndexer->setIndexNamePostfix((string)$postfix);
         if ($this->nodeIndexer->getIndex()->exists() === true) {
@@ -565,8 +566,8 @@ class NodeIndexCommandController extends CommandController
         $this->logger->log('+ Updated Mapping.', LOG_INFO);
     }
 
-    protected function outputMemoryUsage()
+    private function outputMemoryUsage():void
     {
-        $this->logger->log(vsprintf('! Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]), LOG_INFO);
+        $this->outputLine('! Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]);
     }
 }
