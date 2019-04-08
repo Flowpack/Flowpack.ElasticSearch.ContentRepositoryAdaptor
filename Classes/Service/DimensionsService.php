@@ -13,6 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
  * source code.
  */
 
+use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Utility;
 use Neos\Flow\Annotations as Flow;
 
@@ -21,15 +22,54 @@ use Neos\Flow\Annotations as Flow;
  */
 class DimensionsService
 {
+    /**
+     * @var array
+     */
+    protected $lastTargetDimensions;
+
+    /**
+     * @var array
+     */
+    protected $dimensionsRegistry = [];
+
     public function hash(array $dimensionValues): ?string
     {
         if ($dimensionValues === []) {
             return null;
         }
-        $targetDimensions = array_map(function ($dimensionValues) {
+        $this->lastTargetDimensions = array_map(function ($dimensionValues) {
             return [\is_array($dimensionValues) ? array_shift($dimensionValues) : $dimensionValues];
         }, $dimensionValues);
 
-        return Utility::sortDimensionValueArrayAndReturnDimensionsHash($targetDimensions);
+        $hash = Utility::sortDimensionValueArrayAndReturnDimensionsHash($this->lastTargetDimensions);
+        $this->dimensionsRegistry[$hash] = $this->lastTargetDimensions;
+        return $hash;
+    }
+
+    public function hashByNode(NodeInterface $node): ?string
+    {
+        return $this->hash($node->getContext()->getTargetDimensions());
+    }
+
+    /**
+     * @return array
+     */
+    public function getDimensionsRegistry(): array
+    {
+        return $this->dimensionsRegistry;
+    }
+
+    /**
+     * @return array
+     */
+    public function getLastTargetDimensions(): array
+    {
+        return $this->lastTargetDimensions;
+    }
+
+    public function reset()
+    {
+        $this->dimensionsRegistry = [];
+        $this->lastTargetDimensions = null;
     }
 }

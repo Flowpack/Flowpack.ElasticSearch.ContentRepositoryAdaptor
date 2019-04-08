@@ -25,6 +25,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\BulkIndexingError;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\MalformedBulkRequestError;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
@@ -134,9 +135,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     protected $bulkProcessing = false;
 
     /**
-     * @var array
+     * @var DimensionsService
+     * @Flow\Inject
      */
-    protected $dimensionsRegistry = [];
+    protected $dimensionService;
 
     public function setDimensions(array $dimensionsValues): void
     {
@@ -293,25 +295,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             return;
         }
 
-        $this->currentBulkRequest[] = new BulkRequestPart($this->computeTargetDimensionsHash($node), $tuple);
-    }
-
-    /**
-     * @param NodeInterface $node
-     * @return string
-     */
-    protected function computeTargetDimensionsHash(NodeInterface $node): string
-    {
-        $dimensions = array_map(function ($dimensionValues) {
-            return [$dimensionValues];
-        }, $node->getContext()->getTargetDimensions());
-        $hash = Utility::sortDimensionValueArrayAndReturnDimensionsHash($dimensions);
-
-        if (!isset($this->dimensionsRegistry[$hash])) {
-            $this->dimensionsRegistry[$hash] = $dimensions;
-        }
-
-        return $hash;
+        $this->currentBulkRequest[] = new BulkRequestPart($this->dimensionService->hashByNode($node), $tuple);
     }
 
     /**
@@ -408,7 +392,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             return;
         }
 
-        foreach ($this->dimensionsRegistry as $hash => $dimensions) {
+        foreach ($this->dimensionService->getDimensionsRegistry() as $hash => $dimensions) {
             $this->searchClient->setDimensions($dimensions);
             $response = $this->requestDriver->bulk($this->getIndex(), $payload[$hash]);
             foreach ($response as $responseLine) {
@@ -426,7 +410,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
     protected function reset()
     {
-        $this->dimensionsRegistry = [];
+        $this->dimensionService->reset();
         $this->currentBulkRequest = [];
     }
 
