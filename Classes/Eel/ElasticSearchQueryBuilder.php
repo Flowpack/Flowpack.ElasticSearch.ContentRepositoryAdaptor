@@ -579,7 +579,18 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
             $this->result['nodes'] = [];
 
-            $this->logThisQuery && $this->logger->log(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s', $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($searchResult->getHits()), $searchResult->getTotal()), LOG_DEBUG);
+            if ($this->logThisQuery) {
+                $this->logger->log(vsprintf('Query Log (%s) index: %s, %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s',
+                    [
+                        $this->logMessage,
+                        $this->elasticSearchClient->getIndexName(),
+                        $request,
+                        (($timeAfterwards - $timeBefore) * 1000),
+                        $this->limit,
+                        count($searchResult->getHits()),
+                        $searchResult->getTotal()
+                    ]), LOG_DEBUG);
+            }
 
             if (count($searchResult->getHits()) > 0) {
                 $this->result['nodes'] = $this->convertHitsToNodes($searchResult->getHits());
