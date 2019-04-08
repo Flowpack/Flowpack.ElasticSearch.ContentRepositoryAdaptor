@@ -546,8 +546,8 @@ class NodeIndexCommandController extends CommandController
             $this->nodeIndexer->getIndex()->delete();
         }
         $this->nodeIndexer->getIndex()->create();
-        $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
-        $this->logger->log('+ Dimensions: ' . \json_encode($dimensionValues), LOG_INFO);
+        $this->outputLine('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
+        $this->outputLine('+ Dimensions: ' . \json_encode($dimensionValues), LOG_INFO);
     }
 
     /**
