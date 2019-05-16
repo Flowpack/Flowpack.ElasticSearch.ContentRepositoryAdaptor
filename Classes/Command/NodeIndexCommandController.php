@@ -159,7 +159,7 @@ class NodeIndexCommandController extends CommandController
             $this->outputLine('<b>Mapping Warnings</b>');
             foreach ($mappingErrors->getFlattenedWarnings() as $warnings) {
                 foreach ($warnings as $warning) {
-                    $this->outputLine($warning);
+                    $this->outputLine((string)$warning);
                 }
             }
         }
