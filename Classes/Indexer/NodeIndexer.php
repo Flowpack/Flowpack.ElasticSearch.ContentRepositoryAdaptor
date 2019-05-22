@@ -123,6 +123,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     protected $systemDriver;
 
     /**
+     * @var array
+     * @Flow\InjectConfiguration(package="Flowpack.ElasticSearch.ContentRepositoryAdaptor", path="indexing.batchSize")
+     */
+    protected $batchSize;
+
+    /**
      * The current Elasticsearch bulk request, in the format required by http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html
      *
      * @var array
@@ -296,6 +302,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         }
 
         $this->currentBulkRequest[] = new BulkRequestPart($this->dimensionService->hashByNode($node), $tuple);
+        $this->flushIfNeeded();
     }
 
     /**
@@ -348,6 +355,25 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $this->logger->log(sprintf('NodeIndexer (%s): Removed node %s (%s) from index.', $documentIdentifier, $node->getContextPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
     }
 
+    protected function flushIfNeeded(): void
+    {
+        if ($this->bulkRequestLenght() >= $this->batchSize['elements'] || $this->bulkRequestSize() >= $this->batchSize['octets']) {
+            $this->flush();
+        }
+    }
+
+    protected function bulkRequestSize(): int
+    {
+        return array_reduce($this->currentBulkRequest, function ($sum, BulkRequestPart $request) {
+            return $sum + $request->getSize();
+        }, 0);
+    }
+
+    protected function bulkRequestLenght(): int
+    {
+        return count($this->currentBulkRequest);
+    }
+
     /**
      * Perform the current bulk request
      *
@@ -357,9 +383,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     public function flush(): void
     {
         $bulkRequest = $this->currentBulkRequest;
-        if (count($bulkRequest) === 0) {
+        $bulkRequestSize = $this->bulkRequestLenght();
+        if ($bulkRequestSize === 0) {
             return;
         }
+
+        $this->logger->log(vsprintf('Flush bulk request, elements=%d, maximumElements=%s, octets=%d, maximumOctets=%d', [$bulkRequestSize, $this->batchSize['elements'], $this->bulkRequestSize(), $this->batchSize['octets']]), LOG_DEBUG);
 
         $payload = [];
         /** @var BulkRequestPart $bulkRequestPart */
@@ -368,15 +397,14 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 throw new \RuntimeException('Invalid bulk request part');
             }
             $tupleAsJson = '';
-            foreach ($bulkRequestPart->getItems() as $bulkRequestItem) {
-                $itemAsJson = json_encode($bulkRequestItem);
-                if ($itemAsJson === false) {
+            foreach ($bulkRequestPart->getRequest() as $bulkRequestItem) {
+                if ($bulkRequestItem === null) {
                     $this->errorHandlingService->log(
                         new MalformedBulkRequestError('Indexing Error: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), $bulkRequestItem)
                     );
                     continue 2;
                 }
-                $tupleAsJson .= $itemAsJson . chr(10);
+                $tupleAsJson .= $bulkRequestItem . chr(10);
             }
 
             $hash = $bulkRequestPart->getTargetDimensionsHash();

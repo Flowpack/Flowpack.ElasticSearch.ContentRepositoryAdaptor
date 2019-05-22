@@ -1,6 +1,10 @@
 Flowpack:
   ElasticSearch:
     ContentRepositoryAdaptor:
+      indexing:
+        batchSize:
+          elements: 50
+          octets: 40000000
       driver:
         version: '5.x'
         mapping:

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
 
+use Generator;
+
 class BulkRequestPart
 {
     /**
@@ -12,29 +14,44 @@ class BulkRequestPart
     protected $targetDimensionsHash;
 
     /**
-     * @var array
+     * JSON Payload of the current requests
+     * @var string
      */
-    protected $items;
-
-    public function __construct(string $targetDimensionsHash, array $items)
-    {
-        $this->targetDimensionsHash = $targetDimensionsHash;
-        $this->items = $items;
-    }
+    protected $requests = [];
 
     /**
-     * @return array
+     * Size in octet of the current request
+     * @var int
      */
+    protected $size = 0;
+
+    public function __construct(string $targetDimensionsHash, array $requests)
+    {
+        $this->targetDimensionsHash = $targetDimensionsHash;
+        $this->requests = array_map(function (array $request) {
+            $data = json_encode($request);
+            if ($data === false) {
+                return null;
+            }
+            $this->size += strlen($data);
+            return $data;
+        }, $requests);
+    }
+
     public function getTargetDimensionsHash(): string
     {
         return $this->targetDimensionsHash;
     }
 
-    /**
-     * @return array
-     */
-    public function getItems(): array
+    public function getRequest(): Generator
     {
-        return $this->items;
+        foreach ($this->requests as $request) {
+            yield $request;
+        }
+    }
+
+    public function getSize(): int
+    {
+        return $this->size;
     }
 }
