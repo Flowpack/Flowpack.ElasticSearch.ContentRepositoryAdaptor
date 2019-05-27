@@ -29,7 +29,6 @@ use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
 use Neos\ContentRepository\Domain\Service\ContentDimensionPresetSourceInterface;
 use Neos\ContentRepository\Domain\Service\Context;
-use Neos\ContentRepository\Domain\Service\ContextFactory;
 use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
@@ -37,7 +36,6 @@ use Neos\Flow\Configuration\ConfigurationManager;
 use Neos\Flow\Core\Booting\Scripts;
 use Neos\Flow\Exception;
 use Neos\Utility\Files;
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * Provides CLI features for index handling

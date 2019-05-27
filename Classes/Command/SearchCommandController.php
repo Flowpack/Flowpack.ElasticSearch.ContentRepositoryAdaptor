@@ -53,14 +53,7 @@ class SearchCommandController extends CommandController
      */
     public function fulltextCommand(string $path, string $query, ?string $dimensions = null)
     {
-        $contextConfiguration = [
-            'workspaceName' => 'live',
-        ];
-        if ($dimensions !== null) {
-            $contextConfiguration['dimensions'] = json_decode($dimensions, true);
-        }
-        
-        $context = $this->contextFactory->create($contextConfiguration);
+        $context = $this->createContext($dimensions);
         $contextNode = $context->getNode($path);
 
         if ($contextNode === null) {
@@ -87,13 +80,61 @@ class SearchCommandController extends CommandController
         $this->outputLine('<info>Results</info>');
         $this->outputLine('Number of result(s): %d', [$q->count()]);
         $this->outputLine('Index name: %s', [$this->elasticSearchClient->getIndexName()]);
+        $this->outputResults($q->execute());
         $this->outputLine();
+    }
 
-        /** @var NodeInterface $node */
-        foreach ($results as $node) {
-            $hits = $results->searchHitForNode($node);
-            $this->outputLine('- <b>%s</b> (%s)', [$node->getLabel(), $node->getNodeType()]);
+    /**
+     * @param string $identifier
+     * @param string|null $dimensions
+     */
+    public function viewNodeCommand(string $identifier, ?string $dimensions = null)
+    {
+        $context = $this->createContext($dimensions);
+
+        $q = new ElasticSearchQueryBuilder();
+        $q->query($context->getRootNode());
+        $q->exactMatch('__identifier', $identifier);
+
+        if ($q->count() > 0) {
+            $this->outputLine();
+            $this->outputLine('<info>Results</info>');
+            $this->outputResults($q->execute());
+        } else {
+            $this->outputLine();
+            $this->outputLine('No document matching the given node identifier');
+        }
+    }
+
+    protected function outputResults(ElasticSearchQueryResult $result)
+    {
+        $results = array_map(function(NodeInterface $node) {
+            $properties = [];
+            foreach ($node->getProperties() as $propertyName => $propertyValue) {
+                $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . (string)$propertyValue;
+            }
+            return [
+                'identifier' => $node->getIdentifier(),
+                'label' => $node->getLabel(),
+                'nodeType' => $node->getNodeType()->getName(),
+                'contextPath' => implode(PHP_EOL, explode('@', $node->getContextPath())),
+                'properties' => implode(PHP_EOL, $properties),
+            ];
+        }, $result->toArray());
+
+        $this->output->outputTable($results, ['Identifier', 'Label', 'Node Type', 'Context', 'Properties']);
+    }
+
+    protected function createContext(string $dimensions = null)
+    {
+        $contextConfiguration = [
+            'workspaceName' => 'live',
+        ];
+        if ($dimensions !== null) {
+            $contextConfiguration['dimensions'] = json_decode($dimensions, true);
         }
 
+        $context = $this->contextFactory->create($contextConfiguration);
+        return $context;
     }
 }
