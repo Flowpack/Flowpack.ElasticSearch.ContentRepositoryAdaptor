@@ -388,7 +388,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             return;
         }
 
-        $this->logger->log(vsprintf('Flush bulk request, elements=%d, maximumElements=%s, octets=%d, maximumOctets=%d', [$bulkRequestSize, $this->batchSize['elements'], $this->bulkRequestSize(), $this->batchSize['octets']]), LOG_DEBUG);
+        $this->logger->log(vsprintf('Flush bulk request, elements=%d, maximumElements=%s, octets=%d, maximumOctets=%d', [$bulkRequestSize, $this->batchSize['elements'], $this->bulkRequestSize(), $this->batchSize['octets']]), LOG_DEBUG, null, 'ElasticSearch (CR)');
 
         $payload = [];
         /** @var BulkRequestPart $bulkRequestPart */
@@ -396,7 +396,13 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             if (!$bulkRequestPart instanceof BulkRequestPart) {
                 throw new \RuntimeException('Invalid bulk request part');
             }
-            $tupleAsJson = '';
+
+            $hash = $bulkRequestPart->getTargetDimensionsHash();
+
+            if (!isset($payload[$hash])) {
+                $payload[$hash] = [];
+            }
+
             foreach ($bulkRequestPart->getRequest() as $bulkRequestItem) {
                 if ($bulkRequestItem === null) {
                     $this->errorHandlingService->log(
@@ -404,15 +410,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                     );
                     continue 2;
                 }
-                $tupleAsJson .= $bulkRequestItem . chr(10);
+                $payload[$hash][] = $bulkRequestItem;
             }
-
-            $hash = $bulkRequestPart->getTargetDimensionsHash();
-
-            if (!isset($payload[$hash])) {
-                $payload[$hash] = '';
-            }
-            $payload[$hash] .= $tupleAsJson;
         }
 
         if ($payload === []) {
@@ -422,7 +421,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         foreach ($this->dimensionService->getDimensionsRegistry() as $hash => $dimensions) {
             $this->searchClient->setDimensions($dimensions);
-            $response = $this->requestDriver->bulk($this->getIndex(), $payload[$hash]);
+            file_put_contents(FLOW_PATH_DATA . 'Logs/ElasticSearch/' . time() . '.json', implode(chr(10), $payload[$hash]));
+            $response = $this->requestDriver->bulk($this->getIndex(), implode(chr(10), $payload[$hash]));
             foreach ($response as $responseLine) {
                 if (isset($response['errors']) && $response['errors'] !== false) {
                     $this->errorHandlingService->log(
