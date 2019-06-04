@@ -188,6 +188,8 @@ class NodeIndexCommandController extends CommandController
             }
             $indexInWorkspace($identifier, $workspaceInstance);
         }
+
+        $this->nodeIndexer->flush();
     }
 
     /**
