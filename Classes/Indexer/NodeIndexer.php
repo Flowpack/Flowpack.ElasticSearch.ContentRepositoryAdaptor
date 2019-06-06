@@ -423,14 +423,19 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         foreach ($this->dimensionService->getDimensionsRegistry() as $hash => $dimensions) {
             $this->searchClient->setDimensions($dimensions);
             $logDirectory = FLOW_PATH_DATA . 'Logs/ElasticSearch/';
-            Files::createDirectoryRecursively($logDirectory);
-            file_put_contents($logDirectory . time() . '.json', implode(chr(10), $payload[$hash]));
+            if (!@is_dir($logDirectory)) {
+                Files::createDirectoryRecursively($logDirectory);
+            }
             $response = $this->requestDriver->bulk($this->getIndex(), implode(chr(10), $payload[$hash]));
             foreach ($response as $responseLine) {
                 if (isset($response['errors']) && $response['errors'] !== false) {
                     $this->errorHandlingService->log(
                         new BulkIndexingError($this->currentBulkRequest, $responseLine)
                     );
+                    file_put_contents($logDirectory . 'BulkIndexing_Error_' . time() . '.json', json_encode([
+                        'request' => $payload[$hash],
+                        'response' => $responseLine
+                    ], JSON_PRETTY_PRINT));
                 }
             }
         }
