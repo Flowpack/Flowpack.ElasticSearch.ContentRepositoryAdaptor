@@ -421,6 +421,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         }
 
         foreach ($this->dimensionService->getDimensionsRegistry() as $hash => $dimensions) {
+            if (!isset($payload[$hash])) {
+                continue;
+            }
             $this->searchClient->setDimensions($dimensions);
             $logDirectory = FLOW_PATH_DATA . 'Logs/ElasticSearch/';
             if (!@is_dir($logDirectory)) {
