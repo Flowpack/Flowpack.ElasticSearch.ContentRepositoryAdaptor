@@ -39,6 +39,7 @@ use Neos\ContentRepository\Search\Indexer\BulkNodeIndexerInterface;
 use Neos\ContentRepository\Utility;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
+use Neos\Utility\Files;
 
 /**
  * Indexer for Content Repository Nodes. Triggered from the NodeIndexingManager.
@@ -421,7 +422,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         foreach ($this->dimensionService->getDimensionsRegistry() as $hash => $dimensions) {
             $this->searchClient->setDimensions($dimensions);
-            file_put_contents(FLOW_PATH_DATA . 'Logs/ElasticSearch/' . time() . '.json', implode(chr(10), $payload[$hash]));
+            $logDirectory = FLOW_PATH_DATA . 'Logs/ElasticSearch/';
+            Files::createDirectoryRecursively($logDirectory);
+            file_put_contents($logDirectory . time() . '.json', implode(chr(10), $payload[$hash]));
             $response = $this->requestDriver->bulk($this->getIndex(), implode(chr(10), $payload[$hash]));
             foreach ($response as $responseLine) {
                 if (isset($response['errors']) && $response['errors'] !== false) {
