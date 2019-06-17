@@ -87,7 +87,10 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
         while (isset($treatedContent['hits']['hits']) && $treatedContent['hits']['hits'] !== []) {
             $hits = $treatedContent['hits']['hits'];
             $bulkRequest = array_merge($bulkRequest, array_map($mapHitToDeleteRequest, $hits));
-            $result = $index->request('GET', '/_search/scroll?scroll=1m', [], $scrollId, false);
+            $result = $index->request('GET', '/_search/scroll', [], json_encode([
+                'scroll' => '1m',
+                'scroll_id' => $scrollId
+            ]));
             $treatedContent = $result->getTreatedContent();
         }
         $this->logger->log(sprintf('NodeIndexer: Check duplicate nodes for %s (%s), found %d document(s)', $documentIdentifier, $nodeType->getName(), count($bulkRequest)), LOG_DEBUG, null, 'ElasticSearch (CR)');
