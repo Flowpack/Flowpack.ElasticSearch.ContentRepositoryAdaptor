@@ -18,7 +18,6 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception as CRAException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
@@ -33,9 +32,11 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 use Neos\Flow\Configuration\ConfigurationManager;
 use Neos\Flow\Configuration\Exception\InvalidConfigurationTypeException;
+use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 use Neos\Neos\Controller\CreateContentContextTrait;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -246,18 +247,18 @@ class NodeIndexCommandController extends CommandController
     public function buildCommand(int $limit = null, bool $update = false, string $workspace = null, string $postfix = ''): void
     {
         if ($workspace !== null && $this->workspaceRepository->findByIdentifier($workspace) === null) {
-            $this->logger->log('The given workspace (' . $workspace . ') does not exist.', LOG_ERR);
+            $this->logger->error('The given workspace (' . $workspace . ') does not exist.', LogEnvironment::fromMethodName(__METHOD__));
             $this->quit(1);
         }
 
         if ($update === true) {
-            $this->logger->log('!!! Update Mode (Development) active!');
+            $this->logger->warning('!!! Update Mode (Development) active!', LogEnvironment::fromMethodName(__METHOD__));
         } else {
             $this->createNewIndex($postfix);
         }
         $this->applyMapping();
 
-        $this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')));
+        $this->logger->info(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LogEnvironment::fromMethodName(__METHOD__));
 
         $count = 0;
 
@@ -291,7 +292,7 @@ class NodeIndexCommandController extends CommandController
             $this->outputLine();
             $this->outputLine('<error>Check your logs for more information</error>');
         } else {
-            $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
+            $this->logger->info('Done. (indexed ' . $count . ' nodes)', LogEnvironment::fromMethodName(__METHOD__));
         }
         $this->nodeIndexer->getIndex()->refresh();
 
@@ -313,17 +314,17 @@ class NodeIndexCommandController extends CommandController
             $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
             if (count($indicesToBeRemoved) > 0) {
                 foreach ($indicesToBeRemoved as $indexToBeRemoved) {
-                    $this->logger->log('Removing old index ' . $indexToBeRemoved);
+                    $this->logger->info('Removing old index ' . $indexToBeRemoved, LogEnvironment::fromMethodName(__METHOD__));
                 }
             } else {
-                $this->logger->log('Nothing to remove.');
+                $this->logger->info('Nothing to remove.', LogEnvironment::fromMethodName(__METHOD__));
             }
         } catch (ApiException $exception) {
             $response = json_decode($exception->getResponse());
             if ($response->error instanceof \stdClass) {
-                $this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s: %s"', $response->status, $response->error->type, $response->error->reason));
+                $this->logger->info(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s: %s"', $response->status, $response->error->type, $response->error->reason), LogEnvironment::fromMethodName(__METHOD__));
             } else {
-                $this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s"', $response->status, $response->error));
+                $this->logger->info(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s"', $response->status, $response->error), LogEnvironment::fromMethodName(__METHOD__));
             }
         }
     }
@@ -339,11 +340,11 @@ class NodeIndexCommandController extends CommandController
     {
         $this->nodeIndexer->setIndexNamePostfix($postfix ?: (string)time());
         if ($this->nodeIndexer->getIndex()->exists() === true) {
-            $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
+            $this->logger->warning(sprintf('Deleted index with the same postfix (%s)!', $postfix), LogEnvironment::fromMethodName(__METHOD__));
             $this->nodeIndexer->getIndex()->delete();
         }
         $this->nodeIndexer->getIndex()->create();
-        $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName());
+        $this->logger->info('Created index ' . $this->nodeIndexer->getIndexName(), LogEnvironment::fromMethodName(__METHOD__));
     }
 
     /**
@@ -359,6 +360,6 @@ class NodeIndexCommandController extends CommandController
             /** @var Mapping $mapping */
             $mapping->apply();
         }
-        $this->logger->log('Updated Mapping.');
+        $this->logger->info('Updated Mapping.', LogEnvironment::fromMethodName(__METHOD__));
     }
 }

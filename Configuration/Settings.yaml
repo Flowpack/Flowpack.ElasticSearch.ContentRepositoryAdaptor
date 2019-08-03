@@ -67,20 +67,6 @@ Neos:
         # API. name of the Elasticsearch index to use. Will create many indices prefixed by this indexName.
         indexName: typo3cr
 
-        # configuration of the ElasticSearch logfile
-        log:
-          backendOptions:
-            fileBackend:
-              logFileURL: '%FLOW_PATH_DATA%Logs/ElasticSearch.log'
-              createParentDirectories: true
-              severityThreshold: '%LOG_DEBUG%'
-              maximumLogFileSize: 10485760
-              logFilesToKeep: 1
-              logMessageOrigin: false
-
-            ansiConsoleBackend:
-              disableAnsi: false
-
       defaultConfigurationPerType:
 
         string:

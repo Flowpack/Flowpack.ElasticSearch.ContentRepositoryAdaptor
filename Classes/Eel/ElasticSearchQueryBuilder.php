@@ -19,7 +19,8 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Dto\SearchResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
+use Neos\Flow\Log\Utility\LogEnvironment;
+use Psr\Log\LoggerInterface;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
@@ -586,7 +587,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
             $this->result['nodes'] = [];
 
-            $this->logThisQuery && $this->logger->log(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s', $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($searchResult->getHits()), $searchResult->getTotal()), LOG_DEBUG);
+            $this->logThisQuery && $this->logger->debug(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s', $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($searchResult->getHits()), $searchResult->getTotal()));
 
             if (count($searchResult->getHits()) > 0) {
                 $this->result['nodes'] = $this->convertHitsToNodes($searchResult->getHits());
@@ -653,7 +654,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $treatedContent = $response->getTreatedContent();
         $count = $treatedContent['count'];
 
-        $this->logThisQuery && $this->logger->log('Count Query Log (' . $this->logMessage . '): ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
+        $this->logThisQuery && $this->logger->debug('Count Query Log (' . $this->logMessage . '): ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count);
 
         return $count;
     }
@@ -712,7 +713,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             $respondedDocuments = Arrays::getValueByPath($response, 'hits.hits');
 
             if (count($respondedDocuments) === 0) {
-                $this->logger->log(sprintf('The node with identifier %s was not found in the elasticsearch index.', $node->getIdentifier()), LOG_INFO);
+                $this->logger->info(sprintf('The node with identifier %s was not found in the elasticsearch index.', $node->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
                 return [];
             }
 
@@ -852,7 +853,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             }
         }
 
-        $this->logThisQuery && $this->logger->log('Returned nodes (' . $this->logMessage . '): ' . count($nodes), LOG_DEBUG);
+        $this->logThisQuery && $this->logger->debug('Returned nodes (' . $this->logMessage . '): ' . count($nodes));
 
         $this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
 

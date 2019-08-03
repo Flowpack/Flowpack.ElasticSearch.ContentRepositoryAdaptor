@@ -16,6 +16,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Log\Utility\LogEnvironment;
 
 /**
  * Abstract Fulltext Indexer Driver
@@ -58,7 +59,7 @@ abstract class AbstractIndexerDriver extends AbstractDriver
             if ($closestFulltextNode === null) {
                 // root of hierarchy, no fulltext root found anymore, abort silently...
                 if ($node->getPath() !== '/' && $node->getPath() !== '/sites') {
-                    $this->logger->log(sprintf('NodeIndexer: No fulltext root found for node %s (%s)', $node->getIdentifier(), $node->getContextPath()), LOG_WARNING, null, 'ElasticSearch (CR)');
+                    $this->logger->warning(sprintf('NodeIndexer: No fulltext root found for node %s (%s)', $node->getIdentifier(), $node->getContextPath()), LogEnvironment::fromMethodName(__METHOD__));
                 }
 
                 return null;

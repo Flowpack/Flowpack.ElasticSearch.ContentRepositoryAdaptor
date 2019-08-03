@@ -14,7 +14,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
+use Neos\Flow\Log\Utility\LogEnvironment;
+use Psr\Log\LoggerInterface;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -76,9 +77,9 @@ class BulkIndexingError implements ErrorInterface
     {
         if (file_exists(FLOW_PATH_DATA . 'Logs/Elasticsearch') && is_dir(FLOW_PATH_DATA . 'Logs/Elasticsearch') && is_writable(FLOW_PATH_DATA . 'Logs/Elasticsearch')) {
             file_put_contents($this->filename, $this->renderErrors());
-            $this->logger->log($this->message, LOG_ERR, [], 'Flowpack.ElasticSearch.ContentRepositoryAdaptor', __CLASS__, __FUNCTION__);
+            $this->logger->error($this->message, LogEnvironment::fromMethodName(__METHOD__));
         } else {
-            $this->logger->log(sprintf('Could not write indexing errors backtrace into %s because the directory could not be created or is not writable.', FLOW_PATH_DATA . 'Logs/Elasticsearch/'), LOG_WARNING, [], 'Flowpack.ElasticSearch.ContentRepositoryAdaptor', __CLASS__, __FUNCTION__);
+            $this->logger->warning(sprintf('Could not write indexing errors backtrace into %s because the directory could not be created or is not writable.', FLOW_PATH_DATA . 'Logs/Elasticsearch/'), LogEnvironment::fromMethodName(__METHOD__));
         }
     }
 

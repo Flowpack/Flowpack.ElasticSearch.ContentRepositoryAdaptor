@@ -15,7 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\DriverConfigurationException;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
+use Psr\Log\LoggerInterface;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -57,7 +57,7 @@ class AbstractDriverSpecificObjectFactory
 
         $className = trim($this->mapping[$version][$type]['className']);
 
-        $this->logger->log(sprintf('Load %s implementation for Elastic %s (%s)', $type, $version, $className), LOG_DEBUG);
+        $this->logger->debug(sprintf('Load %s implementation for Elastic %s (%s)', $type, $version, $className));
 
         if (!isset($this->mapping[$version][$type]['arguments'])) {
             return new $className();

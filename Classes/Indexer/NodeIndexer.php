@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
@@ -35,6 +34,8 @@ use Neos\ContentRepository\Domain\Service\ContextFactory;
 use Neos\ContentRepository\Search\Indexer\AbstractNodeIndexer;
 use Neos\ContentRepository\Search\Indexer\BulkNodeIndexerInterface;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
+use Psr\Log\LoggerInterface;
 
 /**
  * Indexer for Content Repository Nodes. Triggered from the NodeIndexingManager.
@@ -72,7 +73,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
     /**
      * @Flow\Inject
-     * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface
+     * @var LoggerInterface
      */
     protected $logger;
 
@@ -207,13 +208,13 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
             if ($this->bulkProcessing === false) {
                 // Remove document with the same contextPathHash but different NodeType, required after NodeType change
-                $this->logger->log(sprintf('NodeIndexer (%s): Search and remove duplicate document for node %s (%s) if needed.', $documentIdentifier, $contextPath, $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+                $this->logger->debug(sprintf('NodeIndexer (%s): Search and remove duplicate document for node %s (%s) if needed.', $documentIdentifier, $contextPath, $node->getIdentifier()));
                 $this->documentDriver->deleteDuplicateDocumentNotMatchingType($this->getIndex(), $documentIdentifier, $node->getNodeType());
             }
 
             $fulltextIndexOfNode = [];
             $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($documentIdentifier, $node) {
-                $this->logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found, node type %s.', $documentIdentifier, $propertyName, $node->getNodeType()->getName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+                $this->logger->debug(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found, node type %s.', $documentIdentifier, $propertyName, $node->getNodeType()->getName()));
             });
 
             $document = new ElasticSearchDocument($mappingType,
@@ -237,7 +238,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $this->currentBulkRequest[] = $this->indexerDriver->fulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
             }
 
-            $this->logger->log(sprintf('NodeIndexer (%s): Indexed node %s.', $documentIdentifier, $contextPath), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $this->logger->debug(sprintf('NodeIndexer (%s): Indexed node %s.', $documentIdentifier, $contextPath));
         };
 
         $handleNode = function (NodeInterface $node, Context $context) use ($targetWorkspaceName, $indexer) {
@@ -248,9 +249,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
                 if ($node->isRemoved()) {
                     $this->removeNode($node, $context->getWorkspaceName());
-                    $this->logger->log(sprintf('NodeIndexer (%s): Removed node with identifier %s, no longer in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+                    $this->logger->debug(sprintf('NodeIndexer (%s): Removed node with identifier %s, no longer in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()));
                 } else {
-                    $this->logger->log(sprintf('NodeIndexer (%s): Could not index node with identifier %s, not found in workspace %s with dimensions %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName(), json_encode($context->getDimensions())), LOG_DEBUG, null, 'ElasticSearch (CR)');
+                    $this->logger->debug(sprintf('NodeIndexer (%s): Could not index node with identifier %s, not found in workspace %s with dimensions %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName(), json_encode($context->getDimensions())));
                 }
             }
         };
@@ -274,7 +275,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param NodeInterface $node
      * @param string $targetWorkspaceName
      * @return string
-     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
+     * @throws IllegalObjectTypeException
      */
     protected function calculateDocumentIdentifier(NodeInterface $node, $targetWorkspaceName = null): string
     {
@@ -293,7 +294,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param NodeInterface $node
      * @param string $targetWorkspaceName
      * @return void
-     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
+     * @throws IllegalObjectTypeException
      */
     public function removeNode(NodeInterface $node, string $targetWorkspaceName = null)
     {
@@ -315,7 +316,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $this->currentBulkRequest[] = $this->documentDriver->delete($node, $documentIdentifier);
         $this->currentBulkRequest[] = $this->indexerDriver->fulltext($node, [], $targetWorkspaceName);
 
-        $this->logger->log(sprintf('NodeIndexer (%s): Removed node %s (%s) from index.', $documentIdentifier, $node->getContextPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        $this->logger->debug(sprintf('NodeIndexer (%s): Removed node %s (%s) from index.', $documentIdentifier, $node->getContextPath(), $node->getIdentifier()));
     }
 
     /**
