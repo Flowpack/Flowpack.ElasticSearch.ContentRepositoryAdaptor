@@ -192,7 +192,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * {@inheritdoc}
      */
-    public function setValueByPath(string $path, string $value): void
+    public function setValueByPath(string $path, $value): void
     {
         $this->request = Arrays::setValueByPath($this->request, $path, $value);
     }
