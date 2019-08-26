@@ -57,8 +57,6 @@ class AbstractDriverSpecificObjectFactory
 
         $className = trim($this->mapping[$version][$type]['className']);
 
-        $this->logger->debug(sprintf('Load %s implementation for Elastic %s (%s)', $type, $version, $className));
-
         if (!isset($this->mapping[$version][$type]['arguments'])) {
             return new $className();
         }
