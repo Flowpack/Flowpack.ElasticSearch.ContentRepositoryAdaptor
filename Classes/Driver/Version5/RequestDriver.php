@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
@@ -29,6 +28,7 @@ class RequestDriver extends AbstractDriver implements RequestDriverInterface
     /**
      * {@inheritdoc}
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
      */
     public function bulk(Index $index, $request): array
     {
@@ -39,7 +39,7 @@ class RequestDriver extends AbstractDriver implements RequestDriverInterface
         // Bulk request MUST end with line return
         $request = trim($request) . "\n";
 
-        $response = $index->request('POST', '/_bulk', [], $request)->getOriginalResponse()->getContent();
+        $response = $index->request('POST', '/_bulk', [], $request)->getOriginalResponse()->getBody()->getContents();
 
         return array_map('json_decode', explode("\n", $response));
     }
