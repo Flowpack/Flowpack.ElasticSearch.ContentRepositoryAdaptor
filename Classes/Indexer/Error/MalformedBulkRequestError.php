@@ -14,7 +14,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
+use Neos\Flow\Log\Utility\LogEnvironment;
+use Psr\Log\LoggerInterface;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -55,7 +56,7 @@ class MalformedBulkRequestError implements ErrorInterface
      */
     public function log(): void
     {
-        $this->logger->log($this->message(), LOG_ERR, $this->tuple);
+        $this->logger->error($this->message(), LogEnvironment::fromMethodName(__METHOD__) + $this->tuple);
     }
 
     /**

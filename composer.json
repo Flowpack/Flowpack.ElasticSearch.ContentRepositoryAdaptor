@@ -12,7 +12,7 @@
         "neos/content-repository": "^3.3 || ^4.0 || dev-master",
         "neos/content-repository-search": "^3.0 || ^4.0 || dev-master",
         "neos/eel": "^4.3 || ^5.0 || dev-master",
-        "neos/flow": "^4.3 || ^5.0 || dev-master",
+        "neos/flow": "^6.0 || dev-master",
         "neos/fluid-adaptor": "^4.3 || ^5.0 || dev-master",
         "neos/utility-arrays": "^4.3 || ^5.0 || dev-master"
     },

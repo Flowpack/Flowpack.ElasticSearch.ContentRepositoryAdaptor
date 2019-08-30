@@ -15,7 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
+use Psr\Log\LoggerInterface;
 use Neos\Flow\Annotations as Flow;
 
 /**
