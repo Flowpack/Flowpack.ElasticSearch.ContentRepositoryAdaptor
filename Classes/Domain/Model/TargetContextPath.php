@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model;
@@ -14,10 +13,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Flow\Annotations as Flow;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 
 /**
  * Calculate the target ContextPath
@@ -27,17 +25,17 @@ class TargetContextPath
     /**
      * @var string
      */
-    protected $contextPath;
+    protected $contextPath = '';
 
     /**
      * @param NodeInterface $node
      * @param string $targetWorkspaceName
-     * @param string $contextPaht
-     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
+     * @param string $contextPath
+     * @throws IllegalObjectTypeException
      */
-    public function __construct(NodeInterface $node, string $targetWorkspaceName, string $contextPaht)
+    public function __construct(NodeInterface $node, string $targetWorkspaceName, string $contextPath)
     {
-        $this->contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPaht);
+        $this->contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
     }
 
     public function __toString()

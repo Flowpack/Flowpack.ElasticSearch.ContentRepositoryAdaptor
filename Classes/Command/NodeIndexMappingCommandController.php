@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
@@ -69,6 +68,7 @@ class NodeIndexMappingCommandController extends CommandController
      * Show the mapping which would be sent to the ElasticSearch server
      *
      * @return void
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function mappingCommand(): void
     {

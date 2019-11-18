@@ -120,7 +120,7 @@ class SearchCommandController extends CommandController
     /**
      * @param ElasticSearchQueryResult $result
      */
-    protected function outputResults(ElasticSearchQueryResult $result): void
+    private function outputResults(ElasticSearchQueryResult $result): void
     {
         $results = array_map(static function (NodeInterface $node) {
             $properties = [];
@@ -143,7 +143,7 @@ class SearchCommandController extends CommandController
      * @param string|null $dimensions
      * @return Context
      */
-    protected function createContext(string $dimensions = null): Context
+    private function createContext(string $dimensions = null): Context
     {
         $contextConfiguration = [
             'workspaceName' => 'live',

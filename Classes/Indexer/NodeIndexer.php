@@ -383,6 +383,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @return void
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Utility\Exception\FilesException
      */
     public function flush(): void
     {
@@ -392,7 +393,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             return;
         }
 
-        $this->logger->log(vsprintf('Flush bulk request, elements=%d, maximumElements=%s, octets=%d, maximumOctets=%d', [$bulkRequestSize, $this->batchSize['elements'], $this->bulkRequestSize(), $this->batchSize['octets']]), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        $this->logger->debug(vsprintf('Flush bulk request, elements=%d, maximumElements=%s, octets=%d, maximumOctets=%d',
+            [$bulkRequestSize, $this->batchSize['elements'], $this->bulkRequestSize(), $this->batchSize['octets']]),
+            LogEnvironment::fromMethodName(__METHOD__));
 
         $payload = [];
         /** @var BulkRequestPart $bulkRequestPart */
@@ -427,7 +430,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         if (!@is_dir($logDirectory)) {
             Files::createDirectoryRecursively($logDirectory);
         }
-        
+
+        // TODO: Remove fileystem logging
         foreach ($this->dimensionService->getDimensionsRegistry() as $hash => $dimensions) {
             if (!isset($payload[$hash])) {
                 continue;
