@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
@@ -167,7 +166,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
      */
     public function queryFilterThrowsExceptionOnInvalidClauseType(): void
     {
-        $this->expectException( QueryBuildingException::class);
+        $this->expectException(QueryBuildingException::class);
         $this->queryBuilder->queryFilter('foo', [], 'unsupported');
     }
 
