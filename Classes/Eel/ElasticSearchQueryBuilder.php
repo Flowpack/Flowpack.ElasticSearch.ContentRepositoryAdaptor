@@ -671,7 +671,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @return QueryBuilderInterface
      * @api
      */
-    public function fulltext($searchWord, array $options = [])
+    public function fulltext(string $searchWord, array $options = []): QueryBuilderInterface
     {
         // We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
         $this->request->fulltext(trim(json_encode($searchWord), '"'), $options);

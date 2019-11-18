@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
@@ -19,14 +18,18 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilde
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\SearchResultHelper;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
+use Neos\ContentRepository\Domain\Service\Context;
 use Neos\ContentRepository\Domain\Service\ContextFactory;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
+use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -50,8 +53,11 @@ class SearchCommandController extends CommandController
      * @param string $path
      * @param string $query
      * @param string|null $dimensions
+     * @throws Exception
+     * @throws QueryBuildingException
+     * @throws IllegalObjectTypeException
      */
-    public function fulltextCommand(string $path, string $query, ?string $dimensions = null)
+    public function fulltextCommand(string $path, string $query, ?string $dimensions = null): void
     {
         $context = $this->createContext($dimensions);
         $contextNode = $context->getNode($path);
@@ -61,15 +67,15 @@ class SearchCommandController extends CommandController
             $this->sendAndExit(1);
         }
 
-        $q = new ElasticSearchQueryBuilder();
-        $q = $q->query($contextNode)
+        $queryBuilder = new ElasticSearchQueryBuilder();
+        $queryBuilder = $queryBuilder->query($contextNode)
             ->log(__CLASS__)
             ->fulltext($query)
             ->limit(100)
             ->termSuggestions($query);
 
         /** @var ElasticSearchQueryResult $results */
-        $results = $q->execute();
+        $results = $queryBuilder->execute();
 
         $didYouMean = (new SearchResultHelper())->didYouMean($results);
         if (trim($didYouMean) !== '') {
@@ -78,37 +84,45 @@ class SearchCommandController extends CommandController
 
         $this->outputLine();
         $this->outputLine('<info>Results</info>');
-        $this->outputLine('Number of result(s): %d', [$q->count()]);
+        $this->outputLine('Number of result(s): %d', [$queryBuilder->count()]);
         $this->outputLine('Index name: %s', [$this->elasticSearchClient->getIndexName()]);
-        $this->outputResults($q->execute());
+        $this->outputResults($results);
         $this->outputLine();
     }
 
     /**
      * @param string $identifier
      * @param string|null $dimensions
+     * @throws Exception
+     * @throws IllegalObjectTypeException
+     * @throws QueryBuildingException
+     * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
      */
-    public function viewNodeCommand(string $identifier, ?string $dimensions = null)
+    public function viewNodeCommand(string $identifier, ?string $dimensions = null): void
     {
         $context = $this->createContext($dimensions);
 
-        $q = new ElasticSearchQueryBuilder();
-        $q->query($context->getRootNode());
-        $q->exactMatch('__identifier', $identifier);
+        $queryBuilder = new ElasticSearchQueryBuilder();
+        $queryBuilder->query($context->getRootNode());
+        $queryBuilder->exactMatch('__identifier', $identifier);
 
-        if ($q->count() > 0) {
+        if ($queryBuilder->count() > 0) {
             $this->outputLine();
             $this->outputLine('<info>Results</info>');
-            $this->outputResults($q->execute());
+            $this->outputResults($queryBuilder->execute());
         } else {
             $this->outputLine();
             $this->outputLine('No document matching the given node identifier');
         }
     }
 
-    protected function outputResults(ElasticSearchQueryResult $result)
+    /**
+     * @param ElasticSearchQueryResult $result
+     */
+    protected function outputResults(ElasticSearchQueryResult $result): void
     {
-        $results = array_map(function(NodeInterface $node) {
+        $results = array_map(static function (NodeInterface $node) {
             $properties = [];
             foreach ($node->getProperties() as $propertyName => $propertyValue) {
                 $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . (string)$propertyValue;
@@ -125,7 +139,11 @@ class SearchCommandController extends CommandController
         $this->output->outputTable($results, ['Identifier', 'Label', 'Node Type', 'Context', 'Properties']);
     }
 
-    protected function createContext(string $dimensions = null)
+    /**
+     * @param string|null $dimensions
+     * @return Context
+     */
+    protected function createContext(string $dimensions = null): Context
     {
         $contextConfiguration = [
             'workspaceName' => 'live',
@@ -134,7 +152,6 @@ class SearchCommandController extends CommandController
             $contextConfiguration['dimensions'] = json_decode($dimensions, true);
         }
 
-        $context = $this->contextFactory->create($contextConfiguration);
-        return $context;
+        return $this->contextFactory->create($contextConfiguration);
     }
 }
