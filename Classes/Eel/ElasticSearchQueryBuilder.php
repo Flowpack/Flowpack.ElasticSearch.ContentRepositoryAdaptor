@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
@@ -19,7 +18,9 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Dto\SearchResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
+use Neos\Flow\Log\ThrowableStorageInterface;
+use Neos\Flow\Log\Utility\LogEnvironment;
+use Psr\Log\LoggerInterface;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
@@ -51,6 +52,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @var LoggerInterface
      */
     protected $logger;
+
+    /**
+     * @Flow\Inject
+     * @var ThrowableStorageInterface
+     */
+    protected $throwableStorage;
 
     /**
      * @var boolean
@@ -182,6 +189,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param integer $limit
      * @return ElasticSearchQueryBuilder
+     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
      * @api
      */
     public function limit($limit)
@@ -563,7 +571,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * This method is rather internal; just to be called from the ElasticSearchQueryResult. For the public API, please use execute()
      *
      * @return array<\Neos\ContentRepository\Domain\Model\NodeInterface>
+     * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
      */
     public function fetch(): array
     {
@@ -579,24 +589,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
             $this->result['nodes'] = [];
 
-            if ($this->logThisQuery) {
-                $this->logger->log(vsprintf('Query Log (%s) index: %s, %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s',
-                    [
-                        $this->logMessage,
-                        $this->elasticSearchClient->getIndexName(),
-                        $request,
-                        (($timeAfterwards - $timeBefore) * 1000),
-                        $this->limit,
-                        count($searchResult->getHits()),
-                        $searchResult->getTotal()
-                    ]), LOG_DEBUG);
-            }
+            $this->logThisQuery && $this->logger->debug(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s', $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($searchResult->getHits()), $searchResult->getTotal()), LogEnvironment::fromMethodName(__METHOD__));
 
             if (count($searchResult->getHits()) > 0) {
                 $this->result['nodes'] = $this->convertHitsToNodes($searchResult->getHits());
             }
         } catch (ApiException $exception) {
-            $this->logger->logException($exception);
+            $this->throwableStorage->logThrowable($exception);
             $this->result['nodes'] = [];
         }
 
@@ -643,7 +642,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * Return the total number of hits for the query.
      *
      * @return integer
+     * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
      * @api
      */
     public function count()
@@ -657,7 +658,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $treatedContent = $response->getTreatedContent();
         $count = $treatedContent['count'];
 
-        $this->logThisQuery && $this->logger->log('Count Query Log (' . $this->logMessage . '): ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
+        $this->logThisQuery && $this->logger->debug('Count Query Log (' . $this->logMessage . '): ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LogEnvironment::fromMethodName(__METHOD__));
 
         return $count;
     }
@@ -716,7 +717,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             $respondedDocuments = Arrays::getValueByPath($response, 'hits.hits');
 
             if (count($respondedDocuments) === 0) {
-                $this->logger->log(sprintf('The node with identifier %s was not found in the elasticsearch index.', $node->getIdentifier()), LOG_INFO);
+                $this->logger->info(sprintf('The node with identifier %s was not found in the elasticsearch index.', $node->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
                 return [];
             }
 
@@ -850,7 +851,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             }
         }
 
-        $this->logThisQuery && $this->logger->log('Returned nodes (' . $this->logMessage . '): ' . count($nodes), LOG_DEBUG);
+        $this->logThisQuery && $this->logger->debug('Returned nodes (' . $this->logMessage . '): ' . count($nodes));
 
         $this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
 
@@ -863,8 +864,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * hiddenBeforeDateTime or hiddenAfterDateTime properties of all nodes in the result.
      *
      * @return int
+     * @throws Exception
      * @throws QueryBuildingException
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
      */
     public function cacheLifetime(): int
     {
@@ -887,8 +890,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * @param string $dateField
      * @return int
+     * @throws Exception
      * @throws QueryBuildingException
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
      */
     protected function getNearestFutureDate(string $dateField): int
     {

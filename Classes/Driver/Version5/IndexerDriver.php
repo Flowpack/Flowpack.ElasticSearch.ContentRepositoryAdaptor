@@ -20,6 +20,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterfac
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Log\Utility\LogEnvironment;
 
 /**
  * Indexer driver for Elasticsearch version 5.x
@@ -97,12 +98,12 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
 
         if ($closestFulltextNode->isRemoved()) {
             // fulltext root is removed, abort silently...
-            $this->logger->log(sprintf('NodeIndexer (%s): Fulltext root found for %s (%s) not updated, it is removed', $closestFulltextNodeDocumentIdentifier, $node->getPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $this->logger->debug(sprintf('NodeIndexer (%s): Fulltext root found for %s (%s) not updated, it is removed', $closestFulltextNodeDocumentIdentifier, $node->getPath(), $node->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
 
             return [];
         }
 
-        $this->logger->log(sprintf('NodeIndexer (%s): Updated fulltext index for %s (%s)', $closestFulltextNodeDocumentIdentifier, $closestFulltextNodeContextPath, $closestFulltextNode->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        $this->logger->debug(sprintf('NodeIndexer (%s): Updated fulltext index for %s (%s)', $closestFulltextNodeDocumentIdentifier, $closestFulltextNodeContextPath, $closestFulltextNode->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
 
         $upsertFulltextParts = [];
         if (!empty($fulltextIndexOfNode)) {

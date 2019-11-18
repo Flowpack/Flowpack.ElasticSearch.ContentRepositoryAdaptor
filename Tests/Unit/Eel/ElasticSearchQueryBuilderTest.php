@@ -164,10 +164,10 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
 
     /**
      * @test
-     * @expectedException \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
      */
     public function queryFilterThrowsExceptionOnInvalidClauseType(): void
     {
+        $this->expectException( QueryBuildingException::class);
         $this->queryBuilder->queryFilter('foo', [], 'unsupported');
     }
 
@@ -360,20 +360,22 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
 
     /**
      * @test
-     * @expectedException \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
      */
     public function ifTheParentPathDoesNotExistAnExceptionisThrown(): void
     {
+        $this->expectException(QueryBuildingException::class);
+
         $this->queryBuilder->fieldBasedAggregation('foo', 'bar');
         $this->queryBuilder->fieldBasedAggregation('bar', 'bar', 'terms', 'doesNotExist');
     }
 
     /**
      * @test
-     * @expectedException \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
      */
     public function ifSubbedParentPathDoesNotExistAnExceptionisThrown(): void
     {
+        $this->expectException(QueryBuildingException::class);
+
         $this->queryBuilder->fieldBasedAggregation('foo', 'bar');
         $this->queryBuilder->fieldBasedAggregation('bar', 'bar', 'terms', 'foo.doesNotExist');
     }

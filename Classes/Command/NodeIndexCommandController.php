@@ -18,11 +18,8 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\WorkspaceIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
-use Flowpack\ElasticSearch\Domain\Model\Mapping;
-use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
 use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
@@ -36,6 +33,13 @@ use Neos\Flow\Configuration\ConfigurationManager;
 use Neos\Flow\Core\Booting\Scripts;
 use Neos\Flow\Exception;
 use Neos\Utility\Files;
+use Neos\Flow\Configuration\Exception\InvalidConfigurationTypeException;
+use Neos\Flow\Log\Utility\LogEnvironment;
+use Neos\Flow\Mvc\Exception\StopActionException;
+use Neos\Flow\ObjectManagement\ObjectManagerInterface;
+use Neos\Neos\Controller\CreateContentContextTrait;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Provides CLI features for index handling
@@ -121,6 +125,36 @@ class NodeIndexCommandController extends CommandController
      * @Flow\InjectConfiguration(package="Neos.ContentRepository.Search")
      */
     protected $settings;
+    
+    public function showMappingCommand(): void
+    {
+        $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
+        foreach ($nodeTypeMappingCollection as $mapping) {
+            /** @var Mapping $mapping */
+            $this->output(Yaml::dump($mapping->asArray(), 5, 2));
+            $this->outputLine();
+        }
+        $this->outputLine('------------');
+
+        $mappingErrors = $this->nodeTypeMappingBuilder->getLastMappingErrors();
+        if ($mappingErrors->hasErrors()) {
+            $this->outputLine('<b>Mapping Errors</b>');
+            foreach ($mappingErrors->getFlattenedErrors() as $errors) {
+                foreach ($errors as $error) {
+                    $this->outputLine($error);
+                }
+            }
+        }
+
+        if ($mappingErrors->hasWarnings()) {
+            $this->outputLine('<b>Mapping Warnings</b>');
+            foreach ($mappingErrors->getFlattenedWarnings() as $warnings) {
+                foreach ($warnings as $warning) {
+                    $this->outputLine((string)$warning);
+                }
+            }
+        }
+    }
 
     /**
      * Index a single node by the given identifier and workspace name
@@ -206,7 +240,7 @@ class NodeIndexCommandController extends CommandController
     public function buildCommand(int $limit = null, bool $update = false, string $workspace = null, string $postfix = null)
     {
         if ($workspace !== null && $this->workspaceRepository->findByIdentifier($workspace) === null) {
-            $this->logger->log('The given workspace (' . $workspace . ') does not exist.', LOG_ERR);
+            $this->logger->error('The given workspace (' . $workspace . ') does not exist.', LogEnvironment::fromMethodName(__METHOD__));
             $this->quit(1);
         }
 
@@ -279,7 +313,7 @@ class NodeIndexCommandController extends CommandController
     public function createInternalCommand(string $dimensionsValues, bool $update = false, ?string $postfix = null): void
     {
         if ($update === true) {
-            $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
+            $this->logger->warning('!!! Update Mode (Development) active!', LogEnvironment::fromMethodName(__METHOD__));
         } else {
             $dimensionsValues = $this->configureInternalCommand($dimensionsValues, $postfix);
             if ($this->nodeIndexer->getIndex()->exists() === true) {
@@ -543,12 +577,11 @@ class NodeIndexCommandController extends CommandController
     {
         $this->nodeIndexer->setIndexNamePostfix((string)$postfix);
         if ($this->nodeIndexer->getIndex()->exists() === true) {
-            $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
+            $this->logger->warning(sprintf('Deleted index with the same postfix (%s)!', $postfix), LogEnvironment::fromMethodName(__METHOD__));
             $this->nodeIndexer->getIndex()->delete();
         }
         $this->nodeIndexer->getIndex()->create();
-        $this->outputLine('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
-        $this->outputLine('+ Dimensions: ' . \json_encode($dimensionValues), LOG_INFO);
+        $this->logger->info('Created index ' . $this->nodeIndexer->getIndexName(), LogEnvironment::fromMethodName(__METHOD__));
     }
 
     /**
@@ -569,5 +602,6 @@ class NodeIndexCommandController extends CommandController
     private function outputMemoryUsage():void
     {
         $this->outputLine('! Memory usage %s', [Files::bytesToSizeString(\memory_get_usage(true))]);
+        $this->logger->info('Updated Mapping.', LogEnvironment::fromMethodName(__METHOD__));
     }
 }

@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
@@ -40,6 +39,8 @@ use Neos\ContentRepository\Utility;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Utility\Files;
+use Neos\Flow\Log\Utility\LogEnvironment;
+use Psr\Log\LoggerInterface;
 
 /**
  * Indexer for Content Repository Nodes. Triggered from the NodeIndexingManager.
@@ -77,7 +78,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
     /**
      * @Flow\Inject
-     * @var \Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface
+     * @var LoggerInterface
      */
     protected $logger;
 
@@ -184,6 +185,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      *
      * @return Index
      * @throws Exception
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function getIndex(): Index
     {
@@ -229,13 +231,13 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
             if ($this->bulkProcessing === false) {
                 // Remove document with the same contextPathHash but different NodeType, required after NodeType change
-                $this->logger->log(sprintf('NodeIndexer (%s): Search and remove duplicate document for node %s (%s) if needed.', $documentIdentifier, $contextPath, $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+                $this->logger->debug(sprintf('NodeIndexer (%s): Search and remove duplicate document for node %s (%s) if needed.', $documentIdentifier, $contextPath, $node->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
                 $this->documentDriver->deleteDuplicateDocumentNotMatchingType($this->getIndex(), $documentIdentifier, $node->getNodeType());
             }
 
             $fulltextIndexOfNode = [];
             $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($documentIdentifier, $node) {
-                $this->logger->log(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found, node type %s.', $documentIdentifier, $propertyName, $node->getNodeType()->getName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+                $this->logger->debug(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found, node type %s.', $documentIdentifier, $propertyName, $node->getNodeType()->getName()), LogEnvironment::fromMethodName(__METHOD__));
             });
 
             $document = new ElasticSearchDocument($mappingType,
@@ -253,7 +255,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $this->toBulkRequest($node, $this->indexerDriver->fulltext($node, $fulltextIndexOfNode, $targetWorkspaceName));
             }
 
-            $this->logger->log(sprintf('NodeIndexer (%s): Indexed node %s.', $documentIdentifier, $contextPath), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $this->logger->debug(sprintf('NodeIndexer (%s): Indexed node %s.', $documentIdentifier, $contextPath));
         };
 
         $handleNode = function (NodeInterface $node, Context $context) use ($targetWorkspaceName, $indexer) {
@@ -266,9 +268,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
                 if ($node->isRemoved()) {
                     $this->removeNode($node, $context->getWorkspaceName());
-                    $this->logger->log(sprintf('NodeIndexer (%s): Removed node with identifier %s, no longer in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+                    $this->logger->debug(sprintf('NodeIndexer (%s): Removed node with identifier %s, no longer in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LogEnvironment::fromMethodName(__METHOD__));
                 } else {
-                    $this->logger->log(sprintf('NodeIndexer (%s): Could not index node with identifier %s, not found in workspace %s with dimensions %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName(), json_encode($context->getDimensions())), LOG_DEBUG, null, 'ElasticSearch (CR)');
+                    $this->logger->debug(sprintf('NodeIndexer (%s): Could not index node with identifier %s, not found in workspace %s with dimensions %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName(), json_encode($context->getDimensions())), LogEnvironment::fromMethodName(__METHOD__));
                 }
             }
         };
@@ -353,7 +355,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $this->toBulkRequest($node, $this->documentDriver->delete($node, $documentIdentifier));
         $this->toBulkRequest($node, $this->indexerDriver->fulltext($node, [], $targetWorkspaceName));
 
-        $this->logger->log(sprintf('NodeIndexer (%s): Removed node %s (%s) from index.', $documentIdentifier, $node->getContextPath(), $node->getIdentifier()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        $this->logger->debug(sprintf('NodeIndexer (%s): Removed node %s (%s) from index.', $documentIdentifier, $node->getContextPath(), $node->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
     }
 
     protected function flushIfNeeded(): void
@@ -380,6 +382,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      *
      * @return void
      * @throws Exception
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function flush(): void
     {
@@ -460,6 +463,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @return void
      * @throws Exception
      * @throws ApiException
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function updateIndexAlias(): void
     {

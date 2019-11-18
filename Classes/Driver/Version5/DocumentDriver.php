@@ -21,6 +21,7 @@ use Flowpack\ElasticSearch\Domain\Model\Index;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Log\Utility\LogEnvironment;
 
 /**
  * Document driver for Elasticsearch version 5.x
@@ -90,7 +91,7 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
             $result = $index->request('GET', '/_search/scroll?scroll=1m', [], $scrollId, false);
             $treatedContent = $result->getTreatedContent();
         }
-        $this->logger->log(sprintf('NodeIndexer: Check duplicate nodes for %s (%s), found %d document(s)', $documentIdentifier, $nodeType->getName(), count($bulkRequest)), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        $this->logger->debug(sprintf('NodeIndexer: Check duplicate nodes for %s (%s), found %d document(s)', $documentIdentifier, $nodeType->getName(), count($bulkRequest)), LogEnvironment::fromMethodName(__METHOD__));
         if ($bulkRequest !== []) {
             $index->request('POST', '/_bulk', [], implode("\n", $bulkRequest) . "\n");
         }

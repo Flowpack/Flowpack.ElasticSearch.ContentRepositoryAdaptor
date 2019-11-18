@@ -140,10 +140,10 @@ interface QueryInterface
 
     /**
      * @param string $path
-     * @param string $value
+     * @param string|array $value
      * @return void
      */
-    public function setValueByPath(string $path, string $value): void;
+    public function setValueByPath(string $path, $value): void;
 
     /**
      * Append $data to the given array at $path inside $this->request.
