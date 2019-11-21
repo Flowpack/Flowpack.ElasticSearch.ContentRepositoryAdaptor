@@ -15,7 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\DriverConfigurationException;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\ConfigurationException;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -27,7 +27,7 @@ class QueryFactory extends AbstractDriverSpecificObjectFactory
 {
     /**
      * @return QueryInterface
-     * @throws DriverConfigurationException
+     * @throws ConfigurationException
      */
     public function createQuery(): QueryInterface
     {

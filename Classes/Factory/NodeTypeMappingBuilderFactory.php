@@ -15,7 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\DriverConfigurationException;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\ConfigurationException;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -27,7 +27,7 @@ class NodeTypeMappingBuilderFactory extends AbstractDriverSpecificObjectFactory
 {
     /**
      * @return NodeTypeMappingBuilderInterface
-     * @throws DriverConfigurationException
+     * @throws ConfigurationException
      */
     public function createNodeTypeMappingBuilder(): NodeTypeMappingBuilderInterface
     {

@@ -40,6 +40,6 @@ class TargetContextPath
 
     public function __toString()
     {
-        return $this->contextPath;
+        return (string)$this->contextPath;
     }
 }

@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
@@ -18,7 +17,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Neos\Flow\Annotations as Flow;
 
 /**
- * Get Index Name from Settings
+ * Get the index name from settings
  *
  * @Flow\Scope("singleton")
  */
@@ -32,13 +31,13 @@ class IndexNameStrategy implements IndexNameStrategyInterface
 
     /**
      * @return string
-     * @throws Exception
+     * @throws Exception\ConfigurationException
      */
     public function get(): string
     {
         $name = $this->indexName;
         if ($name === '') {
-            throw new Exception('Index name can not be null, check Settings at path: Neos.ContentRepository.Search.elasticSearch.indexName');
+            throw new Exception\ConfigurationException('Index name can not be null, check Settings at path: Neos.ContentRepository.Search.elasticSearch.indexName', 1574327388);
         }
 
         return $name;
