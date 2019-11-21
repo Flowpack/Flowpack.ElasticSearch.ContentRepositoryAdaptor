@@ -34,6 +34,7 @@ use Neos\Flow\Cli\Exception\StopCommandException;
 use Neos\Flow\Configuration\ConfigurationManager;
 use Neos\Flow\Core\Booting\Scripts;
 use Neos\Flow\Exception;
+use Neos\Utility\Exception\FilesException;
 use Neos\Utility\Files;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Psr\Log\LoggerInterface;
@@ -132,14 +133,22 @@ class NodeIndexCommandController extends CommandController
      */
     protected $settings;
 
+    /**
+     * Print out the complete mapping for all node types
+     *
+     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws \Flowpack\ElasticSearch\Exception
+     */
     public function showMappingCommand(): void
     {
         $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
+
         foreach ($nodeTypeMappingCollection as $mapping) {
             /** @var Mapping $mapping */
             $this->output(Yaml::dump($mapping->asArray(), 5, 2));
             $this->outputLine();
         }
+
         $this->outputLine('------------');
 
         $mappingErrors = $this->nodeTypeMappingBuilder->getLastMappingErrors();
@@ -172,6 +181,7 @@ class NodeIndexCommandController extends CommandController
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws StopCommandException
+     * @throws FilesException
      */
     public function indexNodeCommand(string $identifier, string $workspace = null, string $postfix = null): void
     {
@@ -186,24 +196,18 @@ class NodeIndexCommandController extends CommandController
         $indexNode = function ($identifier, Workspace $workspace, array $dimensions) {
             $context = $this->createContentContext($workspace->getName(), $dimensions);
             $node = $context->getNodeByIdentifier($identifier);
+
             if ($node === null) {
-                $this->outputLine('Node with the given identifier is not found.');
-                $this->quit();
+                $this->outputLine('<error>Error: Node with the given identifier was not found.</error>');
+                $this->quit(1);
             }
+
             $this->outputLine();
-            $this->outputLine('Index node "%s" (%s)', [
-                $node->getLabel(),
-                $node->getIdentifier(),
-            ]);
-            $this->outputLine('  workspace: %s', [
-                $workspace->getName()
-            ]);
-            $this->outputLine('  node type: %s', [
-                $node->getNodeType()->getName()
-            ]);
-            $this->outputLine('  dimensions: %s', [
-                json_encode($dimensions)
-            ]);
+            $this->outputLine('Indexing node "%s" (%s)', [$node->getLabel(), $node->getIdentifier(),]);
+            $this->outputLine('  workspace: %s', [$workspace->getName()]);
+            $this->outputLine('  node type: %s', [$node->getNodeType()->getName()]);
+            $this->outputLine('  dimensions: %s', [json_encode($dimensions)]);
+
             $this->nodeIndexer->indexNode($node);
         };
 
@@ -227,7 +231,7 @@ class NodeIndexCommandController extends CommandController
             /** @var Workspace $workspaceInstance */
             $workspaceInstance = $this->workspaceRepository->findByIdentifier($workspace);
             if ($workspaceInstance === null) {
-                $this->outputLine('The given workspace (%s) does not exist.', [$workspace]);
+                $this->outputLine('<error>Error: The given workspace (%s) does not exist.</error>', [$workspace]);
                 $this->quit(1);
             }
             $indexInWorkspace($identifier, $workspaceInstance);
@@ -307,34 +311,8 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
-     * @param string $dimensionsValues
-     * @param bool $update
-     * @param string|null $postfix
-     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
-     * @throws \Flowpack\ElasticSearch\Exception
-     * @throws \Neos\Flow\Http\Exception
-     * @Flow\Internal
-     */
-    public function createInternalCommand(string $dimensionsValues, bool $update = false, ?string $postfix = null): void
-    {
-        if ($update === true) {
-            $this->logger->warning('!!! Update Mode (Development) active!', LogEnvironment::fromMethodName(__METHOD__));
-        } else {
-            $dimensionsValuesArray = $this->configureInternalCommand(json_decode($dimensionsValues, true), $postfix);
-            if ($this->nodeIndexer->getIndex()->exists() === true) {
-                $this->logger->warning(sprintf('Deleted index with the same postfix (%s)!', $postfix), LogEnvironment::fromMethodName(__METHOD__));
-                $this->nodeIndexer->getIndex()->delete();
-            }
-            $this->nodeIndexer->getIndex()->create();
-            $this->logger->info('Created index ' . $this->nodeIndexer->getIndexName() . ' with dimensions ' . json_encode($dimensionsValuesArray), LogEnvironment::fromMethodName(__METHOD__));
-        }
-
-        $this->applyMapping();
-        $this->outputErrorHandling();
-        $this->outputMemoryUsage();
-    }
-
-    /**
+     * Build up the node index
+     *
      * @param array $dimensionsValues
      * @param string $postfix
      * @param string $workspace
@@ -342,11 +320,10 @@ class NodeIndexCommandController extends CommandController
      * @Flow\Internal
      * @throws Exception
      */
-    public function build(array $dimensionsValues, ?string $workspace = null, ?string $postfix = null, ?int $limit = null): void
+    private function build(array $dimensionsValues, ?string $workspace = null, ?string $postfix = null, ?int $limit = null): void
     {
-        $dimensionsValues = $this->configureInternalCommand($dimensionsValues, $postfix);
+        $dimensionsValues = $this->configureNodeIndexer($dimensionsValues, $postfix);
 
-        $this->outputLine();
         $this->logger->info(vsprintf('Indexing %s nodes to %s', [($limit !== null ? 'the first ' . $limit . ' ' : ''), $this->nodeIndexer->getIndexName()]), LogEnvironment::fromMethodName(__METHOD__));
 
         if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
@@ -371,7 +348,35 @@ class NodeIndexCommandController extends CommandController
         }
 
         $this->outputErrorHandling();
-        $this->outputMemoryUsage();
+    }
+
+    /**
+     * Internal sub-command to create an index
+     *
+     * @param string $dimensionsValues
+     * @param bool $update
+     * @param string|null $postfix
+     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
+     * @Flow\Internal
+     */
+    public function createInternalCommand(string $dimensionsValues, bool $update = false, ?string $postfix = null): void
+    {
+        if ($update === true) {
+            $this->logger->warning('!!! Update Mode (Development) active!', LogEnvironment::fromMethodName(__METHOD__));
+        } else {
+            $dimensionsValuesArray = $this->configureNodeIndexer(json_decode($dimensionsValues, true), $postfix);
+            if ($this->nodeIndexer->getIndex()->exists() === true) {
+                $this->logger->warning(sprintf('Deleted index with the same postfix (%s)!', $postfix), LogEnvironment::fromMethodName(__METHOD__));
+                $this->nodeIndexer->getIndex()->delete();
+            }
+            $this->nodeIndexer->getIndex()->create();
+            $this->logger->info('Created index ' . $this->nodeIndexer->getIndexName() . ' with dimensions ' . json_encode($dimensionsValuesArray), LogEnvironment::fromMethodName(__METHOD__));
+        }
+
+        $this->applyMapping();
+        $this->outputErrorHandling();
     }
 
     /**
@@ -384,7 +389,7 @@ class NodeIndexCommandController extends CommandController
      */
     public function buildWorkspaceInternalCommand(string $workspace, string $dimensionsValues, string $postfix, int $limit = null): void
     {
-        $dimensionsValuesArray = $this->configureInternalCommand(json_decode($dimensionsValues, true), $postfix);
+        $dimensionsValuesArray = $this->configureNodeIndexer(json_decode($dimensionsValues, true), $postfix);
 
         $workspaceLogger = function ($workspaceName, $indexedNodes, $dimensions) {
             if ($dimensions === []) {
@@ -397,12 +402,13 @@ class NodeIndexCommandController extends CommandController
 
         $count = $this->worksaceIndexer->indexWithDimensions($workspace, $dimensionsValuesArray, $limit, $workspaceLogger);
 
-        $this->outputMemoryUsage();
         $this->outputErrorHandling();
         $this->outputLine('Number of nodes: %s', [$count]);
     }
 
     /**
+     * Internal subcommand to refresh the index
+     *
      * @param string $dimensionsValues
      * @param string $postfix
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
@@ -412,11 +418,9 @@ class NodeIndexCommandController extends CommandController
      */
     public function refreshInternalCommand(string $dimensionsValues, string $postfix): void
     {
-        $this->configureInternalCommand(json_decode($dimensionsValues, true), $postfix);
+        $this->configureNodeIndexer(json_decode($dimensionsValues, true), $postfix);
 
-        $this->logger->info(vsprintf('Refresh index %s', [$this->nodeIndexer->getIndexName()]), LogEnvironment::fromMethodName(__METHOD__));
-        $this->outputMemoryUsage();
-
+        $this->logger->info(vsprintf('Refreshing index %s', [$this->nodeIndexer->getIndexName()]), LogEnvironment::fromMethodName(__METHOD__));
         $this->nodeIndexer->getIndex()->refresh();
 
         $this->outputErrorHandling();
@@ -428,7 +432,7 @@ class NodeIndexCommandController extends CommandController
      * @param bool $update
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      * @throws \Flowpack\ElasticSearch\Exception
-     * @throws \Flowpack\ElasticSearch\Transfer\Exception\ApiException
+     * @throws ApiException
      * @Flow\Internal
      */
     public function aliasInternalCommand(string $dimensionsValues, string $postfix, bool $update = false): void
@@ -436,7 +440,7 @@ class NodeIndexCommandController extends CommandController
         if ($update === true) {
             return;
         }
-        $this->configureInternalCommand(json_decode($dimensionsValues, true), $postfix);
+        $this->configureNodeIndexer(json_decode($dimensionsValues, true), $postfix);
 
         $this->logger->info(vsprintf('Update alias for index %s', [$this->nodeIndexer->getIndexName()]), LogEnvironment::fromMethodName(__METHOD__));
         $this->nodeIndexer->updateIndexAlias();
@@ -448,7 +452,7 @@ class NodeIndexCommandController extends CommandController
      * @param string $postfix
      * @return array
      */
-    protected function configureInternalCommand(array $dimensionsValues, string $postfix): array
+    private function configureNodeIndexer(array $dimensionsValues, string $postfix): array
     {
         $this->nodeIndexer->setIndexNamePostfix($postfix);
         $this->nodeIndexer->setDimensions($dimensionsValues);
@@ -514,13 +518,11 @@ class NodeIndexCommandController extends CommandController
      */
     private function executeInternalCommand(string $command, array $arguments): void
     {
-        $this->outputLine();
         $commandIdentifier = 'flowpack.elasticsearch.contentrepositoryadaptor:nodeindex:' . $command;
         $status = Scripts::executeCommand($commandIdentifier, $this->flowSettings, true, $arguments);
         if ($status !== true) {
             throw new Exception(vsprintf('Command: %s with parameters: %s', [$commandIdentifier, json_encode($arguments)]), 1426767159);
         }
-        $this->outputLine();
     }
 
     /**
@@ -622,9 +624,8 @@ class NodeIndexCommandController extends CommandController
     /**
      * @param string $title
      */
-    private function outputSection(string $title)
+    private function outputSection(string $title): void
     {
-        $this->outputLine();
         $this->outputLine('<b>%s</b>', [$title]);
     }
 }
