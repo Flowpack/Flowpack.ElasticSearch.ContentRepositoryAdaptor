@@ -69,7 +69,7 @@ Neos:
       elasticSearch:
 
         # API. name of the Elasticsearch index to use. Will create many indices prefixed by this indexName.
-        indexName: typo3cr
+        indexName: neoscr
 
       defaultConfigurationPerType:
 
