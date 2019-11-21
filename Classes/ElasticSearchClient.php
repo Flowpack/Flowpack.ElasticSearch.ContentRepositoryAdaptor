@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
@@ -142,6 +141,7 @@ class ElasticSearchClient extends Client
      *
      * @return \Flowpack\ElasticSearch\Domain\Model\Index
      * @throws Exception
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function getIndex(): Index
     {

@@ -221,7 +221,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
 
             if ($targetWorkspaceName !== null) {
-                $contextPath = (string)(new TargetContextPath($node, $targetWorkspaceName, $contextPath));
+                $contextPath = (string)(new TargetContextPath($node, (string)$targetWorkspaceName, $contextPath));
             }
 
             $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
@@ -286,6 +286,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         }
     }
 
+    /**
+     * @param string $workspaceName
+     * @param array $dimensions
+     * @return Context
+     */
     protected function createContentContext(string $workspaceName, array $dimensions = []): Context
     {
         $configuration = [
@@ -298,6 +303,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         return $this->contextFactory->create($configuration);
     }
 
+    /**
+     * @param NodeInterface $node
+     * @param array|null $tuple
+     */
     protected function toBulkRequest(NodeInterface $node, array $tuple = null)
     {
         if ($tuple === null) {

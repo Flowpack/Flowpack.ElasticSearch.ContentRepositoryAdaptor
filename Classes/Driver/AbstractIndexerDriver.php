@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
@@ -51,7 +50,7 @@ abstract class AbstractIndexerDriver extends AbstractDriver
      * @param NodeInterface $node
      * @return NodeInterface|null
      */
-    protected function findClosestFulltextRoot(NodeInterface $node)
+    protected function findClosestFulltextRoot(NodeInterface $node): ?NodeInterface
     {
         $closestFulltextNode = $node;
         while (!$this->isFulltextRoot($closestFulltextNode)) {

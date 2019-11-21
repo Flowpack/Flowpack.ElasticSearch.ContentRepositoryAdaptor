@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
@@ -35,8 +34,11 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @param string $index
      * @throws Exception
+     * @throws \Flowpack\ElasticSearch\Transfer\Exception
+     * @throws \Flowpack\ElasticSearch\Transfer\Exception\ApiException
+     * @throws \Neos\Flow\Http\Exception
      */
     public function deleteIndex(string $index): void
     {
@@ -50,8 +52,12 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @param string $alias
+     * @return array
      * @throws Exception
+     * @throws \Flowpack\ElasticSearch\Transfer\Exception
+     * @throws \Flowpack\ElasticSearch\Transfer\Exception\ApiException
+     * @throws \Neos\Flow\Http\Exception
      */
     public function indexesByAlias(string $alias): array
     {
@@ -68,7 +74,11 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @param string $prefix
+     * @return array
+     * @throws \Flowpack\ElasticSearch\Transfer\Exception
+     * @throws \Flowpack\ElasticSearch\Transfer\Exception\ApiException
+     * @throws \Neos\Flow\Http\Exception
      */
     public function indexesByPrefix(string $prefix): array
     {
@@ -79,9 +89,9 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
         if (!\is_array($treatedContent)) {
             return [];
         }
-        return \array_filter(\array_keys($treatedContent), function ($indexName) use ($prefix) {
-            $prefix = $prefix . '-';
-            return substr($indexName, 0, strlen($prefix)) === $prefix;
+        return \array_filter(\array_keys($treatedContent), static function ($indexName) use ($prefix) {
+            $prefix .= '-';
+            return strpos($indexName, $prefix) === 0;
         });
     }
 }
