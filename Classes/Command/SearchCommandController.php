@@ -30,6 +30,8 @@ use Neos\ContentRepository\Domain\Service\ContextFactory;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
+use Neos\Media\Domain\Model\ImageVariant;
+use Neos\Media\Domain\Model\ResourceBasedInterface;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -50,14 +52,17 @@ class SearchCommandController extends CommandController
     protected $elasticSearchClient;
 
     /**
-     * @param string $path
-     * @param string $query
-     * @param string|null $dimensions
+     * This commnd can be used to test and debug
+     * full-text searches
+     *
+     * @param string $searchWord The search word to seartch for.
+     * @param string $path Path to the root node. Defaults to '/'
+     * @param string|null $dimensions The dimesnions to be taken into account.
      * @throws Exception
      * @throws QueryBuildingException
      * @throws IllegalObjectTypeException
      */
-    public function fulltextCommand(string $path, string $query, ?string $dimensions = null): void
+    public function fulltextCommand(string $searchWord, string $path = '/', ?string $dimensions = null): void
     {
         $context = $this->createContext($dimensions);
         $contextNode = $context->getNode($path);
@@ -69,10 +74,10 @@ class SearchCommandController extends CommandController
 
         $queryBuilder = new ElasticSearchQueryBuilder();
         $queryBuilder = $queryBuilder->query($contextNode)
-            ->log(__CLASS__)
-            ->fulltext($query)
+            ->fulltext($searchWord)
             ->limit(100)
-            ->termSuggestions($query);
+            ->termSuggestions($searchWord)
+            ->log(__CLASS__);
 
         /** @var ElasticSearchQueryResult $results */
         $results = $queryBuilder->execute();
@@ -91,6 +96,8 @@ class SearchCommandController extends CommandController
     }
 
     /**
+     * Prints the index content of the given node identifier.
+     *
      * @param string $identifier
      * @param string|null $dimensions
      * @throws Exception
@@ -124,9 +131,15 @@ class SearchCommandController extends CommandController
     {
         $results = array_map(static function (NodeInterface $node) {
             $properties = [];
+
             foreach ($node->getProperties() as $propertyName => $propertyValue) {
-                $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . (string)$propertyValue;
+                if ($propertyValue instanceof ResourceBasedInterface) {
+                    $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . (string)$propertyValue->getResource()->getFilename();
+                } else {
+                    $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . (string)$propertyValue;
+                }
             }
+
             return [
                 'identifier' => $node->getIdentifier(),
                 'label' => $node->getLabel(),
