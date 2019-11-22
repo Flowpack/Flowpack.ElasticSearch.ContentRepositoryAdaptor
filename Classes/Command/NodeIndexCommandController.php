@@ -351,7 +351,7 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
-     * Internal sub-command to create an index
+     * Internal sub-command to create an index and apply the mapping
      *
      * @param string $dimensionsValues
      * @param bool $update
@@ -535,9 +535,11 @@ class NodeIndexCommandController extends CommandController
         ob_start(null, 1 << 20);
         $commandIdentifier = 'flowpack.elasticsearch.contentrepositoryadaptor:nodeindex:buildworkspaceinternal';
         $status = Scripts::executeCommand($commandIdentifier, $this->flowSettings, true, $arguments);
+
         if ($status !== true) {
             throw new Exception(vsprintf('Command: %s with parameters: %s', [$commandIdentifier, json_encode($arguments)]), 1426767159);
         }
+
         $output = explode(PHP_EOL, ob_get_clean());
         $count = (int)array_pop($output);
         if (count($output) > 0) {
