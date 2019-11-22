@@ -10,3 +10,9 @@ Neos:
               severityThreshold: '%LOG_DEBUG%'
       realtimeIndexing:
         enabled: false
+
+Flowpack:
+  ElasticSearch:
+    ContentRepositoryAdaptor:
+      command:
+        useSubProcesses: false
