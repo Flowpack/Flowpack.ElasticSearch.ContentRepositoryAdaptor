@@ -24,6 +24,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\BulkIndexingError;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\MalformedBulkRequestError;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\NodeTypeIndexingConfiguration;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
@@ -133,6 +134,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     protected $bulkProcessing = false;
 
     /**
+     * @var NodeTypeIndexingConfiguration
+     * @Flow\Inject
+     */
+    protected $nodeTypeIndexingConfiguration;
+
+    /**
      * Returns the index name to be used for indexing, with optional indexNamePostfix appended.
      *
      * @return string
@@ -183,6 +190,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      */
     public function indexNode(NodeInterface $node, $targetWorkspaceName = null)
     {
+        if ($this->nodeTypeIndexingConfiguration->isIndexable($node->getNodeType()) === false) {
+            $this->logger->log(sprintf('NodeIndexer - Node "%s" (%s) skipped, Node Type is not allowed in the index.', $node->getContextPath(), $node->getNodeType()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            return;
+        }
+
         $indexer = function (NodeInterface $node, $targetWorkspaceName = null) {
             $contextPath = $node->getContextPath();
 

@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Mappin
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\NodeTypeIndexingConfiguration;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractNodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
@@ -33,6 +34,12 @@ use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
 {
     /**
+     * @var NodeTypeIndexingConfiguration
+     * @Flow\Inject
+     */
+    protected $nodeTypeIndexingConfiguration;
+
+    /**
      * Called by the Flow object framework after creating the object and resolving all dependencies.
      *
      * @param integer $cause Creation cause
@@ -51,6 +58,7 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
      *
      * @param Index $index
      * @return MappingCollection<\Flowpack\ElasticSearch\Domain\Model\Mapping>
+     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      */
     public function buildMappingInformation(Index $index): MappingCollection
     {
@@ -61,6 +69,10 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
         /** @var NodeType $nodeType */
         foreach ($this->nodeTypeManager->getNodeTypes() as $nodeTypeName => $nodeType) {
             if ($nodeTypeName === 'unstructured' || $nodeType->isAbstract()) {
+                continue;
+            }
+
+            if ($this->nodeTypeIndexingConfiguration->isIndexable($nodeType) === false) {
                 continue;
             }
 
