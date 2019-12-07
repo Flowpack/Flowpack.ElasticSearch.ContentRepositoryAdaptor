@@ -16,21 +16,21 @@ Flowpack:
                   query:
                     bool:
                       must:
-                      - match_all:
-                          boost: 1.0 # force match_all to be an object
+                        - match_all:
+                            boost: 1.0 # force match_all to be an object
                       filter:
                         bool:
                           must: []
                           should: []
                           must_not:
-                          - term:
-                              _hidden: true
-                          - range:
-                              _hiddenBeforeDateTime:
-                                gt: now
-                          - range:
-                              _hiddenAfterDateTime:
-                                lt: now
+                            - term:
+                                _hidden: true
+                            - range:
+                                _hiddenBeforeDateTime:
+                                  gt: now
+                            - range:
+                                _hiddenAfterDateTime:
+                                  lt: now
                   _source:
                     - '__path'
                 unsupportedFieldsInCountRequest:
@@ -70,20 +70,6 @@ Neos:
 
         # API. name of the Elasticsearch index to use. Will create many indices prefixed by this indexName.
         indexName: typo3cr
-
-        # configuration of the ElasticSearch logfile
-        log:
-          backendOptions:
-            fileBackend:
-              logFileURL: '%FLOW_PATH_DATA%Logs/ElasticSearch.log'
-              createParentDirectories: true
-              severityThreshold: '%LOG_DEBUG%'
-              maximumLogFileSize: 10485760
-              logFilesToKeep: 1
-              logMessageOrigin: false
-
-            ansiConsoleBackend:
-              disableAnsi: false
 
       defaultConfigurationPerType:
 

@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
 
 /*
@@ -11,10 +14,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
  * source code.
  */
 
-use Neos\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
+use Neos\Flow\Annotations as Flow;
 
 /**
  * Index management driver for Elasticsearch version 5.x
@@ -35,7 +38,7 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
      * {@inheritdoc}
      * @throws Exception
      */
-    public function deleteIndex(string $index)
+    public function deleteIndex(string $index): void
     {
         $response = $this->searchClient->request('HEAD', '/' . $index);
         if ($response->getStatusCode() === 200) {
@@ -50,11 +53,12 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
      * {@inheritdoc}
      * @throws Exception
      */
-    public function indexesByAlias(string $alias)
+    public function indexesByAlias(string $alias): array
     {
         $response = $this->searchClient->request('GET', '/_alias/' . $alias);
-        if ($response->getStatusCode() !== 200 && $response->getStatusCode() !== 404) {
-            throw new Exception('The alias "' . $alias . '" was not found with some unexpected error... (return code: ' . $response->getStatusCode() . ')', 1383650137);
+        $statusCode = $response->getStatusCode();
+        if ($statusCode !== 200 && $statusCode !== 404) {
+            throw new Exception('The alias "' . $alias . '" was not found with some unexpected error... (return code: ' . $statusCode . ')', 1383650137);
         }
 
         // return empty array if content from response cannot be read as an array

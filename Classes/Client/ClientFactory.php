@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Client;
 
 /*
@@ -34,7 +37,7 @@ class ClientFactory
      * @return Client
      * @throws \Flowpack\ElasticSearch\Exception
      */
-    public function create()
+    public function create(): Client
     {
         return $this->clientFactory->create(null, ElasticSearchClient::class);
     }

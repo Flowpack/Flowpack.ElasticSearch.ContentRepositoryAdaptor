@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
 
 /*
@@ -12,7 +15,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\DriverConfigurationException;
 use Neos\Flow\Annotations as Flow;
 
@@ -25,7 +31,7 @@ class DriverFactory extends AbstractDriverSpecificObjectFactory
      * @return DocumentDriverInterface
      * @throws DriverConfigurationException
      */
-    public function createDocumentDriver()
+    public function createDocumentDriver(): DocumentDriverInterface
     {
         return $this->resolve('document');
     }
@@ -34,34 +40,34 @@ class DriverFactory extends AbstractDriverSpecificObjectFactory
      * @return IndexerDriverInterface
      * @throws DriverConfigurationException
      */
-    public function createIndexerDriver()
+    public function createIndexerDriver(): IndexerDriverInterface
     {
         return $this->resolve('indexer');
     }
 
     /**
-     * @return IndexerDriverInterface
+     * @return IndexDriverInterface
      * @throws DriverConfigurationException
      */
-    public function createIndexManagementDriver()
+    public function createIndexManagementDriver(): IndexDriverInterface
     {
         return $this->resolve('indexManagement');
     }
 
     /**
-     * @return IndexerDriverInterface
+     * @return RequestDriverInterface
      * @throws DriverConfigurationException
      */
-    public function createRequestDriver()
+    public function createRequestDriver(): RequestDriverInterface
     {
         return $this->resolve('request');
     }
 
     /**
-     * @return IndexerDriverInterface
+     * @return SystemDriverInterface
      * @throws DriverConfigurationException
      */
-    public function createSystemDriver()
+    public function createSystemDriver(): SystemDriverInterface
     {
         return $this->resolve('system');
     }

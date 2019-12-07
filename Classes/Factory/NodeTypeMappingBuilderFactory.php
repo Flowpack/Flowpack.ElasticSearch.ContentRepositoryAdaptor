@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
 
 /*
@@ -11,8 +14,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\DriverConfigurationException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\DriverConfigurationException;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -26,7 +29,7 @@ class NodeTypeMappingBuilderFactory extends AbstractDriverSpecificObjectFactory
      * @return NodeTypeMappingBuilderInterface
      * @throws DriverConfigurationException
      */
-    public function createNodeTypeMappingBuilder()
+    public function createNodeTypeMappingBuilder(): NodeTypeMappingBuilderInterface
     {
         return $this->resolve('nodeTypeMappingBuilder');
     }

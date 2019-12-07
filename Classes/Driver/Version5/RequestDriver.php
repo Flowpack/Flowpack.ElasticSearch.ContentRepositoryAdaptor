@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
 
 /*
@@ -11,10 +13,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
  * source code.
  */
 
-use Neos\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterface;
 use Flowpack\ElasticSearch\Domain\Model\Index;
+use Neos\Flow\Annotations as Flow;
 
 /**
  * Request driver for Elasticsearch version 5.x
@@ -26,8 +28,9 @@ class RequestDriver extends AbstractDriver implements RequestDriverInterface
     /**
      * {@inheritdoc}
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
      */
-    public function bulk(Index $index, $request)
+    public function bulk(Index $index, $request): array
     {
         if (is_array($request)) {
             $request = json_encode($request);
@@ -36,10 +39,8 @@ class RequestDriver extends AbstractDriver implements RequestDriverInterface
         // Bulk request MUST end with line return
         $request = trim($request) . "\n";
 
-        $response = $index->request('POST', '/_bulk', [], $request)->getOriginalResponse()->getContent();
+        $response = $index->request('POST', '/_bulk', [], $request)->getOriginalResponse()->getBody()->getContents();
 
-        return array_map(function ($line) {
-            return json_decode($line);
-        }, explode("\n", $response));
+        return array_map('json_decode', explode("\n", $response));
     }
 }

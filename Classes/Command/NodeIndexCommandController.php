@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
 /*
@@ -11,9 +14,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception as CRAException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexWorkspaceTrait;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
@@ -28,9 +32,11 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 use Neos\Flow\Configuration\ConfigurationManager;
 use Neos\Flow\Configuration\Exception\InvalidConfigurationTypeException;
+use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 use Neos\Neos\Controller\CreateContentContextTrait;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -51,8 +57,7 @@ class NodeIndexCommandController extends CommandController
     protected $errorHandlingService;
 
     /**
-     * @Flow\Inject
-     * @var NodeIndexerInterface
+     * @var NodeIndexer
      */
     protected $nodeIndexer;
 
@@ -104,12 +109,21 @@ class NodeIndexCommandController extends CommandController
     protected $settings;
 
     /**
+     * @param NodeIndexerInterface $nodeIndexer
+     * @return void
+     */
+    public function injectNodeIndexer(NodeIndexerInterface $nodeIndexer): void
+    {
+        $this->nodeIndexer = $nodeIndexer;
+    }
+
+    /**
      * Called by the Flow object framework after creating the object and resolving all dependencies.
      *
      * @param integer $cause Creation cause
      * @throws InvalidConfigurationTypeException
      */
-    public function initializeObject($cause)
+    public function initializeObject(int $cause): void
     {
         if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
             $this->settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
@@ -120,8 +134,9 @@ class NodeIndexCommandController extends CommandController
      * Show the mapping which would be sent to the ElasticSearch server
      *
      * @return void
+     * @throws CRAException
      */
-    public function showMappingCommand()
+    public function showMappingCommand(): void
     {
         $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
         foreach ($nodeTypeMappingCollection as $mapping) {
@@ -145,7 +160,7 @@ class NodeIndexCommandController extends CommandController
             $this->outputLine('<b>Mapping Warnings</b>');
             foreach ($mappingErrors->getFlattenedWarnings() as $warnings) {
                 foreach ($warnings as $warning) {
-                    $this->outputLine($warning);
+                    $this->outputLine((string)$warning);
                 }
             }
         }
@@ -159,7 +174,7 @@ class NodeIndexCommandController extends CommandController
      * @return void
      * @throws StopActionException
      */
-    public function indexNodeCommand($identifier, $workspace = null)
+    public function indexNodeCommand(string $identifier, string $workspace = null): void
     {
         if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
             $workspace = 'live';
@@ -201,8 +216,8 @@ class NodeIndexCommandController extends CommandController
         };
 
         if ($workspace === null) {
-            foreach ($this->workspaceRepository->findAll() as $workspace) {
-                $indexInWorkspace($identifier, $workspace);
+            foreach ($this->workspaceRepository->findAll() as $workspaceToIndex) {
+                $indexInWorkspace($identifier, $workspaceToIndex);
             }
         } else {
             /** @var Workspace $workspaceInstance */
@@ -220,28 +235,30 @@ class NodeIndexCommandController extends CommandController
      *
      * This command (re-)indexes all nodes contained in the content repository and sets the schema beforehand.
      *
-     * @param integer $limit Amount of nodes to index at maximum
-     * @param boolean $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
+     * @param int $limit Amount of nodes to index at maximum
+     * @param bool $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
      * @param string $workspace name of the workspace which should be indexed
      * @param string $postfix Index postfix, index with the same postfix will be deleted if exist
      * @return void
+     * @throws ApiException
      * @throws StopActionException
+     * @throws CRAException
      */
-    public function buildCommand($limit = null, $update = false, $workspace = null, $postfix = '')
+    public function buildCommand(int $limit = null, bool $update = false, string $workspace = null, string $postfix = ''): void
     {
         if ($workspace !== null && $this->workspaceRepository->findByIdentifier($workspace) === null) {
-            $this->logger->log('The given workspace (' . $workspace . ') does not exist.', LOG_ERR);
+            $this->logger->error('The given workspace (' . $workspace . ') does not exist.', LogEnvironment::fromMethodName(__METHOD__));
             $this->quit(1);
         }
 
         if ($update === true) {
-            $this->logger->log('!!! Update Mode (Development) active!', LOG_INFO);
+            $this->logger->warning('!!! Update Mode (Development) active!', LogEnvironment::fromMethodName(__METHOD__));
         } else {
             $this->createNewIndex($postfix);
         }
         $this->applyMapping();
 
-        $this->logger->log(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LOG_INFO);
+        $this->logger->info(sprintf('Indexing %snodes ... ', ($limit !== null ? 'the first ' . $limit . ' ' : '')), LogEnvironment::fromMethodName(__METHOD__));
 
         $count = 0;
 
@@ -257,8 +274,8 @@ class NodeIndexCommandController extends CommandController
             }
         };
         if ($workspace === null) {
-            foreach ($this->workspaceRepository->findAll() as $workspace) {
-                $count += $this->indexWorkspace($workspace->getName(), $limit, $callback);
+            foreach ($this->workspaceRepository->findAll() as $workspaceToIndex) {
+                $count += $this->indexWorkspace($workspaceToIndex->getName(), $limit, $callback);
             }
         } else {
             $count += $this->indexWorkspace($workspace, $limit, $callback);
@@ -275,7 +292,7 @@ class NodeIndexCommandController extends CommandController
             $this->outputLine();
             $this->outputLine('<error>Check your logs for more information</error>');
         } else {
-            $this->logger->log('Done. (indexed ' . $count . ' nodes)', LOG_INFO);
+            $this->logger->info('Done. (indexed ' . $count . ' nodes)', LogEnvironment::fromMethodName(__METHOD__));
         }
         $this->nodeIndexer->getIndex()->refresh();
 
@@ -289,24 +306,25 @@ class NodeIndexCommandController extends CommandController
      * Clean up old indexes (i.e. all but the current one)
      *
      * @return void
+     * @throws CRAException
      */
-    public function cleanupCommand()
+    public function cleanupCommand(): void
     {
         try {
             $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
             if (count($indicesToBeRemoved) > 0) {
                 foreach ($indicesToBeRemoved as $indexToBeRemoved) {
-                    $this->logger->log('Removing old index ' . $indexToBeRemoved);
+                    $this->logger->info('Removing old index ' . $indexToBeRemoved, LogEnvironment::fromMethodName(__METHOD__));
                 }
             } else {
-                $this->logger->log('Nothing to remove.');
+                $this->logger->info('Nothing to remove.', LogEnvironment::fromMethodName(__METHOD__));
             }
         } catch (ApiException $exception) {
             $response = json_decode($exception->getResponse());
             if ($response->error instanceof \stdClass) {
-                $this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s: %s"', $response->status, $response->error->type, $response->error->reason));
+                $this->logger->info(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s: %s"', $response->status, $response->error->type, $response->error->reason), LogEnvironment::fromMethodName(__METHOD__));
             } else {
-                $this->logger->log(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s"', $response->status, $response->error));
+                $this->logger->info(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s"', $response->status, $response->error), LogEnvironment::fromMethodName(__METHOD__));
             }
         }
     }
@@ -316,30 +334,32 @@ class NodeIndexCommandController extends CommandController
      *
      * @param string $postfix
      * @return void
+     * @throws CRAException
      */
-    protected function createNewIndex(string $postfix)
+    protected function createNewIndex(string $postfix): void
     {
-        $this->nodeIndexer->setIndexNamePostfix($postfix ?: time());
+        $this->nodeIndexer->setIndexNamePostfix($postfix ?: (string)time());
         if ($this->nodeIndexer->getIndex()->exists() === true) {
-            $this->logger->log(sprintf('Deleted index with the same postfix (%s)!', $postfix), LOG_WARNING);
+            $this->logger->warning(sprintf('Deleted index with the same postfix (%s)!', $postfix), LogEnvironment::fromMethodName(__METHOD__));
             $this->nodeIndexer->getIndex()->delete();
         }
         $this->nodeIndexer->getIndex()->create();
-        $this->logger->log('Created index ' . $this->nodeIndexer->getIndexName(), LOG_INFO);
+        $this->logger->info('Created index ' . $this->nodeIndexer->getIndexName(), LogEnvironment::fromMethodName(__METHOD__));
     }
 
     /**
      * Apply the mapping to the current index.
      *
      * @return void
+     * @throws CRAException
      */
-    protected function applyMapping()
+    protected function applyMapping(): void
     {
         $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
         foreach ($nodeTypeMappingCollection as $mapping) {
             /** @var Mapping $mapping */
             $mapping->apply();
         }
-        $this->logger->log('Updated Mapping.', LOG_INFO);
+        $this->logger->info('Updated Mapping.', LogEnvironment::fromMethodName(__METHOD__));
     }
 }

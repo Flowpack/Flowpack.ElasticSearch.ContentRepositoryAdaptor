@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
 
 /*
@@ -11,14 +14,20 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
  * source code.
  */
 
-use Neos\Flow\Annotations as Flow;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\Flow\Annotations as Flow;
 
 /**
  * Index Workspace Trait
  */
 trait IndexWorkspaceTrait
 {
+    /**
+     * @Flow\Inject
+     * @var \Neos\ContentRepository\Domain\Factory\NodeFactory
+     */
+    protected $nodeFactory;
+
     /**
      * @Flow\Inject
      * @var \Neos\ContentRepository\Domain\Service\ContextFactory
@@ -41,9 +50,9 @@ trait IndexWorkspaceTrait
      * @param string $workspaceName
      * @param int $limit
      * @param callable $callback
-     * @return integer
+     * @return int
      */
-    protected function indexWorkspace(string $workspaceName, ?int $limit = null, callable $callback = null)
+    protected function indexWorkspace(string $workspaceName, ?int $limit = null, callable $callback = null): int
     {
         $count = 0;
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
@@ -63,9 +72,9 @@ trait IndexWorkspaceTrait
      * @param array $dimensions
      * @param int $limit
      * @param callable $callback
-     * @return integer
+     * @return int
      */
-    protected function indexWorkspaceWithDimensions(string $workspaceName, array $dimensions = [], ?int $limit = null, callable $callback = null)
+    protected function indexWorkspaceWithDimensions(string $workspaceName, array $dimensions = [], ?int $limit = null, callable $callback = null): int
     {
         $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'dimensions' => $dimensions]);
         $rootNode = $context->getRootNode();

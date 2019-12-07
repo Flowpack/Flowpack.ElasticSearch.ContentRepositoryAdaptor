@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 
 /*
@@ -11,17 +13,19 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  * source code.
  */
 
-use Neos\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Dto\SearchResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
+use Neos\Flow\Log\ThrowableStorageInterface;
+use Neos\Flow\Log\Utility\LogEnvironment;
+use Psr\Log\LoggerInterface;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
 use Neos\Eel\ProtectedContextAwareInterface;
+use Neos\Flow\Annotations as Flow;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 use Neos\Flow\Utility\Now;
 use Neos\Utility\Arrays;
@@ -55,6 +59,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @var LoggerInterface
      */
     protected $logger;
+
+    /**
+     * @Flow\Inject
+     * @var ThrowableStorageInterface
+     */
+    protected $throwableStorage;
 
     /**
      * @var boolean
@@ -169,7 +179,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @return ElasticSearchQueryBuilder
      * @api
      */
-    public function sort($configuration)
+    public function sort($configuration): ElasticSearchQueryBuilder
     {
         $this->request->addSortFilter($configuration);
 
@@ -186,6 +196,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param integer $limit
      * @return ElasticSearchQueryBuilder
+     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
      * @api
      */
     public function limit($limit)
@@ -234,8 +245,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $propertyName Name of the property
      * @param mixed $value Value for comparison
      * @return ElasticSearchQueryBuilder
-     * @api
      * @throws QueryBuildingException
+     * @api
      */
     public function exactMatch($propertyName, $value)
     {
@@ -244,11 +255,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
     /**
      * @param string $propertyName
-     * @param $value
+     * @param mixed $value
      * @return ElasticSearchQueryBuilder
      * @throws QueryBuildingException
      */
-    public function exclude(string $propertyName, $value)
+    public function exclude(string $propertyName, $value): ElasticSearchQueryBuilder
     {
         return $this->queryFilter('term', [$propertyName => $this->convertValue($value)], 'must_not');
     }
@@ -263,7 +274,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @throws QueryBuildingException
      * @api
      */
-    public function greaterThan($propertyName, $value, string $clauseType = 'must')
+    public function greaterThan(string $propertyName, $value, string $clauseType = 'must'): ElasticSearchQueryBuilder
     {
         return $this->queryFilter('range', [$propertyName => ['gt' => $this->convertValue($value)]], $clauseType);
     }
@@ -278,7 +289,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @throws QueryBuildingException
      * @api
      */
-    public function greaterThanOrEqual($propertyName, $value, string $clauseType = 'must')
+    public function greaterThanOrEqual(string $propertyName, $value, string $clauseType = 'must'): ElasticSearchQueryBuilder
     {
         return $this->queryFilter('range', [$propertyName => ['gte' => $this->convertValue($value)]], $clauseType);
     }
@@ -290,10 +301,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param mixed $value Value for comparison
      * @param string $clauseType one of must, should, must_not
      * @return ElasticSearchQueryBuilder
-     * @api
      * @throws QueryBuildingException
+     * @api
      */
-    public function lessThan($propertyName, $value, string $clauseType = 'must')
+    public function lessThan(string $propertyName, $value, string $clauseType = 'must'): ElasticSearchQueryBuilder
     {
         return $this->queryFilter('range', [$propertyName => ['lt' => $this->convertValue($value)]], $clauseType);
     }
@@ -308,7 +319,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @throws QueryBuildingException
      * @api
      */
-    public function lessThanOrEqual($propertyName, $value, string $clauseType = 'must')
+    public function lessThanOrEqual(string $propertyName, $value, string $clauseType = 'must'): ElasticSearchQueryBuilder
     {
         return $this->queryFilter('range', [$propertyName => ['lte' => $this->convertValue($value)]], $clauseType);
     }
@@ -323,11 +334,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $filterType
      * @param mixed $filterOptions
      * @param string $clauseType one of must, should, must_not
-     * @throws QueryBuildingException
      * @return ElasticSearchQueryBuilder
+     * @throws QueryBuildingException
      * @api
      */
-    public function queryFilter($filterType, $filterOptions, string $clauseType = 'must')
+    public function queryFilter(string $filterType, $filterOptions, string $clauseType = 'must'): ElasticSearchQueryBuilder
     {
         $this->request->queryFilter($filterType, $filterOptions, $clauseType);
 
@@ -341,10 +352,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $path
      * @param array $data
-     * @throws QueryBuildingException
      * @return ElasticSearchQueryBuilder
+     * @throws QueryBuildingException
      */
-    public function appendAtPath($path, array $data)
+    public function appendAtPath(string $path, array $data): ElasticSearchQueryBuilder
     {
         $this->request->appendAtPath($path, $data);
 
@@ -369,10 +380,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param array $data An associative array of keys as variable names and values as variable values
      * @param string $clauseType one of must, should, must_not
      * @return ElasticSearchQueryBuilder
-     * @api
      * @throws QueryBuildingException
+     * @api
      */
-    public function queryFilterMultiple($data, $clauseType = 'must')
+    public function queryFilterMultiple(array $data, $clauseType = 'must'): ElasticSearchQueryBuilder
     {
         foreach ($data as $key => $value) {
             if ($value !== null) {
@@ -401,10 +412,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $type Aggregation type
      * @param string $parentPath
      * @param int $size The amount of buckets to return
-     * @return $this
+     * @return ElasticSearchQueryBuilder
      * @throws QueryBuildingException
      */
-    public function fieldBasedAggregation($name, $field, $type = 'terms', $parentPath = '', $size = 10)
+    public function fieldBasedAggregation(string $name, string $field, string $type = 'terms', string $parentPath = '', int $size = 10): ElasticSearchQueryBuilder
     {
         $aggregationDefinition = [
             $type => [
@@ -436,10 +447,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $name
      * @param array $aggregationDefinition
      * @param string $parentPath
-     * @return $this
+     * @return ElasticSearchQueryBuilder
      * @throws QueryBuildingException
      */
-    public function aggregation(string $name, array $aggregationDefinition, $parentPath = ''): ElasticSearchQueryBuilder
+    public function aggregation(string $name, array $aggregationDefinition, string $parentPath = ''): ElasticSearchQueryBuilder
     {
         $this->request->aggregation($name, $aggregationDefinition, $parentPath);
 
@@ -458,9 +469,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $text
      * @param string $field
      * @param string $name
-     * @return $this
+     * @return ElasticSearchQueryBuilder
      */
-    public function termSuggestions($text, $field = '_all', $name = 'suggestions')
+    public function termSuggestions(string $text, string $field = '_all', string $name = 'suggestions'): ElasticSearchQueryBuilder
     {
         $suggestionDefinition = [
             'text' => $text,
@@ -492,9 +503,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $name
      * @param array $suggestionDefinition
-     * @return $this
+     * @return ElasticSearchQueryBuilder
      */
-    public function suggestions($name, array $suggestionDefinition)
+    public function suggestions(string $name, array $suggestionDefinition): ElasticSearchQueryBuilder
     {
         $this->request->suggestions($name, $suggestionDefinition);
 
@@ -506,7 +517,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @return QueryInterface
      */
-    public function getRequest()
+    public function getRequest(): QueryInterface
     {
         return $this->request;
     }
@@ -515,10 +526,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * Log the current request to the Elasticsearch log for debugging after it has been executed.
      *
      * @param string $message an optional message to identify the log entry
-     * @return $this
+     * @return ElasticSearchQueryBuilder
      * @api
      */
-    public function log($message = null)
+    public function log($message = null): ElasticSearchQueryBuilder
     {
         $this->logThisQuery = true;
         $this->logMessage = $message;
@@ -535,17 +546,17 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     }
 
     /**
-     * @return integer
+     * @return int
      */
-    public function getLimit()
+    public function getLimit(): inte
     {
         return $this->limit;
     }
 
     /**
-     * @return integer
+     * @return int
      */
-    public function getFrom()
+    public function getFrom(): int
     {
         return $this->from;
     }
@@ -556,13 +567,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param NodeInterface $node
      * @return array the Elasticsearch hit for the node as array, or NULL if it does not exist.
      */
-    public function getFullElasticSearchHitForNode(NodeInterface $node)
+    public function getFullElasticSearchHitForNode(NodeInterface $node): array
     {
-        if (isset($this->elasticSearchHitsIndexedByNodeFromLastRequest[$node->getIdentifier()])) {
-            return $this->elasticSearchHitsIndexedByNodeFromLastRequest[$node->getIdentifier()];
-        }
-
-        return null;
+        return $this->elasticSearchHitsIndexedByNodeFromLastRequest[$node->getIdentifier()] ?? null;
     }
 
     /**
@@ -571,9 +578,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * This method is rather internal; just to be called from the ElasticSearchQueryResult. For the public API, please use execute()
      *
      * @return array<\Neos\ContentRepository\Domain\Model\NodeInterface>
+     * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
      */
-    public function fetch()
+    public function fetch(): array
     {
         try {
             $timeBefore = microtime(true);
@@ -587,13 +596,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
             $this->result['nodes'] = [];
 
-            $this->logThisQuery && $this->logger->log(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s', $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($searchResult->getHits()), $searchResult->getTotal()), LOG_DEBUG);
+            $this->logThisQuery && $this->logger->debug(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s', $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($searchResult->getHits()), $searchResult->getTotal()), LogEnvironment::fromMethodName(__METHOD__));
 
             if (count($searchResult->getHits()) > 0) {
                 $this->result['nodes'] = $this->convertHitsToNodes($searchResult->getHits());
             }
         } catch (ApiException $exception) {
-            $this->logger->logException($exception);
+            $this->throwableStorage->logThrowable($exception);
             $this->result['nodes'] = [];
         }
 
@@ -615,37 +624,35 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * Get a query result object for lazy execution of the query
      *
-     * @return \Traversable<\Neos\Flow\Persistence\QueryResultInterface>
+     * @return ElasticSearchQueryResult
      * @api
      */
     public function execute()
     {
         $elasticSearchQuery = new ElasticSearchQuery($this);
-        $result = $elasticSearchQuery->execute(true);
-
-        return $result;
+        return $elasticSearchQuery->execute(true);
     }
 
     /**
      * Get a uncached query result object for lazy execution of the query
      *
-     * @return \Traversable<\Neos\Flow\Persistence\QueryResultInterface>
+     * @return ElasticSearchQueryResult
      * @api
      */
-    public function executeUncached()
+    public function executeUncached(): ElasticSearchQueryResult
     {
         $elasticSearchQuery = new ElasticSearchQuery($this);
-        $result = $elasticSearchQuery->execute(false);
-
-        return $result;
+        return $elasticSearchQuery->execute();
     }
 
     /**
      * Return the total number of hits for the query.
      *
      * @return integer
-     * @api
+     * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
+     * @api
      */
     public function count()
     {
@@ -658,7 +665,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $treatedContent = $response->getTreatedContent();
         $count = $treatedContent['count'];
 
-        $this->logThisQuery && $this->logger->log('Count Query Log (' . $this->logMessage . '): ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LOG_DEBUG);
+        $this->logThisQuery && $this->logger->debug('Count Query Log (' . $this->logMessage . '): ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LogEnvironment::fromMethodName(__METHOD__));
 
         return $count;
     }
@@ -686,10 +693,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param integer|boolean $fragmentSize The result fragment size for highlight snippets. If this parameter is FALSE, highlighting will be disabled.
      * @param integer $fragmentCount The number of highlight fragments to show.
-     * @return $this
+     * @return ElasticSearchQueryBuilder
      * @api
      */
-    public function highlight($fragmentSize, $fragmentCount = null)
+    public function highlight($fragmentSize, int $fragmentCount = null): ElasticSearchQueryBuilder
     {
         $this->request->highlight($fragmentSize, $fragmentCount);
 
@@ -706,7 +713,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param array $options Additional options for the more_like_this quey
      * @return ElasticSearchQueryBuilder
      */
-    public function moreLikeThis($like, array $fields = [], array $options = [])
+    public function moreLikeThis(array $like, array $fields = [], array $options = []): ElasticSearchQueryBuilder
     {
         $like = is_array($like) ? $like : [$like];
 
@@ -717,7 +724,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             $respondedDocuments = Arrays::getValueByPath($response, 'hits.hits');
 
             if (count($respondedDocuments) === 0) {
-                $this->logger->log(sprintf('The node with identifier %s was not found in the elasticsearch index.', $node->getIdentifier()), LOG_INFO);
+                $this->logger->info(sprintf('The node with identifier %s was not found in the elasticsearch index.', $node->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
                 return [];
             }
 
@@ -757,8 +764,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param NodeInterface $contextNode
      * @return QueryBuilderInterface
-     * @api
      * @throws QueryBuildingException
+     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
+     * @api
      */
     public function query(NodeInterface $contextNode)
     {
@@ -798,9 +806,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $path
      * @param mixed $requestPart
-     * @return $this
+     * @return ElasticSearchQueryBuilder
      */
-    public function request($path, $requestPart)
+    public function request(string $path, $requestPart): ElasticSearchQueryBuilder
     {
         $this->request->setByPath($path, $requestPart);
 
@@ -811,7 +819,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * All methods are considered safe
      *
      * @param string $methodName
-     * @return boolean
+     * @return bool
      */
     public function allowsCallOfMethod($methodName)
     {
@@ -856,7 +864,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             }
         }
 
-        $this->logThisQuery && $this->logger->log('Returned nodes (' . $this->logMessage . '): ' . count($nodes), LOG_DEBUG);
+        $this->logThisQuery && $this->logger->debug('Returned nodes (' . $this->logMessage . '): ' . count($nodes));
 
         $this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
 
@@ -869,8 +877,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * hiddenBeforeDateTime or hiddenAfterDateTime properties of all nodes in the result.
      *
      * @return int
+     * @throws Exception
      * @throws QueryBuildingException
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
      */
     public function cacheLifetime(): int
     {
@@ -892,11 +902,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
     /**
      * @param string $dateField
-     * @return mixed
+     * @return int
+     * @throws Exception
      * @throws QueryBuildingException
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
      */
-    protected function getNearestFutureDate(string $dateField)
+    protected function getNearestFutureDate(string $dateField): int
     {
         $request = clone $this->request;
 
@@ -941,10 +953,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $method
      * @param array $arguments
-     * @return $this
+     * @return ElasticSearchQueryBuilder
      * @throws Exception
      */
-    public function __call($method, array $arguments)
+    public function __call(string $method, array $arguments): ElasticSearchQueryBuilder
     {
         if (!method_exists($this->request, $method)) {
             throw new Exception(sprintf('Method "%s" does not exist in the current Request object "%s"', $method, get_class($this->request)), 1486763515);

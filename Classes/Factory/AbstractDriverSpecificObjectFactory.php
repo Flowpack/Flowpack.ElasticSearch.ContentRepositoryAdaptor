@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
 
 /*
@@ -12,7 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\DriverConfigurationException;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface;
+use Psr\Log\LoggerInterface;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -48,13 +51,11 @@ class AbstractDriverSpecificObjectFactory
     protected function resolve(string $type)
     {
         $version = trim($this->driverVersion);
-        if (trim($this->driverVersion) === '' || !isset($this->mapping[$version][$type]['className'])) {
+        if (!isset($this->mapping[$version][$type]['className']) || trim($this->driverVersion) === '') {
             throw new DriverConfigurationException(sprintf('Missing or wrongly configured driver type "%s" with the given version: %s', $type, $version ?: '[missing]'), 1485933538);
         }
 
         $className = trim($this->mapping[$version][$type]['className']);
-
-        $this->logger->log(sprintf('Load %s implementation for Elastic %s (%s)', $type, $version, $className), LOG_DEBUG);
 
         if (!isset($this->mapping[$version][$type]['arguments'])) {
             return new $className();

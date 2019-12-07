@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
 
 /*
@@ -30,7 +33,7 @@ class ErrorHandlingService implements \IteratorAggregate
      * @param ErrorInterface $error
      * @return void
      */
-    public function log(ErrorInterface $error)
+    public function log(ErrorInterface $error): void
     {
         $this->errors[] = $error;
         $error->log();
@@ -39,7 +42,7 @@ class ErrorHandlingService implements \IteratorAggregate
     /**
      * @return bool
      */
-    public function hasError()
+    public function hasError(): bool
     {
         return count($this->errors) > 0;
     }

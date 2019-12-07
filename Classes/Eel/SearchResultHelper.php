@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 
 /*
@@ -35,7 +38,7 @@ class SearchResultHelper implements ProtectedContextAwareInterface
      * @param string $suggestionName The suggestion name which was given in the suggestion definition
      * @return string
      */
-    public function didYouMean(ElasticSearchQueryResult $searchResult, $scoreThreshold = 0.7, $suggestionName = 'suggestions')
+    public function didYouMean(ElasticSearchQueryResult $searchResult, float $scoreThreshold = 0.7, string $suggestionName = 'suggestions'): string
     {
         $maxScore = 0;
         $suggestionParts = [];

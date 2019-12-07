@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 /*
@@ -50,9 +53,9 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
      *
      * @param string $path
      * @param mixed $requestPart
-     * @return QueryInterface
+     * @return AbstractQuery
      */
-    public function setByPath($path, $requestPart)
+    public function setByPath(string $path, $requestPart): QueryInterface
     {
         $valueAtPath = Arrays::getValueByPath($this->request, $path);
         if (is_array($valueAtPath)) {
@@ -69,7 +72,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * {@inheritdoc}
      */
-    public function toArray()
+    public function toArray(): array
     {
         return $this->prepareRequest();
     }
@@ -77,7 +80,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * {@inheritdoc}
      */
-    public function getRequestAsJson()
+    public function getRequestAsJson(): string
     {
         return json_encode($this);
     }
@@ -85,7 +88,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * {@inheritdoc}
      */
-    public function addSortFilter($configuration)
+    public function addSortFilter(array $configuration): void
     {
         if (!isset($this->request['sort'])) {
             $this->request['sort'] = [];
@@ -96,13 +99,13 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * {@inheritdoc}
      */
-    public function aggregation($name, array $aggregationDefinition, $parentPath = '')
+    public function aggregation(string $name, array $aggregationDefinition, string $parentPath = ''): void
     {
         if (!array_key_exists('aggregations', $this->request)) {
             $this->request['aggregations'] = [];
         }
 
-        if ((string)$parentPath !== '') {
+        if ($parentPath !== '') {
             $this->addSubAggregation($parentPath, $name, $aggregationDefinition);
         } else {
             $this->request['aggregations'][$name] = $aggregationDefinition;
@@ -113,7 +116,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
      * {@inheritdoc}
      * @throws Exception\QueryBuildingException
      */
-    public function moreLikeThis(array $like, array $fields = [], $options = [])
+    public function moreLikeThis(array $like, array $fields = [], array $options = []): void
     {
         $moreLikeThis = $options;
         $moreLikeThis['like'] = $like;
@@ -121,7 +124,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
         if (!empty($fields)) {
             $moreLikeThis['fields'] = $fields;
         }
-        
+
         $this->appendAtPath('query.bool.filter.bool.must', ['more_like_this' => $moreLikeThis]);
     }
 
@@ -138,13 +141,13 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
      * @return void
      * @throws Exception\QueryBuildingException
      */
-    protected function addSubAggregation($parentPath, $name, $aggregationConfiguration)
+    protected function addSubAggregation(string $parentPath, string $name, array $aggregationConfiguration): void
     {
         // Find the parentPath
         $path =& $this->request['aggregations'];
 
         foreach (explode('.', $parentPath) as $subPart) {
-            if ($path == null || !array_key_exists($subPart, $path)) {
+            if ($path === null || !array_key_exists($subPart, $path)) {
                 throw new Exception\QueryBuildingException(sprintf('The parent path segment "%s" could not be found when adding a sub aggregation to parent path "%s"', $subPart, $parentPath));
             }
             $path =& $path[$subPart]['aggregations'];
@@ -156,7 +159,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * {@inheritdoc}
      */
-    public function suggestions($name, array $suggestionDefinition)
+    public function suggestions(string $name, array $suggestionDefinition): void
     {
         if (!array_key_exists('suggest', $this->request)) {
             $this->request['suggest'] = [];
@@ -168,7 +171,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * {@inheritdoc}
      */
-    public function highlight($fragmentSize, $fragmentCount = null)
+    public function highlight($fragmentSize, int $fragmentCount = null): void
     {
         if ($fragmentSize === false) {
             // Highlighting is disabled.
@@ -189,7 +192,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * {@inheritdoc}
      */
-    public function setValueByPath($path, $value)
+    public function setValueByPath(string $path, $value): void
     {
         $this->request = Arrays::setValueByPath($this->request, $path, $value);
     }
@@ -197,7 +200,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * {@inheritdoc}
      */
-    public function appendAtPath($path, array $data)
+    public function appendAtPath(string $path, array $data): void
     {
         $currentElement =& $this->request;
         foreach (explode('.', $path) as $pathPart) {
@@ -222,7 +225,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
      */
     public function offsetSet($offset, $value)
     {
-        if (is_null($offset)) {
+        if ($offset === null) {
             $this->request[] = $value;
         } else {
             $this->request[$offset] = $value;
@@ -250,7 +253,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
      */
     public function offsetGet($offset)
     {
-        return isset($this->request[$offset]) ? $this->request[$offset] : null;
+        return $this->request[$offset] ?? null;
     }
 
     /**
@@ -260,7 +263,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
      *
      * @return array
      */
-    protected function prepareRequest()
+    protected function prepareRequest(): array
     {
         return $this->request;
     }
@@ -279,7 +282,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * @param array $request
      */
-    public function replaceRequest(array $request)
+    public function replaceRequest(array $request): void
     {
         $this->request = $request;
     }

@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
 
 /*
@@ -11,13 +14,14 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
  * source code.
  */
 
-use Neos\Flow\Annotations as Flow;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\NodeType;
+use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Log\Utility\LogEnvironment;
 
 /**
  * Document driver for Elasticsearch version 5.x
@@ -35,12 +39,12 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
     /**
      * {@inheritdoc}
      */
-    public function delete(NodeInterface $node, $identifier)
+    public function delete(NodeInterface $node, string $identifier): array
     {
         return [
             [
                 'delete' => [
-                    '_type' => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($node->getNodeType()),
+                    '_type' => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($node->getNodeType()->getName()),
                     '_id' => $identifier
                 ]
             ]
@@ -51,7 +55,7 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
      * {@inheritdoc}
      * @throws \Flowpack\ElasticSearch\Exception
      */
-    public function deleteDuplicateDocumentNotMatchingType(Index $index, $documentIdentifier, NodeType $nodeType)
+    public function deleteDuplicateDocumentNotMatchingType(Index $index, string $documentIdentifier, NodeType $nodeType): void
     {
         $result = $index->request('GET', '/_search?scroll=1m', [], json_encode([
             'sort' => ['_doc'],
@@ -87,7 +91,7 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
             $result = $index->request('GET', '/_search/scroll?scroll=1m', [], $scrollId, false);
             $treatedContent = $result->getTreatedContent();
         }
-        $this->logger->log(sprintf('NodeIndexer: Check duplicate nodes for %s (%s), found %d document(s)', $documentIdentifier, $nodeType->getName(), count($bulkRequest)), LOG_DEBUG, null, 'ElasticSearch (CR)');
+        $this->logger->debug(sprintf('NodeIndexer: Check duplicate nodes for %s (%s), found %d document(s)', $documentIdentifier, $nodeType->getName(), count($bulkRequest)), LogEnvironment::fromMethodName(__METHOD__));
         if ($bulkRequest !== []) {
             $index->request('POST', '/_bulk', [], implode("\n", $bulkRequest) . "\n");
         }

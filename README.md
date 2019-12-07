@@ -29,24 +29,30 @@ Finally, run `./flow nodeindex:build`, and add the search plugin to your page. I
 
 ## Elastic version support
 
-**HINT: the Master of this package only supports modern versions of ES. If you need ES 1.x or 2.x support, please [see the 4.x branch of this repository](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/tree/4.0#elastic-version-support).**
+**HINT: this package only supports modern versions of Elasticsearch. If you need 1.x or 2.x support, please [see the 4.x branch of this repository](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/tree/4.0#elastic-version-support).**
 
-You can switch the Elastic driver by editing ```Settings.yaml```
-(```Flowpack.ElasticSearch.ContentRepositoryAdaptor.driver.version```) with the following value:
+You can switch the Elasticsearch driver by editing `Settings.yaml`
+(`Flowpack.ElasticSearch.ContentRepositoryAdaptor.driver.version`) with the following value:
 
-* ```5.x``` to support Elastic 5.x
+* `5.x` to support Elasticsearch 5.x
 
 _Currently the Driver interfaces are not marked as API, and can be changed to adapt to future needs._
 
-**Note:** When using Elasticsearch 5.x changes to the types may need to be done in your mapping.
-More information on the [mapping in ElasticSearch 5.x](Documentation/ElasticMapping-5.x.md).
-
 ### Elasticsearch Configuration file elasticsearch.yml
 
-There is a need, depending on your version of Elasticsearch, to add specific configuration to your
-Elasticsearch Configuration File `<your-elasticsearch>/config/elasticsearch.yml`.
+The following general configuration advice can make your life easier:
 
-- [ElasticSearch 5.x](Documentation/ElasticConfiguration-5.x.md)
+```yaml
+# the following settings secure your cluster
+cluster.name: [PUT_YOUR_CUSTOM_NAME_HERE]
+node.name: [PUT_YOUR_CUSTOM_NAME_HERE]
+network.host: _local_
+```
+
+There may be a need, to add specific configuration to your Elasticsearch Configuration File
+`<your-elasticsearch>/config/elasticsearch.yml`, , depending on your version of Elasticsearch.
+
+- [Elasticsearch 5.x](Documentation/ElasticConfiguration-5.x.md)
 
 ## Building up the Index
 
@@ -339,7 +345,7 @@ be fetched and passed to your template.
 
 If you do use the terms filter be aware of Elasticsearchs analyze functionality for strings. You might want to disable this
 for all your filterable properties, or else filtering won't work on them properly:
-```
+```yaml
 'Vendor.Name:Product'
   properties:
     color:
@@ -398,7 +404,7 @@ This is how a more complex example could look like. Imagine you a want to render
 node you want to display the distance to a specific point.
 
 First of all you have to define a property in your NodeTypes.yaml for your node where to store lat/lon information's:
-```
+```yaml
 'Vendor.Name:Retailer':
   properties:
     'latlng':
@@ -520,24 +526,24 @@ suggestions = ${Search.query(site)...suggestions('my_suggestions', this.suggesti
 
 In order to set the maximum cache time of a fusion prototype that renders nodes fetched by `Search()`,
 the nearest future value of the hiddenBeforeDateTime or hiddenAfterDateTime properties of all nodes in the result needs to be calculated.
+```
+prototype(Acme.Blog:Listing) < prototype(Neos.Fusion:Collection) {
+    @context.searchQuery = ${Search.query(site).nodeType('Acme.Blog:Post')}
 
-	prototype(Acme.Blog:Listing) < prototype(Neos.Fusion:Collection) {
-		@context.searchQuery = ${Search.query(site).nodeType('Acme.Blog:Post')}
-	
-	    collection = ${searchQuery.execute()}
-	    itemName = 'node'
-	    itemRenderer = Acme.Blog:Post
-	    
-	     @cache {
-        	mode = 'cached'
-			maximumLifetime = ${searchQuery.cacheLifetime()}
-			
-        	entryTags {
-          	map = ${'NodeType_Acme.Blog:Post'}
-        	}
-    	}
-	}
-
+    collection = ${searchQuery.execute()}
+    itemName = 'node'
+    itemRenderer = Acme.Blog:Post
+    
+     @cache {
+        mode = 'cached'
+        maximumLifetime = ${searchQuery.cacheLifetime()}
+        
+        entryTags {
+        map = ${'NodeType_Acme.Blog:Post'}
+        }
+    }
+}
+```
 
 ## Advanced: Configuration of Indexing
 
@@ -559,7 +565,7 @@ This configuration contains two parts:
   specified. It has access to the current `value` and the current `node`.
 
 Example (from the default configuration):
-```
+```yaml
  # Settings.yaml
 Neos:
   ContentRepository:
@@ -573,7 +579,7 @@ Neos:
           indexing: '${value}'
 ```
 
-```
+```yaml
  # NodeTypes.yaml
 'Neos.Neos:Timable':
   properties:
@@ -609,7 +615,7 @@ the standard indexing configuration:
 In order to enable fulltext indexing, every `Document` node must be configured as *fulltext root*. Thus,
 the following is configured in the default configuration:
 
-```
+```yaml
 'Neos.Neos:Document':
   search:
     fulltext:
@@ -624,7 +630,7 @@ in `NodeTypes.yaml` at `properties.[propertyName].search.fulltextExtractor`.
 
 An example:
 
-```
+```yaml
 'Neos.Neos.NodeTypes:Text':
   properties:
     'text':
@@ -649,7 +655,7 @@ An example:
 As a default, Elasticsearch indexes dates in the UTC Timezone. In order to have it index using the timezone
 currently configured in PHP, the configuration for any property in a node which represents a date should look like this:
 
-```
+```yaml
 'My.Blog:Post':
   properties:
     date:
@@ -678,7 +684,7 @@ For more information on Elasticsearch's Date Formats,
 If you want to index attachments, you need to install the [Elasticsearch Attachment Plugin](https://github.com/elastic/elasticsearch-mapper-attachments).
 Then, you can add the following to your `Settings.yaml`:
 
-```
+```yaml
 Neos:
   ContentRepository:
     Search:
@@ -702,7 +708,7 @@ If you want to fine-tune the indexing and mapping on a more detailed level, you 
 
 First, configure the index settings as you need them, e.g. configuring analyzers:
 
-```
+```yaml
 Flowpack:
   ElasticSearch:
     indexes:
@@ -725,7 +731,7 @@ Flowpack:
 Then, you can change the analyzers on a per-field level; or e.g. reconfigure the _all field with the following snippet
 in the NodeTypes.yaml. Generally this works by defining the global mapping at `[nodeType].search.elasticSearchMapping`:
 
-```
+```yaml
 'Neos.Neos:Node':
   search:
     elasticSearchMapping:
@@ -747,7 +753,7 @@ If you need to run serveral (different) neos instances on the same elasticsearch
 
 So `./flow nodeindex:build` or `./flow nodeindex:cleanup` won't overwrite your other sites index.
 
-```
+```yaml
 Neos:
   ContentRepository:
     Search:
@@ -783,4 +789,4 @@ In order to understand what's going on, the following commands are helpful:
 3. Replace `ElasticSeach.fulltext` by `Indexing`
 4. Search for `ElasticSearch.` (inside the `indexing` expressions) and replace them by `Indexing.`
 
-Created by Sebastian Kurfürst; [contributions by Karsten Dambekalns, Robert Lemke and others](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/graphs/contributors).
+Created by [Sebastian Kurfürst; contributions by Karsten Dambekalns, Robert Lemke and others](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/graphs/contributors).

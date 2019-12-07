@@ -36,39 +36,6 @@ Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInt
   factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\NodeTypeMappingBuilderFactory'
   factoryMethodName: createNodeTypeMappingBuilder
 
-Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController:
-  properties:
-    logger:
-      object:
-        factoryObjectName: Neos\Flow\Log\LoggerFactory
-        factoryMethodName: create
-        arguments:
-          1:
-            value: 'Flowpack.ElasticSearch.ContentRepositoryAdaptor'
-          2:
-            value: 'Neos\Flow\Log\Logger'
-          3:
-            value:
-              fileBackend: 'Neos\Flow\Log\Backend\FileBackend'
-              ansiConsoleBackend: 'Neos\Flow\Log\Backend\AnsiConsoleBackend'
-          4:
-            setting: Neos.ContentRepository.Search.elasticSearch.log.backendOptions
-
-Flowpack\ElasticSearch\ContentRepositoryAdaptor\LoggerInterface:
-  scope: singleton
-  factoryObjectName: Neos\Flow\Log\LoggerFactory
-  factoryMethodName: create
-  arguments:
-    1:
-      value: 'Flowpack.ElasticSearch.ContentRepositoryAdaptor'
-    2:
-      value: 'Neos\Flow\Log\Logger'
-    3:
-      value:
-        fileBackend: 'Neos\Flow\Log\Backend\FileBackend'
-    4:
-      setting: Neos.ContentRepository.Search.elasticSearch.log.backendOptions
-
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient:
   scope: singleton
   factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Client\ClientFactory'

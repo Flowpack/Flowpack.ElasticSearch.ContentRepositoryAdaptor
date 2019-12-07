@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
 
 /*
@@ -13,10 +16,12 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Query\FilteredQuery;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use Neos\Flow\Tests\UnitTestCase;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Domain\Service\Context;
+use PHPUnit\Framework\MockObject\MockObject;
 
 /**
  * Testcase for ElasticSearchQueryBuilder
@@ -28,19 +33,19 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
      */
     protected $queryBuilder;
 
-    public function setUp()
+    public function setUp(): void
     {
-        /** @var NodeInterface|\PHPUnit_Framework_MockObject_MockObject $node */
+        /** @var NodeInterface|MockObject $node */
         $node = $this->createMock(NodeInterface::class);
-        $node->expects($this->any())->method('getPath')->will($this->returnValue('/foo/bar'));
+        $node->expects(self::any())->method('getPath')->willReturn('/foo/bar');
         $mockContext = $this->getMockBuilder(Context::class)->disableOriginalConstructor()->getMock();
-        $mockContext->expects($this->any())->method('getDimensions')->will($this->returnValue([]));
-        $node->expects($this->any())->method('getContext')->will($this->returnValue($mockContext));
+        $mockContext->expects(self::any())->method('getDimensions')->willReturn([]);
+        $node->expects(self::any())->method('getContext')->willReturn($mockContext);
 
         $mockWorkspace = $this->getMockBuilder(Workspace::class)->disableOriginalConstructor()->getMock();
-        $mockContext->expects($this->any())->method('getWorkspace')->will($this->returnValue($mockWorkspace));
+        $mockContext->expects(self::any())->method('getWorkspace')->willReturn($mockWorkspace);
 
-        $mockWorkspace->expects($this->any())->method('getName')->will($this->returnValue('user-foo'));
+        $mockWorkspace->expects(self::any())->method('getName')->willReturn('user-foo');
 
         $this->queryBuilder = new ElasticSearchQueryBuilder();
 
@@ -91,7 +96,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
     /**
      * @test
      */
-    public function basicRequestStructureTakesContextNodeIntoAccount()
+    public function basicRequestStructureTakesContextNodeIntoAccount(): void
     {
         $expected = [
             'query' => [
@@ -159,22 +164,22 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
             'fields' => ['__path']
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertEquals($expected, $actual);
+        self::assertEquals($expected, $actual);
     }
 
     /**
      * @test
-     * @expectedException \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
      */
-    public function queryFilterThrowsExceptionOnInvalidClauseType()
+    public function queryFilterThrowsExceptionOnInvalidClauseType(): void
     {
+        $this->expectException( QueryBuildingException::class);
         $this->queryBuilder->queryFilter('foo', [], 'unsupported');
     }
 
     /**
      * @test
      */
-    public function nodeTypeFilterWorks()
+    public function nodeTypeFilterWorks(): void
     {
         $this->queryBuilder->nodeType('Foo.Bar:Baz');
         $expected = [
@@ -183,13 +188,13 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
             ]
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertInArray($expected, $actual['query']['bool']['filter']['bool']['must']);
+        self::assertInArray($expected, $actual['query']['bool']['filter']['bool']['must']);
     }
 
     /**
      * @test
      */
-    public function sortAscWorks()
+    public function sortAscWorks(): void
     {
         $this->queryBuilder->sortAsc('fieldName');
         $expected = [
@@ -198,13 +203,13 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
             ]
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertSame($expected, $actual['sort']);
+        self::assertSame($expected, $actual['sort']);
     }
 
     /**
      * @test
      */
-    public function sortingIsAdditive()
+    public function sortingIsAdditive(): void
     {
         $this->queryBuilder->sortAsc('fieldName')->sortDesc('field2')->sortAsc('field3');
         $expected = [
@@ -219,23 +224,23 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
             ]
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertSame($expected, $actual['sort']);
+        self::assertSame($expected, $actual['sort']);
     }
 
     /**
      * @test
      */
-    public function limitWorks()
+    public function limitWorks(): void
     {
         $this->queryBuilder->limit(2);
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertSame(2, $actual['size']);
+        self::assertSame(2, $actual['size']);
     }
 
     /**
      * @test
      */
-    public function sortDescWorks()
+    public function sortDescWorks(): void
     {
         $this->queryBuilder->sortDesc('fieldName');
         $expected = [
@@ -244,13 +249,13 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
             ]
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertSame($expected, $actual['sort']);
+        self::assertSame($expected, $actual['sort']);
     }
 
     /**
      * @return array
      */
-    public function rangeConstraintExamples()
+    public function rangeConstraintExamples(): array
     {
         return [
             ['greaterThan', 'gt', 10],
@@ -263,8 +268,11 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
     /**
      * @test
      * @dataProvider rangeConstraintExamples
+     * @param string $constraint
+     * @param string $operator
+     * @param mixed $value
      */
-    public function rangeConstraintsWork($constraint, $operator, $value)
+    public function rangeConstraintsWork(string $constraint, string $operator, $value): void
     {
         $this->queryBuilder->$constraint('fieldName', $value);
         $expected = [
@@ -273,13 +281,13 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
             ]
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertInArray($expected, $actual['query']['bool']['filter']['bool']['must']);
+        self::assertInArray($expected, $actual['query']['bool']['filter']['bool']['must']);
     }
 
     /**
      * @return array
      */
-    public function simpleAggregationExamples()
+    public function simpleAggregationExamples(): array
     {
         return [
             ['min', 'foo', 'bar', 10],
@@ -297,10 +305,10 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
      * @param string $type
      * @param string $name
      * @param string $field
-     * @param integer size
-     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
+     * @param int $size
+     * @throws QueryBuildingException
      */
-    public function anSimpleAggregationCanBeAddedToTheRequest($type, $name, $field, $size)
+    public function anSimpleAggregationCanBeAddedToTheRequest(string $type, string $name, string $field, int $size): void
     {
         $expected = [
             $name => [
@@ -314,13 +322,13 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
         $this->queryBuilder->fieldBasedAggregation($name, $field, $type, '', $size);
         $actual = $this->queryBuilder->getRequest()->toArray();
 
-        $this->assertInArray($expected, $actual);
+        self::assertInArray($expected, $actual);
     }
 
     /**
      * @test
      */
-    public function anAggregationCanBeSubbedUnderAPath()
+    public function anAggregationCanBeSubbedUnderAPath(): void
     {
         $this->queryBuilder->fieldBasedAggregation('foo', 'bar');
         $this->queryBuilder->fieldBasedAggregation('bar', 'bar', 'terms', 'foo');
@@ -352,25 +360,27 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
         ];
 
         $actual = $this->queryBuilder->getRequest()->toArray();
-        $this->assertInArray($expected, $actual);
+        self::assertInArray($expected, $actual);
     }
 
     /**
      * @test
-     * @expectedException \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
      */
-    public function ifTheParentPathDoesNotExistAnExceptionisThrown()
+    public function ifTheParentPathDoesNotExistAnExceptionisThrown(): void
     {
+        $this->expectException(QueryBuildingException::class);
+
         $this->queryBuilder->fieldBasedAggregation('foo', 'bar');
         $this->queryBuilder->fieldBasedAggregation('bar', 'bar', 'terms', 'doesNotExist');
     }
 
     /**
      * @test
-     * @expectedException \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException
      */
-    public function ifSubbedParentPathDoesNotExistAnExceptionisThrown()
+    public function ifSubbedParentPathDoesNotExistAnExceptionisThrown(): void
     {
+        $this->expectException(QueryBuildingException::class);
+
         $this->queryBuilder->fieldBasedAggregation('foo', 'bar');
         $this->queryBuilder->fieldBasedAggregation('bar', 'bar', 'terms', 'foo.doesNotExist');
     }
@@ -378,7 +388,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
     /**
      * @test
      */
-    public function aCustomAggregationDefinitionCanBeApplied()
+    public function aCustomAggregationDefinitionCanBeApplied(): void
     {
         $expected = [
             'foo' => [
@@ -391,49 +401,49 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
         $this->queryBuilder->aggregation('foo', $expected['foo']);
         $actual = $this->queryBuilder->getRequest()->toArray();
 
-        $this->assertInArray($expected, $actual);
+        self::assertInArray($expected, $actual);
     }
 
     /**
      * @test
      */
-    public function requestCanBeExtendedByArbitraryProperties()
+    public function requestCanBeExtendedByArbitraryProperties(): void
     {
         $this->queryBuilder->request('foo.bar', ['field' => 'x']);
         $expected = [
             'bar' => ['field' => 'x']
         ];
         $actual = $this->queryBuilder->getRequest();
-        $this->assertEquals($expected, $actual['foo']);
+        self::assertEquals($expected, $actual['foo']);
     }
 
     /**
      * @test
      */
-    public function existingRequestPropertiesCanBeOverridden()
+    public function existingRequestPropertiesCanBeOverridden(): void
     {
         $this->queryBuilder->limit(2);
         $this->queryBuilder->request('limit', 10);
         $expected = 10;
         $actual = $this->queryBuilder->getRequest();
-        $this->assertEquals($expected, $actual['limit']);
+        self::assertEquals($expected, $actual['limit']);
     }
 
     /**
      * @test
      */
-    public function getTotalItemsReturnsZeroByDefault()
+    public function getTotalItemsReturnsZeroByDefault(): void
     {
-        $this->assertSame(0, $this->queryBuilder->getTotalItems());
+        self::assertSame(0, $this->queryBuilder->getTotalItems());
     }
 
     /**
      * @test
      */
-    public function getTotalItemsReturnsTotalHitsIfItExists()
+    public function getTotalItemsReturnsTotalHitsIfItExists(): void
     {
         $this->inject($this->queryBuilder, 'result', ['hits' => ['total' => 123]]);
-        $this->assertSame(123, $this->queryBuilder->getTotalItems());
+        self::assertSame(123, $this->queryBuilder->getTotalItems());
     }
 
     /**
@@ -443,17 +453,17 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
      * @param $actual
      * @return void
      */
-    protected function assertInArray($expected, $actual)
+    protected static function assertInArray($expected, $actual): void
     {
         foreach ($actual as $actualElement) {
             if ($actualElement === $expected) {
-                $this->assertTrue(true);
+                self::assertTrue(true);
 
                 return;
             }
         }
 
         // because $expected !== $actual ALWAYS, this will NEVER match but display a nice error message.
-        $this->assertSame($expected, $actual, 'The $expected array was not found inside $actual.');
+        self::assertSame($expected, $actual, 'The $expected array was not found inside $actual.');
     }
 }
