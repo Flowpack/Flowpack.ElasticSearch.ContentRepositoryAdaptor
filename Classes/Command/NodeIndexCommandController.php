@@ -42,7 +42,6 @@ use Neos\Flow\Log\Utility\LogEnvironment;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Yaml\Yaml;
 
-
 /**
  * Provides CLI features for index handling
  *
@@ -255,7 +254,6 @@ class NodeIndexCommandController extends CommandController
      */
     public function buildCommand(int $limit = null, bool $update = false, string $workspace = null, string $postfix = null): void
     {
-
         $this->logger->info(sprintf('Starting elasticsearch indexing %s sub processes', $this->useSubProcesses ? 'with' : 'without'), LogEnvironment::fromMethodName(__METHOD__));
 
         if ($workspace !== null && $this->workspaceRepository->findByIdentifier($workspace) === null) {

@@ -17,5 +17,4 @@ use Neos\Flow\Exception;
 
 class RuntimeException extends Exception
 {
-
 }

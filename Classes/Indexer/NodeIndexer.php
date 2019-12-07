@@ -477,6 +477,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @throws Exception
      * @throws ApiException
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Exception
      */
     public function updateIndexAlias(): void
     {
