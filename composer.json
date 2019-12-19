@@ -10,7 +10,7 @@
 
         "flowpack/elasticsearch": " ^4.0",
         "neos/content-repository": "^5.0",
-        "neos/content-repository-search": "^3.0",
+        "neos/content-repository-search": "^3.0 || dev-master",
         "neos/eel": "^6.0",
         "neos/flow": "^6.0",
         "neos/fluid-adaptor": "^6.0",
