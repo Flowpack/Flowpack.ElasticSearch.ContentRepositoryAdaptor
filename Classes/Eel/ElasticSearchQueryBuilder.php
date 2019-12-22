@@ -20,6 +20,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use Neos\Flow\Log\ThrowableStorageInterface;
 use Neos\Flow\Log\Utility\LogEnvironment;
+use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Psr\Log\LoggerInterface;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
@@ -189,7 +190,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param integer $limit
      * @return ElasticSearchQueryBuilder
-     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
+     * @throws IllegalObjectTypeException
      * @api
      */
     public function limit($limit)
@@ -756,12 +757,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * match the context of the given node and have it as parent node in their rootline.
      *
      * @param NodeInterface $contextNode
-     * @return QueryBuilderInterface
+     * @return ElasticSearchQueryBuilder
      * @throws QueryBuildingException
-     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
+     * @throws IllegalObjectTypeException
      * @api
      */
-    public function query(NodeInterface $contextNode)
+    public function query(NodeInterface $contextNode): ElasticSearchQueryBuilder
     {
         $this->elasticSearchClient->setContextNode($contextNode);
 

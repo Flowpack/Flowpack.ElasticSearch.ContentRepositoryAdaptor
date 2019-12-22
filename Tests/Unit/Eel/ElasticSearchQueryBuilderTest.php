@@ -15,6 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Query\FilteredQuery;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use Neos\Flow\Tests\UnitTestCase;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
@@ -36,15 +37,19 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
     {
         /** @var NodeInterface|MockObject $node */
         $node = $this->createMock(NodeInterface::class);
-        $node->expects(self::any())->method('getPath')->willReturn('/foo/bar');
+        $node->method('getPath')->willReturn('/foo/bar');
+
         $mockContext = $this->getMockBuilder(Context::class)->disableOriginalConstructor()->getMock();
-        $mockContext->expects(self::any())->method('getDimensions')->willReturn([]);
-        $node->expects(self::any())->method('getContext')->willReturn($mockContext);
+        $mockContext->method('getDimensions')->willReturn([]);
+        $node->method('getContext')->willReturn($mockContext);
 
         $mockWorkspace = $this->getMockBuilder(Workspace::class)->disableOriginalConstructor()->getMock();
-        $mockContext->expects(self::any())->method('getWorkspace')->willReturn($mockWorkspace);
+        $mockContext->method('getWorkspace')->willReturn($mockWorkspace);
 
-        $mockWorkspace->expects(self::any())->method('getName')->willReturn('user-foo');
+        $mockWorkspace->method('getName')->willReturn('user-foo');
+
+        $elasticsearchClient = $this->createMock(ElasticSearchClient::class);
+        $elasticsearchClient->method('getContextNode')->willReturn($node);
 
         $this->queryBuilder = new ElasticSearchQueryBuilder();
 
@@ -85,6 +90,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
         ];
         $unsupportedFieldsInCountRequest = ['fields', 'sort', 'from', 'size', 'highlight', 'aggs', 'aggregations'];
 
+        $this->inject($this->queryBuilder, 'elasticSearchClient', $elasticsearchClient);
         $this->inject($this->queryBuilder, 'request', new FilteredQuery($request, $unsupportedFieldsInCountRequest));
 
         $query = new FilteredQuery($this->queryBuilder->getRequest()->toArray(), []);
