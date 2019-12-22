@@ -763,7 +763,7 @@ Neos:
 
 ## Debugging
 
-In order to understand what's going on, the following commands are helpful:
+In order to understand what's going on, the following might be helpful:
 
 * use `./flow nodeindex:showMapping` to show the currently defined Elasticsearch Mapping
 * use the `.log()` statement inside queries to dump them to the Elasticsearch Log

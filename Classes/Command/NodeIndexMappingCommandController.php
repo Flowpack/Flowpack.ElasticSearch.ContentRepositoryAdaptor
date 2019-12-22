@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
@@ -21,6 +22,7 @@ use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 use Symfony\Component\Yaml\Yaml;
+use function json_encode;
 
 /**
  * Provides CLI features for checking mapping informations
@@ -54,14 +56,25 @@ class NodeIndexMappingCommandController extends CommandController
     protected $nodeTypeMappingBuilder;
 
     /**
-     * Mapping between dimensions presets and index name
+     * Shows the mapping between dimensions presets and index name
+     *
+     * @throws Exception
      */
     public function indicesCommand(): void
     {
         $indexName = $this->nodeIndexer->getIndexName();
+
+        $headers = ['Dimension Preset', 'Index Name'];
+        $rows = [];
+
         foreach ($this->contentDimensionCombinator->getAllAllowedCombinations() as $dimensionValues) {
-            $this->outputLine('<info>%s-%s</info> %s', [$indexName, $this->dimensionsService->hash($dimensionValues), \json_encode($dimensionValues)]);
+            $rows[] = [
+                json_encode($dimensionValues),
+                sprintf('%s-%s', $indexName, $this->dimensionsService->hash($dimensionValues))
+            ];
         }
+
+        $this->output->outputTable($rows, $headers);
     }
 
     /**
@@ -74,10 +87,11 @@ class NodeIndexMappingCommandController extends CommandController
     {
         try {
             $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
-        } catch (\Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception $e) {
+        } catch (Exception $e) {
             $this->outputLine('Unable to get the current index');
             $this->sendAndExit(1);
         }
+
         foreach ($nodeTypeMappingCollection as $mapping) {
             /** @var Mapping $mapping */
             $this->output(Yaml::dump($mapping->asArray(), 5, 2));
