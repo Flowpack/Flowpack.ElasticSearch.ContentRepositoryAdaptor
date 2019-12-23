@@ -5,7 +5,7 @@ Flowpack:
         useSubProcesses: true
       indexing:
         batchSize:
-          elements: 50
+          elements: 500
           octets: 40000000
       configuration:
         nodeTypes:
