@@ -212,7 +212,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     public function indexNode(NodeInterface $node, $targetWorkspaceName = null): void
     {
         if ($this->nodeTypeIndexingConfiguration->isIndexable($node->getNodeType()) === false) {
-            $this->logger->log(sprintf('NodeIndexer - Node "%s" (%s) skipped, Node Type is not allowed in the index.', $node->getContextPath(), $node->getNodeType()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $this->logger->debug(sprintf('NodeIndexer - Node "%s" (%s) skipped, Node Type is not allowed in the index.', $node->getContextPath(), $node->getNodeType()));
             return;
         }
 
@@ -266,8 +266,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $this->toBulkRequest($node, $this->indexerDriver->document($this->getIndexName(), $node, $document, $documentData));
                 $this->toBulkRequest($node, $this->indexerDriver->fulltext($node, $fulltextIndexOfNode, $targetWorkspaceName));
             }
-
-            $this->logger->debug(sprintf('NodeIndexer (%s): Indexed node %s.', $documentIdentifier, $contextPath));
         };
 
         $handleNode = function (NodeInterface $node, Context $context) use ($targetWorkspaceName, $indexer) {
@@ -379,6 +377,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $this->logger->debug(sprintf('NodeIndexer (%s): Removed node %s (%s) from index.', $documentIdentifier, $node->getContextPath(), $node->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
     }
 
+    /**
+     * @throws Exception
+     * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Utility\Exception\FilesException
+     */
     protected function flushIfNeeded(): void
     {
         if ($this->bulkRequestLenght() >= $this->batchSize['elements'] || $this->bulkRequestSize() >= $this->batchSize['octets']) {
@@ -422,7 +425,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         /** @var BulkRequestPart $bulkRequestPart */
         foreach ($bulkRequest as $bulkRequestPart) {
             if (!$bulkRequestPart instanceof BulkRequestPart) {
-                throw new \RuntimeException('Invalid bulk request part');
+                throw new \RuntimeException('Invalid bulk request part', 1577016145);
             }
 
             $hash = $bulkRequestPart->getTargetDimensionsHash();
