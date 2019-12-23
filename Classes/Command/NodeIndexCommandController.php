@@ -134,44 +134,6 @@ class NodeIndexCommandController extends CommandController
     protected $workspaceIndexer;
 
     /**
-     * Print out the complete mapping for all node types
-     *
-     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
-     * @throws \Flowpack\ElasticSearch\Exception
-     */
-    public function showMappingCommand(): void
-    {
-        $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
-
-        foreach ($nodeTypeMappingCollection as $mapping) {
-            /** @var Mapping $mapping */
-            $this->output(Yaml::dump($mapping->asArray(), 5, 2));
-            $this->outputLine();
-        }
-
-        $this->outputLine('------------');
-
-        $mappingErrors = $this->nodeTypeMappingBuilder->getLastMappingErrors();
-        if ($mappingErrors->hasErrors()) {
-            $this->outputLine('<b>Mapping Errors</b>');
-            foreach ($mappingErrors->getFlattenedErrors() as $errors) {
-                foreach ($errors as $error) {
-                    $this->outputLine($error);
-                }
-            }
-        }
-
-        if ($mappingErrors->hasWarnings()) {
-            $this->outputLine('<b>Mapping Warnings</b>');
-            foreach ($mappingErrors->getFlattenedWarnings() as $warnings) {
-                foreach ($warnings as $warning) {
-                    $this->outputLine((string)$warning);
-                }
-            }
-        }
-    }
-
-    /**
      * Index a single node by the given identifier and workspace name
      *
      * @param string $identifier
@@ -293,19 +255,19 @@ class NodeIndexCommandController extends CommandController
 
         $combinations = new ArrayCollection($this->contentDimensionCombinator->getAllAllowedCombinations());
 
-        $this->outputSection('Create indicies ...');
-        $combinations->map($create);
+        $runAndLog = function ($command, string $stepInfo) use ($combinations) {
+            $timeStart = microtime(true);
+            $this->output(str_pad($stepInfo . '... ', 20));
+            $combinations->map($command);
+            $this->outputLine('<success>Done</success> (took %s seconds)', [number_format(microtime(true) - $timeStart, 2)]);
+        };
 
-        $this->outputSection('Indexing nodes ...');
-        $combinations->map($build);
+        $runAndLog($create, 'Create indicies');
+        $runAndLog($build, 'Indexing nodes');
+        $runAndLog($refresh, 'Refresh indicies');
+        $runAndLog($updateAliases, 'Update aliases');
 
-        $this->outputSection('Refresh indicies ...');
-        $combinations->map($refresh);
-
-        $this->outputSection('Update aliases ...');
-        $combinations->map($updateAliases);
-
-        $this->outputSection('Update main alias');
+        $this->outputLine('Update main alias');
         $this->nodeIndexer->updateMainAlias();
 
         $this->outputLine();
@@ -319,7 +281,6 @@ class NodeIndexCommandController extends CommandController
      * @param string $postfix
      * @param string $workspace
      * @param int $limit
-     * @Flow\Internal
      * @throws Exception
      */
     private function build(array $dimensionsValues, ?string $workspace = null, ?string $postfix = null, ?int $limit = null): void
@@ -351,7 +312,6 @@ class NodeIndexCommandController extends CommandController
         }
 
         $outputArray = explode(PHP_EOL, $output);
-        $count = (int)array_pop($outputArray);
         if (count($outputArray) > 0) {
             foreach ($outputArray as $line) {
                 $line = trim($line);
@@ -596,13 +556,5 @@ class NodeIndexCommandController extends CommandController
     private function outputMemoryUsage(): void
     {
         $this->outputLine('! Memory usage %s', [Files::bytesToSizeString(memory_get_usage(true))]);
-    }
-
-    /**
-     * @param string $title
-     */
-    private function outputSection(string $title): void
-    {
-        $this->outputLine('<b>%s</b>', [$title]);
     }
 }
