@@ -15,6 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\EsProfiler;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\RuntimeException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
@@ -226,7 +227,7 @@ class NodeIndexCommandController extends CommandController
         $postfix = (string)($postfix ?: time());
         $this->nodeIndexer->setIndexNamePostfix((string)$postfix);
 
-        $create = function (array $dimensionsValues) use ($update, $postfix) {
+        $createMapping = function (array $dimensionsValues) use ($update, $postfix) {
             $this->executeInternalCommand('createInternal', [
                 'dimensionsValues' => json_encode($dimensionsValues),
                 'update' => $update,
@@ -234,7 +235,7 @@ class NodeIndexCommandController extends CommandController
             ]);
         };
 
-        $build = function (array $dimensionsValues) use ($workspace, $limit, $update, $postfix) {
+        $buildIndex = function (array $dimensionsValues) use ($workspace, $limit, $update, $postfix) {
             $this->build($dimensionsValues, $workspace, $postfix, $limit);
         };
 
@@ -262,8 +263,10 @@ class NodeIndexCommandController extends CommandController
             $this->outputLine('<success>Done</success> (took %s seconds)', [number_format(microtime(true) - $timeStart, 2)]);
         };
 
-        $runAndLog($create, 'Create indicies');
-        $runAndLog($build, 'Indexing nodes');
+        $runAndLog($createMapping, 'Create indicies');
+        $runAndLog($buildIndex, 'Indexing nodes');
+        $this->outputLine('Batchtime: ' . EsProfiler::getAndReset('estime'));
+
         $runAndLog($refresh, 'Refresh indicies');
         $runAndLog($updateAliases, 'Update aliases');
 
@@ -334,6 +337,7 @@ class NodeIndexCommandController extends CommandController
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws \Neos\Flow\Http\Exception
+     * @throws \Exception
      * @Flow\Internal
      */
     public function createInternalCommand(string $dimensionsValues, bool $update = false, ?string $postfix = null): void
@@ -375,7 +379,7 @@ class NodeIndexCommandController extends CommandController
             $this->outputLine($message);
         };
 
-        $count = $this->workspaceIndexer->indexWithDimensions($workspace, $dimensionsValuesArray, $limit, $workspaceLogger);
+        $this->workspaceIndexer->indexWithDimensions($workspace, $dimensionsValuesArray, $limit, $workspaceLogger);
 
         $this->outputErrorHandling();
     }

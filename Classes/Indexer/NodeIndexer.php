@@ -36,10 +36,9 @@ use Neos\ContentRepository\Domain\Service\Context;
 use Neos\ContentRepository\Domain\Service\ContextFactory;
 use Neos\ContentRepository\Search\Indexer\AbstractNodeIndexer;
 use Neos\ContentRepository\Search\Indexer\BulkNodeIndexerInterface;
-use Neos\ContentRepository\Utility;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
-use Neos\Utility\Files;
+use Neos\Utility\Exception\FilesException;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Psr\Log\LoggerInterface;
 
@@ -208,6 +207,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param NodeInterface $node
      * @param string $targetWorkspaceName In case indexing is triggered during publishing, a target workspace name will be passed in
      * @return void
+     * @throws Exception
      */
     public function indexNode(NodeInterface $node, $targetWorkspaceName = null): void
     {
@@ -271,7 +271,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $handleNode = function (NodeInterface $node, Context $context) use ($targetWorkspaceName, $indexer) {
             $nodeFromContext = $context->getNodeByIdentifier($node->getIdentifier());
             if ($nodeFromContext instanceof NodeInterface) {
-                $this->searchClient->withDimensions(function () use ($indexer, $nodeFromContext, $targetWorkspaceName) {
+                $this->searchClient->withDimensions(static function () use ($indexer, $nodeFromContext, $targetWorkspaceName) {
                     $indexer($nodeFromContext, $targetWorkspaceName);
                 }, $nodeFromContext->getContext()->getTargetDimensions());
             } else {
@@ -315,15 +315,18 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
     /**
      * @param NodeInterface $node
-     * @param array|null $tuple
+     * @param array|null $requests
+     * @throws Exception
+     * @throws \Flowpack\ElasticSearch\Exception
+     * @throws FilesException
      */
-    protected function toBulkRequest(NodeInterface $node, array $tuple = null)
+    protected function toBulkRequest(NodeInterface $node, array $requests = null): void
     {
-        if ($tuple === null) {
+        if ($requests === null) {
             return;
         }
 
-        $this->currentBulkRequest[] = new BulkRequestPart($this->dimensionService->hashByNode($node), $tuple);
+        $this->currentBulkRequest[] = new BulkRequestPart($this->dimensionService->hashByNode($node), $requests);
         $this->flushIfNeeded();
     }
 
@@ -352,7 +355,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param NodeInterface $node
      * @param string $targetWorkspaceName
      * @return void
+     * @throws Exception
+     * @throws FilesException
      * @throws IllegalObjectTypeException
+     * @throws \Flowpack\ElasticSearch\Exception
      */
     public function removeNode(NodeInterface $node, string $targetWorkspaceName = null): void
     {
@@ -380,7 +386,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     /**
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
-     * @throws \Neos\Utility\Exception\FilesException
+     * @throws FilesException
      */
     protected function flushIfNeeded(): void
     {
@@ -391,7 +397,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
     protected function bulkRequestSize(): int
     {
-        return array_reduce($this->currentBulkRequest, function ($sum, BulkRequestPart $request) {
+        return array_reduce($this->currentBulkRequest, static function ($sum, BulkRequestPart $request) {
             return $sum + $request->getSize();
         }, 0);
     }
@@ -407,7 +413,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @return void
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
-     * @throws \Neos\Utility\Exception\FilesException
+     * @throws FilesException
      */
     public function flush(): void
     {
@@ -450,31 +456,22 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             return;
         }
 
-        $logDirectory = FLOW_PATH_DATA . 'Logs/ElasticSearch/';
-        if (!@is_dir($logDirectory)) {
-            Files::createDirectoryRecursively($logDirectory);
-        }
-
-        // TODO: Remove fileystem logging
         foreach ($this->dimensionService->getDimensionsRegistry() as $hash => $dimensions) {
             if (!isset($payload[$hash])) {
                 continue;
             }
+
             $this->searchClient->setDimensions($dimensions);
+
             $response = $this->requestDriver->bulk($this->getIndex(), implode(chr(10), $payload[$hash]));
+
+
             foreach ($response as $responseLine) {
                 if (isset($response['errors']) && $response['errors'] !== false) {
-                    $this->errorHandlingService->log(
-                        new BulkIndexingError($this->currentBulkRequest, $responseLine)
-                    );
-                    file_put_contents($logDirectory . 'BulkIndexing_Error_' . time() . '.json', json_encode([
-                        'request' => $payload[$hash],
-                        'response' => $responseLine
-                    ], JSON_PRETTY_PRINT));
+                    $this->errorHandlingService->log(new BulkIndexingError($this->currentBulkRequest, $responseLine));
                 }
             }
         }
-
 
         $this->reset();
     }

@@ -37,7 +37,7 @@ class DimensionsService
         if ($dimensionValues === []) {
             return null;
         }
-        $this->lastTargetDimensions = array_map(function ($dimensionValues) {
+        $this->lastTargetDimensions = array_map(static function ($dimensionValues) {
             return [\is_array($dimensionValues) ? array_shift($dimensionValues) : $dimensionValues];
         }, $dimensionValues);
 

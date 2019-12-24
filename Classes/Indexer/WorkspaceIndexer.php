@@ -93,8 +93,10 @@ final class WorkspaceIndexer
             if ($limit !== null && $indexedNodes > $limit) {
                 return;
             }
+
             $this->nodeIndexingManager->indexNode($currentNode);
             $indexedNodes++;
+
             array_map(function (NodeInterface $childNode) use ($traverseNodes, &$indexedNodes) {
                 $traverseNodes($childNode, $indexedNodes);
             }, $currentNode->getChildNodes());
