@@ -91,8 +91,8 @@ class SearchCommandController extends CommandController
     /**
      * Prints the index content of the given node identifier.
      *
-     * @param string $identifier
-     * @param string|null $dimensions
+     * @param string $identifier The node identifier
+     * @param string|null $dimensions Dimensions, specified in JSON format, like '{"language":["de"]}'
      * @throws Exception
      * @throws IllegalObjectTypeException
      * @throws QueryBuildingException
@@ -101,6 +101,11 @@ class SearchCommandController extends CommandController
      */
     public function viewNodeCommand(string $identifier, ?string $dimensions = null): void
     {
+        if ($dimensions !== null && is_array(json_decode($dimensions, true)) === false) {
+            $this->outputLine('<error>Error: </error>The Dimensions must be given as a JSON array like \'{"language":["de"]}\'');
+            $this->sendAndExit(1);
+        }
+
         $context = $this->createContext($dimensions);
 
         $queryBuilder = new ElasticSearchQueryBuilder();
@@ -156,6 +161,7 @@ class SearchCommandController extends CommandController
         $contextConfiguration = [
             'workspaceName' => 'live',
         ];
+
         if ($dimensions !== null) {
             $contextConfiguration['dimensions'] = json_decode($dimensions, true);
         }
