@@ -15,7 +15,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\EsProfiler;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\RuntimeException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
@@ -264,8 +263,11 @@ class NodeIndexCommandController extends CommandController
         };
 
         $runAndLog($createMapping, 'Create indicies');
-        $runAndLog($buildIndex, 'Indexing nodes');
-        $this->outputLine('Batchtime: ' . EsProfiler::getAndReset('estime'));
+
+        $timeStart = microtime(true);
+        $this->output(str_pad('Indexing nodes' . '... ', 20));
+        $buildIndex([]);
+        $this->outputLine('<success>Done</success> (took %s seconds)', [number_format(microtime(true) - $timeStart, 2)]);
 
         $runAndLog($refresh, 'Refresh indicies');
         $runAndLog($updateAliases, 'Update aliases');

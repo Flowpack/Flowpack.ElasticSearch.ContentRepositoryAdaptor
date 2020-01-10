@@ -18,6 +18,7 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Flow\Annotations as Flow;
 
 /**
+ * @TODO: Unused? Can be removed?
  * Index Workspace Trait
  */
 trait IndexWorkspaceTrait
@@ -50,7 +51,7 @@ trait IndexWorkspaceTrait
      * @param string $workspaceName
      * @param int $limit
      * @param callable $callback
-     * @return int
+     * @return int Count of nodes indexed
      */
     protected function indexWorkspace(string $workspaceName, ?int $limit = null, callable $callback = null): int
     {
