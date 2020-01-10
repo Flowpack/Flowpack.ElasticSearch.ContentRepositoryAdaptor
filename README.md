@@ -54,7 +54,9 @@ There may be a need, to add specific configuration to your Elasticsearch Configu
 
 - [Elasticsearch 5.x](Documentation/ElasticConfiguration-5.x.md)
 
-## Building up the Index
+## Available Commands
+
+### Building up the index
 
 The node index is updated on the fly, but during development you need to update it frequently.
 
@@ -62,15 +64,42 @@ In case of a mapping update, you need to reindex all nodes. Don't worry to do th
 the system transparently creates a new index, fills it completely, and when everything worked,
 changes the index alias.
 
-```
-./flow nodeindex:build
+	./flow nodeindex:build
 
- # if during development, you only want to index a few nodes, you can use "limit"
-./flow nodeindex:build --limit 20
+if during development, you only want to index a few nodes, you can use "limit"
 
- # in order to remove old, non-used indices, you should use this command from time to time:
-./flow nodeindex:cleanup
-```
+	./flow nodeindex:build --limit 20
+
+
+### Cleanup old indices
+
+ In order to remove old, non-used indices, you should use this command from time to time:
+
+	./flow nodeindex:cleanup
+
+### Debug commands
+
+The following commands are meant to be used for debugging while configuring and developing your search:
+
+	./flow nodeindexmapping:indices
+
+Shows the mapping between the projects dimensions presets and the resultig index name.
+
+	./flow nodeindexmapping:mapping
+
+Shows the mapping created for the NodeTypes.
+
+	./flow search:viewnode <nodeIdentifier>
+	
+Shows all contents that are indexed fo a given node.
+
+	./flow search:fulltext
+	
+Performs a fulltext search and displays the results.
+
+
+
+
 
 ### Advanced Configuration
 
@@ -788,5 +817,3 @@ In order to understand what's going on, the following might be helpful:
    `elasticSearchMapping`.
 3. Replace `ElasticSeach.fulltext` by `Indexing`
 4. Search for `ElasticSearch.` (inside the `indexing` expressions) and replace them by `Indexing.`
-
-Created by [Sebastian Kurfürst; contributions by Karsten Dambekalns, Robert Lemke and others](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/graphs/contributors).
