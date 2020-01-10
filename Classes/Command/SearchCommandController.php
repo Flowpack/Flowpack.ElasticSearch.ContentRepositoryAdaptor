@@ -128,6 +128,8 @@ class SearchCommandController extends CommandController
             foreach ($node->getProperties() as $propertyName => $propertyValue) {
                 if ($propertyValue instanceof ResourceBasedInterface) {
                     $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . (string)$propertyValue->getResource()->getFilename();
+                } elseif ($propertyValue instanceof \DateTime) {
+                    $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . $propertyValue->format('Y-m-d H:i');
                 } else {
                     $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . (string)$propertyValue;
                 }
