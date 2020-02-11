@@ -32,20 +32,33 @@ class DimensionsService
      */
     protected $dimensionsRegistry = [];
 
-    public function hash(array $dimensionValues): ?string
+    protected const HASH_DEFAULT = 'default';
+
+    /**
+     * @param array $dimensionValues
+     * @return string
+     */
+    public function hash(array $dimensionValues): string
     {
         if ($dimensionValues === []) {
-            return null;
+            $this->dimensionsRegistry[self::HASH_DEFAULT] = [];
+            return self::HASH_DEFAULT;
         }
+
         $this->lastTargetDimensions = array_map(static function ($dimensionValues) {
             return [\is_array($dimensionValues) ? array_shift($dimensionValues) : $dimensionValues];
         }, $dimensionValues);
 
         $hash = Utility::sortDimensionValueArrayAndReturnDimensionsHash($this->lastTargetDimensions);
         $this->dimensionsRegistry[$hash] = $this->lastTargetDimensions;
+
         return $hash;
     }
 
+    /**
+     * @param NodeInterface $node
+     * @return string|null
+     */
     public function hashByNode(NodeInterface $node): ?string
     {
         return $this->hash($node->getContext()->getTargetDimensions());
@@ -59,15 +72,7 @@ class DimensionsService
         return $this->dimensionsRegistry;
     }
 
-    /**
-     * @return array
-     */
-    public function getLastTargetDimensions(): array
-    {
-        return $this->lastTargetDimensions;
-    }
-
-    public function reset()
+    public function reset(): void
     {
         $this->dimensionsRegistry = [];
         $this->lastTargetDimensions = null;

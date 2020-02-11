@@ -287,12 +287,13 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $workspaceName = $targetWorkspaceName ?: $node->getContext()->getWorkspaceName();
         $dimensionCombinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-        if ($dimensionCombinations !== []) {
+
+        if (array_filter($dimensionCombinations) === []) {
+            $handleNode($node, $this->createContentContext($workspaceName));
+        } else {
             foreach ($dimensionCombinations as $combination) {
                 $handleNode($node, $this->createContentContext($workspaceName, $combination));
             }
-        } else {
-            $handleNode($node, $this->createContentContext($workspaceName));
         }
     }
 
@@ -307,9 +308,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             'workspaceName' => $workspaceName,
             'invisibleContentShown' => true
         ];
+
         if ($dimensions !== []) {
             $configuration['dimensions'] = $dimensions;
         }
+
         return $this->contextFactory->create($configuration);
     }
 
@@ -390,7 +393,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      */
     protected function flushIfNeeded(): void
     {
-        if ($this->bulkRequestLenght() >= $this->batchSize['elements'] || $this->bulkRequestSize() >= $this->batchSize['octets']) {
+        if ($this->bulkRequestLength() >= $this->batchSize['elements'] || $this->bulkRequestSize() >= $this->batchSize['octets']) {
             $this->flush();
         }
     }
@@ -402,7 +405,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         }, 0);
     }
 
-    protected function bulkRequestLenght(): int
+    /**
+     * @return int
+     */
+    protected function bulkRequestLength(): int
     {
         return count($this->currentBulkRequest);
     }
@@ -418,7 +424,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     public function flush(): void
     {
         $bulkRequest = $this->currentBulkRequest;
-        $bulkRequestSize = $this->bulkRequestLenght();
+        $bulkRequestSize = $this->bulkRequestLength();
         if ($bulkRequestSize === 0) {
             return;
         }
@@ -442,9 +448,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
             foreach ($bulkRequestPart->getRequest() as $bulkRequestItem) {
                 if ($bulkRequestItem === null) {
-                    $this->errorHandlingService->log(
-                        new MalformedBulkRequestError('Indexing Error: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), $bulkRequestItem)
-                    );
+                    $this->errorHandlingService->log(new MalformedBulkRequestError('Indexing Error: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), $bulkRequestItem));
                     continue 2;
                 }
                 $payload[$hash][] = $bulkRequestItem;
@@ -462,9 +466,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
 
             $this->searchClient->setDimensions($dimensions);
-
             $response = $this->requestDriver->bulk($this->getIndex(), implode(chr(10), $payload[$hash]));
-
 
             foreach ($response as $responseLine) {
                 if (isset($response['errors']) && $response['errors'] !== false) {
@@ -476,7 +478,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $this->reset();
     }
 
-    protected function reset()
+    protected function reset(): void
     {
         $this->dimensionService->reset();
         $this->currentBulkRequest = [];
