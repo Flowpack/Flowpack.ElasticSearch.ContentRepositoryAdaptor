@@ -60,7 +60,7 @@ class FilteredQuery extends AbstractQuery
     public function fulltext(string $searchWord, array $options = []): void
     {
         $this->appendAtPath('query.bool.must', [
-            'query_string' => array_merge($options, [
+            'multi_match' => array_merge($options, [
                 'query' => $searchWord,
                 'fields' => ['__fulltext*']
             ])
