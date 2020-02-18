@@ -98,10 +98,8 @@ class ElasticSearchClient extends Client
         try {
             $this->setDimensions($dimensionValues);
             $closure();
+        } finally {
             $this->dimensionsHash = $previousDimensionHash;
-        } catch (\Exception $exception) {
-            $this->dimensionsHash = $previousDimensionHash;
-            throw $exception;
         }
     }
 
