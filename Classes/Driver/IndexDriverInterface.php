@@ -19,13 +19,14 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  */
 interface IndexDriverInterface
 {
+
     /**
      * Get the list of Indexes attached to the given alias
      *
      * @param string $alias
      * @return array
      */
-    public function indexesByAlias(string $alias): array;
+    public function getIndexeNamesByAlias(string $alias): array;
 
     /**
      * Get the list of Indexes attached to the given alias prefix
@@ -33,7 +34,7 @@ interface IndexDriverInterface
      * @param string $prefix
      * @return array
      */
-    public function indexesByPrefix(string $prefix): array;
+    public function getIndexeNamesByPrefix(string $prefix): array;
 
     /**
      * Remove alias by name

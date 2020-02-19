@@ -16,6 +16,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameService;
+use Flowpack\ElasticSearch\Transfer\Exception as TransferException;
+use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -36,8 +39,8 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
     /**
      * @param string $index
      * @throws Exception
-     * @throws \Flowpack\ElasticSearch\Transfer\Exception
-     * @throws \Flowpack\ElasticSearch\Transfer\Exception\ApiException
+     * @throws TransferException
+     * @throws ApiException
      * @throws \Neos\Flow\Http\Exception
      */
     public function deleteIndex(string $index): void
@@ -55,11 +58,11 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
      * @param string $alias
      * @return array
      * @throws Exception
-     * @throws \Flowpack\ElasticSearch\Transfer\Exception
-     * @throws \Flowpack\ElasticSearch\Transfer\Exception\ApiException
+     * @throws TransferException
+     * @throws ApiException
      * @throws \Neos\Flow\Http\Exception
      */
-    public function indexesByAlias(string $alias): array
+    public function getIndexeNamesByAlias(string $alias): array
     {
         $response = $this->searchClient->request('GET', '/_alias/' . $alias);
         $statusCode = $response->getStatusCode();
@@ -76,21 +79,21 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
     /**
      * @param string $prefix
      * @return array
-     * @throws \Flowpack\ElasticSearch\Transfer\Exception
-     * @throws \Flowpack\ElasticSearch\Transfer\Exception\ApiException
+     * @throws TransferException
+     * @throws ApiException
      * @throws \Neos\Flow\Http\Exception
      */
-    public function indexesByPrefix(string $prefix): array
+    public function getIndexeNamesByPrefix(string $prefix): array
     {
-        $response = $this->searchClient->request('GET', '/_alias/');
+        $treatedContent = $this->searchClient->request('GET', '/_alias/')->getTreatedContent();
 
         // return empty array if content from response cannot be read as an array
-        $treatedContent = $response->getTreatedContent();
         if (!\is_array($treatedContent)) {
             return [];
         }
+
         return \array_filter(\array_keys($treatedContent), static function ($indexName) use ($prefix) {
-            $prefix .= '-';
+            $prefix .= IndexNameService::INDEX_PART_SEPARATOR;
             return strpos($indexName, $prefix) === 0;
         });
     }

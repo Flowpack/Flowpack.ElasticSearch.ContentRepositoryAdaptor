@@ -26,6 +26,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\BulkIndexingEr
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\MalformedBulkRequestError;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\NodeTypeIndexingConfiguration;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
@@ -169,7 +170,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     {
         $indexName = $this->searchClient->getIndexName();
         if ($this->indexNamePostfix !== '') {
-            $indexName .= '-' . $this->indexNamePostfix;
+            $indexName .= IndexNameService::INDEX_PART_SEPARATOR . $this->indexNamePostfix;
         }
 
         return $indexName;
@@ -506,7 +507,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $aliasActions = [];
         try {
-            $indexNames = $this->indexDriver->indexesByAlias($aliasName);
+            $indexNames = $this->indexDriver->getIndexeNamesByAlias($aliasName);
             if ($indexNames === []) {
                 // if there is an actual index with the name we want to use as alias, remove it now
                 $this->indexDriver->deleteIndex($aliasName);
@@ -539,22 +540,18 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
     /**
      * Update the main alias to allow to query all indices at once
+     * @throws Exception
      */
     public function updateMainAlias()
     {
         $aliasActions = [];
         $aliasNamePrefix = $this->searchClient->getIndexNamePrefix(); // The alias name is the unprefixed index name
 
-        $indexNames = $this->indexDriver->indexesByPrefix($aliasNamePrefix);
-        $indexNames = \array_values(\array_filter($indexNames, function ($indexName) {
-            $suffix = '-' . $this->indexNamePostfix;
-            $indexNameParts = \explode('-', $indexName);
-            return substr($indexName, 0 - strlen($suffix)) === $suffix && count($indexNameParts) === 3;
-        }));
+        $indexNames = IndexNameService::filterIndexNamesByPostfix($this->indexDriver->getIndexeNamesByPrefix($aliasNamePrefix), $this->indexNamePostfix);
 
         $cleanupAlias = function ($alias) use (&$aliasActions) {
             try {
-                $indexNames = $this->indexDriver->indexesByAlias($alias);
+                $indexNames = $this->indexDriver->getIndexeNamesByAlias($alias);
                 if ($indexNames === []) {
                     // if there is an actual index with the name we want to use as alias, remove it now
                     $this->indexDriver->deleteIndex($alias);
@@ -577,7 +574,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         };
 
         $postfix = function ($alias) {
-            return $alias . '-' . $this->indexNamePostfix;
+            return $alias . IndexNameService::INDEX_PART_SEPARATOR . $this->indexNamePostfix;
         };
 
         if (\count($indexNames) > 0) {
@@ -614,7 +611,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     {
         $aliasName = $this->searchClient->getIndexName(); // The alias name is the unprefixed index name
 
-        $currentlyLiveIndices = $this->indexDriver->indexesByAlias($aliasName);
+        $currentlyLiveIndices = $this->indexDriver->getIndexeNamesByAlias($aliasName);
 
         $indexStatus = $this->systemDriver->status();
         $allIndices = array_keys($indexStatus['indices']);
@@ -622,7 +619,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $indicesToBeRemoved = [];
 
         foreach ($allIndices as $indexName) {
-            if (strpos($indexName, $aliasName . '-') !== 0) {
+            if (strpos($indexName, $aliasName . IndexNameService::INDEX_PART_SEPARATOR) !== 0) {
                 // filter out all indices not starting with the alias-name, as they are unrelated to our application
                 continue;
             }
