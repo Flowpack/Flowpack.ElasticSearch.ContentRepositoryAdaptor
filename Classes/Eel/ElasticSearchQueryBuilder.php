@@ -388,7 +388,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         foreach ($data as $key => $value) {
             if ($value !== null) {
                 if (is_array($value)) {
-                    $this->queryFilter('terms', [$key => $value], $clauseType);
+                    $this->queryFilter('terms', [$key => array_values($value)], $clauseType);
                 } else {
                     $this->queryFilter('term', [$key => $value], $clauseType);
                 }
