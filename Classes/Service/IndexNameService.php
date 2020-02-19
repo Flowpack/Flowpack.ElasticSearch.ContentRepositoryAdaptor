@@ -16,7 +16,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
 class IndexNameService
 {
 
-    public CONST INDEX_PART_SEPARATOR = '-';
+    public const INDEX_PART_SEPARATOR = '-';
 
     /**
      * @param array $indexNames

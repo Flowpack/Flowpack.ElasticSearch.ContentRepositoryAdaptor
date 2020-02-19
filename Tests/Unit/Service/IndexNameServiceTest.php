@@ -18,7 +18,6 @@ use Neos\Flow\Tests\UnitTestCase;
 
 class IndexNameServiceTest extends UnitTestCase
 {
-
     public function indexNameDataProvider(): array
     {
         return [
@@ -47,5 +46,4 @@ class IndexNameServiceTest extends UnitTestCase
     {
         self::assertEquals($expected, IndexNameService::filterIndexNamesByPostfix($indexNames, $postfix));
     }
-
 }
