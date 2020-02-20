@@ -23,7 +23,6 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\BulkIndexingError;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\MalformedBulkRequestError;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameService;
@@ -449,7 +448,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
             foreach ($bulkRequestPart->getRequest() as $bulkRequestItem) {
                 if ($bulkRequestItem === null) {
-                    $this->errorHandlingService->log(new MalformedBulkRequestError('Indexing Error: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), $bulkRequestItem));
+                    $this->logger->error('Indexing Error: A bulk request item could not be encoded as JSON', LogEnvironment::fromMethodName(__METHOD__));
                     continue 2;
                 }
                 $payload[$hash][] = $bulkRequestItem;
