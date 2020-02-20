@@ -33,7 +33,7 @@ interface IndexDriverInterface
      * @param string $prefix
      * @return array
      */
-    public function getIndexeNamesByPrefix(string $prefix): array;
+    public function getIndexNamesByPrefix(string $prefix): array;
 
     /**
      * Remove alias by name

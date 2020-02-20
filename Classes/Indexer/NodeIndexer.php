@@ -547,7 +547,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $aliasActions = [];
         $aliasNamePrefix = $this->searchClient->getIndexNamePrefix(); // The alias name is the unprefixed index name
 
-        $indexNames = IndexNameService::filterIndexNamesByPostfix($this->indexDriver->getIndexeNamesByPrefix($aliasNamePrefix), $this->indexNamePostfix);
+        $indexNames = IndexNameService::filterIndexNamesByPostfix($this->indexDriver->getIndexNamesByPrefix($aliasNamePrefix), $this->indexNamePostfix);
 
         $cleanupAlias = function ($alias) use (&$aliasActions) {
             try {

@@ -83,7 +83,7 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
      * @throws ApiException
      * @throws \Neos\Flow\Http\Exception
      */
-    public function getIndexeNamesByPrefix(string $prefix): array
+    public function getIndexNamesByPrefix(string $prefix): array
     {
         $treatedContent = $this->searchClient->request('GET', '/_alias/')->getTreatedContent();
 
