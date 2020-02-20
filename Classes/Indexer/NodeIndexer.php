@@ -507,7 +507,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $aliasActions = [];
         try {
-            $indexNames = $this->indexDriver->getIndexeNamesByAlias($aliasName);
+            $indexNames = $this->indexDriver->getIndexNamesByAlias($aliasName);
             if ($indexNames === []) {
                 // if there is an actual index with the name we want to use as alias, remove it now
                 $this->indexDriver->deleteIndex($aliasName);
@@ -551,7 +551,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $cleanupAlias = function ($alias) use (&$aliasActions) {
             try {
-                $indexNames = $this->indexDriver->getIndexeNamesByAlias($alias);
+                $indexNames = $this->indexDriver->getIndexNamesByAlias($alias);
                 if ($indexNames === []) {
                     // if there is an actual index with the name we want to use as alias, remove it now
                     $this->indexDriver->deleteIndex($alias);
@@ -611,7 +611,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     {
         $aliasName = $this->searchClient->getIndexName(); // The alias name is the unprefixed index name
 
-        $currentlyLiveIndices = $this->indexDriver->getIndexeNamesByAlias($aliasName);
+        $currentlyLiveIndices = $this->indexDriver->getIndexNamesByAlias($aliasName);
 
         $indexStatus = $this->systemDriver->status();
         $allIndices = array_keys($indexStatus['indices']);

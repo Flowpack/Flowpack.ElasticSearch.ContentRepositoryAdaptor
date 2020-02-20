@@ -62,7 +62,7 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
      * @throws ApiException
      * @throws \Neos\Flow\Http\Exception
      */
-    public function getIndexeNamesByAlias(string $alias): array
+    public function getIndexNamesByAlias(string $alias): array
     {
         $response = $this->searchClient->request('GET', '/_alias/' . $alias);
         $statusCode = $response->getStatusCode();

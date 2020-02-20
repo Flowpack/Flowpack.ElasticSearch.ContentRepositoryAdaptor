@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
@@ -26,7 +25,7 @@ interface IndexDriverInterface
      * @param string $alias
      * @return array
      */
-    public function getIndexeNamesByAlias(string $alias): array;
+    public function getIndexNamesByAlias(string $alias): array;
 
     /**
      * Get the list of Indexes attached to the given alias prefix
