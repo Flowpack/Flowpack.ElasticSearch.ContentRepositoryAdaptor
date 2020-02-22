@@ -452,15 +452,15 @@ class NodeIndexCommandController extends CommandController
         foreach ($combinations as $dimensionsValues) {
             try {
                 $this->nodeIndexer->setDimensions($dimensionsValues);
-                $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
-                if (count($indicesToBeRemoved) > 0) {
-                    foreach ($indicesToBeRemoved as $indexToBeRemoved) {
-                        $removed = true;
-                        $this->logger->info('Removing old index ' . $indexToBeRemoved, LogEnvironment::fromMethodName(__METHOD__));
-                    }
+                $removedIndices = $this->nodeIndexer->removeOldIndices();
+
+                foreach ($removedIndices as $indexToBeRemoved) {
+                    $removed = true;
+                    $this->logger->info('Removing old index ' . $indexToBeRemoved, LogEnvironment::fromMethodName(__METHOD__));
                 }
             } catch (ApiException $exception) {
-                $response = json_decode($exception->getResponse(), false);
+                $exception->getResponse()->getBody()->rewind();
+                $response = json_decode($exception->getResponse()->getBody()->getContents(), false);
                 $message = sprintf('Nothing removed. ElasticSearch responded with status %s', $response->status);
 
                 if (isset($response->error->type)) {
@@ -548,6 +548,7 @@ class NodeIndexCommandController extends CommandController
      * @return void
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
      */
     private function applyMapping(): void
     {
