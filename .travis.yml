@@ -27,7 +27,7 @@ before_install:
   - cd neos-base-distribution
   - composer config repositories.flowpack-elasticsearch git https://github.com/daniellienert/Flowpack.ElasticSearch.git
   - composer require --no-update --no-interaction neos/content-repository-search:dev-master
-  - composer require --no-update --no-interaction flowpack/elasticsearch:dev-feature/es-6-compatibility
+  - composer require --no-update --no-interaction flowpack/elasticsearch:"dev-feature/es-6-compatibility as 4.1"
   - composer require --no-update --no-interaction flowpack/elasticsearch-contentrepositoryadaptor:dev-master
   - composer require --no-update --no-interaction neos/nodetypes
   - composer remove --no-update --no-interaction neos/site-kickstarter
@@ -40,4 +40,4 @@ install:
 script:
   - bin/phpunit --colors -c Build/BuildEssentials/PhpUnit/UnitTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Unit
   - if [ "$ES" = 5 ]; then FLOW_CONTEXT="Testing/ElasticVersion5" bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional; fi
-  - if [ "$ES" = 6 ]; then FLOW_CONTEXT="Testing/ElasticVersion6" bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional; fi
+  - if [ "$ES" = 6 ]; then FLOW_CONTEXT="Testing/ElasticVersion5" bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional; fi
