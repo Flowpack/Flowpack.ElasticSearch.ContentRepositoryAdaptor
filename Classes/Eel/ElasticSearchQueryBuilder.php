@@ -18,6 +18,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Dto\SearchResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
+use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Neos\Flow\Log\ThrowableStorageInterface;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
@@ -725,7 +726,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             $respondedDocument = current($respondedDocuments);
             return [
                 '_id' => $respondedDocument['_id'],
-                '_type' => $respondedDocument['_type'],
+                Mapping::NEOS_TYPE_FIELD => $respondedDocument[Mapping::NEOS_TYPE_FIELD],
                 '_index' => $respondedDocument['_index'],
             ];
         };
