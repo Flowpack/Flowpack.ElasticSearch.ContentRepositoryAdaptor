@@ -11,11 +11,15 @@ matrix:
   include:
     - php: 7.3
       env: ES=5
+  include:
+    - php: 7.3
+      env: ES=6
 
 before_install:
   - export NEOS_TARGET_VERSION=5.1
   - cd ..
   - if [ "$ES" = 5 ]; then wget --no-check-certificate https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.6.15.zip && unzip elasticsearch-5.6.15.zip && mv elasticsearch-5.6.15 elasticsearch; fi
+  - if [ "$ES" = 6 ]; then wget --no-check-certificate https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.8.6.tar.gz && tar xvfz elasticsearch-6.8.6.tar.gz && mv elasticsearch-6.8.6 elasticsearch; fi
   - cd elasticsearch
   - bin/elasticsearch -d
   - cd ..
@@ -34,3 +38,4 @@ install:
 script:
   - bin/phpunit --colors -c Build/BuildEssentials/PhpUnit/UnitTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Unit
   - if [ "$ES" = 5 ]; then FLOW_CONTEXT="Testing/ElasticVersion5" bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional; fi
+  - if [ "$ES" = 6 ]; then FLOW_CONTEXT="Testing/ElasticVersion6" bin/phpunit --colors --stop-on-failure -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Flowpack.ElasticSearch.ContentRepositoryAdaptor/Tests/Functional; fi
