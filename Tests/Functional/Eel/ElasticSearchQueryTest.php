@@ -329,8 +329,8 @@ class ElasticSearchQueryTest extends FunctionalTestCase
         /** @var ElasticSearchQueryResult $result */
         $node = $result->getFirst();
 
-        $this->assertInstanceOf(NodeInterface::class, $node);
-        $this->assertEquals('chicken', $node->getProperty('title'), 'Asserting a asc sort order by property title');
+        static::assertInstanceOf(NodeInterface::class, $node);
+        static::assertEquals('chicken', $node->getProperty('title'), 'Asserting a asc sort order by property title');
     }
 
     /**
@@ -345,7 +345,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
             ->execute();
 
         foreach ($result as $node) {
-            $this->assertEquals([$node->getProperty('title')], $result->getSortValuesForNode($node));
+            static::assertEquals([$node->getProperty('title')], $result->getSortValuesForNode($node));
         }
     }
 

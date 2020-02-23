@@ -44,7 +44,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                         '_type' => '_doc',
                         '_id' => $document->getId(),
                         '_index' => $indexName,
-                        '_retry_on_conflict' => 3
+                        'retry_on_conflict' => 3
                     ]
                 ],
                 // http://www.elasticsearch.org/guide/en/elasticsearch/reference/5.0/docs-update.html
