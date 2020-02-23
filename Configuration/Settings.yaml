@@ -2,7 +2,7 @@ Flowpack:
   ElasticSearch:
     ContentRepositoryAdaptor:
       command:
-        useSubProcesses: true
+        useSubProcesses: false
       indexing:
         batchSize:
           elements: 500
@@ -12,11 +12,11 @@ Flowpack:
           '*':
             indexed: true
       driver:
-        version: '5.x'
+        version: '6.x'
         mapping:
-          5.x:
+          6.x:
             query:
-              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Query\FilteredQuery
+              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\Query\FilteredQuery
               arguments:
                 request:
                   query:
@@ -49,14 +49,14 @@ Flowpack:
                   - 'aggregations'
                   - 'suggest'
             document:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\DocumentDriver'
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\DocumentDriver'
             indexer:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\IndexerDriver'
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\IndexerDriver'
             indexManagement:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\IndexDriver'
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\IndexDriver'
             request:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\RequestDriver'
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\RequestDriver'
             system:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\SystemDriver'
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\SystemDriver'
             nodeTypeMappingBuilder:
-              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Mapping\NodeTypeMappingBuilder'
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\Mapping\NodeTypeMappingBuilder'

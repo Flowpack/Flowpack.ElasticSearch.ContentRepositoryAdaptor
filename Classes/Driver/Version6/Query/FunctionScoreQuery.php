@@ -1,8 +1,7 @@
 <?php
-
 declare(strict_types=1);
 
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Query;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\Query;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.

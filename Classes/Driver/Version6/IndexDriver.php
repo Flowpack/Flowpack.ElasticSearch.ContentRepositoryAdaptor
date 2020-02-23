@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -22,7 +22,7 @@ use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\Flow\Annotations as Flow;
 
 /**
- * Index management driver for Elasticsearch version 5.x
+ * Index management driver for Elasticsearch version 6.x
  *
  * @Flow\Scope("singleton")
  */

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Mapping;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\Mapping;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -50,7 +50,7 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
         parent::initializeObject($cause);
 
         if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-            $this->migrateConfigurationForElasticVersion5($this->defaultConfigurationPerType);
+            $this->migrateConfigurationForElasticVersion6($this->defaultConfigurationPerType);
         }
     }
 
@@ -82,7 +82,7 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
             $fullConfiguration = $nodeType->getFullConfiguration();
             if (isset($fullConfiguration['search']['elasticSearchMapping'])) {
                 $fullMapping = $fullConfiguration['search']['elasticSearchMapping'];
-                $this->migrateConfigurationForElasticVersion5($fullMapping);
+                $this->migrateConfigurationForElasticVersion6($fullMapping);
                 $mapping->setFullMapping($fullMapping);
             }
 
@@ -90,7 +90,7 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
                 if (isset($propertyConfiguration['search']['elasticSearchMapping'])) {
                     if (is_array($propertyConfiguration['search']['elasticSearchMapping'])) {
                         $propertyMapping = $propertyConfiguration['search']['elasticSearchMapping'];
-                        $this->migrateConfigurationForElasticVersion5($propertyMapping);
+                        $this->migrateConfigurationForElasticVersion6($propertyMapping);
                         $mapping->setPropertyByPath($propertyName, $propertyMapping);
                     }
                 } elseif (isset($propertyConfiguration['type'], $this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping'])) {
@@ -112,7 +112,7 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
      * @param array $mapping
      * @return void
      */
-    protected function migrateConfigurationForElasticVersion5(array &$mapping): void
+    protected function migrateConfigurationForElasticVersion6(array &$mapping): void
     {
         $this->adjustStringTypeMapping($mapping);
     }
