@@ -13,6 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\ConfigurationException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameStrategyInterface;
 use Flowpack\ElasticSearch\Domain\Model\Client;
@@ -108,6 +109,7 @@ class ElasticSearchClient extends Client
      *
      * @return string
      * @throws Exception
+     * @throws ConfigurationException
      * @todo Add a contraints, if the system use content dimensions, the dimensionsHash MUST be set
      */
     public function getIndexName(): string
@@ -122,12 +124,13 @@ class ElasticSearchClient extends Client
     /**
      * @return string
      * @throws Exception
+     * @throws ConfigurationException
      */
     public function getIndexNamePrefix(): string
     {
         $name = trim($this->indexNameStrategy->get());
         if ($name === '') {
-            throw new Exception('Index name can not be null');
+            throw new ConfigurationException('IndexNameStrategy ' . get_class($this->indexNameStrategy) . ' returned an empty index name', 1582538800);
         }
 
         return $name;
@@ -140,6 +143,7 @@ class ElasticSearchClient extends Client
      * @return \Flowpack\ElasticSearch\Domain\Model\Index
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws ConfigurationException
      */
     public function getIndex(): Index
     {

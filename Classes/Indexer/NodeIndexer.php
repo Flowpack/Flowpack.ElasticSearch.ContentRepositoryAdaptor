@@ -131,6 +131,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     protected $batchSize;
 
     /**
+     * @var array
+     * @Flow\InjectConfiguration(package="Flowpack.ElasticSearch", path="indexes")
+     */
+    protected $indexConfiguration;
+
+    /**
      * The current Elasticsearch bulk request, in the format required by http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html
      *
      * @var array
@@ -163,6 +169,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * Returns the index name to be used for indexing, with optional indexNamePostfix appended.
      *
      * @return string
+     * @throws Exception\ConfigurationException
      * @throws Exception
      */
     public function getIndexName(): string
@@ -192,11 +199,18 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @return Index
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws Exception\ConfigurationException
      */
     public function getIndex(): Index
     {
         $index = $this->searchClient->findIndex($this->getIndexName());
-        $index->setSettingsKey($this->searchClient->getIndexName());
+
+        $perDimensionConfiguration = $this->indexConfiguration[$this->searchClient->getBundle()][$this->searchClient->getIndexName()] ?? null;
+        if ($perDimensionConfiguration !== null) {
+            $index->setSettingsKey($this->searchClient->getIndexName());
+        } else {
+            $index->setSettingsKey($this->searchClient->getIndexNamePrefix());
+        }
 
         return $index;
     }
@@ -212,7 +226,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     public function indexNode(NodeInterface $node, $targetWorkspaceName = null): void
     {
         if ($this->nodeTypeIndexingConfiguration->isIndexable($node->getNodeType()) === false) {
-            $this->logger->debug(sprintf('NodeIndexer - Node "%s" (%s) skipped, Node Type is not allowed in the index.', $node->getContextPath(), $node->getNodeType()));
+            $this->logger->debug(sprintf('NodeIndexer - Node "%s" (%s) skipped, Node Type is not allowed in the index.', $node->getContextPath(), $node->getNodeType()), LogEnvironment::fromMethodName(__METHOD__));
             return;
         }
 
