@@ -224,7 +224,7 @@ class NodeIndexCommandController extends CommandController
         }
 
         $postfix = (string)($postfix ?: time());
-        $this->nodeIndexer->setIndexNamePostfix((string)$postfix);
+        $this->nodeIndexer->setIndexNamePostfix($postfix);
 
         $createMapping = function (array $dimensionsValues) use ($update, $postfix) {
             $this->executeInternalCommand('createInternal', [

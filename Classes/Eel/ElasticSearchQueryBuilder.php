@@ -466,7 +466,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $name
      * @return ElasticSearchQueryBuilder
      */
-    public function termSuggestions(string $text, string $field = '_all', string $name = 'suggestions'): ElasticSearchQueryBuilder
+    public function termSuggestions(string $text, string $field = '__fulltext.text', string $name = 'suggestions'): ElasticSearchQueryBuilder
     {
         $suggestionDefinition = [
             'text' => $text,
@@ -582,7 +582,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         try {
             $timeBefore = microtime(true);
             $request = $this->request->getRequestAsJson();
-
+\Neos\Flow\var_dump($request, __METHOD__ . ':' . __LINE__);
             $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request);
             $timeAfterwards = microtime(true);
 
@@ -610,6 +610,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     protected function evaluateResult(array $result): SearchResult
     {
+        \Neos\Flow\var_dump($result['hits']['total'], __METHOD__ . ':' . __LINE__);
         return new SearchResult(
             $hits = $result['hits']['hits'] ?? [],
             $total = $result['hits']['total'] ?? 0
