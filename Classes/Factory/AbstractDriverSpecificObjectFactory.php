@@ -14,7 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\DriverConfigurationException;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\ConfigurationException;
 use Psr\Log\LoggerInterface;
 use Neos\Flow\Annotations as Flow;
 
@@ -46,13 +46,13 @@ class AbstractDriverSpecificObjectFactory
     /**
      * @param string $type
      * @return mixed
-     * @throws DriverConfigurationException
+     * @throws ConfigurationException
      */
     protected function resolve(string $type)
     {
         $version = trim($this->driverVersion);
         if (!isset($this->mapping[$version][$type]['className']) || trim($this->driverVersion) === '') {
-            throw new DriverConfigurationException(sprintf('Missing or wrongly configured driver type "%s" with the given version: %s', $type, $version ?: '[missing]'), 1485933538);
+            throw new ConfigurationException(sprintf('Missing or wrongly configured driver type "%s" with the given version: %s', $type, $version ?: '[missing]'), 1485933538);
         }
 
         $className = trim($this->mapping[$version][$type]['className']);

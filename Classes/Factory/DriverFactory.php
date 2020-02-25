@@ -19,7 +19,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\DriverConfigurationException;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\ConfigurationException;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -29,7 +29,7 @@ class DriverFactory extends AbstractDriverSpecificObjectFactory
 {
     /**
      * @return DocumentDriverInterface
-     * @throws DriverConfigurationException
+     * @throws ConfigurationException
      */
     public function createDocumentDriver(): DocumentDriverInterface
     {
@@ -38,7 +38,7 @@ class DriverFactory extends AbstractDriverSpecificObjectFactory
 
     /**
      * @return IndexerDriverInterface
-     * @throws DriverConfigurationException
+     * @throws ConfigurationException
      */
     public function createIndexerDriver(): IndexerDriverInterface
     {
@@ -47,7 +47,7 @@ class DriverFactory extends AbstractDriverSpecificObjectFactory
 
     /**
      * @return IndexDriverInterface
-     * @throws DriverConfigurationException
+     * @throws ConfigurationException
      */
     public function createIndexManagementDriver(): IndexDriverInterface
     {
@@ -56,7 +56,7 @@ class DriverFactory extends AbstractDriverSpecificObjectFactory
 
     /**
      * @return RequestDriverInterface
-     * @throws DriverConfigurationException
+     * @throws ConfigurationException
      */
     public function createRequestDriver(): RequestDriverInterface
     {
@@ -65,7 +65,7 @@ class DriverFactory extends AbstractDriverSpecificObjectFactory
 
     /**
      * @return SystemDriverInterface
-     * @throws DriverConfigurationException
+     * @throws ConfigurationException
      */
     public function createSystemDriver(): SystemDriverInterface
     {

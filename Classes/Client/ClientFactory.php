@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Client;
@@ -19,8 +18,6 @@ use Flowpack\ElasticSearch\Domain\Model\Client;
 use Neos\Flow\Annotations as Flow;
 
 /**
- * ClientFactory
- *
  * @Flow\Scope("singleton")
  */
 class ClientFactory

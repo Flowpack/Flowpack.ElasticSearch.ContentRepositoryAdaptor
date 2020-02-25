@@ -1,0 +1,3 @@
+Fusion:
+  defaultContext:
+    SearchResult: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\SearchResultHelper

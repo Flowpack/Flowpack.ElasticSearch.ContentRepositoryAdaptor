@@ -1,8 +1,7 @@
 <?php
-
 declare(strict_types=1);
 
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -14,54 +13,59 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
  * source code.
  */
 
+use Neos\ContentRepository\Domain\Factory\NodeFactory;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
+use Neos\ContentRepository\Domain\Service\ContextFactory;
+use Neos\ContentRepository\Search\Indexer\NodeIndexingManager;
 use Neos\Flow\Annotations as Flow;
 
 /**
- * @TODO: Unused? Can be removed?
- * Index Workspace Trait
+ * Workspace Indexer for Content Repository Nodes.
+ *
+ * @Flow\Scope("singleton")
  */
-trait IndexWorkspaceTrait
+final class WorkspaceIndexer
 {
     /**
+     * @var ContextFactory
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Domain\Factory\NodeFactory
-     */
-    protected $nodeFactory;
-
-    /**
-     * @Flow\Inject
-     * @var \Neos\ContentRepository\Domain\Service\ContextFactory
      */
     protected $contextFactory;
 
     /**
+     * @var ContentDimensionCombinator
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Domain\Service\ContentDimensionCombinator
      */
     protected $contentDimensionCombinator;
 
     /**
+     * @var NodeIndexingManager
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Search\Indexer\NodeIndexingManager
      */
     protected $nodeIndexingManager;
 
     /**
-     * @param string $workspaceName
-     * @param int $limit
-     * @param callable $callback
-     * @return int Count of nodes indexed
+     * @var NodeFactory
+     * @Flow\Inject
      */
-    protected function indexWorkspace(string $workspaceName, ?int $limit = null, callable $callback = null): int
+    protected $nodeFactory;
+
+    /**
+     * @param string $workspaceName
+     * @param integer $limit
+     * @param callable $callback
+     * @return integer
+     */
+    public function index(string $workspaceName, $limit = null, callable $callback = null): int
     {
         $count = 0;
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
         if ($combinations === []) {
-            $count += $this->indexWorkspaceWithDimensions($workspaceName, [], $limit, $callback);
+            $count += $this->indexWithDimensions($workspaceName, [], $limit, $callback);
         } else {
             foreach ($combinations as $combination) {
-                $count += $this->indexWorkspaceWithDimensions($workspaceName, $combination, $limit, $callback);
+                $count += $this->indexWithDimensions($workspaceName, $combination, $limit, $callback);
             }
         }
 
@@ -75,7 +79,7 @@ trait IndexWorkspaceTrait
      * @param callable $callback
      * @return int
      */
-    protected function indexWorkspaceWithDimensions(string $workspaceName, array $dimensions = [], ?int $limit = null, callable $callback = null): int
+    public function indexWithDimensions(string $workspaceName, array $dimensions = [], $limit = null, callable $callback = null): int
     {
         $context = $this->contextFactory->create([
             'workspaceName' => $workspaceName,
@@ -89,8 +93,10 @@ trait IndexWorkspaceTrait
             if ($limit !== null && $indexedNodes > $limit) {
                 return;
             }
+
             $this->nodeIndexingManager->indexNode($currentNode);
             $indexedNodes++;
+
             array_map(function (NodeInterface $childNode) use ($traverseNodes, &$indexedNodes) {
                 $traverseNodes($childNode, $indexedNodes);
             }, $currentNode->getChildNodes());
@@ -100,6 +106,8 @@ trait IndexWorkspaceTrait
 
         $this->nodeFactory->reset();
         $context->getFirstLevelNodeCache()->flush();
+
+        $this->nodeIndexingManager->flushQueues();
 
         if ($callback !== null) {
             $callback($workspaceName, $indexedNodes, $dimensions);

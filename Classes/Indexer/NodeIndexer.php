@@ -13,6 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\TargetContextPath;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
@@ -22,8 +23,9 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\BulkIndexingError;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\MalformedBulkRequestError;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\NodeTypeIndexingConfiguration;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
@@ -35,8 +37,9 @@ use Neos\ContentRepository\Domain\Service\ContextFactory;
 use Neos\ContentRepository\Search\Indexer\AbstractNodeIndexer;
 use Neos\ContentRepository\Search\Indexer\BulkNodeIndexerInterface;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
+use Neos\Utility\Exception\FilesException;
+use Neos\Flow\Log\Utility\LogEnvironment;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -122,6 +125,18 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     protected $systemDriver;
 
     /**
+     * @var array
+     * @Flow\InjectConfiguration(package="Flowpack.ElasticSearch.ContentRepositoryAdaptor", path="indexing.batchSize")
+     */
+    protected $batchSize;
+
+    /**
+     * @var array
+     * @Flow\InjectConfiguration(package="Flowpack.ElasticSearch", path="indexes")
+     */
+    protected $indexConfiguration;
+
+    /**
      * The current Elasticsearch bulk request, in the format required by http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html
      *
      * @var array
@@ -134,22 +149,34 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     protected $bulkProcessing = false;
 
     /**
+     * @var DimensionsService
+     * @Flow\Inject
+     */
+    protected $dimensionService;
+
+    /**
      * @var NodeTypeIndexingConfiguration
      * @Flow\Inject
      */
     protected $nodeTypeIndexingConfiguration;
 
+    public function setDimensions(array $dimensionsValues): void
+    {
+        $this->searchClient->setDimensions($dimensionsValues);
+    }
+
     /**
      * Returns the index name to be used for indexing, with optional indexNamePostfix appended.
      *
      * @return string
+     * @throws Exception\ConfigurationException
      * @throws Exception
      */
     public function getIndexName(): string
     {
         $indexName = $this->searchClient->getIndexName();
         if ($this->indexNamePostfix !== '') {
-            $indexName .= '-' . $this->indexNamePostfix;
+            $indexName .= IndexNameService::INDEX_PART_SEPARATOR . $this->indexNamePostfix;
         }
 
         return $indexName;
@@ -172,11 +199,18 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @return Index
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws Exception\ConfigurationException
      */
     public function getIndex(): Index
     {
         $index = $this->searchClient->findIndex($this->getIndexName());
-        $index->setSettingsKey($this->searchClient->getIndexName());
+
+        $perDimensionConfiguration = $this->indexConfiguration[$this->searchClient->getBundle()][$this->searchClient->getIndexName()] ?? null;
+        if ($perDimensionConfiguration !== null) {
+            $index->setSettingsKey($this->searchClient->getIndexName());
+        } else {
+            $index->setSettingsKey($this->searchClient->getIndexNamePrefix());
+        }
 
         return $index;
     }
@@ -187,11 +221,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param NodeInterface $node
      * @param string $targetWorkspaceName In case indexing is triggered during publishing, a target workspace name will be passed in
      * @return void
+     * @throws Exception
      */
-    public function indexNode(NodeInterface $node, $targetWorkspaceName = null)
+    public function indexNode(NodeInterface $node, $targetWorkspaceName = null): void
     {
         if ($this->nodeTypeIndexingConfiguration->isIndexable($node->getNodeType()) === false) {
-            $this->logger->log(sprintf('NodeIndexer - Node "%s" (%s) skipped, Node Type is not allowed in the index.', $node->getContextPath(), $node->getNodeType()), LOG_DEBUG, null, 'ElasticSearch (CR)');
+            $this->logger->debug(sprintf('NodeIndexer - Node "%s" (%s) skipped, Node Type is not allowed in the index.', $node->getContextPath(), $node->getNodeType()), LogEnvironment::fromMethodName(__METHOD__));
             return;
         }
 
@@ -212,7 +247,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
 
             if ($targetWorkspaceName !== null) {
-                $contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
+                $contextPath = (string)(new TargetContextPath($node, (string)$targetWorkspaceName, $contextPath));
             }
 
             $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
@@ -241,24 +276,18 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $documentData['__workspace'] = $targetWorkspaceName;
             }
 
-            $dimensionCombinations = $node->getContext()->getDimensions();
-            if (is_array($dimensionCombinations)) {
-                $documentData['__dimensionCombinations'] = $dimensionCombinations;
-                $documentData['__dimensionCombinationHash'] = md5(json_encode($dimensionCombinations));
-            }
-
             if ($this->isFulltextEnabled($node)) {
-                $this->currentBulkRequest[] = $this->indexerDriver->document($this->getIndexName(), $node, $document, $documentData);
-                $this->currentBulkRequest[] = $this->indexerDriver->fulltext($node, $fulltextIndexOfNode, $targetWorkspaceName);
+                $this->toBulkRequest($node, $this->indexerDriver->document($this->getIndexName(), $node, $document, $documentData));
+                $this->toBulkRequest($node, $this->indexerDriver->fulltext($node, $fulltextIndexOfNode, $targetWorkspaceName));
             }
-
-            $this->logger->debug(sprintf('NodeIndexer (%s): Indexed node %s.', $documentIdentifier, $contextPath));
         };
 
         $handleNode = function (NodeInterface $node, Context $context) use ($targetWorkspaceName, $indexer) {
             $nodeFromContext = $context->getNodeByIdentifier($node->getIdentifier());
             if ($nodeFromContext instanceof NodeInterface) {
-                $indexer($nodeFromContext, $targetWorkspaceName);
+                $this->searchClient->withDimensions(static function () use ($indexer, $nodeFromContext, $targetWorkspaceName) {
+                    $indexer($nodeFromContext, $targetWorkspaceName);
+                }, $nodeFromContext->getContext()->getTargetDimensions());
             } else {
                 $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
                 if ($node->isRemoved()) {
@@ -272,15 +301,50 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $workspaceName = $targetWorkspaceName ?: $node->getContext()->getWorkspaceName();
         $dimensionCombinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-        if ($dimensionCombinations !== []) {
-            foreach ($dimensionCombinations as $combination) {
-                $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'dimensions' => $combination, 'invisibleContentShown' => true]);
-                $handleNode($node, $context);
-            }
+
+        if (array_filter($dimensionCombinations) === []) {
+            $handleNode($node, $this->createContentContext($workspaceName));
         } else {
-            $context = $this->contextFactory->create(['workspaceName' => $workspaceName, 'invisibleContentShown' => true]);
-            $handleNode($node, $context);
+            foreach ($dimensionCombinations as $combination) {
+                $handleNode($node, $this->createContentContext($workspaceName, $combination));
+            }
         }
+    }
+
+    /**
+     * @param string $workspaceName
+     * @param array $dimensions
+     * @return Context
+     */
+    protected function createContentContext(string $workspaceName, array $dimensions = []): Context
+    {
+        $configuration = [
+            'workspaceName' => $workspaceName,
+            'invisibleContentShown' => true
+        ];
+
+        if ($dimensions !== []) {
+            $configuration['dimensions'] = $dimensions;
+        }
+
+        return $this->contextFactory->create($configuration);
+    }
+
+    /**
+     * @param NodeInterface $node
+     * @param array|null $requests
+     * @throws Exception
+     * @throws \Flowpack\ElasticSearch\Exception
+     * @throws FilesException
+     */
+    protected function toBulkRequest(NodeInterface $node, array $requests = null): void
+    {
+        if ($requests === null) {
+            return;
+        }
+
+        $this->currentBulkRequest[] = new BulkRequestPart($this->dimensionService->hashByNode($node), $requests);
+        $this->flushIfNeeded();
     }
 
     /**
@@ -296,7 +360,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $contextPath = $node->getContextPath();
 
         if ($targetWorkspaceName !== null) {
-            $contextPath = str_replace($node->getContext()->getWorkspace()->getName(), $targetWorkspaceName, $contextPath);
+            $contextPath = (string)(new TargetContextPath($node, $targetWorkspaceName, $contextPath));
         }
 
         return sha1($contextPath);
@@ -308,9 +372,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param NodeInterface $node
      * @param string $targetWorkspaceName
      * @return void
+     * @throws Exception
+     * @throws FilesException
      * @throws IllegalObjectTypeException
+     * @throws \Flowpack\ElasticSearch\Exception
      */
-    public function removeNode(NodeInterface $node, string $targetWorkspaceName = null)
+    public function removeNode(NodeInterface $node, string $targetWorkspaceName = null): void
     {
         if ($this->settings['indexAllWorkspaces'] === false) {
             // we are only supposed to index the live workspace.
@@ -327,10 +394,37 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
 
-        $this->currentBulkRequest[] = $this->documentDriver->delete($node, $documentIdentifier);
-        $this->currentBulkRequest[] = $this->indexerDriver->fulltext($node, [], $targetWorkspaceName);
+        $this->toBulkRequest($node, $this->documentDriver->delete($node, $documentIdentifier));
+        $this->toBulkRequest($node, $this->indexerDriver->fulltext($node, [], $targetWorkspaceName));
 
         $this->logger->debug(sprintf('NodeIndexer (%s): Removed node %s (%s) from index.', $documentIdentifier, $node->getContextPath(), $node->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
+    }
+
+    /**
+     * @throws Exception
+     * @throws \Flowpack\ElasticSearch\Exception
+     * @throws FilesException
+     */
+    protected function flushIfNeeded(): void
+    {
+        if ($this->bulkRequestLength() >= $this->batchSize['elements'] || $this->bulkRequestSize() >= $this->batchSize['octets']) {
+            $this->flush();
+        }
+    }
+
+    protected function bulkRequestSize(): int
+    {
+        return array_reduce($this->currentBulkRequest, static function ($sum, BulkRequestPart $request) {
+            return $sum + $request->getSize();
+        }, 0);
+    }
+
+    /**
+     * @return int
+     */
+    protected function bulkRequestLength(): int
+    {
+        return count($this->currentBulkRequest);
     }
 
     /**
@@ -339,41 +433,68 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @return void
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws FilesException
      */
-    public function flush()
+    public function flush(): void
     {
-        $bulkRequest = array_filter($this->currentBulkRequest);
-        if (count($bulkRequest) === 0) {
+        $bulkRequest = $this->currentBulkRequest;
+        $bulkRequestSize = $this->bulkRequestLength();
+        if ($bulkRequestSize === 0) {
             return;
         }
 
-        $content = '';
-        foreach ($bulkRequest as $bulkRequestTuple) {
-            $tupleAsJson = '';
-            foreach ($bulkRequestTuple as $bulkRequestItem) {
-                $itemAsJson = json_encode($bulkRequestItem);
-                if ($itemAsJson === false) {
-                    $this->errorHandlingService->log(
-                        new MalformedBulkRequestError('Indexing Error: Bulk request item could not be encoded as JSON - ' . json_last_error_msg(), $bulkRequestItem)
-                    );
+        $this->logger->debug(vsprintf('Flush bulk request, elements=%d, maximumElements=%s, octets=%d, maximumOctets=%d',
+            [$bulkRequestSize, $this->batchSize['elements'], $this->bulkRequestSize(), $this->batchSize['octets']]),
+            LogEnvironment::fromMethodName(__METHOD__));
+
+        $payload = [];
+        /** @var BulkRequestPart $bulkRequestPart */
+        foreach ($bulkRequest as $bulkRequestPart) {
+            if (!$bulkRequestPart instanceof BulkRequestPart) {
+                throw new \RuntimeException('Invalid bulk request part', 1577016145);
+            }
+
+            $hash = $bulkRequestPart->getTargetDimensionsHash();
+
+            if (!isset($payload[$hash])) {
+                $payload[$hash] = [];
+            }
+
+            foreach ($bulkRequestPart->getRequest() as $bulkRequestItem) {
+                if ($bulkRequestItem === null) {
+                    $this->logger->error('Indexing Error: A bulk request item could not be encoded as JSON', LogEnvironment::fromMethodName(__METHOD__));
                     continue 2;
                 }
-                $tupleAsJson .= $itemAsJson . chr(10);
+                $payload[$hash][] = $bulkRequestItem;
             }
-            $content .= $tupleAsJson;
         }
 
-        if ($content !== '') {
-            $response = $this->requestDriver->bulk($this->getIndex(), $content);
+        if ($payload === []) {
+            $this->reset();
+            return;
+        }
+
+        foreach ($this->dimensionService->getDimensionsRegistry() as $hash => $dimensions) {
+            if (!isset($payload[$hash])) {
+                continue;
+            }
+
+            $this->searchClient->setDimensions($dimensions);
+            $response = $this->requestDriver->bulk($this->getIndex(), implode(chr(10), $payload[$hash]));
+
             foreach ($response as $responseLine) {
                 if (isset($response['errors']) && $response['errors'] !== false) {
-                    $this->errorHandlingService->log(
-                        new BulkIndexingError($this->currentBulkRequest, $responseLine)
-                    );
+                    $this->errorHandlingService->log(new BulkIndexingError($this->currentBulkRequest, $responseLine));
                 }
             }
         }
 
+        $this->reset();
+    }
+
+    protected function reset(): void
+    {
+        $this->dimensionService->reset();
         $this->currentBulkRequest = [];
     }
 
@@ -384,6 +505,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @throws Exception
      * @throws ApiException
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Exception
      */
     public function updateIndexAlias(): void
     {
@@ -398,8 +520,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $aliasActions = [];
         try {
-            $indexNames = $this->indexDriver->indexesByAlias($aliasName);
-
+            $indexNames = $this->indexDriver->getIndexNamesByAlias($aliasName);
             if ($indexNames === []) {
                 // if there is an actual index with the name we want to use as alias, remove it now
                 $this->indexDriver->deleteIndex($aliasName);
@@ -431,6 +552,68 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     }
 
     /**
+     * Update the main alias to allow to query all indices at once
+     * @throws Exception
+     */
+    public function updateMainAlias()
+    {
+        $aliasActions = [];
+        $aliasNamePrefix = $this->searchClient->getIndexNamePrefix(); // The alias name is the unprefixed index name
+
+        $indexNames = IndexNameService::filterIndexNamesByPostfix($this->indexDriver->getIndexNamesByPrefix($aliasNamePrefix), $this->indexNamePostfix);
+
+        $cleanupAlias = function ($alias) use (&$aliasActions) {
+            try {
+                $indexNames = $this->indexDriver->getIndexNamesByAlias($alias);
+                if ($indexNames === []) {
+                    // if there is an actual index with the name we want to use as alias, remove it now
+                    $this->indexDriver->deleteIndex($alias);
+                } else {
+                    foreach ($indexNames as $indexName) {
+                        $aliasActions[] = [
+                            'remove' => [
+                                'index' => $indexName,
+                                'alias' => $alias
+                            ]
+                        ];
+                    }
+                }
+            } catch (ApiException $exception) {
+                // in case of 404, do not throw an error...
+                if ($exception->getResponse()->getStatusCode() !== 404) {
+                    throw $exception;
+                }
+            }
+        };
+
+        $postfix = function ($alias) {
+            return $alias . IndexNameService::INDEX_PART_SEPARATOR . $this->indexNamePostfix;
+        };
+
+        if (\count($indexNames) > 0) {
+            $cleanupAlias($aliasNamePrefix);
+            $cleanupAlias($postfix($aliasNamePrefix));
+
+            foreach ($indexNames as $indexName) {
+                $aliasActions[] = [
+                    'add' => [
+                        'index' => $indexName,
+                        'alias' => $aliasNamePrefix
+                    ]
+                ];
+                $aliasActions[] = [
+                    'add' => [
+                        'index' => $indexName,
+                        'alias' => $postfix($aliasNamePrefix)
+                    ]
+                ];
+            }
+        }
+
+        $this->indexDriver->aliasActions($aliasActions);
+    }
+
+    /**
      * Remove old indices which are not active anymore (remember, each bulk index creates a new index from scratch,
      * making the "old" index a stale one).
      *
@@ -441,7 +624,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     {
         $aliasName = $this->searchClient->getIndexName(); // The alias name is the unprefixed index name
 
-        $currentlyLiveIndices = $this->indexDriver->indexesByAlias($aliasName);
+        $currentlyLiveIndices = $this->indexDriver->getIndexNamesByAlias($aliasName);
 
         $indexStatus = $this->systemDriver->status();
         $allIndices = array_keys($indexStatus['indices']);
@@ -449,7 +632,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $indicesToBeRemoved = [];
 
         foreach ($allIndices as $indexName) {
-            if (strpos($indexName, $aliasName . '-') !== 0) {
+            if (strpos($indexName, $aliasName . IndexNameService::INDEX_PART_SEPARATOR) !== 0) {
                 // filter out all indices not starting with the alias-name, as they are unrelated to our application
                 continue;
             }

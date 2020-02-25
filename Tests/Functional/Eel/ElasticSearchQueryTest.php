@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Eel;
@@ -14,10 +13,14 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Eel;
  * source code.
  */
 
+use DateTime;
+use DateTimeImmutable;
+use Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
+use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
@@ -27,6 +30,7 @@ use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\ContentRepository\Exception\NodeExistsException;
 use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
+use Neos\Flow\Cli\Exception\StopCommandException;
 use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Flow\Persistence\QueryResultInterface;
 use Neos\Flow\Tests\FunctionalTestCase;
@@ -122,8 +126,8 @@ class ElasticSearchQueryTest extends FunctionalTestCase
 
         $query2 = $this->objectManager->get(ElasticSearchQueryBuilder::class);
 
-        $this->assertNotSame($query->getRequest(), $query2->getRequest());
-        $this->assertEquals($cleanRequestArray, $query2->getRequest()->toArray());
+        static::assertNotSame($query->getRequest(), $query2->getRequest());
+        static::assertEquals($cleanRequestArray, $query2->getRequest()->toArray());
     }
 
     /**
@@ -139,8 +143,8 @@ class ElasticSearchQueryTest extends FunctionalTestCase
 
         /** @var NodeInterface $node */
         $node = $result->current();
-        $this->assertEquals('Neos.NodeTypes:Page', $node->getNodeType()->getName());
-        $this->assertEquals('test-node-1', $node->getName());
+        static::assertEquals('Neos.NodeTypes:Page', $node->getNodeType()->getName());
+        static::assertEquals('test-node-1', $node->getName());
     }
 
     /**
@@ -160,7 +164,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
         $searchHitForNode = $queryBuilder->getFullElasticSearchHitForNode($resultNode);
         $highlightedText = current($searchHitForNode['highlight']['__fulltext.text']);
         $expected = 'A Scout smiles and <em>whistles</em> under all circumstances.';
-        $this->assertEquals($expected, $highlightedText);
+        static::assertEquals($expected, $highlightedText);
     }
 
     /**
@@ -172,7 +176,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
             ->log($this->getLogMessagePrefix(__METHOD__))
             ->nodeType('Neos.NodeTypes:Page')
             ->count();
-        $this->assertEquals(4, $resultCount);
+        static::assertEquals(4, $resultCount);
     }
 
     /**
@@ -184,7 +188,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
             ->log($this->getLogMessagePrefix(__METHOD__))
             ->exactMatch('title', 'egg')
             ->count();
-        $this->assertEquals(1, $resultCount);
+        static::assertEquals(1, $resultCount);
     }
 
     /**
@@ -198,7 +202,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
             ->limit(1);
 
         $resultCount = $query->count();
-        $this->assertEquals(4, $resultCount, 'Asserting the count query returns the total count.');
+        static::assertEquals(4, $resultCount, 'Asserting the count query returns the total count.');
     }
 
     /**
@@ -212,8 +216,8 @@ class ElasticSearchQueryTest extends FunctionalTestCase
 
         $result = $query->execute();
 
-        $this->assertEquals(1, $result->getAccessibleCount(), 'Asserting that getAccessibleCount returns the correct number');
-        $this->assertCount(1, $result->toArray(), 'Asserting the executed query returns a valid number of items.');
+        static::assertEquals(1, $result->getAccessibleCount(), 'Asserting that getAccessibleCount returns the correct number');
+        static::assertCount(1, $result->toArray(), 'Asserting the executed query returns a valid number of items.');
     }
 
     /**
@@ -228,9 +232,9 @@ class ElasticSearchQueryTest extends FunctionalTestCase
             ->execute()
             ->getAggregations();
 
-        $this->assertArrayHasKey($aggregationTitle, $result);
+        static::assertArrayHasKey($aggregationTitle, $result);
 
-        $this->assertCount(3, $result[$aggregationTitle]['buckets']);
+        static::assertCount(3, $result[$aggregationTitle]['buckets']);
 
         $expectedChickenBucket = [
             'key' => 'chicken',
@@ -277,15 +281,15 @@ class ElasticSearchQueryTest extends FunctionalTestCase
             ->execute()
             ->getSuggestions();
 
-        $this->assertArrayHasKey('suggestions', $result, 'The result should contain a key suggestions but looks like this ' . print_r($result, true));
-        $this->assertIsArray($result['suggestions']);
-        $this->assertCount(count($expectedBestSuggestions), $result['suggestions'], sprintf('Expected %s suggestions "[%s]" but got %s suggestions', count($expectedBestSuggestions), implode(',', $expectedBestSuggestions), print_r($result['suggestions'], true)));
+        static::assertArrayHasKey('suggestions', $result, 'The result should contain a key suggestions but looks like this ' . print_r($result, true));
+        static::assertIsArray($result['suggestions']);
+        static::assertCount(count($expectedBestSuggestions), $result['suggestions'], sprintf('Expected %s suggestions "[%s]" but got %s suggestions', count($expectedBestSuggestions), implode(',', $expectedBestSuggestions), print_r($result['suggestions'], true)));
 
         foreach ($expectedBestSuggestions as $key => $expectedBestSuggestion) {
             $suggestion = $result['suggestions'][$key];
-            $this->assertArrayHasKey('options', $suggestion);
-            $this->assertCount(1, $suggestion['options']);
-            $this->assertEquals($expectedBestSuggestion, $suggestion['options'][0]['text']);
+            static::assertArrayHasKey('options', $suggestion);
+            static::assertCount(1, $suggestion['options']);
+            static::assertEquals($expectedBestSuggestion, $suggestion['options'][0]['text']);
         }
     }
 
@@ -302,14 +306,14 @@ class ElasticSearchQueryTest extends FunctionalTestCase
 
         /** @var QueryResultInterface $result $node */
 
-        $this->assertInstanceOf(QueryResultInterface::class, $result);
-        $this->assertCount(4, $result, 'The result should have 3 items');
-        $this->assertEquals(4, $result->count(), 'Count should be 3');
+        static::assertInstanceOf(QueryResultInterface::class, $result);
+        static::assertCount(4, $result, 'The result should have 3 items');
+        static::assertEquals(4, $result->count(), 'Count should be 3');
 
         $node = $result->getFirst();
 
-        $this->assertInstanceOf(NodeInterface::class, $node);
-        $this->assertEquals('welcome', $node->getProperty('title'), 'Asserting a desc sort order by property title');
+        static::assertInstanceOf(NodeInterface::class, $node);
+        static::assertEquals('welcome', $node->getProperty('title'), 'Asserting a desc sort order by property title');
     }
 
     /**
@@ -348,7 +352,9 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     /**
      * @test
      * @throws QueryBuildingException
+     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
      */
     public function cacheLifetimeIsCalculatedCorrectly(): void
     {
@@ -358,7 +364,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
             ->sortAsc('title')
             ->cacheLifetime();
 
-        $this->assertEquals(600, $cacheLifetime);
+        static::assertEquals(600, $cacheLifetime);
     }
 
     /**
@@ -377,7 +383,8 @@ class ElasticSearchQueryTest extends FunctionalTestCase
      * @throws NodeTypeNotFoundException
      * @throws StopActionException
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
-     * @throws \Flowpack\ElasticSearch\Transfer\Exception\ApiException
+     * @throws ApiException
+     * @throws StopCommandException
      */
     protected function createNodesForNodeSearchTest(): void
     {
@@ -395,10 +402,10 @@ class ElasticSearchQueryTest extends FunctionalTestCase
         // Nodes for cacheLifetime test
         $newContentNode2 = $newDocumentNode2->getNode('main')->createNode('document-2-text-1', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Text'));
         $newContentNode2->setProperty('text', 'Hidden after 2025-01-01');
-        $newContentNode2->setHiddenAfterDateTime(new \DateTime('@1735686000'));
+        $newContentNode2->setHiddenAfterDateTime(new DateTime('@1735686000'));
         $newContentNode3 = $newDocumentNode2->getNode('main')->createNode('document-2-text-2', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Text'));
         $newContentNode3->setProperty('text', 'Hidden before 2018-07-18');
-        $newContentNode3->setHiddenBeforeDateTime(new \DateTime('@1531864800'));
+        $newContentNode3->setHiddenBeforeDateTime(new DateTime('@1531864800'));
 
         $newDocumentNode3 = $this->siteNode->createNode('test-node-3', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
         $newDocumentNode3->setProperty('title', 'egg');
@@ -430,11 +437,11 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         try {
             $elasticSearchQueryBuilder = $this->objectManager->get(ElasticSearchQueryBuilder::class);
-            $this->inject($elasticSearchQueryBuilder, 'now', new \DateTimeImmutable('@1735685400')); // Dec. 31, 2024 23:50:00
+            $this->inject($elasticSearchQueryBuilder, 'now', new DateTimeImmutable('@1735685400')); // Dec. 31, 2024 23:50:00
 
             return $elasticSearchQueryBuilder->query($this->siteNode);
-        } catch (\Exception $exception) {
-            $this->fail('Setting up the QueryBuilder failed: ' . $exception->getMessage());
+        } catch (Exception $exception) {
+            static::fail('Setting up the QueryBuilder failed: ' . $exception->getMessage());
         }
     }
 }

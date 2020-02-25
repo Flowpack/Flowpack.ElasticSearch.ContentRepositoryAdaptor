@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
@@ -17,6 +16,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameService;
+use Flowpack\ElasticSearch\Transfer\Exception as TransferException;
+use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -35,8 +37,11 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @param string $index
      * @throws Exception
+     * @throws TransferException
+     * @throws ApiException
+     * @throws \Neos\Flow\Http\Exception
      */
     public function deleteIndex(string $index): void
     {
@@ -50,10 +55,14 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @param string $alias
+     * @return array
      * @throws Exception
+     * @throws TransferException
+     * @throws ApiException
+     * @throws \Neos\Flow\Http\Exception
      */
-    public function indexesByAlias(string $alias): array
+    public function getIndexNamesByAlias(string $alias): array
     {
         $response = $this->searchClient->request('GET', '/_alias/' . $alias);
         $statusCode = $response->getStatusCode();
@@ -65,5 +74,27 @@ class IndexDriver extends AbstractDriver implements IndexDriverInterface
         $treatedContent = $response->getTreatedContent();
 
         return is_array($treatedContent) ? array_keys($treatedContent) : [];
+    }
+
+    /**
+     * @param string $prefix
+     * @return array
+     * @throws TransferException
+     * @throws ApiException
+     * @throws \Neos\Flow\Http\Exception
+     */
+    public function getIndexNamesByPrefix(string $prefix): array
+    {
+        $treatedContent = $this->searchClient->request('GET', '/_alias/')->getTreatedContent();
+
+        // return empty array if content from response cannot be read as an array
+        if (!\is_array($treatedContent)) {
+            return [];
+        }
+
+        return \array_filter(\array_keys($treatedContent), static function ($indexName) use ($prefix) {
+            $prefix .= IndexNameService::INDEX_PART_SEPARATOR;
+            return strpos($indexName, $prefix) === 0;
+        });
     }
 }

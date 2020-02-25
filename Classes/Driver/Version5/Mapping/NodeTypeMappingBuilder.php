@@ -48,6 +48,7 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
     public function initializeObject($cause): void
     {
         parent::initializeObject($cause);
+
         if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
             $this->migrateConfigurationForElasticVersion5($this->defaultConfigurationPerType);
         }
@@ -84,18 +85,6 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
                 $this->migrateConfigurationForElasticVersion5($fullMapping);
                 $mapping->setFullMapping($fullMapping);
             }
-
-            // https://www.elastic.co/guide/en/elasticsearch/reference/5.4/dynamic-templates.html
-            $mapping->addDynamicTemplate('dimensions', [
-                'path_match' => '__dimensionCombinations.*',
-                'match_mapping_type' => 'string',
-                'mapping' => [
-                    'type' => 'text'
-                ]
-            ]);
-            $mapping->setPropertyByPath('__dimensionCombinationHash', [
-                'type' => 'keyword'
-            ]);
 
             foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {
                 if (isset($propertyConfiguration['search']['elasticSearchMapping'])) {

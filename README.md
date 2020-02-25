@@ -8,15 +8,15 @@ main functionalities:
 * finding Nodes in Fusion / Eel by arbitrary queries
 * Full-Text Indexing of Pages and other Documents (of course including the full content)
 
-## Relevant Packages
+This documentation is structured in the following parts:
 
-* [Neos.ContentRepository.Search](https://www.neos.io/download-and-extend/packages/neos/neos-content-repository-search.html): provides common functionality for searching Neos Content Repository nodes. Does not contain a search backend.
-* [Flowpack.ElasticSearch](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch.html): provides common code for working with Elasticsearch
-* [Flowpack.ElasticSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch-contentrepositoryadaptor.html): this package
-* [Flowpack.SimpleSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-simplesearch-contentrepositoryadaptor.html): an alternative search backend (to be used instead of this package); storing the search index in SQLite
-* [Flowpack.SearchPlugin](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-searchplugin.html): search plugin for Neos
+* [Installation](#installation): Which packages are needed and how they are installed.
+* [Commands](#commands): This section describes the available ./flow CLI commands
+* [Configuration](#configuration): Configuration of indices, fields, ...
+* [Query Data](#query-data): Available Eel operations to query data
+* [Examples](#examples): Some more advanced examples
 
-## Installation
+# Installation
 
 ```
 composer require 'flowpack/elasticsearch-contentrepositoryadaptor'
@@ -27,7 +27,15 @@ Ensure to update `<your-elasticsearch>/config/elasticsearch.yml` as explained be
 
 Finally, run `./flow nodeindex:build`, and add the search plugin to your page. It should "just work".
 
-## Elastic version support
+## Relevant Packages
+
+* [Neos.ContentRepository.Search](https://www.neos.io/download-and-extend/packages/neos/neos-content-repository-search.html): provides common functionality for searching Neos Content Repository nodes. Does not contain a search backend.
+* [Flowpack.ElasticSearch](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch.html): provides common code for working with Elasticsearch
+* [Flowpack.ElasticSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-elasticsearch-contentrepositoryadaptor.html): this package
+* [Flowpack.SimpleSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-simplesearch-contentrepositoryadaptor.html): an alternative search backend (to be used instead of this package); storing the search index in SQLite
+* [Flowpack.SearchPlugin](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-searchplugin.html): search plugin for Neos
+
+## Elasticseearch version support
 
 **HINT: this package only supports modern versions of Elasticsearch. If you need 1.x or 2.x support, please [see the 4.x branch of this repository](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/tree/4.0#elastic-version-support).**
 
@@ -54,7 +62,9 @@ There may be a need, to add specific configuration to your Elasticsearch Configu
 
 - [Elasticsearch 5.x](Documentation/ElasticConfiguration-5.x.md)
 
-## Building up the Index
+# Commands
+
+### Building up the index
 
 The node index is updated on the fly, but during development you need to update it frequently.
 
@@ -62,17 +72,124 @@ In case of a mapping update, you need to reindex all nodes. Don't worry to do th
 the system transparently creates a new index, fills it completely, and when everything worked,
 changes the index alias.
 
+	./flow nodeindex:build
+
+if during development, you only want to index a few nodes, you can use "limit"
+
+	./flow nodeindex:build --limit 20
+
+
+### Cleanup old indices
+
+ In order to remove old, non-used indices, you should use this command from time to time:
+
+	./flow nodeindex:cleanup
+
+### Debug commands
+
+The following commands are meant to be used for debugging while configuring and developing your search:
+
+	./flow nodeindexmapping:indices
+
+Shows the mapping between the projects dimensions presets and the resultig index name.
+
+	./flow nodeindexmapping:mapping
+
+Shows the mapping created for the NodeTypes.
+
+	./flow search:viewnode <nodeIdentifier>
+	
+Shows all contents that are indexed fo a given node.
+
+	./flow search:fulltext
+	
+Performs a fulltext search and displays the results.
+
+
+# Configuration
+
+## Index Settings
+
+If you want to fine-tune the indexing and mapping on a more detailed level, you can do so in the following way.
+
+### Configure the index name
+
+If you need to run serveral (different) neos instances on the same elasticsearch server you will need to change the Configuration/Settings.yaml indexName for each of your project.
+
+So `./flow nodeindex:build` or `./flow nodeindex:cleanup` won't overwrite your other sites index.
+
+```yaml
+Neos:
+  ContentRepository:
+    Search:
+      elasticSearch:
+        indexName: useMoreSpecificIndexName
 ```
-./flow nodeindex:build
 
- # if during development, you only want to index a few nodes, you can use "limit"
-./flow nodeindex:build --limit 20
+If you use multiple client configurations, please change the *default* key just below the *indexes*.
 
- # in order to remove old, non-used indices, you should use this command from time to time:
-./flow nodeindex:cleanup
+### Configure per index
+
+You can set one default configuration for all indices with your index prefix.
+
+```yaml
+Flowpack:
+  ElasticSearch:
+    indexes:
+      default: # Configuration bundle name
+        neoscontentrepository: # The index prefix name, must be the same as in the Neos.ContentRepository.Search.elasticSearch.indexName setting
+          index:
+            number_of_shards: 1
+            number_of_replicas: 0
 ```
 
-### Advanced Configuration
+### Configure per dimension
+
+As an index is created for every dimension combination of the Neos content repository, you can configure the index behavior for every dimension combination separately.
+
+**Caution: Default configuration and per dimension combination configuration is not merged. If a configuration for a dimension-combination is found, this configuration is used.**
+
+```yaml
+Flowpack:
+  ElasticSearch:
+    indexes:
+      default: 
+        'neoscontentrepository-0359ed5c416567b8bc2e5ade0f277b36': # The hash specifies the dimension combination 
+          index:
+            number_of_shards: 1
+            number_of_replicas: 0
+          analysis:
+            filter:
+              elision:
+                type: 'elision'
+                articles: [ 'l', 'm', 't', 'qu', 'n', 's', 'j', 'd' ]
+            analyzer:
+              custom_french_analyzer:
+                tokenizer: 'letter'
+                filter: [ 'asciifolding', 'lowercase', 'french_stem', 'elision', 'stop' ]
+              tag_analyzer:
+                tokenizer: 'keyword'
+                filter: [ 'asciifolding', 'lowercase' ]
+```
+
+Which dimension combinations are available in your system and which hashes they are identified with can be shown with the CLI command: 
+
+	dflow nodeindexmapping:indices
+
+### Configurations per property (index field)
+
+Then, you can change the analyzers on a per-field level; or e.g. reconfigure the _all field with the following snippet
+in the NodeTypes.yaml. Generally this works by defining the global mapping at `[nodeType].search.elasticSearchMapping`:
+
+```yaml
+'Neos.Neos:Node':
+  search:
+    elasticSearchMapping:
+      myProperty:
+        analyzer: custom_french_analyzer
+```
+
+## Exclude NodeTypes from indexing
 
 By default the indexing processes all NodeTypes, but you can change this in your *Settings.yaml*:
 
@@ -99,38 +216,160 @@ types in the `Acme.AcmeCom` namespace. The most specific configuration is used i
 - Full namespace notation (`Neos.Neos:*`)
 - Catch all (`*`)
 
-### Advanced Index Settings
+## Advanced Indexing configuration
 
-If you need advanced settings you can define them in your *Settings.yaml*:
+### Indexing configuration per data type
 
-Example is from the Documentation of the used *Flowpack.ElasticSearch* Package
+**The default configuration supports most usecases and often may not need to be touched, as this package comes
+with sane defaults for all Neos data types.**
 
-https://github.com/Flowpack/Flowpack.ElasticSearch/blob/master/Documentation/Indexer.rst
+Indexing of properties is configured at two places. The defaults per-data-type are configured
+inside `Neos.ContentRepository.Search.defaultConfigurationPerType` of `Settings.yaml`.
+Furthermore, this can be overridden using the `properties.[....].search` path inside
+`NodeTypes.yaml`.
 
+This configuration contains two parts:
+
+* Underneath `elasticSearchMapping`, the Elasticsearch property mapping can be defined.
+* Underneath `indexing`, an Eel expression which processes the value before indexing has to be
+  specified. It has access to the current `value` and the current `node`.
+
+Example (from the default configuration):
 ```yaml
-Flowpack:
-  ElasticSearch:
-    indexes:
-      default:
-        twitter:
-          analysis:
-            filter:
-              elision:
-                type: elision
-                articles: [ 'l', 'm', 't', 'qu', 'n', 's', 'j', 'd' ]
-          analyzer:
-            custom_french_analyzer:
-              tokenizer: letter
-              filter: [ 'asciifolding', 'lowercase', 'french_stem', 'elision', 'stop' ]
-            tag_analyzer:
-              tokenizer: keyword
-              filter: [ 'asciifolding', 'lowercase' ]
+ # Settings.yaml
+Neos:
+  ContentRepository:
+    Search:
+      defaultConfigurationPerType:
+
+        # strings should just be indexed with their simple value.
+        string:
+          elasticSearchMapping:
+            type: string
+          indexing: '${value}'
 ```
 
-If you use multiple client configurations, please change the *default* key just below the *indexes*.
+### Indexing configuration per property
+
+```yaml
+ # NodeTypes.yaml
+'Neos.Neos:Timable':
+  properties:
+    '_hiddenBeforeDateTime':
+      search:
+
+        # a date should be mapped differently, and in this case we want to use a date format which
+        # Elasticsearch understands
+        elasticSearchMapping:
+          type: DateTime
+          format: 'date_time_no_millis'
+        indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:sP") : null)}'
+```
+
+If your nodetypes schema defines custom properties of type DateTime, you have got to provide similar configuration for
+them as well in your `NodeTypes.yaml`, or else they will not be indexed correctly.
+
+There are a few indexing helpers inside the `Indexing` namespace which are usable inside the
+`indexing` expression. In most cases, you don't need to touch this, but they were needed to build up
+the standard indexing configuration:
+
+* `Indexing.buildAllPathPrefixes`: for a path such as `foo/bar/baz`, builds up a list of path
+  prefixes, e.g. `['foo', 'foo/bar', 'foo/bar/baz']`.
+* `Indexing.extractNodeTypeNamesAndSupertypes(NodeType)`: extracts a list of node type names for
+  the passed node type and all of its supertypes
+* `Indexing.convertArrayOfNodesToArrayOfNodeIdentifiers(array $nodes)`: convert the given nodes to
+  their node identifiers.
 
 
-## Doing Arbitrary Queries
+
+### Fulltext Indexing
+
+In order to enable fulltext indexing, every `Document` node must be configured as *fulltext root*. Thus,
+the following is configured in the default configuration:
+
+```yaml
+'Neos.Neos:Document':
+  search:
+    fulltext:
+      isRoot: true
+```
+
+A *fulltext root* contains all the *content* of its non-document children, such that when one searches
+inside these texts, the document itself is returned as result.
+
+In order to specify how the fulltext of a property in a node should be extracted, this is configured
+in `NodeTypes.yaml` at `properties.[propertyName].search.fulltextExtractor`.
+
+An example:
+
+```yaml
+'Neos.Neos.NodeTypes:Text':
+  properties:
+    'text':
+      search:
+        fulltextExtractor: '${Indexing.extractHtmlTags(value)}'
+
+'My.Blog:Post':
+  properties:
+    title:
+      search:
+        fulltextExtractor: '${Indexing.extractInto("h1", value)}'
+```
+
+
+### Working with Dates
+
+As a default, Elasticsearch indexes dates in the UTC Timezone. In order to have it index using the timezone
+currently configured in PHP, the configuration for any property in a node which represents a date should look like this:
+
+```yaml
+'My.Blog:Post':
+  properties:
+    date:
+      search:
+        elasticSearchMapping:
+          type: 'date'
+          format: 'date_time_no_millis'
+        indexing: '${(value ? Date.format(value, "Y-m-d\TH:i:sP") : null)}'
+```
+
+This is important so that Date- and Time-based searches work as expected, both when using formatted DateTime strings and
+when using relative DateTime calculations (eg.: `now`, `now+1d`).
+
+If you want to filter items by date, e.g. to show items with date later than today, you can create a query like this:
+
+```
+${...greaterThan('date', Date.format(Date.Now(), "Y-m-d\TH:i:sP"))...}
+```
+
+For more information on Elasticsearch's Date Formats,
+[click here](http://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html).
+
+
+### Working with Assets / Attachments
+
+If you want to index attachments, you need to install the [Elasticsearch Attachment Plugin](https://github.com/elastic/elasticsearch-mapper-attachments).
+Then, you can add the following to your `Settings.yaml`:
+
+```yaml
+Neos:
+  ContentRepository:
+    Search:
+      defaultConfigurationPerType:
+        'Neos\Media\Domain\Model\Asset':
+          elasticSearchMapping:
+            type: attachment
+          indexing: ${Indexing.indexAsset(value)}
+
+        'array<Neos\Media\Domain\Model\Asset>':
+          elasticSearchMapping:
+            type: attachment
+          indexing: ${Indexing.indexAsset(value)}
+```
+
+
+
+# Query Data
 
 We'll first show how to do arbitrary Elasticsearch Queries in Fusion. This is a more powerful
 alternative to FlowQuery. In the long run, we might be able to integrate this API back into FlowQuery,
@@ -172,13 +411,15 @@ As **value**, the following methods accept a simple type, a node object or a Dat
 * `from(5)` -- return the results starting from the 6th one
 * `fulltext('searchWord', options)` -- do a query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-query-string-query.html) to the query_string
 
-#### moreLikeThis(like, fields, options)
+## moreLikeThis(like, fields, options)
 
 The More Like This Query (MLT Query) finds documents that are "like" a given text or a given set of documents.
 
 * `like` Single value or an array of strings or nodes.
 * `fields` An array of fields which are used to compare other docs with the given "like" definition.
 * `options` Additional options for the `more_like_this` query. See the [elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-mlt-query.html) for what is possible.
+
+## Low-level operations
 
 Furthermore, there is a more low-level operator which can be used to add arbitrary Elasticsearch filters:
 
@@ -195,9 +436,9 @@ In order to debug the query more easily, the following operation is helpful:
 
 * `log()` log the full query on execution into the Elasticsearch log (i.e. in `Data/Logs/ElasticSearch.log`)
 
-### Example Queries
+## Example Queries
 
-#### Finding all pages which are tagged in a special way and rendering them in an overview
+### Finding all pages which are tagged in a special way and rendering them in an overview
 
 Use Case: On a "Tag Overview" page, you want to show all pages being tagged in a certain way
 
@@ -225,7 +466,7 @@ prototype(Acme.Blog:SingleTag) < prototype(Neos.Neos:Template) {
 }
 ```
 
-#### Making OR queries
+### Making OR queries
 
 There's no OR operator provided in this package, so you need to use a custom Elasticsearch query filter for that:
 
@@ -253,9 +494,11 @@ You can nest aggregations by providing a parent name.
 * `fieldBasedAggregation($name, $field, $type = 'terms', $parentPath = '', $size = 10)` -- adds a simple filed based Aggregation of type $type with name $name under path $parentPath. Used for simple aggregations like sum, avg, min, max or terms. By default 10 buckets are returned.
 
 
-### Examples
+# Examples
 
-#### Add a average aggregation
+## Aggregations
+
+### Add a average aggregation
 
 To add an average aggregation you can use the fieldBasedAggregation. This snippet would add an average aggregation for
 a property price:
@@ -267,7 +510,7 @@ Now you can access your aggregations inside your fluid template with
 {nodes.aggregations}
 ```
 
-#### Create a nested aggregation
+### Create a nested aggregation
 
 In this scenario you could have a node that represents a product with the properties price and color. If you would like
 to know the average price for all your colors you just nest an aggregation in your Fusion:
@@ -283,7 +526,7 @@ You can nest even more aggregations like this:
 fieldBasedAggregation("anotherAggregation", "field", "avg", "colors.avgprice")
 ```
 
-#### Add a custom aggregation
+### Add a custom aggregation
 
 To add a custom aggregation you can use the `aggregation()` method. All you have to do is to provide an array with your
 aggregation definition. This example would do the same as the fieldBasedAggregation would do for you:
@@ -545,225 +788,9 @@ prototype(Acme.Blog:Listing) < prototype(Neos.Fusion:Collection) {
 }
 ```
 
-## Advanced: Configuration of Indexing
-
-**The default configuration supports most usecases and often may not need to be touched, as this package comes
-with sane defaults for all Neos data types.**
-
-**Note:** When using Elasticsearch 5.x changes to the your mapping may be needed. More information
-on the [mapping in ElasticSearch 5.x](Documentation/ElasticMapping-5.x.md).
-
-Indexing of properties is configured at two places. The defaults per-data-type are configured
-inside `Neos.ContentRepository.Search.defaultConfigurationPerType` of `Settings.yaml`.
-Furthermore, this can be overridden using the `properties.[....].search` path inside
-`NodeTypes.yaml`.
-
-This configuration contains two parts:
-
-* Underneath `elasticSearchMapping`, the Elasticsearch property mapping can be defined.
-* Underneath `indexing`, an Eel expression which processes the value before indexing has to be
-  specified. It has access to the current `value` and the current `node`.
-
-Example (from the default configuration):
-```yaml
- # Settings.yaml
-Neos:
-  ContentRepository:
-    Search:
-      defaultConfigurationPerType:
-
-        # strings should just be indexed with their simple value.
-        string:
-          elasticSearchMapping:
-            type: string
-          indexing: '${value}'
-```
-
-```yaml
- # NodeTypes.yaml
-'Neos.Neos:Timable':
-  properties:
-    '_hiddenBeforeDateTime':
-      search:
-
-        # a date should be mapped differently, and in this case we want to use a date format which
-        # Elasticsearch understands
-        elasticSearchMapping:
-          type: DateTime
-          format: 'date_time_no_millis'
-        indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:sP") : null)}'
-```
-
-If your nodetypes schema defines custom properties of type DateTime, you have got to provide similar configuration for
-them as well in your `NodeTypes.yaml`, or else they will not be indexed correctly.
-
-There are a few indexing helpers inside the `Indexing` namespace which are usable inside the
-`indexing` expression. In most cases, you don't need to touch this, but they were needed to build up
-the standard indexing configuration:
-
-* `Indexing.buildAllPathPrefixes`: for a path such as `foo/bar/baz`, builds up a list of path
-  prefixes, e.g. `['foo', 'foo/bar', 'foo/bar/baz']`.
-* `Indexing.extractNodeTypeNamesAndSupertypes(NodeType)`: extracts a list of node type names for
-  the passed node type and all of its supertypes
-* `Indexing.convertArrayOfNodesToArrayOfNodeIdentifiers(array $nodes)`: convert the given nodes to
-  their node identifiers.
-
-
-
-## Advanced: Fulltext Indexing
-
-In order to enable fulltext indexing, every `Document` node must be configured as *fulltext root*. Thus,
-the following is configured in the default configuration:
-
-```yaml
-'Neos.Neos:Document':
-  search:
-    fulltext:
-      isRoot: true
-```
-
-A *fulltext root* contains all the *content* of its non-document children, such that when one searches
-inside these texts, the document itself is returned as result.
-
-In order to specify how the fulltext of a property in a node should be extracted, this is configured
-in `NodeTypes.yaml` at `properties.[propertyName].search.fulltextExtractor`.
-
-An example:
-
-```yaml
-'Neos.Neos.NodeTypes:Text':
-  properties:
-    'text':
-      search:
-        fulltextExtractor: '${Indexing.extractHtmlTags(value)}'
-
-'My.Blog:Post':
-  properties:
-    title:
-      search:
-        fulltextExtractor: '${Indexing.extractInto("h1", value)}'
-```
-
-
-## Fulltext Searching / Search Plugin
-
-**For a search user interface, checkout the Flowpack.SearchPlugin package**
-
-
-## Working with Dates
-
-As a default, Elasticsearch indexes dates in the UTC Timezone. In order to have it index using the timezone
-currently configured in PHP, the configuration for any property in a node which represents a date should look like this:
-
-```yaml
-'My.Blog:Post':
-  properties:
-    date:
-      search:
-        elasticSearchMapping:
-          type: 'date'
-          format: 'date_time_no_millis'
-        indexing: '${(value ? Date.format(value, "Y-m-d\TH:i:sP") : null)}'
-```
-
-This is important so that Date- and Time-based searches work as expected, both when using formatted DateTime strings and
-when using relative DateTime calculations (eg.: `now`, `now+1d`).
-
-If you want to filter items by date, e.g. to show items with date later than today, you can create a query like this:
-
-```
-${...greaterThan('date', Date.format(Date.Now(), "Y-m-d\TH:i:sP"))...}
-```
-
-For more information on Elasticsearch's Date Formats,
-[click here](http://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html).
-
-
-## Working with Assets / Attachments
-
-If you want to index attachments, you need to install the [Elasticsearch Attachment Plugin](https://github.com/elastic/elasticsearch-mapper-attachments).
-Then, you can add the following to your `Settings.yaml`:
-
-```yaml
-Neos:
-  ContentRepository:
-    Search:
-      defaultConfigurationPerType:
-        'Neos\Media\Domain\Model\Asset':
-          elasticSearchMapping:
-            type: attachment
-          indexing: ${Indexing.indexAsset(value)}
-
-        'array<Neos\Media\Domain\Model\Asset>':
-          elasticSearchMapping:
-            type: attachment
-          indexing: ${Indexing.indexAsset(value)}
-```
-
-## Configurable Elasticsearch Mapping
-
-(included in version >= 2.1)
-
-If you want to fine-tune the indexing and mapping on a more detailed level, you can do so in the following way.
-
-First, configure the index settings as you need them, e.g. configuring analyzers:
-
-```yaml
-Flowpack:
-  ElasticSearch:
-    indexes:
-      default:
-        'neoscontentrepository': # This index name must be the same as in the Neos.ContentRepository.Search.elasticSearch.indexName setting
-          analysis:
-            filter:
-              elision:
-                type: 'elision'
-                articles: [ 'l', 'm', 't', 'qu', 'n', 's', 'j', 'd' ]
-            analyzer:
-              custom_french_analyzer:
-                tokenizer: 'letter'
-                filter: [ 'asciifolding', 'lowercase', 'french_stem', 'elision', 'stop' ]
-              tag_analyzer:
-                tokenizer: 'keyword'
-                filter: [ 'asciifolding', 'lowercase' ]
-```
-
-Then, you can change the analyzers on a per-field level; or e.g. reconfigure the _all field with the following snippet
-in the NodeTypes.yaml. Generally this works by defining the global mapping at `[nodeType].search.elasticSearchMapping`:
-
-```yaml
-'Neos.Neos:Node':
-  search:
-    elasticSearchMapping:
-      _all:
-        analyzer: custom_french_analyzer
-```
-
-Hint: If this leads to error message like:
-
-    mapper [_all] has different [analyzer], mapper [_all] is used by multiple types
-
-you have different (node) types that do not have the same analyzer. Internally Elasticsearch uses the same
-configuration for all fields of the same name, even if they are in different types. Use the `nodeindex:showmapping`
-command to check for any node type that does not have `\_all` configured as expected and adjust it as well.
-
-## Change the default Elastic index name
-
-If you need to run serveral (different) neos instances on the same elasticsearch server you will need to change the Configuration/Settings.yaml indexName for each of your project.
-
-So `./flow nodeindex:build` or `./flow nodeindex:cleanup` won't overwrite your other sites index.
-
-```yaml
-Neos:
-  ContentRepository:
-    Search:
-      elasticSearch:
-        indexName: useMoreSpecificIndexName
-```
-
 ## Debugging
 
-In order to understand what's going on, the following commands are helpful:
+In order to understand what's going on, the following might be helpful:
 
 * use `./flow nodeindex:showMapping` to show the currently defined Elasticsearch Mapping
 * use the `.log()` statement inside queries to dump them to the Elasticsearch Log
@@ -788,5 +815,3 @@ In order to understand what's going on, the following commands are helpful:
    `elasticSearchMapping`.
 3. Replace `ElasticSeach.fulltext` by `Indexing`
 4. Search for `ElasticSearch.` (inside the `indexing` expressions) and replace them by `Indexing.`
-
-Created by [Sebastian Kurfürst; contributions by Karsten Dambekalns, Robert Lemke and others](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/graphs/contributors).

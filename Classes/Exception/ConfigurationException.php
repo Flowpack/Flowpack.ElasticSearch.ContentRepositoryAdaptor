@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
@@ -14,11 +13,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
+use Neos\Flow\Exception;
 
 /**
- * Elastic Driver Configuration exception
+ * Configuration exception
  */
-class DriverConfigurationException extends Exception
+class ConfigurationException extends Exception
 {
 }

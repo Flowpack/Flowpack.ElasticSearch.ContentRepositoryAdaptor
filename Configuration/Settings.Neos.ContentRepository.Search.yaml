@@ -1,0 +1,52 @@
+Neos:
+  ContentRepository:
+    Search:
+
+      # API. If set to FALSE, only index the "live" workspace and not user workspaces.
+      # If you only index the live workspace, Search will not work for your editors in the user workspaces.
+      # Furthermore, if you heavily rely on Search for collecting content, this might be strange for editors to
+      # work with -- as unpublished changes are not indexed right away.
+      indexAllWorkspaces: true
+
+      elasticSearch:
+
+        # API. name of the Elasticsearch index to use. Will create many indices prefixed by this indexName.
+        indexName: neoscr
+
+      defaultConfigurationPerType:
+
+        string:
+          elasticSearchMapping:
+            type: string
+
+        boolean:
+          elasticSearchMapping:
+            type: boolean
+
+        integer:
+          elasticSearchMapping:
+            type: integer
+
+        DateTime:
+          elasticSearchMapping:
+            type: date
+            format: 'date_time_no_millis'
+
+        'Neos\Media\Domain\Model\Asset':
+          elasticSearchMapping: '' # deliberately don't map or index this
+
+        'array<Neos\Media\Domain\Model\Asset>':
+          elasticSearchMapping: '' # deliberately don't map or index this
+
+        'Neos\Media\Domain\Model\ImageInterface':
+          elasticSearchMapping: '' # deliberately don't map or index this
+
+        'references':
+          elasticSearchMapping:
+            type: string # an array of strings, to be precise
+            index: not_analyzed
+
+        'reference':
+          elasticSearchMapping:
+            type: string
+            index: not_analyzed

@@ -20,6 +20,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use Neos\Flow\Log\ThrowableStorageInterface;
 use Neos\Flow\Log\Utility\LogEnvironment;
+use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Psr\Log\LoggerInterface;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
@@ -46,13 +47,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @var ObjectManagerInterface
      */
     protected $objectManager;
-
-    /**
-     * The node inside which searching should happen
-     *
-     * @var NodeInterface
-     */
-    protected $contextNode;
 
     /**
      * @Flow\Inject
@@ -196,7 +190,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param integer $limit
      * @return ElasticSearchQueryBuilder
-     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
+     * @throws IllegalObjectTypeException
      * @api
      */
     public function limit($limit)
@@ -206,7 +200,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         }
 
         $currentWorkspaceNestingLevel = 1;
-        $workspace = $this->contextNode->getContext()->getWorkspace();
+        $workspace = $this->elasticSearchClient->getContextNode()->getContext()->getWorkspace();
         while ($workspace->getBaseWorkspace() !== null) {
             $currentWorkspaceNestingLevel++;
             $workspace = $workspace->getBaseWorkspace();
@@ -678,7 +672,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @return QueryBuilderInterface
      * @api
      */
-    public function fulltext($searchWord, array $options = [])
+    public function fulltext(string $searchWord, array $options = []): QueryBuilderInterface
     {
         // We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
         $this->request->fulltext(trim(json_encode($searchWord), '"'), $options);
@@ -763,13 +757,15 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * match the context of the given node and have it as parent node in their rootline.
      *
      * @param NodeInterface $contextNode
-     * @return QueryBuilderInterface
+     * @return ElasticSearchQueryBuilder
      * @throws QueryBuildingException
-     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
+     * @throws IllegalObjectTypeException
      * @api
      */
-    public function query(NodeInterface $contextNode)
+    public function query(NodeInterface $contextNode): ElasticSearchQueryBuilder
     {
+        $this->elasticSearchClient->setContextNode($contextNode);
+
         // on indexing, the __parentPath is tokenized to contain ALL parent path parts,
         // e.g. /foo, /foo/bar/, /foo/bar/baz; to speed up matching.. That's why we use a simple "term" filter here.
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-term-filter.html
@@ -788,14 +784,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         //
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-terms-filter.html
         $this->queryFilter('terms', ['__workspace' => array_unique(['live', $contextNode->getContext()->getWorkspace()->getName()])]);
-
-        // match exact dimension values for each dimension, this works because the indexing flattens the node variants for all dimension preset combinations
-        $dimensionCombinations = $contextNode->getContext()->getDimensions();
-        if (is_array($dimensionCombinations)) {
-            $this->queryFilter('term', ['__dimensionCombinationHash' => md5(json_encode($dimensionCombinations))]);
-        }
-
-        $this->contextNode = $contextNode;
 
         return $this;
     }
@@ -854,7 +842,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             if (is_array($nodePath)) {
                 $nodePath = current($nodePath);
             }
-            $node = $this->contextNode->getNode($nodePath);
+            $node = $this->elasticSearchClient->getContextNode()->getNode($nodePath);
             if ($node instanceof NodeInterface && !isset($nodes[$node->getIdentifier()])) {
                 $nodes[$node->getIdentifier()] = $node;
                 $elasticSearchHitPerNode[$node->getIdentifier()] = $hit;
