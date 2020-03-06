@@ -58,7 +58,7 @@ abstract class AbstractIndexerDriver extends AbstractDriver
             if ($closestFulltextNode === null) {
                 // root of hierarchy, no fulltext root found anymore, abort silently...
                 if ($node->getPath() !== '/' && $node->getPath() !== '/sites') {
-                    $this->logger->warning(sprintf('NodeIndexer: No fulltext root found for node %s (%s)', $node->getIdentifier(), $node->getContextPath()), LogEnvironment::fromMethodName(__METHOD__));
+                    $this->logger->warning(sprintf('NodeIndexer: No fulltext root found for node %s', (string)$node), LogEnvironment::fromMethodName(__METHOD__));
                 }
 
                 return null;
