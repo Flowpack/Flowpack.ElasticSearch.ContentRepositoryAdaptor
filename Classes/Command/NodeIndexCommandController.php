@@ -15,6 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\ConfigurationException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\RuntimeException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
@@ -213,6 +214,7 @@ class NodeIndexCommandController extends CommandController
      * @param string $postfix Index postfix, index with the same postfix will be deleted if exist
      * @return void
      * @throws StopCommandException
+     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      */
     public function buildCommand(int $limit = null, bool $update = false, string $workspace = null, string $postfix = null): void
     {
@@ -394,6 +396,7 @@ class NodeIndexCommandController extends CommandController
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws \Neos\Flow\Http\Exception
+     * @throws ConfigurationException
      * @Flow\Internal
      */
     public function refreshInternalCommand(string $dimensionsValues, string $postfix): void
@@ -413,6 +416,7 @@ class NodeIndexCommandController extends CommandController
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws ApiException
+     * @throws ConfigurationException
      * @Flow\Internal
      */
     public function aliasInternalCommand(string $dimensionsValues, string $postfix, bool $update = false): void
