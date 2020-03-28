@@ -21,6 +21,7 @@ before_install:
   - cd ..
   - git clone https://github.com/neos/neos-base-distribution.git -b ${NEOS_TARGET_VERSION}
   - cd neos-base-distribution
+  - composer remove --no-update --no-interaction neos/site-kickstarter
   - composer require --no-update --no-interaction flowpack/elasticsearch-contentrepositoryadaptor:dev-master
 install:
   - composer install --no-interaction
