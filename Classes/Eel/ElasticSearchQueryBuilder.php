@@ -542,7 +542,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * @return int
      */
-    public function getLimit(): inte
+    public function getLimit(): int
     {
         return $this->limit;
     }
