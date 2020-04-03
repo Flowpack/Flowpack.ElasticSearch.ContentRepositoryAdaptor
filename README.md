@@ -78,7 +78,6 @@ if during development, you only want to index a few nodes, you can use "limit"
 
 	./flow nodeindex:build --limit 20
 
-
 ### Cleanup old indices
 
  In order to remove old, non-used indices, you should use this command from time to time:
@@ -91,18 +90,22 @@ The following commands are meant to be used for debugging while configuring and 
 
 	./flow nodeindexmapping:indices
 
-Shows the mapping between the projects dimensions presets and the resultig index name.
+Shows the mapping between the projects dimensions presets and the resulting index name.
 
 	./flow nodeindexmapping:mapping
 
 Shows the mapping created for the NodeTypes.
 
+	./flow nodetype: showIndexableConfiguration
+
+Shows a list of NodeTypes and if they are configured to be indexable
+
 	./flow search:viewnode <nodeIdentifier>
-	
+
 Shows all contents that are indexed fo a given node.
 
 	./flow search:fulltext
-	
+
 Performs a fulltext search and displays the results.
 
 

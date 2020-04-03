@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
 
 /*
@@ -13,6 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Neos\ContentRepository\Domain\Model\NodeType;
+use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -27,11 +30,17 @@ final class NodeTypeIndexingConfiguration
     protected $settings;
 
     /**
+     * @Flow\Inject
+     * @var NodeTypeManager
+     */
+    protected $nodeTypeManager;
+
+    /**
      * @param NodeType $nodeType
      * @return bool
      * @throws Exception
      */
-    public function isIndexable(NodeType $nodeType)
+    public function isIndexable(NodeType $nodeType): bool
     {
         if ($this->settings === null || !is_array($this->settings)) {
             return true;
@@ -51,5 +60,20 @@ final class NodeTypeIndexingConfiguration
         }
 
         return false;
+    }
+
+    /**
+     * @return array
+     * @throws Exception
+     */
+    public function getIndexableConfiguration(): array
+    {
+        $nodeConfigurations = [];
+        /** @var NodeType $nodeType */
+        foreach ($this->nodeTypeManager->getNodeTypes(false) as $nodeType) {
+            $nodeConfigurations[$nodeType->getName()] = $this->isIndexable($nodeType);
+        }
+
+        return $nodeConfigurations;
     }
 }
