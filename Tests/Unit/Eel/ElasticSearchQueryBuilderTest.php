@@ -442,7 +442,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
      */
     public function getTotalItemsReturnsTotalHitsIfItExists(): void
     {
-        $this->inject($this->queryBuilder, 'result', ['hits' => ['total' => 123]]);
+        $this->inject($this->queryBuilder, 'result', ['hits' => ['total' => ['value' => 123]]]);
         self::assertSame(123, $this->queryBuilder->getTotalItems());
     }
 
