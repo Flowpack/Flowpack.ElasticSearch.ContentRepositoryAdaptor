@@ -13,6 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\NodeTypeIndexingConfiguration;
 use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
@@ -36,6 +37,12 @@ class NodeTypeCommandController extends CommandController
     protected $nodeTypeManager;
 
     /**
+     * @Flow\Inject
+     * @var NodeTypeIndexingConfiguration
+     */
+    protected $nodeTypeIndexingConfiguration;
+
+    /**
      * Show node type configuration after applying all supertypes etc
      *
      * @param string $nodeType the node type to optionally filter for
@@ -57,5 +64,21 @@ class NodeTypeCommandController extends CommandController
             }
         }
         $this->output(Yaml::dump($configuration, 5, 2));
+    }
+
+    /**
+     * Shows a list of NodeTypes and if they are configured to be indexable or not
+     *
+     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     */
+    public function showIndexableConfigurationCommand(): void
+    {
+        $indexableConfiguration = $this->nodeTypeIndexingConfiguration->getIndexableConfiguration();
+        $indexTable = [];
+        foreach ($indexableConfiguration as $nodeTypeName => $value) {
+            $indexTable[] = [$nodeTypeName, $value ? '<success>true</success>' : '<error>false</error>'];
+        }
+
+        $this->output->outputTable($indexTable, ['NodeType', 'indexable']);
     }
 }

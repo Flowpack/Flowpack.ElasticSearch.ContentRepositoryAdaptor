@@ -11,8 +11,15 @@ Neos:
       realtimeIndexing:
         enabled: false
 
+      defaultConfigurationPerNodeType:
+        '*':
+          indexed: true
+        'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Type1':
+          indexed: false
+
 Flowpack:
   ElasticSearch:
     ContentRepositoryAdaptor:
       command:
         useSubProcesses: false
+
