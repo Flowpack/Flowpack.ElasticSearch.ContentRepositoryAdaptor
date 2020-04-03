@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
@@ -43,7 +42,7 @@ class ElasticSearchQueryBuilderResultTest extends UnitTestCase
 
         $actual = $queryResult->getAggregations();
 
-        $this->assertIsArray($actual);
-        $this->assertEmpty($actual);
+        static::assertIsArray($actual);
+        static::assertEmpty($actual);
     }
 }

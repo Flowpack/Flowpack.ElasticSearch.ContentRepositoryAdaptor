@@ -61,7 +61,7 @@ class NodeIndexerTest extends FunctionalTestCase
     {
         $this->nodeIndexer->setDimensions([]);
         $index = $this->nodeIndexer->getIndex();
-        static::assertEquals(self::TESTING_INDEX_PREFIX . '-default', $index->getName());
+        static::assertEquals(self::TESTING_INDEX_PREFIX . '-default-functionaltest', $index->getName());
     }
 
     /**
@@ -78,7 +78,7 @@ class NodeIndexerTest extends FunctionalTestCase
         $index = $this->nodeIndexer->getIndex();
         $dimesionHash = $this->dimensionService->hash($dimensionValues);
 
-        static::assertEquals(self::TESTING_INDEX_PREFIX . '-' . $dimesionHash, $index->getName());
+        static::assertEquals(self::TESTING_INDEX_PREFIX . '-' . $dimesionHash . '-functionaltest', $index->getName());
     }
 
     /**

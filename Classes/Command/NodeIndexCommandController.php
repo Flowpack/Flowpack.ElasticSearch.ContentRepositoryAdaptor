@@ -552,7 +552,7 @@ class NodeIndexCommandController extends CommandController
      * @return void
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      * @throws \Flowpack\ElasticSearch\Exception
-     * @throws \Neos\Flow\Http\Exception
+     * @throws ConfigurationException
      */
     private function applyMapping(): void
     {
