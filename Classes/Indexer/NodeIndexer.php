@@ -434,6 +434,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws FilesException
+     * @throws Exception\ConfigurationException
      */
     public function flush(): void
     {
@@ -511,11 +512,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     {
         $aliasName = $this->searchClient->getIndexName(); // The alias name is the unprefixed index name
         if ($this->getIndexName() === $aliasName) {
-            throw new Exception('UpdateIndexAlias is only allowed to be called when $this->setIndexNamePostfix has been created.', 1383649061);
+            throw new Exception('UpdateIndexAlias is only allowed to be called when setIndexNamePostfix() has been called.', 1383649061);
         }
 
         if (!$this->getIndex()->exists()) {
-            throw new Exception('The target index for updateIndexAlias does not exist. This shall never happen.', 1383649125);
+            throw new Exception(sprintf('The target index "%s" does not exist.', $this->getIndex()->getName()), 1383649125);
         }
 
         $aliasActions = [];
@@ -525,6 +526,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 // if there is an actual index with the name we want to use as alias, remove it now
                 $this->indexDriver->deleteIndex($aliasName);
             } else {
+                // Remove all existing aliasses
                 foreach ($indexNames as $indexName) {
                     $aliasActions[] = [
                         'remove' => [
@@ -554,6 +556,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     /**
      * Update the main alias to allow to query all indices at once
      * @throws Exception
+     * @throws Exception\ConfigurationException
      */
     public function updateMainAlias()
     {
@@ -619,6 +622,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      *
      * @return array<string> a list of index names which were removed
      * @throws Exception
+     * @throws Exception\ConfigurationException
      */
     public function removeOldIndices(): array
     {

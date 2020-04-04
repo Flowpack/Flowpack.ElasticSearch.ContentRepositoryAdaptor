@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -19,7 +19,7 @@ use Flowpack\ElasticSearch\Domain\Model\Index;
 use Neos\Flow\Annotations as Flow;
 
 /**
- * Request driver for Elasticsearch version 5.x
+ * Request driver for Elasticsearch version 6.x
  *
  * @Flow\Scope("singleton")
  */
@@ -38,7 +38,6 @@ class RequestDriver extends AbstractDriver implements RequestDriverInterface
 
         // Bulk request MUST end with line return
         $request = trim($request) . "\n";
-
         $response = $index->request('POST', '/_bulk', [], $request)->getOriginalResponse()->getBody()->getContents();
 
         return array_map('json_decode', explode("\n", $response));

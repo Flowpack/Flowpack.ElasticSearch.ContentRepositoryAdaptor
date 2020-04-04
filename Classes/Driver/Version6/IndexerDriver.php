@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -22,7 +22,7 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Log\Utility\LogEnvironment;
 
 /**
- * Indexer driver for Elasticsearch version 5.x
+ * Indexer driver for Elasticsearch version 6.x
  *
  * @Flow\Scope("singleton")
  */
@@ -41,10 +41,10 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
             return [
                 [
                     'update' => [
-                        '_type' => $document->getType()->getName(),
+                        '_type' => '_doc',
                         '_id' => $document->getId(),
                         '_index' => $indexName,
-                        '_retry_on_conflict' => 3
+                        'retry_on_conflict' => 3
                     ]
                 ],
                 // http://www.elasticsearch.org/guide/en/elasticsearch/reference/5.0/docs-update.html
@@ -70,8 +70,9 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
         return [
             [
                 'index' => [
-                    '_type' => $document->getType()->getName(),
-                    '_id' => $document->getId()
+                    '_type' => '_doc',
+                    '_id' => $document->getId(),
+                    '_index' => $indexName,
                 ]
             ],
             $documentData
@@ -112,7 +113,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
         return [
             [
                 'update' => [
-                    '_type' => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($closestFulltextNode->getNodeType()->getName()),
+                    '_type' => '_doc',
                     '_id' => $closestFulltextNodeDocumentIdentifier
                 ]
             ],

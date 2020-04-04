@@ -15,6 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\ConfigurationException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\RuntimeException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
@@ -213,6 +214,7 @@ class NodeIndexCommandController extends CommandController
      * @param string $postfix Index postfix, index with the same postfix will be deleted if exist
      * @return void
      * @throws StopCommandException
+     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      */
     public function buildCommand(int $limit = null, bool $update = false, string $workspace = null, string $postfix = null): void
     {
@@ -224,7 +226,7 @@ class NodeIndexCommandController extends CommandController
         }
 
         $postfix = (string)($postfix ?: time());
-        $this->nodeIndexer->setIndexNamePostfix((string)$postfix);
+        $this->nodeIndexer->setIndexNamePostfix($postfix);
 
         $createMapping = function (array $dimensionsValues) use ($update, $postfix) {
             $this->executeInternalCommand('createInternal', [
@@ -394,6 +396,7 @@ class NodeIndexCommandController extends CommandController
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws \Neos\Flow\Http\Exception
+     * @throws ConfigurationException
      * @Flow\Internal
      */
     public function refreshInternalCommand(string $dimensionsValues, string $postfix): void
@@ -413,6 +416,7 @@ class NodeIndexCommandController extends CommandController
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws ApiException
+     * @throws ConfigurationException
      * @Flow\Internal
      */
     public function aliasInternalCommand(string $dimensionsValues, string $postfix, bool $update = false): void
@@ -452,15 +456,15 @@ class NodeIndexCommandController extends CommandController
         foreach ($combinations as $dimensionsValues) {
             try {
                 $this->nodeIndexer->setDimensions($dimensionsValues);
-                $indicesToBeRemoved = $this->nodeIndexer->removeOldIndices();
-                if (count($indicesToBeRemoved) > 0) {
-                    foreach ($indicesToBeRemoved as $indexToBeRemoved) {
-                        $removed = true;
-                        $this->logger->info('Removing old index ' . $indexToBeRemoved, LogEnvironment::fromMethodName(__METHOD__));
-                    }
+                $removedIndices = $this->nodeIndexer->removeOldIndices();
+
+                foreach ($removedIndices as $indexToBeRemoved) {
+                    $removed = true;
+                    $this->logger->info('Removing old index ' . $indexToBeRemoved, LogEnvironment::fromMethodName(__METHOD__));
                 }
             } catch (ApiException $exception) {
-                $response = json_decode($exception->getResponse(), false);
+                $exception->getResponse()->getBody()->rewind();
+                $response = json_decode($exception->getResponse()->getBody()->getContents(), false);
                 $message = sprintf('Nothing removed. ElasticSearch responded with status %s', $response->status);
 
                 if (isset($response->error->type)) {
@@ -548,6 +552,7 @@ class NodeIndexCommandController extends CommandController
      * @return void
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws ConfigurationException
      */
     private function applyMapping(): void
     {

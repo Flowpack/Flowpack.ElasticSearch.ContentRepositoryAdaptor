@@ -49,6 +49,9 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
      * Initialize the results by really executing the query
      *
      * @return void
+     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
      */
     protected function initialize(): void
     {

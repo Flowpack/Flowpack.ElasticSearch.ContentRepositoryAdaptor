@@ -13,7 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Unit\Eel;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Query\FilteredQuery;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\Query\FilteredQuery;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
@@ -442,7 +442,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
      */
     public function getTotalItemsReturnsTotalHitsIfItExists(): void
     {
-        $this->inject($this->queryBuilder, 'result', ['hits' => ['total' => 123]]);
+        $this->inject($this->queryBuilder, 'result', ['hits' => ['total' => ['value' => 123]]]);
         self::assertSame(123, $this->queryBuilder->getTotalItems());
     }
 

@@ -18,6 +18,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Dto\SearchResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
+use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Neos\Flow\Log\ThrowableStorageInterface;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
@@ -465,7 +466,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $name
      * @return ElasticSearchQueryBuilder
      */
-    public function termSuggestions(string $text, string $field = '_all', string $name = 'suggestions'): ElasticSearchQueryBuilder
+    public function termSuggestions(string $text, string $field = '__fulltext.text', string $name = 'suggestions'): ElasticSearchQueryBuilder
     {
         $suggestionDefinition = [
             'text' => $text,
@@ -581,7 +582,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         try {
             $timeBefore = microtime(true);
             $request = $this->request->getRequestAsJson();
-
             $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request);
             $timeAfterwards = microtime(true);
 
@@ -611,7 +611,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     {
         return new SearchResult(
             $hits = $result['hits']['hits'] ?? [],
-            $total = $result['hits']['total'] ?? 0
+            $total = $result['hits']['total']['value'] ?? 0
         );
     }
 
@@ -725,7 +725,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             $respondedDocument = current($respondedDocuments);
             return [
                 '_id' => $respondedDocument['_id'],
-                '_type' => $respondedDocument['_type'],
+                Mapping::NEOS_TYPE_FIELD => $respondedDocument[Mapping::NEOS_TYPE_FIELD],
                 '_index' => $respondedDocument['_index'],
             ];
         };

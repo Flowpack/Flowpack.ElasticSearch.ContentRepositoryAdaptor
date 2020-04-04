@@ -1,8 +1,7 @@
 <?php
-
 declare(strict_types=1);
 
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version5\Query;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\Query;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -18,7 +17,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractQuery;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 
 /**
- * Filtered query for elastic version 5
+ * Filtered query for Elasticsearch version 6.x
  */
 class FilteredQuery extends AbstractQuery
 {
