@@ -162,7 +162,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
             ->execute()
             ->current();
         $searchHitForNode = $queryBuilder->getFullElasticSearchHitForNode($resultNode);
-        $highlightedText = current($searchHitForNode['highlight']['__fulltext.text']);
+        $highlightedText = current($searchHitForNode['highlight']['neos_fulltext.text']);
         $expected = 'A Scout smiles and <em>whistles</em> under all circumstances.';
         static::assertEquals($expected, $highlightedText);
     }

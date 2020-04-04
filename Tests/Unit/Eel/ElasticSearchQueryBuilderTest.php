@@ -65,18 +65,18 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
                             'should' => [],
                             'must_not' => [
                                 [
-                                    'term' => ['_hidden' => true]
+                                    'term' => ['neos_hidden' => true]
                                 ],
                                 [
                                     'range' => [
-                                        '_hiddenBeforeDateTime' => [
+                                        'neos_hidden_before_datetime' => [
                                             'gt' => 'now'
                                         ]
                                     ]
                                 ],
                                 [
                                     'range' => [
-                                        '_hiddenAfterDateTime' => [
+                                        'neos_hidden_after_datetime' => [
                                             'lt' => 'now'
                                         ]
                                     ]
@@ -86,12 +86,12 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
                     ]
                 ]
             ],
-            'fields' => ['__path']
+            'fields' => ['neos_path']
         ];
         $unsupportedFieldsInCountRequest = ['fields', 'sort', 'from', 'size', 'highlight', 'aggs', 'aggregations'];
 
         $queryStringParameters = [
-            'fields' => ['__fulltext.h1^2']
+            'fields' => ['neos_fulltext.h1^2']
         ];
 
         $this->inject($this->queryBuilder, 'elasticSearchClient', $elasticsearchClient);
@@ -121,12 +121,12 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
                                         'should' => [
                                             0 => [
                                                 'term' => [
-                                                    '__parentPath' => '/foo/bar'
+                                                    'neos_parent_path' => '/foo/bar'
                                                 ]
                                             ],
                                             1 => [
                                                 'term' => [
-                                                    '__path' => '/foo/bar'
+                                                    'neos_path' => '/foo/bar'
                                                 ]
                                             ]
                                         ]
@@ -134,7 +134,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
                                 ],
                                 1 => [
                                     'terms' => [
-                                        '__workspace' => ['live', 'user-foo']
+                                        'neos_workspace' => ['live', 'user-foo']
                                     ]
                                 ]
                             ],
@@ -142,20 +142,20 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
                             'must_not' => [
                                 // Filter out all hidden elements
                                 [
-                                    'term' => ['_hidden' => true]
+                                    'term' => ['neos_hidden' => true]
                                 ],
                                 // if now < hiddenBeforeDateTime: HIDE
                                 // -> hiddenBeforeDateTime > now
                                 [
                                     'range' => [
-                                        '_hiddenBeforeDateTime' => [
+                                        'neos_hidden_before_datetime' => [
                                             'gt' => 'now'
                                         ]
                                     ]
                                 ],
                                 [
                                     'range' => [
-                                        '_hiddenAfterDateTime' => [
+                                        'neos_hidden_after_datetime' => [
                                             'lt' => 'now'
                                         ]
                                     ]
@@ -165,7 +165,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
                     ]
                 ]
             ],
-            'fields' => ['__path']
+            'fields' => ['neos_path']
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();
         self::assertEquals($expected, $actual);
@@ -188,7 +188,7 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
         $this->queryBuilder->nodeType('Foo.Bar:Baz');
         $expected = [
             'term' => [
-                '__typeAndSupertypes' => 'Foo.Bar:Baz'
+                'neos_type_and_supertypes' => 'Foo.Bar:Baz'
             ]
         ];
         $actual = $this->queryBuilder->getRequest()->toArray();

@@ -3,64 +3,64 @@
     fulltext:
       enable: true
   properties:
-    '__identifier':
+    'neos_node_identifier':
       search:
         elasticSearchMapping:
           type: keyword
         indexing: '${node.identifier}'
 
-    '__workspace':
+    'neos.workspace':
       search:
         elasticSearchMapping:
           type: keyword
         indexing: '${node.context.workspace.name}'
 
-    '__path':
+    'neos.path':
       search:
         elasticSearchMapping:
           type: keyword
         indexing: '${node.path}'
 
-    '__parentPath':
+    'neos.parent_path':
       search:
         elasticSearchMapping:
           type: keyword
         # we index *all* parent paths as separate tokens to allow for efficient searching without a prefix query
         indexing: '${Indexing.buildAllPathPrefixes(node.parentPath)}'
 
-    '__sortIndex':
+    'neos.sort_index':
       search:
         elasticSearchMapping:
           type: integer
         indexing: '${node.index}'
 
-    '_removed':
+    'neos.removed':
       search:
         elasticSearchMapping: '' # deliberately don't map or index this
         indexing: ''
 
     # we index the node type INCLUDING ALL SUPERTYPES
-    '__typeAndSupertypes':
+    'neos.type_and_supertypes':
       search:
         elasticSearchMapping:
           type: keyword
         indexing: '${Indexing.extractNodeTypeNamesAndSupertypes(node.nodeType)}'
 
-    '_lastModificationDateTime':
+    'neos.last_modification_date_time':
       search:
         elasticSearchMapping:
           type: date
           format: 'date_time_no_millis'
         indexing: '${(node.lastModificationDateTime ? Date.format(node.lastModificationDateTime, "Y-m-d\TH:i:sP") : null)}'
 
-    '_lastPublicationDateTime':
+    'neos.last_publication_date_time':
       search:
         elasticSearchMapping:
           type: date
           format: 'date_time_no_millis'
         indexing: '${(node.lastPublicationDateTime ? Date.format(node.lastPublicationDateTime, "Y-m-d\TH:i:sP") : null)}'
 
-    '_creationDateTime':
+    'neos.creation_date_time':
       search:
         elasticSearchMapping:
           type: date

@@ -113,7 +113,7 @@ class SearchCommandController extends CommandController
 
         $queryBuilder = new ElasticSearchQueryBuilder();
         $queryBuilder->query($context->getRootNode());
-        $queryBuilder->exactMatch('__identifier', $identifier);
+        $queryBuilder->exactMatch('neos_node_identifier', $identifier);
 
         $queryBuilder->getRequest()->setValueByPath('_source', []);
 

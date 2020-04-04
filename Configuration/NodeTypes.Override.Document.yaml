@@ -10,13 +10,13 @@
     title:
       search:
         fulltextExtractor: ${Indexing.extractInto('h1', value)}
-    '__fulltextParts':
+    'neos_fulltext_parts':
       search:
         elasticSearchMapping:
           type: object
           enabled: false
         indexing: ''
-    '__fulltext':
+    'neos_fulltext':
       search:
         indexing: ''
         elasticSearchMapping:
@@ -36,6 +36,6 @@
               type: text
             'text':
               type: text
-    '_hiddenInIndex':
+    'neos_hidden_in_index':
       search:
         indexing: '${node.hiddenInIndex}'

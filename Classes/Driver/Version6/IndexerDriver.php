@@ -35,9 +35,9 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
     public function document(string $indexName, NodeInterface $node, ElasticSearchDocument $document, array $documentData): array
     {
         if ($this->isFulltextRoot($node)) {
-            // for fulltext root documents, we need to preserve the "__fulltext" field. That's why we use the
+            // for fulltext root documents, we need to preserve the "neos_fulltext" field. That's why we use the
             // "update" API instead of the "index" API, with a custom script internally; as we
-            // shall not delete the "__fulltext" part of the document if it has any.
+            // shall not delete the "neos_fulltext" part of the document if it has any.
             return [
                 [
                     'update' => [
@@ -52,11 +52,11 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                     'script' => [
                         'lang' => 'painless',
                         'source' => '
-                            HashMap fulltext = (ctx._source.containsKey("__fulltext") && ctx._source.__fulltext instanceof Map ? ctx._source.__fulltext : new HashMap());
-                            HashMap fulltextParts = (ctx._source.containsKey("__fulltextParts") && ctx._source.__fulltextParts instanceof Map ? ctx._source.__fulltextParts : new HashMap());
+                            HashMap fulltext = (ctx._source.containsKey("neos_fulltext") && ctx._source.neos_fulltext instanceof Map ? ctx._source.neos_fulltext : new HashMap());
+                            HashMap fulltextParts = (ctx._source.containsKey("neos_fulltext_parts") && ctx._source.neos_fulltext_parts instanceof Map ? ctx._source.neos_fulltext_parts : new HashMap());
                             ctx._source = params.newData;
-                            ctx._source.__fulltext = fulltext;
-                            ctx._source.__fulltextParts = fulltextParts',
+                            ctx._source.neos_fulltext = fulltext;
+                            ctx._source.neos_fulltext_parts = fulltextParts',
                         'params' => [
                             'newData' => $documentData
                         ]
@@ -117,32 +117,32 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
             ],
             // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
             [
-                // first, update the __fulltextParts, then re-generate the __fulltext from all __fulltextParts
+                // first, update the neos_fulltext_parts, then re-generate the neos_fulltext from all neos_fulltext_parts
                 'script' => [
                     'lang' => 'painless',
                     'source' => '
-                        ctx._source.__fulltext = new HashMap();
-                        if (!ctx._source.containsKey("__fulltextParts") || !(ctx._source.__fulltextParts instanceof Map)) {
-                            ctx._source.__fulltextParts = new HashMap();
+                        ctx._source.neos_fulltext = new HashMap();
+                        if (!ctx._source.containsKey("neos_fulltext_parts") || !(ctx._source.neos_fulltext_parts instanceof Map)) {
+                            ctx._source.neos_fulltext_parts = new HashMap();
                         }
 
                         if (params.nodeIsRemoved || params.nodeIsHidden || params.fulltext.size() == 0) {
-                            if (ctx._source.__fulltextParts.containsKey(params.identifier)) {
-                                ctx._source.__fulltextParts.remove(params.identifier);
+                            if (ctx._source.neos_fulltext_parts.containsKey(params.identifier)) {
+                                ctx._source.neos_fulltext_parts.remove(params.identifier);
                             }
                         } else {
-                            ctx._source.__fulltextParts.put(params.identifier, params.fulltext);
+                            ctx._source.neos_fulltext_parts.put(params.identifier, params.fulltext);
                         }
 
-                        for (fulltextPart in ctx._source.__fulltextParts.entrySet()) {
+                        for (fulltextPart in ctx._source.neos_fulltext_parts.entrySet()) {
                             for (entry in fulltextPart.getValue().entrySet()) {
                                 def value = "";
-                                if (ctx._source.__fulltext.containsKey(entry.getKey())) {
-                                    value = ctx._source.__fulltext[entry.getKey()] + " " + entry.getValue().trim();
+                                if (ctx._source.neos_fulltext.containsKey(entry.getKey())) {
+                                    value = ctx._source.neos_fulltext[entry.getKey()] + " " + entry.getValue().trim();
                                 } else {
                                     value = entry.getValue().trim();
                                 }
-                                ctx._source.__fulltext[entry.getKey()] = value;
+                                ctx._source.neos_fulltext[entry.getKey()] = value;
                             }
                         }',
                     'params' => [
@@ -153,8 +153,8 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                     ],
                 ],
                 'upsert' => [
-                    '__fulltext' => $fulltextIndexOfNode,
-                    '__fulltextParts' => $upsertFulltextParts
+                    'neos_fulltext' => $fulltextIndexOfNode,
+                    'neos_fulltext_parts' => $upsertFulltextParts
                 ]
             ]
         ];
