@@ -601,8 +601,7 @@ for all your filterable properties, or else filtering won't work on them properl
       defaultValue: ''
       search:
         elasticSearchMapping:
-          type: "string"
-          index: 'not_analyzed'
+          type: keyword
 ```
 
 **Note:** When using Elasticsearch 5.x the mapping needs to be adjusted in a different way.
