@@ -35,14 +35,16 @@ Finally, run `./flow nodeindex:build`, and add the search plugin to your page. I
 * [Flowpack.SimpleSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-simplesearch-contentrepositoryadaptor.html): an alternative search backend (to be used instead of this package); storing the search index in SQLite
 * [Flowpack.SearchPlugin](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-searchplugin.html): search plugin for Neos
 
-## Elasticseearch version support
+## Elasticseearch and Neos compatibility
 
-**HINT: this package only supports modern versions of Elasticsearch. If you need 1.x or 2.x support, please [see the 4.x branch of this repository](https://github.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor/tree/4.0#elastic-version-support).**
+This following matrix shows the compatibility of this package to Elasticsearch and Neos versions:
 
-You can switch the Elasticsearch driver by editing `Settings.yaml`
-(`Flowpack.ElasticSearch.ContentRepositoryAdaptor.driver.version`) with the following value:
-
-* `5.x` to support Elasticsearch 5.x
+|CR Adapter| Neos          | Elasticsearch |
+|----------|---------------|---------------|
+| 4        | 3.x, 4.x      | 1.x, 2,x 5.x  |
+| 5        | > 3.3, 4.x    | 1.x, 2,x 5.x  |
+| 6        | 5.x           | 5.x           |
+| 7        | 5.x           | 6.x, 7.x      |
 
 _Currently the Driver interfaces are not marked as API, and can be changed to adapt to future needs._
 
@@ -58,7 +60,7 @@ network.host: _local_
 ```
 
 There may be a need, to add specific configuration to your Elasticsearch Configuration File
-`<your-elasticsearch>/config/elasticsearch.yml`, , depending on your version of Elasticsearch.
+`<your-elasticsearch>/config/elasticsearch.yml`, depending on your version of Elasticsearch.
 
 - [Elasticsearch 5.x](Documentation/ElasticConfiguration-5.x.md)
 
