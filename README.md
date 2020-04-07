@@ -102,7 +102,7 @@ Shows the mapping created for the NodeTypes.
 
 Shows a list of NodeTypes and if they are configured to be indexable
 
-	./flow search:viewnode <nodeIdentifier>
+	./flow search:viewnode <nodeIdentifier> [<dimensionCombinationAsJson>] [<field>]
 
 Shows all contents that are indexed fo a given node.
 

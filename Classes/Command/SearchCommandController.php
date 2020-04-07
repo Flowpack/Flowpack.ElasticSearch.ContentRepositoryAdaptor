@@ -26,6 +26,7 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Media\Domain\Model\ResourceBasedInterface;
+use Neos\Utility\Arrays;
 
 /**
  * @Flow\Scope("singleton")
@@ -54,6 +55,7 @@ class SearchCommandController extends CommandController
      * @throws Exception
      * @throws QueryBuildingException
      * @throws IllegalObjectTypeException
+     * @throws Exception\ConfigurationException
      */
     public function fulltextCommand(string $searchWord, string $path = '/', ?string $dimensions = null): void
     {
@@ -68,7 +70,7 @@ class SearchCommandController extends CommandController
         $queryBuilder = new ElasticSearchQueryBuilder();
         $queryBuilder = $queryBuilder->query($contextNode)
             ->fulltext($searchWord)
-            ->limit(100)
+            ->limit(10)
             ->termSuggestions($searchWord)
             ->log(__CLASS__);
 
@@ -93,15 +95,16 @@ class SearchCommandController extends CommandController
      *
      * @param string $identifier The node identifier
      * @param string|null $dimensions Dimensions, specified in JSON format, like '{"language":["de"]}'
+     * @param string $field Name or path to a source field to display. Eg. "__fulltext.h1"
      * @throws Exception
      * @throws IllegalObjectTypeException
      * @throws QueryBuildingException
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws \Neos\Flow\Http\Exception
      */
-    public function viewNodeCommand(string $identifier, ?string $dimensions = null): void
+    public function viewNodeCommand(string $identifier, ?string $dimensions = null, string $field = ''): void
     {
-        if ($dimensions !== null && is_array(json_decode($dimensions, true)) === false) {
+        if ($dimensions !== null && is_array(json_decode($dimensions, true, 512, JSON_THROW_ON_ERROR)) === false) {
             $this->outputLine('<error>Error: </error>The Dimensions must be given as a JSON array like \'{"language":["de"]}\'');
             $this->sendAndExit(1);
         }
@@ -112,10 +115,23 @@ class SearchCommandController extends CommandController
         $queryBuilder->query($context->getRootNode());
         $queryBuilder->exactMatch('__identifier', $identifier);
 
+        $queryBuilder->getRequest()->setValueByPath('_source', []);
+
         if ($queryBuilder->count() > 0) {
             $this->outputLine();
             $this->outputLine('<info>Results</info>');
-            $this->outputResults($queryBuilder->execute());
+
+            foreach ($queryBuilder->execute() as $node) {
+                $this->outputLine('<b>%s</b>', [(string)$node]);
+                $data = $queryBuilder->getFullElasticSearchHitForNode($node);
+
+                if ($field !== '') {
+                    $data = Arrays::getValueByPath($data, '_source.' . $field);
+                }
+
+                $this->outputLine(print_r($data, true));
+                $this->outputLine();
+            }
         } else {
             $this->outputLine();
             $this->outputLine('No document matching the given node identifier');
@@ -135,6 +151,10 @@ class SearchCommandController extends CommandController
                     $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . (string)$propertyValue->getResource()->getFilename();
                 } elseif ($propertyValue instanceof \DateTime) {
                     $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . $propertyValue->format('Y-m-d H:i');
+                } elseif (is_array($propertyValue)) {
+                    $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . 'array';
+                } elseif ($propertyValue instanceof NodeInterface) {
+                    $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . $propertyValue->getIdentifier();
                 } else {
                     $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . (string)$propertyValue;
                 }
@@ -144,12 +164,11 @@ class SearchCommandController extends CommandController
                 'identifier' => $node->getIdentifier(),
                 'label' => $node->getLabel(),
                 'nodeType' => $node->getNodeType()->getName(),
-                'contextPath' => implode(PHP_EOL, explode('@', $node->getContextPath())),
                 'properties' => implode(PHP_EOL, $properties),
             ];
         }, $result->toArray());
 
-        $this->output->outputTable($results, ['Identifier', 'Label', 'Node Type', 'Context', 'Properties']);
+        $this->output->outputTable($results, ['Identifier', 'Label', 'Node Type', 'Properties']);
     }
 
     /**
@@ -163,7 +182,7 @@ class SearchCommandController extends CommandController
         ];
 
         if ($dimensions !== null) {
-            $contextConfiguration['dimensions'] = json_decode($dimensions, true);
+            $contextConfiguration['dimensions'] = json_decode($dimensions, true, 512, JSON_THROW_ON_ERROR);
         }
 
         return $this->contextFactory->create($contextConfiguration);
