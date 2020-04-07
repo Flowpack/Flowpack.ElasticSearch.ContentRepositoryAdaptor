@@ -16,5 +16,4 @@
       type: text
       search:
         elasticSearchMapping:
-          type: string
-          index: analyzed
+          type: text
