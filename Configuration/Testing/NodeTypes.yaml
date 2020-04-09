@@ -13,7 +13,7 @@
 'Neos.Neos:Document':
   properties:
     title_analyzed:
-      type: text
+      type: string
       search:
         elasticSearchMapping:
           type: text

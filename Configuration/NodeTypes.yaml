@@ -6,29 +6,25 @@
     '__identifier':
       search:
         elasticSearchMapping:
-          type: string
-          index: not_analyzed
+          type: keyword
         indexing: '${node.identifier}'
 
     '__workspace':
       search:
         elasticSearchMapping:
-          type: string
-          index: not_analyzed
+          type: keyword
         indexing: '${node.context.workspace.name}'
 
     '__path':
       search:
         elasticSearchMapping:
-          type: string
-          index: not_analyzed
+          type: keyword
         indexing: '${node.path}'
 
     '__parentPath':
       search:
         elasticSearchMapping:
-          type: string
-          index: not_analyzed
+          type: keyword
         # we index *all* parent paths as separate tokens to allow for efficient searching without a prefix query
         indexing: '${Indexing.buildAllPathPrefixes(node.parentPath)}'
 
@@ -47,8 +43,7 @@
     '__typeAndSupertypes':
       search:
         elasticSearchMapping:
-          type: string
-          index: not_analyzed
+          type: keyword
         indexing: '${Indexing.extractNodeTypeNamesAndSupertypes(node.nodeType)}'
 
     '_lastModificationDateTime':
@@ -105,8 +100,7 @@
     'uriPathSegment':
       search:
         elasticSearchMapping:
-          type: string
-          index: not_analyzed
+          type: keyword
     title:
       search:
         fulltextExtractor: ${Indexing.extractInto('h1', value)}
@@ -123,32 +117,25 @@
           type: object
           properties:
             'h1':
-              type: string
-              index: analyzed
+              type: text
               boost: 20
             'h2':
-              type: string
-              index: analyzed
+              type: text
               boost: 12
             'h3':
-              type: string
-              index: analyzed
+              type: text
               boost: 10
             'h4':
-              type: string
-              index: analyzed
+              type: text
               boost: 5
             'h5':
-              type: string
-              index: analyzed
+              type: text
               boost: 3
             'h6':
-              type: string
-              index: analyzed
+              type: text
               boost: 2
             'text':
-              type: string
-              index: analyzed
+              type: text
               boost: 1
     '_hiddenInIndex':
       search:
