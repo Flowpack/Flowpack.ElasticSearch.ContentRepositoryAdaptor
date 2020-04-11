@@ -1,10 +1,7 @@
-# Mapping for Elasticsearch 5.x
+# Mapping for Elasticsearch 5.x+
 
 In contrast to earlier versions, Elasticsearch has deprecated the `string` type
 in version 5. This affects the `index` setting on a field as well.
-
-This package tries to adjust the mapping on-the-fly so you may not need to
-adjust anything, but in certain cases knowing what would be correct might help.
 
 ## `string` is dead, long live strings
 

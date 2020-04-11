@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\Mapping;
@@ -23,12 +22,8 @@ use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\Error\Messages\Result;
 use Neos\Error\Messages\Warning;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Configuration\Exception\InvalidConfigurationTypeException;
-use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 
 /**
- * NodeTypeMappingBuilder for Elasticsearch version 5.x
- *
  * @Flow\Scope("singleton")
  */
 class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
@@ -39,20 +34,6 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
      */
     protected $nodeTypeIndexingConfiguration;
 
-    /**
-     * Called by the Flow object framework after creating the object and resolving all dependencies.
-     *
-     * @param integer $cause Creation cause
-     * @throws InvalidConfigurationTypeException
-     */
-    public function initializeObject($cause): void
-    {
-        parent::initializeObject($cause);
-
-        if ($cause === ObjectManagerInterface::INITIALIZATIONCAUSE_CREATED) {
-            $this->migrateConfigurationForElasticVersion6($this->defaultConfigurationPerType);
-        }
-    }
 
     /**
      * Builds a Mapping Collection from the configured node types
@@ -82,7 +63,6 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
             $fullConfiguration = $nodeType->getFullConfiguration();
             if (isset($fullConfiguration['search']['elasticSearchMapping'])) {
                 $fullMapping = $fullConfiguration['search']['elasticSearchMapping'];
-                $this->migrateConfigurationForElasticVersion6($fullMapping);
                 $mapping->setFullMapping($fullMapping);
             }
 
@@ -90,7 +70,6 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
                 if (isset($propertyConfiguration['search']['elasticSearchMapping'])) {
                     if (is_array($propertyConfiguration['search']['elasticSearchMapping'])) {
                         $propertyMapping = $propertyConfiguration['search']['elasticSearchMapping'];
-                        $this->migrateConfigurationForElasticVersion6($propertyMapping);
                         $mapping->setPropertyByPath($propertyName, $propertyMapping);
                     }
                 } elseif (isset($propertyConfiguration['type'], $this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping'])) {
@@ -106,62 +85,5 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
         }
 
         return $mappings;
-    }
-
-    /**
-     * @param array $mapping
-     * @return void
-     */
-    protected function migrateConfigurationForElasticVersion6(array &$mapping): void
-    {
-        $this->adjustStringTypeMapping($mapping);
-    }
-
-    /**
-     * Adjust the mapping for string to text or keyword as needed.
-     *
-     * This is used to ease moving from ES 1.x and 2.x to 5.x by migrating the
-     * mapping like this:
-     *
-     * | 2.x                                       | 5.x                              |
-     * |-------------------------------------------|----------------------------------|
-     * | "type": "string", "index": "no"           | "type": "text", "index": false   |
-     * | "type": "string", "index": "analyzed"     | "type": "text", "index": true    |
-     * | "type": "string", "index": "not_analyzed" | "type": "keyword", "index": true |
-     *
-     * @param array &$mapping
-     * @return void
-     */
-    protected function adjustStringTypeMapping(array &$mapping): void
-    {
-        $adjustStringTypeMapping = function (&$item) {
-            if (isset($item['type']) && $item['type'] === 'string') {
-                if (isset($item['index'])) {
-                    if ($item['index'] === 'not_analyzed') {
-                        $item['type'] = 'keyword';
-                        $item['index'] = true;
-                        unset($item['analyzer']);
-                    } elseif ($item['index'] === 'no') {
-                        $item['type'] = 'text';
-                        $item['index'] = false;
-                    } elseif ($item['index'] === 'analyzed') {
-                        $item['type'] = 'text';
-                        $item['index'] = true;
-                    }
-                } else {
-                    $item['type'] = 'keyword';
-                    $item['index'] = true;
-                }
-            }
-        };
-
-        $adjustStringTypeMapping($mapping);
-
-        foreach ($mapping as &$item) {
-            if (is_array($item)) {
-                $adjustStringTypeMapping($mapping);
-                $this->adjustStringTypeMapping($item);
-            }
-        }
     }
 }

@@ -17,7 +17,7 @@ Neos:
 
         string:
           elasticSearchMapping:
-            type: string
+            type: keyword
 
         boolean:
           elasticSearchMapping:
@@ -43,10 +43,8 @@ Neos:
 
         'references':
           elasticSearchMapping:
-            type: string # an array of strings, to be precise
-            index: not_analyzed
+            type: keyword # an array of keywords, to be precise
 
         'reference':
           elasticSearchMapping:
-            type: string
-            index: not_analyzed
+            type: keyword
