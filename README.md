@@ -225,7 +225,7 @@ types in the `Acme.AcmeCom` namespace. The most specific configuration is used i
 
 ### Indexing configuration per data type
 
-**The default configuration supports most usecases and often may not need to be touched, as this package comes
+**The default configuration supports most use cases and often may not need to be touched, as this package comes
 with sane defaults for all Neos data types.**
 
 Indexing of properties is configured at two places. The defaults per-data-type are configured
@@ -285,7 +285,10 @@ the standard indexing configuration:
 * `Indexing.convertArrayOfNodesToArrayOfNodeIdentifiers(array $nodes)`: convert the given nodes to
   their node identifiers.
 
+#### Skip indexing and mapping of a property
 
+If you don't want a property to be indexed, set `indexing: false`. In this case no mapping is configured for this field. 
+This can be used to also solve a type conflict of two node properties with same name and different type. 
 
 ### Fulltext Indexing
 

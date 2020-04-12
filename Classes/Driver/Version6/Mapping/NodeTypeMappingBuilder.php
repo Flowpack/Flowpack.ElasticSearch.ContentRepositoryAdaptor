@@ -67,6 +67,11 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
             }
 
             foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {
+                // This property is configured to not be index, so do not add a mapping for it
+                if (isset($propertyConfiguration['search']['indexing']) && $propertyConfiguration['search']['indexing'] === false) {
+                    continue;
+                }
+
                 if (isset($propertyConfiguration['search']['elasticSearchMapping'])) {
                     if (is_array($propertyConfiguration['search']['elasticSearchMapping'])) {
                         $propertyMapping = $propertyConfiguration['search']['elasticSearchMapping'];
