@@ -71,7 +71,7 @@ class FilteredQuery extends AbstractQuery
      */
     public function queryFilter(string $filterType, $filterOptions, string $clauseType = 'must'): void
     {
-        if (!in_array($clauseType, ['must', 'should', 'must_not'])) {
+        if (!in_array($clauseType, ['must', 'should', 'must_not', 'filter'])) {
             throw new QueryBuildingException('The given clause type "' . $clauseType . '" is not supported. Must be one of "must", "should", "must_not".', 1383716082);
         }
 
