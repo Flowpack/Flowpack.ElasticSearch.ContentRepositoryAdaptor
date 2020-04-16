@@ -429,8 +429,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * Example Usage to create a terms aggregation for a property color:
      *
-     * aggregationDefinition = Neos.Fusion:RawArray {
-     *   terms = Neos.Fusion:RawArray {
+     * aggregationDefinition = Neos.Fusion:DataStructure {
+     *   terms {
      *     field = "color"
      *   }
      * }
@@ -562,7 +562,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param NodeInterface $node
      * @return array the Elasticsearch hit for the node as array, or NULL if it does not exist.
      */
-    public function getFullElasticSearchHitForNode(NodeInterface $node): array
+    public function getFullElasticSearchHitForNode(NodeInterface $node): ?array
     {
         return $this->elasticSearchHitsIndexedByNodeFromLastRequest[$node->getIdentifier()] ?? null;
     }
@@ -669,7 +669,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * Match the searchword against the fulltext index
      *
      * @param string $searchWord
-     * @param array $options Options to configure the query_string, see https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-query-string-query.html
+     * @param array $options Options to configure the query_string, see https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-query-string-query.html
      * @return QueryBuilderInterface
      * @api
      */

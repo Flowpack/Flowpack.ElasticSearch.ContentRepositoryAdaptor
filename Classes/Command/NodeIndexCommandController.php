@@ -215,6 +215,7 @@ class NodeIndexCommandController extends CommandController
      * @return void
      * @throws StopCommandException
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws ConfigurationException
      */
     public function buildCommand(int $limit = null, bool $update = false, string $workspace = null, string $postfix = null): void
     {
