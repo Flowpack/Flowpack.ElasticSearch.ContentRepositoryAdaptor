@@ -193,6 +193,23 @@ class ElasticSearchQueryTest extends FunctionalTestCase
 
     /**
      * @test
+     *
+     * @throws QueryBuildingException
+     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \Neos\Flow\Http\Exception
+     */
+    public function prefixFilter(): void
+    {
+        $resultCount = $this->getQueryBuilder()
+            ->log($this->getLogMessagePrefix(__METHOD__))
+            ->prefix('title', 'chi')
+            ->count();
+        static::assertEquals(2, $resultCount);
+    }
+
+    /**
+     * @test
      */
     public function limitDoesNotImpactCount(): void
     {

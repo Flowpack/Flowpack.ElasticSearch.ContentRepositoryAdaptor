@@ -558,7 +558,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @throws Exception
      * @throws Exception\ConfigurationException
      */
-    public function updateMainAlias()
+    public function updateMainAlias(): void
     {
         $aliasActions = [];
         $aliasNamePrefix = $this->searchClient->getIndexNamePrefix(); // The alias name is the unprefixed index name

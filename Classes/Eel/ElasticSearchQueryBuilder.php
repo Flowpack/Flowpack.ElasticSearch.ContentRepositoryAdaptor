@@ -429,8 +429,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * Example Usage to create a terms aggregation for a property color:
      *
-     * aggregationDefinition = Neos.Fusion:RawArray {
-     *   terms = Neos.Fusion:RawArray {
+     * aggregationDefinition = Neos.Fusion:DataStructure {
+     *   terms {
      *     field = "color"
      *   }
      * }
@@ -562,7 +562,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param NodeInterface $node
      * @return array the Elasticsearch hit for the node as array, or NULL if it does not exist.
      */
-    public function getFullElasticSearchHitForNode(NodeInterface $node): array
+    public function getFullElasticSearchHitForNode(NodeInterface $node): ?array
     {
         return $this->elasticSearchHitsIndexedByNodeFromLastRequest[$node->getIdentifier()] ?? null;
     }
@@ -596,7 +596,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
                 $this->result['nodes'] = $this->convertHitsToNodes($searchResult->getHits());
             }
         } catch (ApiException $exception) {
-            $this->throwableStorage->logThrowable($exception);
+            $message = $this->throwableStorage->logThrowable($exception);
+            $this->logger->error(sprintf('Request failed with %s', $message), LogEnvironment::fromMethodName(__METHOD__));
             $this->result['nodes'] = [];
         }
 
@@ -668,7 +669,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * Match the searchword against the fulltext index
      *
      * @param string $searchWord
-     * @param array $options Options to configure the query_string, see https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-query-string-query.html
+     * @param array $options Options to configure the query_string, see https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-query-string-query.html
      * @return QueryBuilderInterface
      * @api
      */
@@ -677,6 +678,22 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         // We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
         $this->request->fulltext(trim(json_encode($searchWord, JSON_UNESCAPED_UNICODE), '"'), $options);
         $this->request->highlight(150, 2);
+
+        return $this;
+    }
+
+    /**
+     * Adds a prefix filter to the query
+     * See: https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-prefix-query.html
+     *
+     * @param string $propertyName
+     * @param string $prefix
+     * @return $this|QueryBuilderInterface
+     * @throws QueryBuildingException
+     */
+    public function prefix(string $propertyName, string $prefix): QueryBuilderInterface
+    {
+        $this->request->queryFilter('prefix', [$propertyName => $prefix]);
 
         return $this;
     }
