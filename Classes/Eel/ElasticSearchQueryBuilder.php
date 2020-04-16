@@ -682,6 +682,22 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     }
 
     /**
+     * Adds a prefix filter to the query
+     * See: https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-prefix-query.html
+     *
+     * @param string $propertyName
+     * @param string $prefix
+     * @return $this|QueryBuilderInterface
+     * @throws QueryBuildingException
+     */
+    public function prefix(string $propertyName, string $prefix): QueryBuilderInterface
+    {
+        $this->request->queryFilter('prefix', [$propertyName => $prefix]);
+
+        return $this;
+    }
+
+    /**
      * Configure Result Highlighting. Only makes sense in combination with fulltext(). By default, highlighting is enabled.
      * It can be disabled by calling "highlight(FALSE)".
      *

@@ -408,18 +408,20 @@ Furthermore, the following operators are supported:
 
 As **value**, the following methods accept a simple type, a node object or a DateTime object.
 
-* `nodeType('Your.Node:Type')`
-* `exactMatch('propertyName', value)` -- supports simple types: `exactMatch('tag', 'foo')`, or node references: `exactMatch('author', authorNode)`
-* `exclude('propertyName', value)` -- excludes results by property - the negation of exactMatch.
-* `greaterThan('propertyName', value, [clauseType])` -- range filter with property values greater than the given value
-* `greaterThanOrEqual('propertyName', value, [clauseType])` -- range filter with property values greater than or equal to the given value
-* `lessThan('propertyName', value, [clauseType])` -- range filter with property values less than the given value
-* `lessThanOrEqual('propertyName', value, [clauseType])` -- range filter with property values less than or equal to the given value
-* `sortAsc('propertyName')` and `sortDesc('propertyName')` -- can also be used multiple times, e.g. `sortAsc('tag').sortDesc(`date')`
-   will first sort by tag ascending, and then by date descending.
-* `limit(5)` -- only return five results. If not specified, the default limit by Elasticsearch applies (which is at 10 by default)
-* `from(5)` -- return the results starting from the 6th one
-* `fulltext('searchWord', options)` -- do a query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/5.6/query-dsl-query-string-query.html) to the query_string
+| Query Operator | Description |
+|----------------|-------------|
+|`nodeType('Your.Node:Type')`                          |Filters on the given NodeType|
+|`exactMatch('propertyName', value)`                   |Supports simple types: `exactMatch('tag', 'foo')`, or node references: `exactMatch('author', authorNode)`|
+|`exclude('propertyName', value)`                      |Excludes results by property - the negation of exactMatch.
+|`greaterThan('propertyName', value, [clauseType])`    |Range filter with property values greater than the given value|
+|`greaterThanOrEqual('propertyName', value, [clauseType])`|Range filter with property values greater than or equal to the given value|
+|`lessThan('propertyName', value, [clauseType])`       |Range filter with property values less than the given value|
+|`lessThanOrEqual('propertyName', value, [clauseType])`|Range filter with property values less than or equal to the given value|
+|`sortAsc('propertyName')` / `sortDesc('propertyName')`|Can also be used multiple times, e.g. `sortAsc('tag').sortDesc(`date')` will first sort by tag ascending, and then by date descending.|
+|`limit(5)`                                            |Only return five results. If not specified, the default limit by Elasticsearch applies (which is at 10 by default)|
+|`from(5)`                                             |Return the results starting from the 6th one|
+|`prefix('propertyName', 'prefix')`                    |Does a prefix on the given field with the given prefix|
+|`fulltext('searchWord', options)`                     |Does a query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-query-string-query.html) to the query_string|
 
 ## moreLikeThis(like, fields, options)
 
