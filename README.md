@@ -143,9 +143,10 @@ Flowpack:
     indexes:
       default: # Configuration bundle name
         neoscontentrepository: # The index prefix name, must be the same as in the Neos.ContentRepository.Search.elasticSearch.indexName setting
-          index:
-            number_of_shards: 1
-            number_of_replicas: 0
+          settings:
+            index:
+              number_of_shards: 1
+              number_of_replicas: 0
 ```
 
 ### Configure per dimension
@@ -159,22 +160,23 @@ Flowpack:
   ElasticSearch:
     indexes:
       default: 
-        'neoscontentrepository-0359ed5c416567b8bc2e5ade0f277b36': # The hash specifies the dimension combination 
-          index:
-            number_of_shards: 1
-            number_of_replicas: 0
-          analysis:
-            filter:
-              elision:
-                type: 'elision'
-                articles: [ 'l', 'm', 't', 'qu', 'n', 's', 'j', 'd' ]
-            analyzer:
-              custom_french_analyzer:
-                tokenizer: 'letter'
-                filter: [ 'asciifolding', 'lowercase', 'french_stem', 'elision', 'stop' ]
-              tag_analyzer:
-                tokenizer: 'keyword'
-                filter: [ 'asciifolding', 'lowercase' ]
+        'neoscontentrepository-0359ed5c416567b8bc2e5ade0f277b36': # The hash specifies the dimension combination
+          settings: 
+            index:
+              number_of_shards: 1
+              number_of_replicas: 0
+            analysis:
+              filter:
+                elision:
+                  type: 'elision'
+                  articles: [ 'l', 'm', 't', 'qu', 'n', 's', 'j', 'd' ]
+              analyzer:
+                custom_french_analyzer:
+                  tokenizer: 'letter'
+                  filter: [ 'asciifolding', 'lowercase', 'french_stem', 'elision', 'stop' ]
+                tag_analyzer:
+                  tokenizer: 'keyword'
+                  filter: [ 'asciifolding', 'lowercase' ]
 ```
 
 Which dimension combinations are available in your system and which hashes they are identified with can be shown with the CLI command: 
@@ -539,8 +541,8 @@ fieldBasedAggregation("anotherAggregation", "field", "avg", "colors.avgprice")
 To add a custom aggregation you can use the `aggregation()` method. All you have to do is to provide an array with your
 aggregation definition. This example would do the same as the fieldBasedAggregation would do for you:
 ```
-aggregationDefinition = Neos.Fusion:RawArray {
-    terms = Neos.Fusion:RawArray {
+aggregationDefinition = Neos.Fusion:DataStructure {
+    terms = Neos.Fusion:DataStructure {
         field = "color"
     }
 }
@@ -558,7 +560,7 @@ prototype(Vendor.Name:FilteredProductList) < prototype(Neos.Neos:Content)
 prototype(Vendor.Name:FilteredProductList) {
 
     // Create SearchFilter for products
-    searchFilter = Neos.Fusion:RawArray {
+    searchFilter = Neos.Fusion:DataStructure {
         sku = ${String.split(q(node).property("products"), ",")}
     }
 
@@ -607,9 +609,6 @@ for all your filterable properties, or else filtering won't work on them properl
           type: keyword
 ```
 
-**Note:** When using Elasticsearch 5.x the mapping needs to be adjusted in a different way.
-More information on the [mapping in ElasticSearch 5.x](Documentation/ElasticMapping-5.x.md).
-
 ## Sorting
 
 This package adapts Elasticsearchs sorting capabilities. You can add multiple sort operations to your query.
@@ -631,9 +630,9 @@ nodes = ${q(Search.query(site).....sortAsc("title").sortDesc("name").execute())}
 
 # Custom sort operation
 
-geoSorting = Neos.Fusion:RawArray {
-    _geo_distance = Neos.Fusion:RawArray {
-        latlng = Neos.Fusion:RawArray {
+geoSorting = Neos.Fusion:DataStructure {
+    _geo_distance = Neos.Fusion:DataStructure {
+        latlng = Neos.Fusion:DataStructure {
             lat = 51.512711
             lon = 7.453084
         }
@@ -666,9 +665,9 @@ First of all you have to define a property in your NodeTypes.yaml for your node 
 
 Query your nodes in your Fusion:
 ```
-geoSorting = Neos.Fusion:RawArray {
-    _geo_distance = Neos.Fusion:RawArray {
-        latlng = Neos.Fusion:RawArray {
+geoSorting = Neos.Fusion:DataStructure {
+    _geo_distance = Neos.Fusion:DataStructure {
+        latlng = Neos.Fusion:DataStructure {
             lat = 51.512711
             lon = 7.453084
         }
@@ -757,10 +756,10 @@ You can access your suggestions inside your fluid template with
 Phrase query that returns query suggestions
 
 ```
-suggestionsQueryDefinition = Neos.Fusion:RawArray {
+suggestionsQueryDefinition = Neos.Fusion:DataStructure {
     text = 'some Text'
-    simple_phrase = Neos.Fusion:RawArray {
-        phrase = Neos.Fusion:RawArray {
+    simple_phrase = Neos.Fusion:DataStructure {
+        phrase = Neos.Fusion:DataStructure {
             analyzer = 'body'
             field = 'bigram'
             size = 1
