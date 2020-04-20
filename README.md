@@ -417,10 +417,11 @@ As **value**, the following methods accept a simple type, a node object or a Dat
 |`greaterThanOrEqual('propertyName', value, [clauseType])`|Range filter with property values greater than or equal to the given value|
 |`lessThan('propertyName', value, [clauseType])`       |Range filter with property values less than the given value|
 |`lessThanOrEqual('propertyName', value, [clauseType])`|Range filter with property values less than or equal to the given value|
-|`sortAsc('propertyName')` / `sortDesc('propertyName')`|Can also be used multiple times, e.g. `sortAsc('tag').sortDesc(`date')` will first sort by tag ascending, and then by date descending.|
+|`sortAsc('propertyName')` / `sortDesc('propertyName')`|Can also be used multiple times, e.g. `sortAsc('tag').sortDesc('date')` will first sort by tag ascending, and then by date descending.|
 |`limit(5)`                                            |Only return five results. If not specified, the default limit by Elasticsearch applies (which is at 10 by default)|
 |`from(5)`                                             |Return the results starting from the 6th one|
-|`prefix('propertyName', 'prefix')`                    |Adds a prefix filter on the given field with the given prefix|
+|`prefix('propertyName', 'prefix', [clauseType])`      |Adds a prefix filter on the given field with the given prefix|
+|`geoDistance(propertyName, geoPoint, distance, [clauseType])` |Filters documents that include only hits that exists within a specific distance from a geo point.|
 |`fulltext('searchWord', options)`                     |Does a query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-query-string-query.html) to the query_string|
 
 ## moreLikeThis(like, fields, options)
