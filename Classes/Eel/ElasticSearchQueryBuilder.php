@@ -688,14 +688,33 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * @param string $propertyName
      * @param string $prefix
+     * @param string $clauseType one of must, should, must_not
      * @return $this|QueryBuilderInterface
      * @throws QueryBuildingException
      */
-    public function prefix(string $propertyName, string $prefix): QueryBuilderInterface
+    public function prefix(string $propertyName, string $prefix, string $clauseType): QueryBuilderInterface
     {
-        $this->request->queryFilter('prefix', [$propertyName => $prefix]);
+        $this->request->queryFilter('prefix', [$propertyName => $prefix], $clauseType);
 
         return $this;
+    }
+
+    /**
+     * Filters documents that include only hits that exists within a specific distance from a geo point.
+     *
+     * @param string $propertyName
+     * @param string|array $geoPoint Either ['lon' => x.x, 'lat' => y.y], [lon, lat], 'lat,lon', or GeoHash
+     * @param string $distance Distance with unit. See: https://www.elastic.co/guide/en/elasticsearch/reference/7.6/common-options.html#distance-units
+     * @param string $clauseType one of must, should, must_not
+     * @return QueryBuilderInterface
+     * @throws QueryBuildingException
+     */
+    public function geoDistance(string $propertyName, $geoPoint, string $distance, string $clauseType): QueryBuilderInterface
+    {
+        $this->queryFilter('geo_distance',[
+            'distance' => $distance,
+            $propertyName => $geoPoint,
+        ], $clauseType);
     }
 
     /**
