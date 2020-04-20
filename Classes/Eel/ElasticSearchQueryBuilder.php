@@ -692,7 +692,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @return $this|QueryBuilderInterface
      * @throws QueryBuildingException
      */
-    public function prefix(string $propertyName, string $prefix, string $clauseType): QueryBuilderInterface
+    public function prefix(string $propertyName, string $prefix, string $clauseType = 'must'): QueryBuilderInterface
     {
         $this->request->queryFilter('prefix', [$propertyName => $prefix], $clauseType);
 
@@ -709,9 +709,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @return QueryBuilderInterface
      * @throws QueryBuildingException
      */
-    public function geoDistance(string $propertyName, $geoPoint, string $distance, string $clauseType): QueryBuilderInterface
+    public function geoDistance(string $propertyName, $geoPoint, string $distance, string $clauseType = 'must'): QueryBuilderInterface
     {
-        $this->queryFilter('geo_distance',[
+        $this->queryFilter('geo_distance', [
             'distance' => $distance,
             $propertyName => $geoPoint,
         ], $clauseType);
