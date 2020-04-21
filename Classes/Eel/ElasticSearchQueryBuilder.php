@@ -715,6 +715,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             'distance' => $distance,
             $propertyName => $geoPoint,
         ], $clauseType);
+
+        return $this;
     }
 
     /**
