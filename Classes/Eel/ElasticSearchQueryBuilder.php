@@ -752,9 +752,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $getDocumentDefinitionByNode = function (QueryInterface $request, NodeInterface $node): array {
             $request->queryFilter('term', ['__identifier' => $node->getIdentifier()]);
             $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request->toArray())->getTreatedContent();
-
             $respondedDocuments = Arrays::getValueByPath($response, 'hits.hits');
-
             if (count($respondedDocuments) === 0) {
                 $this->logger->info(sprintf('The node with identifier %s was not found in the elasticsearch index.', $node->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
                 return [];
@@ -763,7 +761,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             $respondedDocument = current($respondedDocuments);
             return [
                 '_id' => $respondedDocument['_id'],
-                Mapping::NEOS_TYPE_FIELD => $respondedDocument[Mapping::NEOS_TYPE_FIELD],
                 '_index' => $respondedDocument['_index'],
             ];
         };
