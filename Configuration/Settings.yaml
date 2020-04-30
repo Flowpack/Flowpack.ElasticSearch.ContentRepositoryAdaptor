@@ -48,6 +48,38 @@ Flowpack:
                   - 'aggs'
                   - 'aggregations'
                   - 'suggest'
+
+            pipelineManagement:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\PipelineDriver'
+              arguments:
+                pipelineConfigurations:
+                  neos_contentrepository:
+                    enabled: false
+                    configuration:
+                      description: 'Pipeline to ingest attachments using the ingest-attachment plugin'
+                      processors:
+                        -
+                          attachment:
+                            field: neos_asset
+                            indexed_chars: 100000
+                            ignore_missing: true
+                        -
+                          script:
+                            lang: painless
+                            source: >
+                              if (ctx.containsKey("attachment")) {
+                                 if (!ctx.containsKey("__fulltext") || !(ctx.__fulltextParts instanceof Map)) {
+                                   ctx.__fulltext = new HashMap();
+                                 }
+                                 ctx.__fulltext.text = ctx.__fulltext.text + ' ' + ctx.attachment.content
+                               }
+                        -
+                          remove:
+                            field:
+                              - attachment
+                              - neos_asset
+                            ignore_missing: true
+
             document:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\DocumentDriver'
             indexer:

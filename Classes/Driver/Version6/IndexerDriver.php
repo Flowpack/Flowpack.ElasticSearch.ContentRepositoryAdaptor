@@ -103,8 +103,6 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
             return [];
         }
 
-        $this->logger->debug(sprintf('NodeIndexer (%s): Updated fulltext index for %s (%s)', $closestFulltextNodeDocumentIdentifier, $closestFulltextNodeContextPath, $closestFulltextNode->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
-
         $upsertFulltextParts = [];
         if (!empty($fulltextIndexOfNode)) {
             $upsertFulltextParts[$node->getIdentifier()] = $fulltextIndexOfNode;

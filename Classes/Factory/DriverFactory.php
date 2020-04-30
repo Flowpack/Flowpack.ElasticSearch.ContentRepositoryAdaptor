@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
@@ -17,6 +16,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\PipelineDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\ConfigurationException;
@@ -70,5 +70,14 @@ class DriverFactory extends AbstractDriverSpecificObjectFactory
     public function createSystemDriver(): SystemDriverInterface
     {
         return $this->resolve('system');
+    }
+
+    /**
+     * @return PipelineDriverInterface
+     * @throws ConfigurationException
+     */
+    public function createPipelineManagementDriver(): PipelineDriverInterface
+    {
+        return $this->resolve('pipelineManagement');
     }
 }

@@ -29,6 +29,11 @@ Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterface:
   factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\DriverFactory'
   factoryMethodName: createRequestDriver
 
+Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\PipelineDriverInterface:
+  scope: singleton
+  factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\DriverFactory'
+  factoryMethodName: createPipelineManagementDriver
+
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface:
   scope: singleton
   factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\DriverFactory'

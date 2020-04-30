@@ -23,3 +23,19 @@ Flowpack:
       command:
         useSubProcesses: false
 
+      driver:
+        mapping:
+          6.x:
+            pipelineManagement:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\PipelineDriver'
+              arguments:
+                pipelineConfigurations:
+                  neos_contentrepository_test:
+                    enabled: true
+                    configuration:
+                      description: 'Test Pipeline'
+                      processors:
+                        -
+                          set:
+                            field: theField
+                            value: theValue

@@ -15,6 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\PipelineDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\ConfigurationException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\RuntimeException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
@@ -135,6 +136,12 @@ class NodeIndexCommandController extends CommandController
     protected $workspaceIndexer;
 
     /**
+     * @Flow\Inject
+     * @var PipelineDriverInterface
+     */
+    protected $pipelineDriver;
+
+    /**
      * Index a single node by the given identifier and workspace name
      *
      * @param string $identifier
@@ -191,7 +198,6 @@ class NodeIndexCommandController extends CommandController
                 $indexInWorkspace($identifier, $iteratedWorkspace);
             }
         } else {
-            /** @var Workspace $workspaceInstance */
             $workspaceInstance = $this->workspaceRepository->findByIdentifier($workspace);
             if ($workspaceInstance === null) {
                 $this->outputLine('<error>Error: The given workspace (%s) does not exist.</error>', [$workspace]);
@@ -237,6 +243,10 @@ class NodeIndexCommandController extends CommandController
             ]);
         };
 
+        $createOrUpdatePipelines = function () {
+            $this->executeInternalCommand('createOrUpdatePipelinesInternal', []);
+        };
+
         $buildIndex = function (array $dimensionsValues) use ($workspace, $limit, $update, $postfix) {
             $this->build($dimensionsValues, $workspace, $postfix, $limit);
         };
@@ -266,6 +276,7 @@ class NodeIndexCommandController extends CommandController
         };
 
         $runAndLog($createIndicesAndApplyMapping, 'Creating indices and apply mapping');
+        $runAndLog($createOrUpdatePipelines, 'Creating or updating ingest pipelines');
 
         $timeStart = microtime(true);
         $this->output(str_pad('Indexing nodes ... ', 20));
@@ -361,6 +372,14 @@ class NodeIndexCommandController extends CommandController
 
         $this->applyMapping();
         $this->outputErrorHandling();
+    }
+
+    /**
+     * Internal SubCommand to update ingest pipelines
+     */
+    public function createOrUpdatePipelinesInternalCommand(): void
+    {
+        $this->pipelineDriver->updatePipelines();
     }
 
     /**
