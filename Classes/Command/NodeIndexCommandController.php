@@ -229,7 +229,7 @@ class NodeIndexCommandController extends CommandController
         $postfix = (string)($postfix ?: time());
         $this->nodeIndexer->setIndexNamePostfix($postfix);
 
-        $createMapping = function (array $dimensionsValues) use ($update, $postfix) {
+        $createIndicesAndApplyMapping = function (array $dimensionsValues) use ($update, $postfix) {
             $this->executeInternalCommand('createInternal', [
                 'dimensionsValues' => json_encode($dimensionsValues),
                 'update' => $update,
@@ -265,10 +265,10 @@ class NodeIndexCommandController extends CommandController
             $this->outputLine('<success>Done</success> (took %s seconds)', [number_format(microtime(true) - $timeStart, 2)]);
         };
 
-        $runAndLog($createMapping, 'Create indicies');
+        $runAndLog($createIndicesAndApplyMapping, 'Creating indices and apply mapping');
 
         $timeStart = microtime(true);
-        $this->output(str_pad('Indexing nodes' . '... ', 20));
+        $this->output(str_pad('Indexing nodes ... ', 20));
         $buildIndex([]);
         $this->outputLine('<success>Done</success> (took %s seconds)', [number_format(microtime(true) - $timeStart, 2)]);
 
