@@ -14,7 +14,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\AssetExtraction;
  */
 
 use Neos\Flow\Annotations as FLow;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Dto\AssetContent;
+use Neos\ContentRepository\Search\AssetExtraction\AssetExtractorInterface;
+use Neos\ContentRepository\Search\Dto\AssetContent;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Media\Domain\Model\AssetInterface;
