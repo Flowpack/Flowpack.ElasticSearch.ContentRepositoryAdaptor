@@ -358,7 +358,7 @@ For more information on Elasticsearch's Date Formats,
 
 ### Working with Assets / Attachments
 
-If you want to index attachments, you need to install the [Elasticsearch Attachment Plugin](https://github.com/elastic/elasticsearch-mapper-attachments).
+If you want to index attachments, you need to install the [Elasticsearch Ingest-Attachment Plugin](https://www.elastic.co/guide/en/elasticsearch/plugins/master/ingest-attachment.html).
 Then, you can add the following to your `Settings.yaml`:
 
 ```yaml
@@ -368,15 +368,33 @@ Neos:
       defaultConfigurationPerType:
         'Neos\Media\Domain\Model\Asset':
           elasticSearchMapping:
-            type: attachment
-          indexing: ${Indexing.indexAsset(value)}
-
-        'array<Neos\Media\Domain\Model\Asset>':
-          elasticSearchMapping:
-            type: attachment
-          indexing: ${Indexing.indexAsset(value)}
+            type: text
+          indexing: ${Indexing.Indexing.extractAssetContent(value)}
 ```
 
+or add the attachments content to a fulletxt field in your NodeType configuration:
+
+```yaml
+  properties:
+    file:
+      type: 'Neos\Media\Domain\Model\Asset'
+      ui:
+      search:
+        fulltextExtractor: ${Indexing.extractInto('text', Indexing.extractAssetContent(value))}
+```
+
+By default `Indexing.extractAssetContent(value)` returns the asset content. You can use the second parameter to return asset meta data. The field parameter can be set to one of the following: `content, title, name, author, keywords, date, content_type, content_length, language`. 
+
+With that, you can for example add the keywords of a file to a higher boosted field: 
+
+```yaml
+  properties:
+    file:
+      type: 'Neos\Media\Domain\Model\Asset'
+      ui:
+      search:
+        fulltextExtractor: ${Indexing.extractInto('h2', Indexing.extractAssetContent(value, 'keywords'))}
+```
 
 
 # Query Data

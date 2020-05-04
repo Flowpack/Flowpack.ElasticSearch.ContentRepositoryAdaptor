@@ -4,6 +4,9 @@ Neos\ContentRepository\Search\Search\QueryBuilderInterface:
 Neos\ContentRepository\Search\Indexer\NodeIndexerInterface:
   className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer'
 
+Neos\ContentRepository\Search\AssetExtraction\AssetExtractorInterface:
+  className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\AssetExtraction\IngestAttachmentAssetExtractor'
+
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface:
   scope: prototype
   factoryObjectName: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Factory\QueryFactory'
