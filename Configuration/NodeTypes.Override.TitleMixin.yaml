@@ -1,0 +1,5 @@
+'Neos.NodeTypes.BaseMixins:TitleMixin':
+  properties:
+    'title':
+      search:
+        fulltextExtractor: '${Indexing.extractHtmlTags(value)}'
