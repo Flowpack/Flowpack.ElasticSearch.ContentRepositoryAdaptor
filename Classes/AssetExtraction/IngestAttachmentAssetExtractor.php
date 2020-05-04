@@ -27,7 +27,6 @@ use Psr\Log\LoggerInterface;
  */
 class IngestAttachmentAssetExtractor implements AssetExtractorInterface
 {
-
     /**
      * @Flow\Inject
      * @var ElasticSearchClient
@@ -40,6 +39,15 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
      */
     protected $logger;
 
+    /**
+     * Takes an asset and extracts content and meta data.
+     *
+     * @param AssetInterface $asset
+     * @return AssetContent
+     * @throws \Flowpack\ElasticSearch\Transfer\Exception
+     * @throws \Flowpack\ElasticSearch\Transfer\Exception\ApiException
+     * @throws \Neos\Flow\Http\Exception
+     */
     public function extract(AssetInterface $asset): AssetContent
     {
         $request = [
