@@ -2,7 +2,7 @@ Flowpack:
   ElasticSearch:
     ContentRepositoryAdaptor:
       command:
-        useSubProcesses: false
+        useSubProcesses: true
       indexing:
         batchSize:
           elements: 500
@@ -39,6 +39,7 @@ Flowpack:
                                   lt: now
                   _source:
                     - '__path'
+
                 unsupportedFieldsInCountRequest:
                   - '_source'
                   - 'sort'
@@ -48,6 +49,21 @@ Flowpack:
                   - 'aggs'
                   - 'aggregations'
                   - 'suggest'
+
+                # Parameters for the query string query used by the fullText() operation
+                # See https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#query-string-multi-field
+                # for all available parameters
+                queryStringParameters:
+                  default_operator: or
+                  fields:
+                    - __fulltext.h1^20
+                    - __fulltext.h2^12
+                    - __fulltext.h3^10
+                    - __fulltext.h4^5
+                    - __fulltext.h5^3
+                    - __fulltext.h6^2
+                    - __fulltext.text^1
+
             document:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\DocumentDriver'
             indexer:
