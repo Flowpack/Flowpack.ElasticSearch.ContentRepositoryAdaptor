@@ -143,8 +143,6 @@ class NodeIndexCommandController extends CommandController
      * @return void
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      * @throws \Flowpack\ElasticSearch\Exception
-     * @throws StopCommandException
-     * @throws FilesException
      */
     public function indexNodeCommand(string $identifier, string $workspace = null, string $postfix = null): void
     {
@@ -166,11 +164,12 @@ class NodeIndexCommandController extends CommandController
             }
 
             $this->outputLine();
-            $this->outputLine('Indexing node "%s" (%s)', [$node->getLabel(), $node->getIdentifier(),]);
-            $this->outputLine('  workspace: %s', [$workspace->getName()]);
-            $this->outputLine('  node type: %s', [$node->getNodeType()->getName()]);
-            $this->outputLine('  dimensions: %s', [json_encode($dimensions)]);
+            $this->outputLine('Indexing node <b>"%s"</b> (%s)', [$node->getLabel(), $node->getIdentifier(),]);
+            $this->outputLine('  Workspace: %s', [$workspace->getName()]);
+            $this->outputLine('  Node type: %s', [$node->getNodeType()->getName()]);
+            $this->outputLine('  Dimensions: %s', [json_encode($dimensions)]);
 
+            $this->nodeIndexer->setDimensions($dimensions);
             $this->nodeIndexer->indexNode($node);
         };
 
@@ -191,7 +190,6 @@ class NodeIndexCommandController extends CommandController
                 $indexInWorkspace($identifier, $iteratedWorkspace);
             }
         } else {
-            /** @var Workspace $workspaceInstance */
             $workspaceInstance = $this->workspaceRepository->findByIdentifier($workspace);
             if ($workspaceInstance === null) {
                 $this->outputLine('<error>Error: The given workspace (%s) does not exist.</error>', [$workspace]);
