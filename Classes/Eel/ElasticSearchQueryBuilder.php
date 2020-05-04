@@ -861,7 +861,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         /**
          * TODO: This code below is not fully correct yet:
          *
-         * We always fetch $limit * (numerOfWorkspaces) records; so that we find a node:
+         * We always fetch $limit * (numberOfWorkspaces) records; so that we find a node:
          * - *once* if it is only in live workspace and matches the query
          * - *once* if it is only in user workspace and matches the query
          * - *twice* if it is in both workspaces and matches the query *both times*. In this case we filter the duplicate record.
