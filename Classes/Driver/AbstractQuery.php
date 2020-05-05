@@ -37,13 +37,22 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     protected $unsupportedFieldsInCountRequest = [];
 
     /**
+     * Default parameters for the query_string filter used for fulltext search
+     *
+     * @var array
+     */
+    protected $queryStringParameters = [];
+
+    /**
      * @param array $request
      * @param array $unsupportedFieldsInCountRequest
+     * @param array $queryStringParameters
      */
-    public function __construct(array $request, array $unsupportedFieldsInCountRequest)
+    public function __construct(array $request, array $unsupportedFieldsInCountRequest, array $queryStringParameters)
     {
         $this->request = $request;
         $this->unsupportedFieldsInCountRequest = $unsupportedFieldsInCountRequest;
+        $this->queryStringParameters = $queryStringParameters;
     }
 
     /**
@@ -78,10 +87,11 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
 
     /**
      * {@inheritdoc}
+     * @throws \JsonException
      */
     public function getRequestAsJson(): string
     {
-        return json_encode($this);
+        return json_encode($this, JSON_THROW_ON_ERROR, 512);
     }
 
     /**

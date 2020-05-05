@@ -90,10 +90,14 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
         ];
         $unsupportedFieldsInCountRequest = ['fields', 'sort', 'from', 'size', 'highlight', 'aggs', 'aggregations'];
 
-        $this->inject($this->queryBuilder, 'elasticSearchClient', $elasticsearchClient);
-        $this->inject($this->queryBuilder, 'request', new FilteredQuery($request, $unsupportedFieldsInCountRequest));
+        $queryStringParameters = [
+            'fields' => ['__fulltext.h1^2']
+        ];
 
-        $query = new FilteredQuery($this->queryBuilder->getRequest()->toArray(), []);
+        $this->inject($this->queryBuilder, 'elasticSearchClient', $elasticsearchClient);
+        $this->inject($this->queryBuilder, 'request', new FilteredQuery($request, $unsupportedFieldsInCountRequest, $queryStringParameters));
+
+        $query = new FilteredQuery($this->queryBuilder->getRequest()->toArray(), [], []);
         $this->inject($this->queryBuilder, 'request', $query);
         $this->queryBuilder->query($node);
     }
