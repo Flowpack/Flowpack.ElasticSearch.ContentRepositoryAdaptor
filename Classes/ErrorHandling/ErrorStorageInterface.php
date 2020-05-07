@@ -1,8 +1,7 @@
 <?php
-
 declare(strict_types=1);
 
-namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error;
+namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\ErrorHandling;
 
 /*
  * This file is part of the Flowpack.ElasticSearch.ContentRepositoryAdaptor package.
@@ -14,22 +13,13 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error;
  * source code.
  */
 
-/**
- * Error Interface
- */
-interface ErrorInterface
+interface ErrorStorageInterface
 {
     /**
-     * Log the error message
+     * Write the error message and return a short info for the log
      *
-     * @return void
+     * @param array $errorResult
+     * @return string Information about the logged Elasticsearch Error
      */
-    public function log(): void;
-
-    /**
-     * Get a short log message for reporting
-     *
-     * @return string
-     */
-    public function message(): string;
+    public function logErrorResult(array $errorResult): string;
 }

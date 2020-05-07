@@ -21,10 +21,10 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilde
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ErrorHandling\ErrorHandlingService;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ErrorHandling\ErrorStorageInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\BulkIndexingError;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\NodeTypeIndexingConfiguration;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
@@ -149,16 +149,22 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     protected $bulkProcessing = false;
 
     /**
-     * @var DimensionsService
      * @Flow\Inject
+     * @var DimensionsService
      */
     protected $dimensionService;
 
     /**
-     * @var NodeTypeIndexingConfiguration
      * @Flow\Inject
+     * @var NodeTypeIndexingConfiguration
      */
     protected $nodeTypeIndexingConfiguration;
+
+    /**
+     * @Flow\Inject
+     * @var ErrorStorageInterface
+     */
+    protected $errorStorage;
 
     public function setDimensions(array $dimensionsValues): void
     {
@@ -290,7 +296,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                     $indexer($nodeFromContext, $targetWorkspaceName);
                 }, $nodeFromContext->getContext()->getTargetDimensions());
             } else {
-                $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
                 if ($node->isRemoved()) {
                     $this->removeNode($node, $context->getWorkspaceName());
                     $this->logger->debug(sprintf('Removed node with identifier %s, no longer in workspace %s', $node->getIdentifier(), $context->getWorkspaceName()), LogEnvironment::fromMethodName(__METHOD__));
@@ -483,9 +488,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             $this->searchClient->setDimensions($dimensions);
             $response = $this->requestDriver->bulk($this->getIndex(), implode(chr(10), $payload[$hash]));
 
-            foreach ($response as $responseLine) {
-                if (isset($response['errors']) && $response['errors'] !== false) {
-                    $this->errorHandlingService->log(new BulkIndexingError($this->currentBulkRequest, $responseLine));
+            if (isset($response['errors']) && $response['errors'] !== false) {
+                foreach ($response['items'] as $responseInfo) {
+                    if (current($responseInfo)['status'] !== 200) {
+                        $this->errorHandlingService->log($this->errorStorage->logErrorResult($responseInfo), LogEnvironment::fromMethodName(__METHOD__));
+                    }
                 }
             }
         }

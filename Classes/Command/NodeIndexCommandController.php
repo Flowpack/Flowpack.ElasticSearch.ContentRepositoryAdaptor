@@ -15,12 +15,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ErrorHandling\ErrorHandlingService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\ConfigurationException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\RuntimeException;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\Error\ErrorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\WorkspaceIndexer;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\ErrorHandlingService;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\Workspace;
@@ -141,6 +140,9 @@ class NodeIndexCommandController extends CommandController
      * @param string $workspace
      * @param string|null $postfix
      * @return void
+     * @throws ConfigurationException
+     * @throws FilesException
+     * @throws StopCommandException
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      * @throws \Flowpack\ElasticSearch\Exception
      */
@@ -199,6 +201,7 @@ class NodeIndexCommandController extends CommandController
         }
 
         $this->nodeIndexer->flush();
+        $this->outputErrorHandling();
     }
 
     /**
@@ -485,13 +488,7 @@ class NodeIndexCommandController extends CommandController
         }
 
         $this->outputLine();
-        /** @var ErrorInterface $error */
-        foreach ($this->errorHandlingService as $error) {
-            $this->outputLine('<error>Error</error> ' . $error->message());
-        }
-
-        $this->outputLine();
-        $this->outputLine('<error>Check your logs for more information</error>');
+        $this->outputLine('<error>%s Errors where returned while indexing. Check your logs for more information.</error>', [$this->errorHandlingService->getErrorCount()]);
     }
 
     /**
