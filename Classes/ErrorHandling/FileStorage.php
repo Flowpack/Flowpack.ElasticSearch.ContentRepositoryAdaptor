@@ -20,7 +20,6 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\RuntimeException;
  */
 class FileStorage implements ErrorStorageInterface
 {
-
     public function __construct()
     {
         if (!file_exists(FLOW_PATH_DATA . 'Logs/Elasticsearch')) {
@@ -37,7 +36,6 @@ class FileStorage implements ErrorStorageInterface
      */
     public function logErrorResult(array $errorResult): string
     {
-
         $referenceCode = date('YmdHis', $_SERVER['REQUEST_TIME']) . substr(md5((string)rand()), 0, 6);
 
         $filename = FLOW_PATH_DATA . 'Logs/Elasticsearch/' . $referenceCode . '.txt';
@@ -61,5 +59,4 @@ class FileStorage implements ErrorStorageInterface
         $error = json_encode($errorResult, JSON_PRETTY_PRINT);
         return sprintf("Error:\n=======\n\n%s\n\n", $error);
     }
-
 }
