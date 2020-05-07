@@ -91,7 +91,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
      */
     public function getRequestAsJson(): string
     {
-        return json_encode($this, JSON_THROW_ON_ERROR, 512);
+        return json_encode($this);
     }
 
     /**

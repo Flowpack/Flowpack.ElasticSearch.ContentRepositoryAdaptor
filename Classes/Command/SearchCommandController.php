@@ -182,7 +182,7 @@ class SearchCommandController extends CommandController
         ];
 
         if ($dimensions !== null) {
-            $contextConfiguration['dimensions'] = json_decode($dimensions, true, 512, JSON_THROW_ON_ERROR);
+            $contextConfiguration['dimensions'] = json_decode($dimensions, true);
         }
 
         return $this->contextFactory->create($contextConfiguration);
