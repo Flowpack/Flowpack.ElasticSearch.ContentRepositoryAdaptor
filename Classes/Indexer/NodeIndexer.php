@@ -226,7 +226,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     public function indexNode(NodeInterface $node, $targetWorkspaceName = null): void
     {
         if ($this->nodeTypeIndexingConfiguration->isIndexable($node->getNodeType()) === false) {
-            $this->logger->debug(sprintf('NodeIndexer - Node "%s" (%s) skipped, Node Type is not allowed in the index.', $node->getContextPath(), $node->getNodeType()), LogEnvironment::fromMethodName(__METHOD__));
+            $this->logger->debug(sprintf('Node "%s" (%s) skipped, Node Type is not allowed in the index.', $node->getContextPath(), $node->getNodeType()), LogEnvironment::fromMethodName(__METHOD__));
             return;
         }
 
@@ -257,13 +257,13 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
             if ($this->bulkProcessing === false) {
                 // Remove document with the same contextPathHash but different NodeType, required after NodeType change
-                $this->logger->debug(sprintf('NodeIndexer (%s): Search and remove duplicate document for node %s (%s) if needed.', $documentIdentifier, $contextPath, $node->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
+                $this->logger->debug(sprintf('Search and remove duplicate document for node %s (%s) if needed.', $contextPath, $node->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
                 $this->documentDriver->deleteDuplicateDocumentNotMatchingType($this->getIndex(), $documentIdentifier, $node->getNodeType());
             }
 
             $fulltextIndexOfNode = [];
             $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($documentIdentifier, $node) {
-                $this->logger->debug(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found, node type %s.', $documentIdentifier, $propertyName, $node->getNodeType()->getName()), LogEnvironment::fromMethodName(__METHOD__));
+                $this->logger->debug(sprintf('Property "%s" not indexed because no configuration found, node type %s.', $propertyName, $node->getNodeType()->getName()), LogEnvironment::fromMethodName(__METHOD__));
             });
 
             $document = new ElasticSearchDocument($mappingType,
@@ -293,9 +293,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
                 if ($node->isRemoved()) {
                     $this->removeNode($node, $context->getWorkspaceName());
-                    $this->logger->debug(sprintf('NodeIndexer (%s): Removed node with identifier %s, no longer in workspace %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName()), LogEnvironment::fromMethodName(__METHOD__));
+                    $this->logger->debug(sprintf('Removed node with identifier %s, no longer in workspace %s', $node->getIdentifier(), $context->getWorkspaceName()), LogEnvironment::fromMethodName(__METHOD__));
                 } else {
-                    $this->logger->debug(sprintf('NodeIndexer (%s): Could not index node with identifier %s, not found in workspace %s with dimensions %s', $documentIdentifier, $node->getIdentifier(), $context->getWorkspaceName(), json_encode($context->getDimensions())), LogEnvironment::fromMethodName(__METHOD__));
+                    $this->logger->debug(sprintf('Could not index node with identifier %s, not found in workspace %s with dimensions %s', $node->getIdentifier(), $context->getWorkspaceName(), json_encode($context->getDimensions())), LogEnvironment::fromMethodName(__METHOD__));
                 }
             }
         };
@@ -434,7 +434,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @return void
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
-     * @throws FilesException
      * @throws Exception\ConfigurationException
      */
     public function flush(): void
