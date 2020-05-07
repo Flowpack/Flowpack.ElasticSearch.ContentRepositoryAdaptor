@@ -41,6 +41,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
             return [
                 [
                     'update' => [
+                        '_type' => '_doc',
                         '_id' => $document->getId(),
                         '_index' => $indexName,
                         'retry_on_conflict' => 3
@@ -69,6 +70,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
         return [
             [
                 'index' => [
+                    '_type' => '_doc',
                     '_id' => $document->getId(),
                     '_index' => $indexName,
                 ]
@@ -109,6 +111,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
         return [
             [
                 'update' => [
+                    '_type' => '_doc',
                     '_id' => $closestFulltextNodeDocumentIdentifier
                 ]
             ],
