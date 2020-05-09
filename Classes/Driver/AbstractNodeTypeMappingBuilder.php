@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
@@ -64,17 +63,6 @@ abstract class AbstractNodeTypeMappingBuilder implements NodeTypeMappingBuilderI
             $settings = $this->configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Neos.ContentRepository.Search');
             $this->defaultConfigurationPerType = $settings['defaultConfigurationPerType'];
         }
-    }
-
-    /**
-     * Converts a Content Repository Node Type name into a name which can be used for an Elasticsearch Mapping
-     *
-     * @param string $nodeTypeName
-     * @return string
-     */
-    public function convertNodeTypeNameToMappingName(string $nodeTypeName): string
-    {
-        return str_replace('.', '-', $nodeTypeName);
     }
 
     /**

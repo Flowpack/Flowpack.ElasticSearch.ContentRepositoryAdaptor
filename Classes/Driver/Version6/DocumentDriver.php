@@ -15,7 +15,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
@@ -31,12 +30,6 @@ use Neos\Flow\Log\Utility\LogEnvironment;
 class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
 {
     /**
-     * @Flow\Inject
-     * @var NodeTypeMappingBuilderInterface
-     */
-    protected $nodeTypeMappingBuilder;
-
-    /**
      * {@inheritdoc}
      */
     public function delete(NodeInterface $node, string $identifier): array
@@ -44,7 +37,7 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
         return [
             [
                 'delete' => [
-                    '_type' => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($node->getNodeType()->getName()),
+                    '_type' => $node->getNodeType()->getName(),
                     '_id' => $identifier
                 ]
             ]
@@ -69,7 +62,7 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
                     ],
                     'must_not' => [
                         'term' => [
-                            Mapping::NEOS_TYPE_FIELD => $this->nodeTypeMappingBuilder->convertNodeTypeNameToMappingName($nodeType->getName())
+                            Mapping::NEOS_TYPE_FIELD => $nodeType->getName()
                         ]
                     ]
                 ]

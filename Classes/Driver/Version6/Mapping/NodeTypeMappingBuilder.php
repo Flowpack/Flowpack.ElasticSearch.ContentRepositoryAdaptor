@@ -58,8 +58,7 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
                 continue;
             }
 
-            $type = $index->findType($this->convertNodeTypeNameToMappingName($nodeTypeName));
-            $mapping = new Mapping($type);
+            $mapping = new Mapping($index->findType($nodeTypeName));
             $fullConfiguration = $nodeType->getFullConfiguration();
             if (isset($fullConfiguration['search']['elasticSearchMapping'])) {
                 $fullMapping = $fullConfiguration['search']['elasticSearchMapping'];
