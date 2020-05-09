@@ -39,12 +39,12 @@ Finally, run `./flow nodeindex:build`, and add the search plugin to your page. I
 
 This following matrix shows the compatibility of this package to Elasticsearch and Neos versions:
 
-|CR Adapter| Neos          | Elasticsearch |
-|----------|---------------|---------------|
-| 4        | 3.x, 4.x      | 1.x, 2,x 5.x  |
-| 5        | > 3.3, 4.x    | 1.x, 2,x 5.x  |
-| 6        | 5.x           | 5.x           |
-| 7        | 5.x           | 6.x, 7.x      |
+|CR Adapter| Neos          | Elasticsearch | Status       |
+|----------|---------------|---------------|--------------|
+| 4        | 3.x, 4.x      | 1.x, 2,x 5.x  | Unmaintained, probably broken |
+| 5        | > 3.3, 4.x    | 1.x, 2,x 5.x  | Bugfix only  | 
+| 6        | 5.x           | 5.x           | Bugfix only  |
+| 7        | 5.x           | 6.x, 7.x      | Bugfix and Features |
 
 _Currently the Driver interfaces are not marked as API, and can be changed to adapt to future needs._
 
