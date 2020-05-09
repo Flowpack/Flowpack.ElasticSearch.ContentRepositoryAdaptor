@@ -23,15 +23,6 @@ use Neos\Error\Messages\Result;
  */
 interface NodeTypeMappingBuilderInterface
 {
-
-    /**
-     * Converts a Content Repository Node Type name into a name which can be used for an Elasticsearch Mapping
-     *
-     * @param string $nodeTypeName
-     * @return string
-     */
-    public function convertNodeTypeNameToMappingName(string $nodeTypeName): string;
-
     /**
      * Builds a Mapping Collection from the configured node types
      *
