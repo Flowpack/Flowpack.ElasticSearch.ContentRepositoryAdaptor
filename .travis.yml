@@ -32,7 +32,6 @@ before_install:
   - cd ..
   - git clone https://github.com/neos/neos-base-distribution.git -b ${NEOS_TARGET_VERSION}
   - cd neos-base-distribution
-  - composer config repositories.flowpack-elasticsearch git https://github.com/daniellienert/Flowpack.ElasticSearch.git
   - composer require --no-update --no-interaction neos/content-repository-search:dev-master
   - composer require --no-update --no-interaction flowpack/elasticsearch:dev-master
   - composer require --no-update --no-interaction flowpack/elasticsearch-contentrepositoryadaptor:dev-master
