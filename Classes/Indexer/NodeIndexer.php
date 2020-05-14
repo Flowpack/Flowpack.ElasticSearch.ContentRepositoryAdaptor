@@ -279,7 +279,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
             $documentData = $document->getData();
             if ($targetWorkspaceName !== null) {
-                $documentData['__workspace'] = $targetWorkspaceName;
+                $documentData['neos_workspace'] = $targetWorkspaceName;
             }
 
             $this->toBulkRequest($node, $this->indexerDriver->document($this->getIndexName(), $node, $document, $documentData));

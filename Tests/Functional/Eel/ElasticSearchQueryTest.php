@@ -138,8 +138,9 @@ class ElasticSearchQueryTest extends FunctionalTestCase
         /** @var ElasticSearchQueryResult $result */
         $result = $this->getQueryBuilder()
             ->fulltext('circum*')
+            ->log($this->getLogMessagePrefix(__METHOD__))
             ->execute();
-        $this->assertEquals(1, $result->count());
+        static::assertEquals(1, $result->count());
 
         /** @var NodeInterface $node */
         $node = $result->current();
@@ -162,7 +163,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
             ->execute()
             ->current();
         $searchHitForNode = $queryBuilder->getFullElasticSearchHitForNode($resultNode);
-        $highlightedText = current($searchHitForNode['highlight']['__fulltext.text']);
+        $highlightedText = current($searchHitForNode['highlight']['neos_fulltext.text']);
         $expected = 'A Scout smiles and <em>whistles</em> under all circumstances.';
         static::assertEquals($expected, $highlightedText);
     }

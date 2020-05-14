@@ -557,7 +557,6 @@ class NodeIndexCommandController extends CommandController
             /** @var Mapping $mapping */
             $mapping->apply();
         }
-        $this->logger->info('+ Updated Mapping.', LogEnvironment::fromMethodName(__METHOD__));
     }
 
     private function outputMemoryUsage(): void

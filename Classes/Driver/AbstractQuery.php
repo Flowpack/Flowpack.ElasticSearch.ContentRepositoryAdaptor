@@ -188,7 +188,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
         } else {
             $this->request['highlight'] = [
                 'fields' => [
-                    '__fulltext*' => [
+                    'neos_fulltext*' => [
                         'fragment_size' => $fragmentSize,
                         'no_match_size' => $fragmentSize,
                         'number_of_fragments' => $fragmentCount

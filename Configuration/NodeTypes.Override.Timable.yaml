@@ -1,13 +1,13 @@
 'Neos.Neos:Timable':
   properties:
-    '_hiddenBeforeDateTime':
+    'neos_hidden_before_datetime':
       search:
         elasticSearchMapping:
           type: date
           format: 'date_time_no_millis'
         indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:sP") : null)}'
 
-    '_hiddenAfterDateTime':
+    'neos_hidden_after_datetime':
       search:
         elasticSearchMapping:
           type: date

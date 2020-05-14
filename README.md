@@ -265,7 +265,7 @@ Neos:
     '_hiddenBeforeDateTime':
       search:
 
-        # a date should be mapped differently, and in this case we want to use a date format which
+        # A date should be mapped differently, and in this case we want to use a date format which
         # Elasticsearch understands
         elasticSearchMapping:
           type: DateTime
@@ -732,14 +732,14 @@ which is a `Document` node. However, the main content of a certain `Document` is
 in the node itself, but inside its (`Content`) child nodes.
 
 This is why we need some special functionality for indexing, which *adds the content of the inner
-nodes* to the `Document` nodes where they belong to, to a field called `__fulltext` and
-`__fulltextParts`.
+nodes* to the `Document` nodes where they belong to, to a field called `neos_fulltext` and
+`neos_fulltext_parts`.
 
 Furthermore, we want that a fulltext match e.g. inside a headline is seen as *more important* than
 a match inside the normal body text. That's why the `Document` node not only contains one field with
 all the texts, but multiple "buckets" where text is added to: One field which contains everything
-deemed as "very important" (`__fulltext.h1`), one which is "less important" (`__fulltext.h2`),
-and finally one for the plain text (`__fulltext.text`). All of these fields are configured with different `boost` values.
+deemed as "very important" (`neos_fulltext.h1`), one which is "less important" (`neos_fulltext.h2`),
+and finally one for the plain text (`neos_fulltext.text`). All of these fields are configured with different `boost` values.
 
 **For a search user interface, checkout the Flowpack.SearchPlugin package**
 

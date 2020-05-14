@@ -30,15 +30,15 @@ Flowpack:
                           should: []
                           must_not:
                             - term:
-                                _hidden: true
+                                neos_hidden: true
                             - range:
-                                _hiddenBeforeDateTime:
+                                neos_hidden_before_datetime:
                                   gt: now
                             - range:
-                                _hiddenAfterDateTime:
+                                neos_hidden_after_datetime:
                                   lt: now
                   _source:
-                    - '__path'
+                    - 'neos_path'
 
                 unsupportedFieldsInCountRequest:
                   - '_source'
@@ -56,13 +56,13 @@ Flowpack:
                 queryStringParameters:
                   default_operator: or
                   fields:
-                    - __fulltext.h1^20
-                    - __fulltext.h2^12
-                    - __fulltext.h3^10
-                    - __fulltext.h4^5
-                    - __fulltext.h5^3
-                    - __fulltext.h6^2
-                    - __fulltext.text^1
+                    - neos_fulltext.h1^20
+                    - neos_fulltext.h2^12
+                    - neos_fulltext.h3^10
+                    - neos_fulltext.h4^5
+                    - neos_fulltext.h5^3
+                    - neos_fulltext.h6^2
+                    - neos_fulltext.text^1
 
             document:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\DocumentDriver'

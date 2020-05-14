@@ -124,11 +124,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function nodeType($nodeType)
     {
-        // on indexing, __typeAndSupertypes contains the typename itself and all supertypes, so that's why we can
+        // on indexing, neos_type_and_supertypes contains the typename itself and all supertypes, so that's why we can
         // use a simple term filter here.
 
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-term-filter.html
-        return $this->queryFilter('term', ['__typeAndSupertypes' => $nodeType]);
+        return $this->queryFilter('term', ['neos_type_and_supertypes' => $nodeType]);
     }
 
     /**
@@ -466,7 +466,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $name
      * @return ElasticSearchQueryBuilder
      */
-    public function termSuggestions(string $text, string $field = '__fulltext.text', string $name = 'suggestions'): ElasticSearchQueryBuilder
+    public function termSuggestions(string $text, string $field = 'neos_fulltext.text', string $name = 'suggestions'): ElasticSearchQueryBuilder
     {
         $suggestionDefinition = [
             'text' => $text,
@@ -750,7 +750,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $like = is_array($like) ? $like : [$like];
 
         $getDocumentDefinitionByNode = function (QueryInterface $request, NodeInterface $node): array {
-            $request->queryFilter('term', ['__identifier' => $node->getIdentifier()]);
+            $request->queryFilter('term', ['neos_node_identifier' => $node->getIdentifier()]);
             $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request->toArray())->getTreatedContent();
             $respondedDocuments = Arrays::getValueByPath($response, 'hits.hits');
             if (count($respondedDocuments) === 0) {
@@ -801,24 +801,24 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     {
         $this->elasticSearchClient->setContextNode($contextNode);
 
-        // on indexing, the __parentPath is tokenized to contain ALL parent path parts,
+        // on indexing, the neos_parent_path is tokenized to contain ALL parent path parts,
         // e.g. /foo, /foo/bar/, /foo/bar/baz; to speed up matching.. That's why we use a simple "term" filter here.
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-term-filter.html
         // another term filter against the path allows the context node itself to be found
         $this->queryFilter('bool', [
             'should' => [
                 [
-                    'term' => ['__parentPath' => $contextNode->getPath()]
+                    'term' => ['neos_parent_path' => $contextNode->getPath()]
                 ],
                 [
-                    'term' => ['__path' => $contextNode->getPath()]
+                    'term' => ['neos_path' => $contextNode->getPath()]
                 ]
             ]
         ]);
 
         //
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-terms-filter.html
-        $this->queryFilter('terms', ['__workspace' => array_unique(['live', $contextNode->getContext()->getWorkspace()->getName()])]);
+        $this->queryFilter('terms', ['neos_workspace' => array_unique(['live', $contextNode->getContext()->getWorkspace()->getName()])]);
 
         return $this;
     }
@@ -873,7 +873,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
          * we might be able to use https://github.com/elasticsearch/elasticsearch/issues/3300 as soon as it is merged.
          */
         foreach ($hits as $hit) {
-            $nodePath = $hit[isset($hit['fields']['__path']) ? 'fields' : '_source']['__path'];
+            $nodePath = $hit[isset($hit['fields']['neos_path']) ? 'fields' : '_source']['neos_path'];
             if (is_array($nodePath)) {
                 $nodePath = current($nodePath);
             }
@@ -908,8 +908,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     public function cacheLifetime(): int
     {
         $minTimestamps = array_filter([
-            $this->getNearestFutureDate('_hiddenBeforeDateTime'),
-            $this->getNearestFutureDate('_hiddenAfterDateTime')
+            $this->getNearestFutureDate('neos_hidden_before_datetime'),
+            $this->getNearestFutureDate('neos_hidden_after_datetime')
         ], function ($value) {
             return $value != 0;
         });
@@ -957,7 +957,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
         /* Remove exclusion of not yet visible nodes
         - range:
-          _hiddenBeforeDateTime:
+          neos_hidden_before_datetime:
             gt: now
         */
         unset($mustNot[1]);

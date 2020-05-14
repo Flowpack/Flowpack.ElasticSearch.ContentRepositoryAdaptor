@@ -1,5 +1,5 @@
 'Neos.Neos:Hidable':
   properties:
-    '_hidden':
+    'neos_hidden':
       search:
         indexing: '${node.hidden}'
