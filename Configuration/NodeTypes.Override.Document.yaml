@@ -39,3 +39,8 @@
     'neos_hidden_in_index':
       search:
         indexing: '${node.hiddenInIndex}'
+
+    # deliberately don't map or index this
+    '_hiddenInIndex':
+      search:
+        indexing: false

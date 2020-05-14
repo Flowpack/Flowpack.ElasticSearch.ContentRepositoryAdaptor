@@ -1,4 +1,4 @@
-'neos_Neos:Node': &node
+'Neos.Neos:Node': &node
   search:
     fulltext:
       enable: true
@@ -34,11 +34,6 @@
           type: integer
         indexing: '${node.index}'
 
-    'neos_removed':
-      search:
-        elasticSearchMapping: '' # deliberately don't map or index this
-        indexing: ''
-
     # we index the node type INCLUDING ALL SUPERTYPES
     'neos_type_and_supertypes':
       search:
@@ -66,5 +61,37 @@
           type: date
           format: 'date_time_no_millis'
         indexing: '${(node.creationDateTime ? Date.format(node.creationDateTime, "Y-m-d\TH:i:sP") : null)}'
+
+    # deliberately don't map or index this
+    '_removed':
+      search:
+        indexing: false
+    '_creationDateTime':
+      search:
+        indexing: false
+    '_lastModificationDateTime':
+      search:
+        indexing: false
+    '_lastPublicationDateTime':
+      search:
+        indexing: false
+    '_hiddenBeforeDateTime':
+      search:
+        indexing: false
+    '_hiddenAfterDateTime':
+      search:
+        indexing: false
+    '_path':
+      search:
+        indexing: false
+    '_nodeType':
+      search:
+        indexing: false
+    '_name':
+      search:
+        indexing: false
+    '_hidden':
+      search:
+        indexing: false
 
 'unstructured': *node

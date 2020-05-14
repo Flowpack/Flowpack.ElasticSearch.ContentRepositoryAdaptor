@@ -138,8 +138,9 @@ class ElasticSearchQueryTest extends FunctionalTestCase
         /** @var ElasticSearchQueryResult $result */
         $result = $this->getQueryBuilder()
             ->fulltext('circum*')
+            ->log($this->getLogMessagePrefix(__METHOD__))
             ->execute();
-        $this->assertEquals(1, $result->count());
+        static::assertEquals(1, $result->count());
 
         /** @var NodeInterface $node */
         $node = $result->current();
