@@ -490,7 +490,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
             if (isset($response['errors']) && $response['errors'] !== false) {
                 foreach ($response['items'] as $responseInfo) {
-                    if (current($responseInfo)['status'] !== 200) {
+                    if ((int)current($responseInfo)['status'] > 299) {
                         $this->errorHandlingService->log($this->errorStorage->logErrorResult($responseInfo), LogEnvironment::fromMethodName(__METHOD__));
                     }
                 }
