@@ -686,17 +686,18 @@ First of all you have to define a property in your NodeTypes.yaml for your node 
 
 Query your nodes in your Fusion:
 ```
-geoSorting = Neos.Fusion:DataStructure {
-    _geo_distance = Neos.Fusion:DataStructure {
-        latlng = Neos.Fusion:DataStructure {
-            lat = 51.512711
-            lon = 7.453084
-        }
-        order = "plane"
-        unit = "km"
-        distance_type = "sloppy_arc"
+    geoSorting = Neos.Fusion:DataStructure {
+	_geo_distance {
+	    geopoint { 
+		lat = 51.512711
+	        lon = 7.453084
+	    }
+	    order = "asc"
+	    unit = "km"
+	    ignore_unmapped = true
+	}
     }
-}
+
 nodes = ${Search.query(site).nodeType('Vendor.Name:Retailer').sort(this.geoSorting)}
 ```
 
