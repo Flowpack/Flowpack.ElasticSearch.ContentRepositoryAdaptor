@@ -35,6 +35,7 @@ Neos:
           elasticSearchMapping:
             type: date
             format: 'date_time_no_millis'
+          indexing: '${(value ? Date.format(value, "Y-m-d\TH:i:sP") : null)}'
 
         'Neos\Media\Domain\Model\Asset':
           elasticSearchMapping: '' # deliberately don't map or index this
