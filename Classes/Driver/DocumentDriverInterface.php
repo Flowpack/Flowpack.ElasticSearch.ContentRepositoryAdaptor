@@ -31,14 +31,4 @@ interface DocumentDriverInterface
      * @return array
      */
     public function delete(NodeInterface $node, string $identifier): array;
-
-    /**
-     * Delete documents by $documentIdentifier not having the given $nodeType
-     *
-     * @param Index $index
-     * @param string $documentIdentifier
-     * @param NodeType $nodeType
-     * @return void
-     */
-    public function deleteDuplicateDocumentNotMatchingType(Index $index, string $documentIdentifier, NodeType $nodeType): void;
 }
