@@ -261,12 +261,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
             $mappingType = $this->getIndex()->findType($nodeType->getName());
 
-            if ($this->bulkProcessing === false) {
-                // Remove document with the same contextPathHash but different NodeType, required after NodeType change
-                $this->logger->debug(sprintf('Search and remove duplicate document for node %s (%s) if needed.', $contextPath, $node->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
-                $this->documentDriver->deleteDuplicateDocumentNotMatchingType($this->getIndex(), $documentIdentifier, $node->getNodeType());
-            }
-
             $fulltextIndexOfNode = [];
             $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($documentIdentifier, $node) {
                 $this->logger->debug(sprintf('Property "%s" not indexed because no configuration found, node type %s.', $propertyName, $node->getNodeType()->getName()), LogEnvironment::fromMethodName(__METHOD__));
