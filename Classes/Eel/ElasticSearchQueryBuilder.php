@@ -122,7 +122,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @throws QueryBuildingException
      * @api
      */
-    public function nodeType($nodeType)
+    public function nodeType(string $nodeType): QueryBuilderInterface
     {
         // on indexing, neos_type_and_supertypes contains the typename itself and all supertypes, so that's why we can
         // use a simple term filter here.
@@ -138,7 +138,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @return ElasticSearchQueryBuilder
      * @api
      */
-    public function sortDesc($propertyName)
+    public function sortDesc(string $propertyName): QueryBuilderInterface
     {
         $configuration = [
             $propertyName => ['order' => 'desc']
@@ -156,7 +156,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @return ElasticSearchQueryBuilder
      * @api
      */
-    public function sortAsc($propertyName)
+    public function sortAsc(string $propertyName): QueryBuilderInterface
     {
         $configuration = [
             $propertyName => ['order' => 'asc']
@@ -194,7 +194,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @throws IllegalObjectTypeException
      * @api
      */
-    public function limit($limit)
+    public function limit($limit): QueryBuilderInterface
     {
         if ($limit === null) {
             return $this;
@@ -222,7 +222,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @return ElasticSearchQueryBuilder
      * @api
      */
-    public function from($from)
+    public function from($from): QueryBuilderInterface
     {
         if (!$from) {
             return $this;
@@ -243,7 +243,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @throws QueryBuildingException
      * @api
      */
-    public function exactMatch($propertyName, $value)
+    public function exactMatch(string $propertyName, $value): QueryBuilderInterface
     {
         return $this->queryFilter('term', [$propertyName => $this->convertValue($value)]);
     }
@@ -620,9 +620,10 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * Get a query result object for lazy execution of the query
      *
      * @return ElasticSearchQueryResult
+     * @return \Traversable
      * @api
      */
-    public function execute()
+    public function execute(): \Traversable
     {
         $elasticSearchQuery = new ElasticSearchQuery($this);
         return $elasticSearchQuery->execute(true);
@@ -649,7 +650,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @throws \Neos\Flow\Http\Exception
      * @api
      */
-    public function count()
+    public function count(): int
     {
         $timeBefore = microtime(true);
         $request = $this->getRequest()->getCountRequestAsJson();
@@ -658,7 +659,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $timeAfterwards = microtime(true);
 
         $treatedContent = $response->getTreatedContent();
-        $count = $treatedContent['count'];
+        $count = (int)$treatedContent['count'];
 
         $this->logThisQuery && $this->logger->debug('Count Query Log (' . $this->logMessage . '): ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LogEnvironment::fromMethodName(__METHOD__));
 
@@ -797,7 +798,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @throws IllegalObjectTypeException
      * @api
      */
-    public function query(NodeInterface $contextNode): ElasticSearchQueryBuilder
+    public function query(NodeInterface $contextNode): QueryBuilderInterface
     {
         $this->elasticSearchClient->setContextNode($contextNode);
 

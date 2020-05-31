@@ -665,7 +665,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @param callable $callback
      * @throws \Exception
      */
-    public function withBulkProcessing(callable $callback)
+    public function withBulkProcessing(callable $callback): void
     {
         $bulkProcessing = $this->bulkProcessing;
         $this->bulkProcessing = true;
