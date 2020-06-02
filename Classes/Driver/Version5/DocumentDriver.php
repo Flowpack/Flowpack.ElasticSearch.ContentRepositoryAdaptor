@@ -57,8 +57,7 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
      */
     public function deleteDuplicateDocumentNotMatchingType(Index $index, string $documentIdentifier, NodeType $nodeType): void
     {
-        $result = $index->request('GET', '/_search?scroll=1m', [], json_encode([
-            'sort' => ['_doc'],
+        $result = $index->request('POST', '/_delete_by_query', [], json_encode([
             'query' => [
                 'bool' => [
                     'must' => [
@@ -72,35 +71,6 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
                         ]
                     ]
                 ]
-            ]
-        ]));
-        $treatedContent = $result->getTreatedContent();
-        $scrollId = $treatedContent['_scroll_id'];
-        $mapHitToDeleteRequest = function ($hit) {
-            return json_encode([
-                'delete' => [
-                    '_type' => $hit['_type'],
-                    '_id' => $hit['_id']
-                ]
-            ]);
-        };
-        $bulkRequest = [];
-        while (isset($treatedContent['hits']['hits']) && $treatedContent['hits']['hits'] !== []) {
-            $hits = $treatedContent['hits']['hits'];
-            $bulkRequest = array_merge($bulkRequest, array_map($mapHitToDeleteRequest, $hits));
-            $result = $index->request('POST', '/_search/scroll', [], json_encode([
-                'scroll'    => '1m',
-                'scroll_id' => $scrollId,
-            ]), false);
-            $treatedContent = $result->getTreatedContent();
-        }
-        $this->logger->debug(sprintf('NodeIndexer: Check duplicate nodes for %s (%s), found %d document(s)', $documentIdentifier, $nodeType->getName(), count($bulkRequest)), LogEnvironment::fromMethodName(__METHOD__));
-        if ($bulkRequest !== []) {
-            $index->request('POST', '/_bulk', [], implode("\n", $bulkRequest) . "\n");
-        }
-        $this->searchClient->request('DELETE', '/_search/scroll', [], json_encode([
-            'scroll_id' => [
-                $scrollId
             ]
         ]));
     }
