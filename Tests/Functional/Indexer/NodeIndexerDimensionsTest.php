@@ -18,6 +18,7 @@ use DateTimeImmutable;
 use Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
@@ -37,6 +38,12 @@ use Neos\Flow\Tests\FunctionalTestCase;
 
 class NodeIndexerDimensionsTest extends FunctionalTestCase
 {
+    const TESTING_INDEX_PREFIX = 'neoscr_testing';
+
+    /**
+     * @var ElasticSearchClient
+     */
+    protected $searchClient;
     /**
      * @var WorkspaceRepository
      */
@@ -70,7 +77,7 @@ class NodeIndexerDimensionsTest extends FunctionalTestCase
     /**
      * @var NodeInterface
      */
-    protected $siteNodeZz;
+    protected $siteNodeDefault;
 
     /**
      * @var NodeInterface
@@ -80,7 +87,7 @@ class NodeIndexerDimensionsTest extends FunctionalTestCase
     /**
      * @var NodeInterface
      */
-    protected $siteNodeEn;
+    protected $siteNodeFr;
 
     /**
      * @var boolean
@@ -90,11 +97,16 @@ class NodeIndexerDimensionsTest extends FunctionalTestCase
     public function setUp(): void
     {
         parent::setUp();
+
         $this->workspaceRepository = $this->objectManager->get(WorkspaceRepository::class);
         $liveWorkspace = new Workspace('live');
         $this->workspaceRepository->add($liveWorkspace);
 
         $this->nodeDataRepository = $this->objectManager->get(NodeDataRepository::class);
+        $this->searchClient = $this->objectManager->get(ElasticSearchClient::class);
+        // clean up any existing indices
+        $this->searchClient->request('DELETE', '/' . self::TESTING_INDEX_PREFIX . '*');
+
         $this->nodeIndexCommandController = $this->objectManager->get(NodeIndexCommandController::class);
         $this->nodeTypeManager = $this->objectManager->get(NodeTypeManager::class);
         $this->contextFactory = $this->objectManager->get(ContextFactoryInterface::class);
@@ -105,6 +117,7 @@ class NodeIndexerDimensionsTest extends FunctionalTestCase
     {
         parent::tearDown();
         $this->inject($this->contextFactory, 'contextInstances', []);
+        //$this->searchClient->request('DELETE', '/' . self::TESTING_INDEX_PREFIX . '*');
     }
 
     /**
@@ -113,17 +126,16 @@ class NodeIndexerDimensionsTest extends FunctionalTestCase
     public function countNodesTest(): void
     {
         $queryBuilder = $this->getQueryBuilder();
-        $resultZz = $queryBuilder
-            ->query($this->siteNodeZz)
+        $resultDefault = $queryBuilder
+            ->query($this->siteNodeDefault)
             ->log($this->getLogMessagePrefix(__METHOD__))
             ->nodeType('Neos.NodeTypes:Page')
             ->sortDesc('title')
             ->execute();
 
-        /** @var QueryResultInterface $resultZz */
-
-        static::assertCount(1, $resultZz, 'The result should have 1 item');
-        static::assertEquals(1, $resultZz->count(), 'Count should be 1');
+        /** @var QueryResultInterface $resultDefault */
+        static::assertCount(1, $resultDefault, 'The result should have 2 items');
+        static::assertEquals(1, $resultDefault->count(), 'Count should be 2');
 
         $resultDe = $queryBuilder
             ->query($this->siteNodeDe)
@@ -137,27 +149,27 @@ class NodeIndexerDimensionsTest extends FunctionalTestCase
         static::assertCount(4, $resultDe, 'The result should have 4 items');
         static::assertEquals(4, $resultDe->count(), 'Count should be 4');
 
-        $resultEn = $queryBuilder
-            ->query($this->siteNodeEn)
+        $resultFr = $queryBuilder
+            ->query($this->siteNodeFr)
             ->log($this->getLogMessagePrefix(__METHOD__))
             ->nodeType('Neos.NodeTypes:Page')
             ->sortDesc('title')
             ->execute();
 
-        /** @var QueryResultInterface $resultEn */
+        /** @var QueryResultInterface $resultFr */
 
-        static::assertCount(3, $resultEn, 'The result should have 3 items');
-        static::assertEquals(3, $resultEn->count(), 'Count should be 3');
+        static::assertCount(3, $resultFr, 'The result should have 3 items');
+        static::assertEquals(3, $resultFr->count(), 'Count should be 3');
     }
 
 
     /**
      * add test data that moreless look like this:
-     * -root-[zz|de|en]
-     *   |- site-[zz|de|en]
-     *     |- document2-[de|en]
+     * -root-[en_US|de|fr]
+     *   |- site-[en_US|de|fr]
+     *     |- document2-[de|fr]
      *       |- document3-de
-     *       |- document4-[de|en]
+     *       |- document4-[de|fr]
      *
      * @throws NodeExistsException
      * @throws NodeTypeNotFoundException
@@ -168,44 +180,46 @@ class NodeIndexerDimensionsTest extends FunctionalTestCase
      */
     protected function createNodesForLanguageDimensions(): void
     {
-        $zzLanguageDimensionContext = $this->contextFactory->create([
+        $defaultLanguageDimensionContext = $this->contextFactory->create([
             'workspaceName' => 'live',
-            'dimensions' => ['language' => ['zz']],
-            'targetDimensions' => ['language' => 'zz']
+            'dimensions' => ['language' => ['en_US']],
+            'targetDimensions' => ['language' => 'en_US']
         ]);
         $deLanguageDimensionContext = $this->contextFactory->create([
             'workspaceName' => 'live',
             'dimensions' => ['language' => ['de']],
             'targetDimensions' => ['language' => 'de']
         ]);
-        $enLanguageDimensionContext = $this->contextFactory->create([
+        $frLanguageDimensionContext = $this->contextFactory->create([
             'workspaceName' => 'live',
-            'dimensions' => ['language' => ['en']],
-            'targetDimensions' => ['language' => 'en']
+            'dimensions' => ['language' => ['fr']],
+            'targetDimensions' => ['language' => 'fr']
         ]);
 
-        $rootNode = $zzLanguageDimensionContext->getRootNode();
-        $this->siteNodeZz = $rootNode->createNode('root', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
-        $this->siteNodeZz->setProperty('title', 'root-zz');
-        $this->siteNodeDe = $deLanguageDimensionContext->adoptNode($this->siteNodeZz, true);
+        $rootNode = $defaultLanguageDimensionContext->getRootNode();
+        $this->siteNodeDefault = $rootNode->createNode('root', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
+        $this->siteNodeDefault->setProperty('title', 'root-default');
+        $this->siteNodeDe = $deLanguageDimensionContext->adoptNode($this->siteNodeDefault, true);
         $this->siteNodeDe->setProperty('title', 'root-de');
-        $this->siteNodeEn = $deLanguageDimensionContext->adoptNode($this->siteNodeZz, true);
-        $this->siteNodeEn->setProperty('title', 'root-en');
+        $this->siteNodeFr = $deLanguageDimensionContext->adoptNode($this->siteNodeDefault, true);
+        $this->siteNodeFr->setProperty('title', 'root-fr');
 
         // add a document node that is translated in two languages
-        $newDocumentNode1 = $this->siteNodeZz->createNode('test-node-1', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
-        $newDocumentNode1->setProperty('title', 'site');
+        $newDocumentNode1 = $this->siteNodeDefault->createNode('site-default', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
+        $newDocumentNode1->setProperty('title', 'site-default');
+
         $translatedDocumentNode1De = $deLanguageDimensionContext->adoptNode($newDocumentNode1, true);
         $translatedDocumentNode1De->setProperty('title', 'site-de');
-        $translatedDocumentNode1En = $enLanguageDimensionContext->adoptNode($newDocumentNode1, true);
-        $translatedDocumentNode1En->setProperty('title', 'site-en');
+        $translatedDocumentNode1Fr = $frLanguageDimensionContext->adoptNode($newDocumentNode1, true);
+        $translatedDocumentNode1Fr->setProperty('title', 'site-fr');
 
 
         // add additional, but separate nodes here
         $standaloneDocumentNode2De = $this->siteNodeDe->createNode('document2-de', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
         $standaloneDocumentNode2De->setProperty('title', 'document2-de');
-        $standaloneDocumentNode2En = $this->siteNodeEn->createNode('document2-en', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
-        $standaloneDocumentNode2En->setProperty('title', 'document2-en');
+
+        $standaloneDocumentNode2Fr = $this->siteNodeFr->createNode('document2-fr', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
+        $standaloneDocumentNode2Fr->setProperty('title', 'document2-fr');
 
         // add an additional german node
         $documentNodeDe3 = $standaloneDocumentNode2De->createNode('document3-de', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
@@ -214,8 +228,9 @@ class NodeIndexerDimensionsTest extends FunctionalTestCase
         // add another german node, but translate it to english
         $documentNodeDe4 = $standaloneDocumentNode2De->createNode('document4-de', $this->nodeTypeManager->getNodeType('Neos.NodeTypes:Page'));
         $documentNodeDe4->setProperty('title', 'document4-de');
-        $translatedDocumentNode1En = $enLanguageDimensionContext->adoptNode($documentNodeDe4, true);
-        $translatedDocumentNode1En->setProperty('title', 'document4-en');
+
+        $translatedDocumentNode4Fr = $frLanguageDimensionContext->adoptNode($documentNodeDe4, true);
+        $translatedDocumentNode4Fr->setProperty('title', 'document4-fr');
 
         $this->persistenceManager->persistAll();
 
