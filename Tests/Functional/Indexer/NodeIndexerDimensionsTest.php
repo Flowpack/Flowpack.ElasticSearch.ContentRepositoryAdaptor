@@ -113,7 +113,6 @@ class NodeIndexerDimensionsTest extends FunctionalTestCase
     public function countNodesTest(): void
     {
         $queryBuilder = $this->getQueryBuilder();
-        \Neos\Flow\var_dump($this->siteNodeZz);
         $resultZz = $queryBuilder
             ->query($this->siteNodeZz)
             ->log($this->getLogMessagePrefix(__METHOD__))
