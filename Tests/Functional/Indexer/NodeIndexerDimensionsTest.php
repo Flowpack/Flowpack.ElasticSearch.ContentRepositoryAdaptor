@@ -98,7 +98,7 @@ class NodeIndexerDimensionsTest extends FunctionalTestCase
         $this->nodeIndexCommandController = $this->objectManager->get(NodeIndexCommandController::class);
         $this->nodeTypeManager = $this->objectManager->get(NodeTypeManager::class);
         $this->contextFactory = $this->objectManager->get(ContextFactoryInterface::class);
-        $this->createNodesForDimensionsTest();
+        $this->createNodesForLanguageDimensions();
     }
 
     public function tearDown(): void
@@ -113,6 +113,7 @@ class NodeIndexerDimensionsTest extends FunctionalTestCase
     public function countNodesTest(): void
     {
         $queryBuilder = $this->getQueryBuilder();
+        \Neos\Flow\var_dump($this->siteNodeZz);
         $resultZz = $queryBuilder
             ->query($this->siteNodeZz)
             ->log($this->getLogMessagePrefix(__METHOD__))
@@ -225,7 +226,7 @@ class NodeIndexerDimensionsTest extends FunctionalTestCase
             return;
         }
 
-        $this->nodeIndexCommandController->buildCommand(null, false, null, 'functionaltest');
+        $this->nodeIndexCommandController->buildCommand(null, false, 'live');
         self::$indexInitialized = true;
     }
 
