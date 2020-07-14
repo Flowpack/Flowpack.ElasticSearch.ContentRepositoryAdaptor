@@ -75,7 +75,11 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
         $result = $this->elasticsearchClient->request('POST', '_ingest/pipeline/_simulate', [], json_encode($request))->getTreatedContent();
         $extractedAsset = Arrays::getValueByPath($result, 'docs.0.doc._source.attachment');
 
-        $this->logger->debug(sprintf('Extracted asset %s of type %s. Extracted %s characters of content', $asset->getResource()->getFilename(), $extractedAsset['content_type'], $extractedAsset['content_length']), LogEnvironment::fromMethodName(__METHOD__));
+        if (!is_array($extractedAsset)) {
+            $this->logger->error(sprintf('Error while extracting fulltext data from file "%s". See Elasticsearch error log line fo details.', $asset->getResource()->getFilename()), LogEnvironment::fromMethodName(__METHOD__));
+        } else {
+            $this->logger->debug(sprintf('Extracted asset %s of type %s. Extracted %s characters of content', $asset->getResource()->getFilename(), $extractedAsset['content_type'] ?? '-no-content-type-', $extractedAsset['content_length'] ?? '0'), LogEnvironment::fromMethodName(__METHOD__));
+        }
 
         return new AssetContent(
             $extractedAsset['content'] ?? '',
@@ -85,7 +89,7 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
             $extractedAsset['keywords'] ?? '',
             $extractedAsset['date'] ?? '',
             $extractedAsset['content_type'] ?? '',
-            $extractedAsset['content_length'] ?? '',
+            $extractedAsset['content_length'] ?? 0,
             $extractedAsset['language'] ?? ''
         );
     }
