@@ -588,6 +588,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             $timeBefore = microtime(true);
             $request = $this->request->getRequestAsJson();
 
+            $this->logThisQuery && $this->logger->debug(sprintf('Query Log (%s): %s', $this->logMessage, $request), LogEnvironment::fromMethodName(__METHOD__));
+
             $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request);
             $timeAfterwards = microtime(true);
 
@@ -596,13 +598,15 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
             $this->result['nodes'] = [];
 
-            $this->logThisQuery && $this->logger->debug(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s', $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($searchResult->getHits()), $searchResult->getTotal()), LogEnvironment::fromMethodName(__METHOD__));
+            $this->logThisQuery && $this->logger->debug(sprintf('Query Log (%s): execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s', $this->logMessage, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($searchResult->getHits()), $searchResult->getTotal()), LogEnvironment::fromMethodName(__METHOD__));
 
             if (count($searchResult->getHits()) > 0) {
                 $this->result['nodes'] = $this->convertHitsToNodes($searchResult->getHits());
             }
         } catch (ApiException $exception) {
-            $this->throwableStorage->logThrowable($exception);
+            $this->logThisQuery && $this->logger->debug(sprintf('Query Log (%s): execution failed with message: %s', $this->logMessage, $exception->getMessage()), LogEnvironment::fromMethodName(__METHOD__));
+            $logMessage = $this->throwableStorage->logThrowable($exception);
+            $this->logger->error($logMessage, LogEnvironment::fromMethodName(__METHOD__));
             $this->result['nodes'] = [];
         }
 
