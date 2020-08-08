@@ -80,6 +80,7 @@ class NodeIndexerTest extends FunctionalTestCase
      */
     public function getIndexWithoutDimensionConfigured(): void
     {
+        $this->nodeIndexer->setIndexNamePostfix('');
         $this->nodeIndexer->setDimensions([]);
         $index = $this->nodeIndexer->getIndex();
         static::assertEquals(self::TESTING_INDEX_PREFIX . '-default', $index->getName());
