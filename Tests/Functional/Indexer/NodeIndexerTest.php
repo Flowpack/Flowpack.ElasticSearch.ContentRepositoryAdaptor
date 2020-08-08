@@ -144,7 +144,7 @@ class NodeIndexerTest extends FunctionalTestCase
 
         $this->nodeIndexer->removeNode($testNode);
         $this->nodeIndexer->flush();
-        usleep(500000);
+        sleep(1);
         $this->assertFalse($this->nodeExistsInIndex($testNode), 'Node still exists after delete');
     }
 
