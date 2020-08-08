@@ -266,7 +266,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $this->logger->debug(sprintf('Property "%s" not indexed because no configuration found, node type %s.', $propertyName, $node->getNodeType()->getName()), LogEnvironment::fromMethodName(__METHOD__));
             });
 
-            $document = new ElasticSearchDocument($mappingType,
+            $document = new ElasticSearchDocument(
+                $mappingType,
                 $nodePropertiesToBeStoredInIndex,
                 $documentIdentifier
             );
@@ -443,9 +444,13 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             return;
         }
 
-        $this->logger->debug(vsprintf('Flush bulk request, elements=%d, maximumElements=%s, octets=%d, maximumOctets=%d',
-            [$bulkRequestSize, $this->batchSize['elements'], $this->bulkRequestSize(), $this->batchSize['octets']]),
-            LogEnvironment::fromMethodName(__METHOD__));
+        $this->logger->debug(
+            vsprintf(
+            'Flush bulk request, elements=%d, maximumElements=%s, octets=%d, maximumOctets=%d',
+            [$bulkRequestSize, $this->batchSize['elements'], $this->bulkRequestSize(), $this->batchSize['octets']]
+        ),
+            LogEnvironment::fromMethodName(__METHOD__)
+        );
 
         $payload = [];
         /** @var BulkRequestPart $bulkRequestPart */
