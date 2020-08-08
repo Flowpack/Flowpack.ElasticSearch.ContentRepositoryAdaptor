@@ -19,7 +19,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandCont
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\TRaits\ContentRepositoryNodeCreationTrait;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Traits\ContentRepositoryNodeCreationTrait;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Flow\Persistence\QueryResultInterface;
 use Neos\Flow\Tests\FunctionalTestCase;
