@@ -37,6 +37,7 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
         return [
             [
                 'delete' => [
+                    '_type' =>'_doc',
                     '_id' => $identifier
                 ]
             ]
