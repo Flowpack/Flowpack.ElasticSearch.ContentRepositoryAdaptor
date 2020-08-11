@@ -255,7 +255,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
      * @return array the Elasticsearch hit, or NULL if it does not exist.
      * @api
      */
-    public function searchHitForNode(NodeInterface $node): array
+    public function searchHitForNode(NodeInterface $node): ?array
     {
         return $this->elasticSearchQuery->getQueryBuilder()->getFullElasticSearchHitForNode($node);
     }
