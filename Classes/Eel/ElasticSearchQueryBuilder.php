@@ -567,7 +567,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param NodeInterface $node
      * @return array the Elasticsearch hit for the node as array, or NULL if it does not exist.
      */
-    public function getFullElasticSearchHitForNode(NodeInterface $node):? array
+    public function getFullElasticSearchHitForNode(NodeInterface $node): ?array
     {
         return $this->elasticSearchHitsIndexedByNodeFromLastRequest[$node->getIdentifier()] ?? null;
     }
