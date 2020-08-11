@@ -604,7 +604,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
                 $this->result['nodes'] = $this->convertHitsToNodes($searchResult->getHits());
             }
         } catch (ApiException $exception) {
-            $this->logThisQuery && $this->logger->debug(sprintf('Query Log (%s): execution failed with message: %s', $this->logMessage, $exception->getMessage()), LogEnvironment::fromMethodName(__METHOD__));
+            $this->logger->debug(sprintf('Query Log (%s): execution of query failed (see below), query was: %s', $this->logMessage, $this->request->getRequestAsJson()), LogEnvironment::fromMethodName(__METHOD__));
             $logMessage = $this->throwableStorage->logThrowable($exception);
             $this->logger->error($logMessage, LogEnvironment::fromMethodName(__METHOD__));
             $this->result['nodes'] = [];
