@@ -320,7 +320,7 @@ class NodeIndexCommandController extends CommandController
                 $this->logger->info('Nothing to remove.', LogEnvironment::fromMethodName(__METHOD__));
             }
         } catch (ApiException $exception) {
-            $response = json_decode($exception->getResponse());
+            $response = json_decode($exception->getResponse()->getBody()->getContents());
             if ($response->error instanceof \stdClass) {
                 $this->logger->info(sprintf('Nothing removed. ElasticSearch responded with status %s, saying "%s: %s"', $response->status, $response->error->type, $response->error->reason), LogEnvironment::fromMethodName(__METHOD__));
             } else {

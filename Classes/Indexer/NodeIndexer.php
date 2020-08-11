@@ -219,7 +219,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 $this->logger->debug(sprintf('NodeIndexer (%s) - Property "%s" not indexed because no configuration found, node type %s.', $documentIdentifier, $propertyName, $node->getNodeType()->getName()), LogEnvironment::fromMethodName(__METHOD__));
             });
 
-            $document = new ElasticSearchDocument($mappingType,
+            $document = new ElasticSearchDocument(
+                $mappingType,
                 $nodePropertiesToBeStoredInIndex,
                 $documentIdentifier
             );
