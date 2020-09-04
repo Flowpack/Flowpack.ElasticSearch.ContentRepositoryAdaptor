@@ -158,5 +158,4 @@ class NodeIndexerDimensionsTest extends FunctionalTestCase
             static::fail('Setting up the QueryBuilder failed: ' . $exception->getMessage());
         }
     }
-
 }
