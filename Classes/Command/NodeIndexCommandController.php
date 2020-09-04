@@ -385,7 +385,8 @@ class NodeIndexCommandController extends CommandController
             $this->outputLine($message);
         };
 
-        $this->workspaceIndexer->indexWithDimensions($workspace, $dimensionsValuesArray, $limit, $workspaceLogger);
+        //$this->workspaceIndexer->indexWithDimensions($workspace, $dimensionsValuesArray, $limit, $workspaceLogger);
+        $this->workspaceIndexer->index($workspace, $limit, $workspaceLogger);
 
         $this->outputErrorHandling();
     }
