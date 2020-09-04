@@ -112,7 +112,6 @@ class NodeIndexerDimensionsTest extends FunctionalTestCase
 
         // expecting: root, document1, document2, document4 (fallback from de), untranslated (fallback from en_us) = 5
         static::assertEquals(5, $this->getNodeCountInDimension('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document', $this->siteNodeDk->getDimensions()));
-
     }
 
     protected function getNodeCountInDimension(string $nodeTypeName, array $dimensions): int
@@ -159,4 +158,5 @@ class NodeIndexerDimensionsTest extends FunctionalTestCase
             static::fail('Setting up the QueryBuilder failed: ' . $exception->getMessage());
         }
     }
+
 }
