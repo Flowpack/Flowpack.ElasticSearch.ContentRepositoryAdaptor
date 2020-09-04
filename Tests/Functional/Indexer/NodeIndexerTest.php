@@ -60,6 +60,11 @@ class NodeIndexerTest extends FunctionalTestCase
      */
     protected $nodeTypeMappingBuilder;
 
+    /**
+     * @var boolean
+     */
+    protected static $indexInitialized = false;
+
     public function setUp(): void
     {
         parent::setUp();
@@ -67,6 +72,7 @@ class NodeIndexerTest extends FunctionalTestCase
         $this->nodeIndexer = $this->objectManager->get(NodeIndexer::class);
         $this->dimensionService = $this->objectManager->get(DimensionsService::class);
         $this->nodeTypeMappingBuilder = $this->objectManager->get(NodeTypeMappingBuilderInterface::class);
+        $this->searchClient->request('DELETE', '/' . self::TESTING_INDEX_PREFIX . '*');
     }
 
     protected function tearDown(): void
@@ -127,7 +133,7 @@ class NodeIndexerTest extends FunctionalTestCase
         $this->setupContentRepository();
         $this->createNodesForNodeSearchTest();
         /** @var NodeInterface $testNode */
-        $testNode = current($this->siteNode->getChildNodes('Neos.NodeTypes:Page', 1));
+        $testNode = current($this->siteNode->getChildNodes('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document', 1));
 
         $dimensionValues = ['language' => ['en_US']];
         $this->nodeIndexer->setDimensions($dimensionValues);

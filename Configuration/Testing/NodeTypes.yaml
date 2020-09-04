@@ -17,3 +17,20 @@
       search:
         elasticSearchMapping:
           type: text
+
+'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document':
+  superTypes:
+    'Neos.Neos:Document': true
+  childNodes:
+    main:
+      type: 'Neos.Neos:ContentCollection'
+
+'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Content':
+  superTypes:
+    'Neos.Neos:Content': true
+  properties:
+    text:
+      type: string
+      defaultValue: ''
+      search:
+        fulltextExtractor: '${Indexing.extractHtmlTags(value)}'

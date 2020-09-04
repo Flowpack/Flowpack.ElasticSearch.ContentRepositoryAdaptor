@@ -18,6 +18,7 @@ use Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Traits\ContentRepositoryNodeCreationTrait;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
@@ -27,6 +28,13 @@ use Neos\Flow\Tests\FunctionalTestCase;
 class ElasticSearchQueryTest extends FunctionalTestCase
 {
     use ContentRepositoryNodeCreationTrait;
+
+    const TESTING_INDEX_PREFIX = 'neoscr_testing';
+
+    /**
+     * @var ElasticSearchClient
+     */
+    protected $searchClient;
 
     /**
      * @var NodeIndexCommandController
@@ -46,6 +54,14 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     public function setUp(): void
     {
         parent::setUp();
+
+        $this->searchClient = $this->objectManager->get(ElasticSearchClient::class);
+
+        if (self::$indexInitialized !== true) {
+            // clean up any existing indices
+            $this->searchClient->request('DELETE', '/' . self::TESTING_INDEX_PREFIX . '*');
+        }
+
         $this->setupContentRepository();
 
         $this->nodeIndexCommandController = $this->objectManager->get(NodeIndexCommandController::class);
@@ -69,7 +85,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
         /** @var ElasticSearchQueryBuilder $query */
         $query = $this->objectManager->get(ElasticSearchQueryBuilder::class);
         $cleanRequestArray = $query->getRequest()->toArray();
-        $query->nodeType('Neos.NodeTypes:Page');
+        $query->nodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document');
 
         $query2 = $this->objectManager->get(ElasticSearchQueryBuilder::class);
 
@@ -91,7 +107,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
 
         /** @var NodeInterface $node */
         $node = $result->current();
-        static::assertEquals('Neos.NodeTypes:Page', $node->getNodeType()->getName());
+        static::assertEquals('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document', $node->getNodeType()->getName());
         static::assertEquals('test-node-1', $node->getName());
     }
 
@@ -122,7 +138,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         $resultCount = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('Neos.NodeTypes:Page')
+            ->nodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document')
             ->count();
         static::assertEquals(4, $resultCount);
     }
@@ -163,7 +179,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         $query = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('Neos.NodeTypes:Page')
+            ->nodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document')
             ->limit(1);
 
         $resultCount = $query->count();
@@ -265,7 +281,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('Neos.NodeTypes:Page')
+            ->nodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document')
             ->sortDesc('title')
             ->execute();
 
@@ -288,7 +304,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('Neos.NodeTypes:Page')
+            ->nodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document')
             ->sortAsc('title')
             ->execute();
         /** @var ElasticSearchQueryResult $result */
@@ -305,7 +321,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('Neos.NodeTypes:Page')
+            ->nodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document')
             ->sortAsc('title')
             ->execute();
 
@@ -325,7 +341,7 @@ class ElasticSearchQueryTest extends FunctionalTestCase
     {
         $cacheLifetime = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('Neos.NodeTypes:Text')
+            ->nodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Content')
             ->sortAsc('title')
             ->cacheLifetime();
 
