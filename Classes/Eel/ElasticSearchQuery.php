@@ -53,7 +53,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function execute($cacheResult = false)
     {
-        $queryHash = md5(json_encode($this->queryBuilder->getRequest()));
+        $queryHash = md5($this->queryBuilder->getIndexName() . json_encode($this->queryBuilder->getRequest()));
         if ($cacheResult === true && isset(self::$runtimeQueryResultCache[$queryHash])) {
             return self::$runtimeQueryResultCache[$queryHash];
         }
