@@ -18,6 +18,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Dto\SearchResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
+use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Neos\Flow\Log\ThrowableStorageInterface;
 use Neos\Flow\Log\Utility\LogEnvironment;
@@ -590,7 +591,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
             $this->result['nodes'] = [];
 
-            $this->logThisQuery && $this->logger->debug(sprintf('Query Log (%s): %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s', $this->logMessage, $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($searchResult->getHits()), $searchResult->getTotal()), LogEnvironment::fromMethodName(__METHOD__));
+            $this->logThisQuery && $this->logger->debug(sprintf('Query Log (%s): Indexname: %s %s -- execution time: %s ms -- Limit: %s -- Number of results returned: %s -- Total Results: %s', $this->logMessage, $this->getIndexName(), $request, (($timeAfterwards - $timeBefore) * 1000), $this->limit, count($searchResult->getHits()), $searchResult->getTotal()), LogEnvironment::fromMethodName(__METHOD__));
 
             if (count($searchResult->getHits()) > 0) {
                 $this->result['nodes'] = $this->convertHitsToNodes($searchResult->getHits());
@@ -661,7 +662,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $treatedContent = $response->getTreatedContent();
         $count = (int)$treatedContent['count'];
 
-        $this->logThisQuery && $this->logger->debug('Count Query Log (' . $this->logMessage . '): ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LogEnvironment::fromMethodName(__METHOD__));
+        $this->logThisQuery && $this->logger->debug('Count Query Log (' . $this->logMessage . '): ' . 'Indexname: ' . $this->getIndexName() . ' ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LogEnvironment::fromMethodName(__METHOD__));
 
         return $count;
     }
@@ -1005,5 +1006,15 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         }
 
         return $value;
+    }
+
+    /**
+     * Retrieve the indexname
+     *
+     * @return string
+     */
+    public function getIndexName(): string
+    {
+        return $this->elasticSearchClient->getIndexName();
     }
 }
