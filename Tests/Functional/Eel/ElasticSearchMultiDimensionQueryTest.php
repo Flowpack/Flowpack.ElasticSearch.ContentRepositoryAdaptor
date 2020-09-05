@@ -179,4 +179,21 @@ class ElasticSearchMultiDimensionQueryTest extends FunctionalTestCase
             static::fail('Setting up the QueryBuilder failed: ' . $exception->getMessage());
         }
     }
+
+    private static function extractNodeNames(ElasticSearchQueryResult $result): array
+    {
+        return array_map(static function (NodeInterface $node) {
+            return $node->getName();
+        }, $result->toArray());
+    }
+
+    private static function assertNodeNames(array $expectedNames, ElasticSearchQueryResult $actualResult): void
+    {
+        sort($expectedNames);
+
+        $actualNames = self::extractNodeNames($actualResult);
+        sort($actualNames);
+
+        self::assertEquals($expectedNames, $actualNames);
+    }
 }
