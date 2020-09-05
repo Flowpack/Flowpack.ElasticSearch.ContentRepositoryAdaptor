@@ -18,6 +18,7 @@ use DateTimeImmutable;
 use Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Traits\ContentRepositoryMultiDimensionNodeCreationTrait;
@@ -109,8 +110,8 @@ class ElasticSearchMultiDimensionQueryTest extends FunctionalTestCase
             ->sortDesc('title')
             ->execute();
 
-        // expecting: root, document1, untranslated = 3
-        static::assertCount(3, $resultDefault);
+        static::assertCount(3, $resultDefault->toArray());
+        static::assertNodeNames(['root', 'document1-default', 'document-untranslated'], $resultDefault);
     }
 
     /**
@@ -125,8 +126,8 @@ class ElasticSearchMultiDimensionQueryTest extends FunctionalTestCase
             ->sortDesc('title')
             ->execute();
 
-        // expecting: root, document1, document2, document3, document4, untranslated (fallback from en_us) = 6
-        static::assertCount(6, $resultDe);
+        // expecting: root, document1-default, document2, document3, document4, untranslated (fallback from en_us) = 6
+        static::assertCount(6, $resultDe->toArray(), 'Found nodes: ' . implode(',', $this->extractNodeNames($resultDe)));
     }
 
     /**
@@ -142,7 +143,7 @@ class ElasticSearchMultiDimensionQueryTest extends FunctionalTestCase
             ->execute();
 
         // expecting: root, document1, document2, document4 (fallback from de), untranslated (fallback from en_us) = 6
-        static::assertCount(5, $resultDk);
+        static::assertCount(5, $resultDk->toArray());
     }
 
 
