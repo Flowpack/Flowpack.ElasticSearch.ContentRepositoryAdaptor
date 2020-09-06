@@ -21,6 +21,8 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\ConfigurationException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\BaseElasticsearchContentRepositoryAdapterTest;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Traits\Assertions;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Traits\ContentRepositoryNodeCreationTrait;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Exception;
@@ -29,16 +31,9 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Flow\Tests\FunctionalTestCase;
 use Neos\Utility\Arrays;
 
-class NodeIndexerTest extends FunctionalTestCase
+class NodeIndexerTest extends BaseElasticsearchContentRepositoryAdapterTest
 {
-    use ContentRepositoryNodeCreationTrait;
-
-    const TESTING_INDEX_PREFIX = 'neoscr_testing';
-
-    /**
-     * @var boolean
-     */
-    protected static $testablePersistenceEnabled = true;
+    use ContentRepositoryNodeCreationTrait, Assertions;
 
     /**
      * @var NodeIndexer
@@ -51,11 +46,6 @@ class NodeIndexerTest extends FunctionalTestCase
     protected $dimensionService;
 
     /**
-     * @var ElasticSearchClient
-     */
-    protected $searchClient;
-
-    /**
      * @var NodeTypeMappingBuilder
      */
     protected $nodeTypeMappingBuilder;
@@ -63,16 +53,9 @@ class NodeIndexerTest extends FunctionalTestCase
     public function setUp(): void
     {
         parent::setUp();
-        $this->searchClient = $this->objectManager->get(ElasticSearchClient::class);
         $this->nodeIndexer = $this->objectManager->get(NodeIndexer::class);
         $this->dimensionService = $this->objectManager->get(DimensionsService::class);
         $this->nodeTypeMappingBuilder = $this->objectManager->get(NodeTypeMappingBuilderInterface::class);
-    }
-
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-        $this->searchClient->request('DELETE', '/' . self::TESTING_INDEX_PREFIX . '*');
     }
 
     /**
@@ -129,8 +112,7 @@ class NodeIndexerTest extends FunctionalTestCase
         /** @var NodeInterface $testNode */
         $testNode = current($this->siteNode->getChildNodes('Neos.NodeTypes:Page', 1));
 
-        $dimensionValues = ['language' => ['en_US']];
-        $this->nodeIndexer->setDimensions($dimensionValues);
+        $this->nodeIndexer->setDimensions($testNode->getDimensions());
         $this->nodeIndexer->getIndex()->create();
 
         $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
@@ -141,31 +123,13 @@ class NodeIndexerTest extends FunctionalTestCase
 
         $this->nodeIndexer->indexNode($testNode);
         $this->nodeIndexer->flush();
-        $this->assertTrue($this->nodeExistsInIndex($testNode), 'Node was not successfully indexed.');
+        sleep(1);
+        self::assertTrue($this->nodeExistsInIndex($testNode), 'Node was not successfully indexed.');
 
         $this->nodeIndexer->removeNode($testNode);
         $this->nodeIndexer->flush();
         sleep(1);
-        $this->assertFalse($this->nodeExistsInIndex($testNode), 'Node still exists after delete');
-    }
-
-
-    /**
-     * @param string $indexName
-     * @throws \Flowpack\ElasticSearch\Transfer\Exception
-     * @throws ApiException
-     * @throws \Neos\Flow\Http\Exception
-     */
-    protected function assertIndexExists(string $indexName): void
-    {
-        $response = $this->searchClient->request('HEAD', '/' . $indexName);
-        self::assertEquals(200, $response->getStatusCode());
-    }
-
-    protected function assertAliasesEquals(string $aliasPrefix, array $expectdAliases): void
-    {
-        $content = $this->searchClient->request('GET', '/_alias/' . $aliasPrefix . '*')->getTreatedContent();
-        static::assertEquals($expectdAliases, array_keys($content));
+        self::assertFalse($this->nodeExistsInIndex($testNode), 'Node still exists after delete');
     }
 
     /**

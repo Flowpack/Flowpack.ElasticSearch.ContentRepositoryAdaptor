@@ -13,52 +13,27 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Eel;
  * source code.
  */
 
-use DateTimeImmutable;
-use Exception;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\BaseElasticsearchContentRepositoryAdapterTest;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Traits\ContentRepositoryNodeCreationTrait;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Traits\ContentRepositorySetupTrait;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Flow\Persistence\QueryResultInterface;
-use Neos\Flow\Tests\FunctionalTestCase;
 
-class ElasticSearchQueryTest extends FunctionalTestCase
+class ElasticSearchQueryTest extends BaseElasticsearchContentRepositoryAdapterTest
 {
-    use ContentRepositoryNodeCreationTrait;
-
-    /**
-     * @var NodeIndexCommandController
-     */
-    protected $nodeIndexCommandController;
-
-    /**
-     * @var boolean
-     */
-    protected static $testablePersistenceEnabled = true;
-
-    /**
-     * @var boolean
-     */
-    protected static $indexInitialized = false;
+    use ContentRepositorySetupTrait, ContentRepositoryNodeCreationTrait;
 
     public function setUp(): void
     {
         parent::setUp();
         $this->setupContentRepository();
 
-        $this->nodeIndexCommandController = $this->objectManager->get(NodeIndexCommandController::class);
-
         $this->createNodesForNodeSearchTest();
-        sleep(2);
+        sleep(1);
         $this->indexNodes();
-    }
-
-    public function tearDown(): void
-    {
-        parent::tearDown();
-        $this->inject($this->contextFactory, 'contextInstances', []);
     }
 
     /**
@@ -330,39 +305,5 @@ class ElasticSearchQueryTest extends FunctionalTestCase
             ->cacheLifetime();
 
         static::assertEquals(600, $cacheLifetime);
-    }
-
-    /**
-     * @param string $method
-     * @return string
-     */
-    protected function getLogMessagePrefix(string $method): string
-    {
-        return substr(strrchr($method, '\\'), 1);
-    }
-
-    protected function indexNodes(): void
-    {
-        if (self::$indexInitialized === true) {
-            return;
-        }
-
-        $this->nodeIndexCommandController->buildCommand(null, false, null, 'functionaltest');
-        self::$indexInitialized = true;
-    }
-
-    /**
-     * @return ElasticSearchQueryBuilder
-     */
-    protected function getQueryBuilder(): ElasticSearchQueryBuilder
-    {
-        try {
-            $elasticSearchQueryBuilder = $this->objectManager->get(ElasticSearchQueryBuilder::class);
-            $this->inject($elasticSearchQueryBuilder, 'now', new DateTimeImmutable('@1735685400')); // Dec. 31, 2024 23:50:00
-
-            return $elasticSearchQueryBuilder->query($this->siteNode);
-        } catch (Exception $exception) {
-            static::fail('Setting up the QueryBuilder failed: ' . $exception->getMessage());
-        }
     }
 }

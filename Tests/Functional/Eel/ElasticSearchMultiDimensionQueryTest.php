@@ -13,44 +13,15 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Eel;
  * source code.
  */
 
-use DateTime;
-use DateTimeImmutable;
-use Exception;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\BaseElasticsearchContentRepositoryAdapterTest;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Traits\Assertions;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Traits\ContentRepositoryMultiDimensionNodeCreationTrait;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Traits\ContentRepositorySetupTrait;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 
-use Neos\Flow\Tests\FunctionalTestCase;
-
-class ElasticSearchMultiDimensionQueryTest extends FunctionalTestCase
+class ElasticSearchMultiDimensionQueryTest extends BaseElasticsearchContentRepositoryAdapterTest
 {
-    use ContentRepositoryMultiDimensionNodeCreationTrait;
-
-    const TESTING_INDEX_PREFIX = 'neoscr_testing';
-
-    /**
-     * @var ElasticSearchClient
-     */
-    protected $searchClient;
-
-    /**
-     * @var NodeIndexCommandController
-     */
-    protected $nodeIndexCommandController;
-
-    /**
-     * @var boolean
-     */
-    protected static $testablePersistenceEnabled = true;
-
-    /**
-     * @var NodeIndexer
-     */
-    protected $nodeIndexer;
+    use ContentRepositorySetupTrait, ContentRepositoryMultiDimensionNodeCreationTrait, Assertions;
 
     /**
      * @var NodeInterface
@@ -67,35 +38,13 @@ class ElasticSearchMultiDimensionQueryTest extends FunctionalTestCase
      */
     protected $siteNodeDk;
 
-    /**
-     * @var boolean
-     */
-    protected static $indexInitialized = false;
-
-
     public function setUp(): void
     {
         parent::setUp();
 
-        $this->nodeIndexer = $this->objectManager->get(NodeIndexer::class);
-        $this->searchClient = $this->objectManager->get(ElasticSearchClient::class);
-
-        if (self::$indexInitialized !== true) {
-            // clean up any existing indices
-            $this->searchClient->request('DELETE', '/' . self::TESTING_INDEX_PREFIX . '*');
-        }
-
-
-        $this->nodeIndexCommandController = $this->objectManager->get(NodeIndexCommandController::class);
         $this->setupContentRepository();
         $this->createNodesForNodeSearchTest();
         $this->indexNodes();
-    }
-
-    public function tearDown(): void
-    {
-        parent::tearDown();
-        $this->inject($this->contextFactory, 'contextInstances', []);
     }
 
     /**
@@ -146,57 +95,5 @@ class ElasticSearchMultiDimensionQueryTest extends FunctionalTestCase
         // expecting: root, document1, document2, document4 (fallback from de), untranslated (fallback from en_us) = 6
         static::assertCount(5, $resultDk->toArray());
         static::assertNodeNames(['root', 'document1', 'document2-dk', 'document4-de', 'document-untranslated'], $resultDk);
-    }
-
-
-    protected function indexNodes(): void
-    {
-        if (self::$indexInitialized === true) {
-            return;
-        }
-
-        $this->nodeIndexCommandController->buildCommand(null, false, 'live');
-        self::$indexInitialized = true;
-    }
-
-    /**
-     * @param string $method
-     * @return string
-     */
-    protected function getLogMessagePrefix(string $method): string
-    {
-        return substr(strrchr($method, '\\'), 1);
-    }
-
-    /**
-     * @return ElasticSearchQueryBuilder
-     */
-    protected function getQueryBuilder(): ElasticSearchQueryBuilder
-    {
-        try {
-            $elasticSearchQueryBuilder = $this->objectManager->get(ElasticSearchQueryBuilder::class);
-            $this->inject($elasticSearchQueryBuilder, 'now', new DateTimeImmutable('@1735685400')); // Dec. 31, 2024 23:50:00
-
-            return $elasticSearchQueryBuilder;
-        } catch (Exception $exception) {
-            static::fail('Setting up the QueryBuilder failed: ' . $exception->getMessage());
-        }
-    }
-
-    private static function extractNodeNames(ElasticSearchQueryResult $result): array
-    {
-        return array_map(static function (NodeInterface $node) {
-            return $node->getName();
-        }, $result->toArray());
-    }
-
-    private static function assertNodeNames(array $expectedNames, ElasticSearchQueryResult $actualResult): void
-    {
-        sort($expectedNames);
-
-        $actualNames = self::extractNodeNames($actualResult);
-        sort($actualNames);
-
-        self::assertEquals($expectedNames, $actualNames);
     }
 }
