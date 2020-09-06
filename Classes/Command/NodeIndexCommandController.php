@@ -268,10 +268,12 @@ class NodeIndexCommandController extends CommandController
 
         $runAndLog($createIndicesAndApplyMapping, 'Creating indices and apply mapping');
 
-        $timeStart = microtime(true);
-        $this->output(str_pad('Indexing nodes ... ', 20));
-        $buildIndex([]);
-        $this->outputLine('<success>Done</success> (took %s seconds)', [number_format(microtime(true) - $timeStart, 2)]);
+//        $timeStart = microtime(true);
+//        $this->output(str_pad('Indexing nodes ... ', 20));
+//        $buildIndex([]);
+//        $this->outputLine('<success>Done</success> (took %s seconds)', [number_format(microtime(true) - $timeStart, 2)]);
+
+        $runAndLog($buildIndex, 'Indexing nodes');
 
         $runAndLog($refresh, 'Refresh indicies');
         $runAndLog($updateAliases, 'Update aliases');

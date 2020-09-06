@@ -111,7 +111,7 @@ class ElasticSearchMultiDimensionQueryTest extends FunctionalTestCase
             ->execute();
 
         static::assertCount(3, $resultDefault->toArray());
-        static::assertNodeNames(['root', 'document1-default', 'document-untranslated'], $resultDefault);
+        static::assertNodeNames(['root', 'document1', 'document-untranslated'], $resultDefault);
     }
 
     /**
@@ -126,8 +126,9 @@ class ElasticSearchMultiDimensionQueryTest extends FunctionalTestCase
             ->sortDesc('title')
             ->execute();
 
-        // expecting: root, document1-default, document2, document3, document4, untranslated (fallback from en_us) = 6
-        static::assertCount(6, $resultDe->toArray(), 'Found nodes: ' . implode(',', $this->extractNodeNames($resultDe)));
+        // expecting: root, document1, document2, document3, document4, untranslated (fallback from en_us) = 6
+        static::assertCount(6, $resultDe->toArray(), 'Found nodes: ' . implode(',', self::extractNodeNames($resultDe)));
+        static::assertNodeNames(['root', 'document1', 'document2-de', 'document3-de', 'document4-de', 'document-untranslated'], $resultDe);
     }
 
     /**
@@ -144,6 +145,7 @@ class ElasticSearchMultiDimensionQueryTest extends FunctionalTestCase
 
         // expecting: root, document1, document2, document4 (fallback from de), untranslated (fallback from en_us) = 6
         static::assertCount(5, $resultDk->toArray());
+        static::assertNodeNames(['root', 'document1', 'document2-dk', 'document4-de', 'document-untranslated'], $resultDk);
     }
 
 

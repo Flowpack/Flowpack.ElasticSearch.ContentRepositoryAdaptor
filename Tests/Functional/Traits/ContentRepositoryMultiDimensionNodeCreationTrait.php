@@ -83,12 +83,12 @@ trait ContentRepositoryMultiDimensionNodeCreationTrait
         ]);
         $deLanguageDimensionContext = $this->contextFactory->create([
             'workspaceName' => 'live',
-            'dimensions' => ['language' => ['de']],
+            'dimensions' => ['language' => ['de', 'en_US']],
             'targetDimensions' => ['language' => 'de']
         ]);
         $dkLanguageDimensionContext = $this->contextFactory->create([
             'workspaceName' => 'live',
-            'dimensions' => ['language' => ['dk']],
+            'dimensions' => ['language' => ['dk', 'en_US']],
             'targetDimensions' => ['language' => 'dk']
         ]);
 
@@ -101,7 +101,7 @@ trait ContentRepositoryMultiDimensionNodeCreationTrait
         $this->siteNodeDk->setProperty('title', 'root-dk');
 
         // add a document node that is translated in two languages
-        $newDocumentNode1 = $this->siteNodeDefault->createNode('document1-default', $this->nodeTypeManager->getNodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document'));
+        $newDocumentNode1 = $this->siteNodeDefault->createNode('document1', $this->nodeTypeManager->getNodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document'));
         $newDocumentNode1->setProperty('title', 'document1-default');
 
         $translatedDocumentNode1De = $deLanguageDimensionContext->adoptNode($newDocumentNode1, true);
