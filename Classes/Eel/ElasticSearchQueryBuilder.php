@@ -859,6 +859,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     {
         $nodes = [];
         $elasticSearchHitPerNode = [];
+        $notConvertedNodePaths = [];
 
         /**
          * TODO: This code below is not fully correct yet:
@@ -879,17 +880,30 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             if (is_array($nodePath)) {
                 $nodePath = current($nodePath);
             }
+
             $node = $this->elasticSearchClient->getContextNode()->getNode($nodePath);
-            if ($node instanceof NodeInterface && !isset($nodes[$node->getIdentifier()])) {
-                $nodes[$node->getIdentifier()] = $node;
-                $elasticSearchHitPerNode[$node->getIdentifier()] = $hit;
-                if ($this->limit > 0 && count($nodes) >= $this->limit) {
-                    break;
-                }
+
+            if (!$node instanceof NodeInterface) {
+                $notConvertedNodePaths[] = $nodePath;
+                continue;
+            }
+
+            if (isset($nodes[$node->getIdentifier()])) {
+                continue;
+            }
+
+            $nodes[$node->getIdentifier()] = $node;
+            $elasticSearchHitPerNode[$node->getIdentifier()] = $hit;
+            if ($this->limit > 0 && count($nodes) >= $this->limit) {
+                break;
             }
         }
 
-        $this->logThisQuery && $this->logger->debug('Returned nodes (' . $this->logMessage . '): ' . count($nodes));
+        $this->logThisQuery && $this->logger->debug(sprintf('[%s] Returned %s nodes.', $this->logMessage, count($nodes)), LogEnvironment::fromMethodName(__METHOD__));
+
+        if (!empty($notConvertedNodePaths)) {
+            $this->logger->warning(sprintf('[%s] Search resulted in %s hits but only %s hits could be converted to nodes. Nodes with paths "%s" could not have been converted.', $this->logMessage, count($hits), count($nodes), implode(', ', $notConvertedNodePaths)), LogEnvironment::fromMethodName(__METHOD__));
+        }
 
         $this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
 
