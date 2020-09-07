@@ -24,6 +24,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\BaseElasticsearchContentRepositoryAdapterTest;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Traits\Assertions;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Traits\ContentRepositoryNodeCreationTrait;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional\Traits\ContentRepositorySetupTrait;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Exception;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
@@ -33,7 +34,7 @@ use Neos\Utility\Arrays;
 
 class NodeIndexerTest extends BaseElasticsearchContentRepositoryAdapterTest
 {
-    use ContentRepositoryNodeCreationTrait, Assertions;
+    use ContentRepositorySetupTrait, ContentRepositoryNodeCreationTrait, Assertions;
 
     /**
      * @var NodeIndexer
@@ -107,29 +108,24 @@ class NodeIndexerTest extends BaseElasticsearchContentRepositoryAdapterTest
      */
     public function indexAndDeleteNode(): void
     {
-        $this->setupContentRepository();
-        $this->createNodesForNodeSearchTest();
-        /** @var NodeInterface $testNode */
-        $testNode = current($this->siteNode->getChildNodes('Neos.NodeTypes:Page', 1));
-
-        $this->nodeIndexer->setDimensions($testNode->getDimensions());
-        $this->nodeIndexer->getIndex()->create();
-
-        $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
-        foreach ($nodeTypeMappingCollection as $mapping) {
-            /** @var Mapping $mapping */
-            $mapping->apply();
-        }
-
-        $this->nodeIndexer->indexNode($testNode);
-        $this->nodeIndexer->flush();
-        sleep(1);
+        $testNode = $this->setupCrAndIndexTestNode();
         self::assertTrue($this->nodeExistsInIndex($testNode), 'Node was not successfully indexed.');
 
         $this->nodeIndexer->removeNode($testNode);
         $this->nodeIndexer->flush();
         sleep(1);
         self::assertFalse($this->nodeExistsInIndex($testNode), 'Node still exists after delete');
+    }
+
+    /**
+     * @test
+     */
+    public function nodeMoveIsHandledCorrectly(): void
+    {
+        $testNode = $this->setupCrAndIndexTestNode();
+        self::assertTrue($this->nodeExistsInIndex($testNode), 'Node was not successfully indexed.');
+
+//        $testNode->moveInto();
     }
 
     /**
@@ -150,5 +146,34 @@ class NodeIndexerTest extends BaseElasticsearchContentRepositoryAdapterTest
 
         $result = $this->nodeIndexer->getIndex()->request('GET', '/_search', [], $query->toArray())->getTreatedContent();
         return count(Arrays::getValueByPath($result, 'hits.hits')) === 1;
+    }
+
+    /**
+     * @return NodeInterface
+     * @throws ConfigurationException
+     * @throws Exception
+     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws \Neos\Flow\Http\Exception
+     */
+    protected function setupCrAndIndexTestNode(): NodeInterface
+    {
+        $this->setupContentRepository();
+        $this->createNodesForNodeSearchTest();
+        /** @var NodeInterface $testNode */
+        $testNode = current($this->siteNode->getChildNodes('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document', 1));
+
+        $this->nodeIndexer->setDimensions($testNode->getDimensions());
+        $this->nodeIndexer->getIndex()->create();
+
+        $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
+        foreach ($nodeTypeMappingCollection as $mapping) {
+            /** @var Mapping $mapping */
+            $mapping->apply();
+        }
+
+        $this->nodeIndexer->indexNode($testNode);
+        $this->nodeIndexer->flush();
+        sleep(1);
+        return $testNode;
     }
 }

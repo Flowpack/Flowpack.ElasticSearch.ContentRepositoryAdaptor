@@ -16,6 +16,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
+use Neos\ContentRepository\Domain\Service\ContextFactory;
 use Neos\Flow\Tests\FunctionalTestCase;
 
 abstract class BaseElasticsearchContentRepositoryAdapterTest extends FunctionalTestCase
@@ -51,7 +52,9 @@ abstract class BaseElasticsearchContentRepositoryAdapterTest extends FunctionalT
     {
         parent::tearDown();
 
-        $this->inject($this->contextFactory, 'contextInstances', []);
+        if (isset($this->contextFactory) && $this->contextFactory instanceof ContextFactory) {
+            $this->inject($this->contextFactory, 'contextInstances', []);
+        }
 
         if (!$this->isIndexInitialized()) {
             // clean up any existing indices

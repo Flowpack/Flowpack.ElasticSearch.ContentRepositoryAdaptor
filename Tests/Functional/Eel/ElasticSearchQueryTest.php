@@ -44,7 +44,7 @@ class ElasticSearchQueryTest extends BaseElasticsearchContentRepositoryAdapterTe
         /** @var ElasticSearchQueryBuilder $query */
         $query = $this->objectManager->get(ElasticSearchQueryBuilder::class);
         $cleanRequestArray = $query->getRequest()->toArray();
-        $query->nodeType('Neos.NodeTypes:Page');
+        $query->nodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document');
 
         $query2 = $this->objectManager->get(ElasticSearchQueryBuilder::class);
 
@@ -66,7 +66,7 @@ class ElasticSearchQueryTest extends BaseElasticsearchContentRepositoryAdapterTe
 
         /** @var NodeInterface $node */
         $node = $result->current();
-        static::assertEquals('Neos.NodeTypes:Page', $node->getNodeType()->getName());
+        static::assertEquals('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document', $node->getNodeType()->getName());
         static::assertEquals('test-node-1', $node->getName());
     }
 
@@ -97,7 +97,7 @@ class ElasticSearchQueryTest extends BaseElasticsearchContentRepositoryAdapterTe
     {
         $resultCount = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('Neos.NodeTypes:Page')
+            ->nodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document')
             ->count();
         static::assertEquals(4, $resultCount);
     }
@@ -138,7 +138,7 @@ class ElasticSearchQueryTest extends BaseElasticsearchContentRepositoryAdapterTe
     {
         $query = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('Neos.NodeTypes:Page')
+            ->nodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document')
             ->limit(1);
 
         $resultCount = $query->count();
@@ -240,7 +240,7 @@ class ElasticSearchQueryTest extends BaseElasticsearchContentRepositoryAdapterTe
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('Neos.NodeTypes:Page')
+            ->nodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document')
             ->sortDesc('title')
             ->execute();
 
@@ -263,7 +263,7 @@ class ElasticSearchQueryTest extends BaseElasticsearchContentRepositoryAdapterTe
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('Neos.NodeTypes:Page')
+            ->nodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document')
             ->sortAsc('title')
             ->execute();
         /** @var ElasticSearchQueryResult $result */
@@ -280,7 +280,7 @@ class ElasticSearchQueryTest extends BaseElasticsearchContentRepositoryAdapterTe
     {
         $result = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('Neos.NodeTypes:Page')
+            ->nodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document')
             ->sortAsc('title')
             ->execute();
 
@@ -300,7 +300,7 @@ class ElasticSearchQueryTest extends BaseElasticsearchContentRepositoryAdapterTe
     {
         $cacheLifetime = $this->getQueryBuilder()
             ->log($this->getLogMessagePrefix(__METHOD__))
-            ->nodeType('Neos.NodeTypes:Text')
+            ->nodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Content')
             ->sortAsc('title')
             ->cacheLifetime();
 
