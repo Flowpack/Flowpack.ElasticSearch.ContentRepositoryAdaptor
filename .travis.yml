@@ -23,7 +23,7 @@ cache:
     - $HOME/.composer/cache
 
 before_install:
-  - export NEOS_TARGET_VERSION=5.2
+  - export NEOS_TARGET_VERSION=5.3
   - cd ..
   - if [ "$ES" = 6 ]; then wget --no-check-certificate https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.8.6.tar.gz && tar xvfz elasticsearch-6.8.6.tar.gz && mv elasticsearch-6.8.6 elasticsearch; fi
   - if [ "$ES" = 7 ]; then wget --no-check-certificate https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.9.0-linux-x86_64.tar.gz && tar xvfz elasticsearch-7.9.0-linux-x86_64.tar.gz && mv elasticsearch-7.9.0 elasticsearch; fi
@@ -35,7 +35,6 @@ before_install:
   - composer require --no-update --no-interaction neos/content-repository-search:dev-master
   - composer require --no-update --no-interaction flowpack/elasticsearch:dev-master
   - composer require --no-update --no-interaction flowpack/elasticsearch-contentrepositoryadaptor:dev-master
-  - composer require --no-update --no-interaction neos/nodetypes
   - composer remove --no-update --no-interaction neos/site-kickstarter
 install:
   - composer install --no-interaction
