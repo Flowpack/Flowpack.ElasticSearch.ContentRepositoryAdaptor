@@ -161,29 +161,29 @@ class NodeIndexCommandController extends CommandController
             $node = $context->getNodeByIdentifier($identifier);
 
             if ($node === null) {
-                $this->outputLine('<error>Error: Node with the given identifier was not found.</error>');
-                $this->quit(1);
+                return [$workspace->getName(), '-', json_encode($dimensions), 'not found'];
             }
-
-            $this->outputLine();
-            $this->outputLine('Indexing node <b>"%s"</b> (%s)', [$node->getLabel(), $node->getIdentifier(),]);
-            $this->outputLine('  Workspace: %s', [$workspace->getName()]);
-            $this->outputLine('  Node type: %s', [$node->getNodeType()->getName()]);
-            $this->outputLine('  Dimensions: %s', [json_encode($dimensions)]);
 
             $this->nodeIndexer->setDimensions($dimensions);
             $this->nodeIndexer->indexNode($node);
+
+            return [$workspace->getName(), $node->getNodeType()->getName(), json_encode($dimensions), '<success>indexed</success>'];
         };
 
         $indexInWorkspace = function ($identifier, Workspace $workspace) use ($indexNode) {
             $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+
+            $results = [];
+
             if ($combinations === []) {
-                $indexNode($identifier, $workspace, []);
+                $results[] = $indexNode($identifier, $workspace, []);
             } else {
                 foreach ($combinations as $combination) {
-                    $indexNode($identifier, $workspace, $combination);
+                    $results[] = $indexNode($identifier, $workspace, $combination);
                 }
             }
+
+            $this->output->outputTable($results, ['Workspace', 'NodeType', 'Dimensions', 'State']);
         };
 
         if ($workspace === null) {
