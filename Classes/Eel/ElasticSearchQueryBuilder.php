@@ -407,18 +407,21 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $field The field to aggregate by
      * @param string $type Aggregation type
      * @param string $parentPath
-     * @param int $size The amount of buckets to return
+     * @param int|null $size The amount of buckets to return or null if not applicable to the aggregation
      * @return ElasticSearchQueryBuilder
      * @throws QueryBuildingException
      */
-    public function fieldBasedAggregation(string $name, string $field, string $type = 'terms', string $parentPath = '', int $size = 10): ElasticSearchQueryBuilder
+    public function fieldBasedAggregation(string $name, string $field, string $type = 'terms', string $parentPath = '', ?int $size = null): ElasticSearchQueryBuilder
     {
         $aggregationDefinition = [
             $type => [
-                'field' => $field,
-                'size' => $size
+                'field' => $field
             ]
         ];
+
+        if ($size !== null) {
+            $aggregationDefinition[$type]['size'] = $size;
+        }
 
         $this->aggregation($name, $aggregationDefinition, $parentPath);
 
