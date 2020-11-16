@@ -237,8 +237,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         }
 
         $indexer = function (NodeInterface $node, $targetWorkspaceName = null) {
-            $contextPath = $node->getContextPath();
-
             if ($this->settings['indexAllWorkspaces'] === false) {
                 // we are only supposed to index the live workspace.
                 // We need to check the workspace at two occasions; checking the
@@ -250,10 +248,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 if ($targetWorkspaceName === null && $node->getContext()->getWorkspaceName() !== 'live') {
                     return;
                 }
-            }
-
-            if ($targetWorkspaceName !== null) {
-                $contextPath = (string)(new TargetContextPath($node, (string)$targetWorkspaceName, $contextPath));
             }
 
             $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
