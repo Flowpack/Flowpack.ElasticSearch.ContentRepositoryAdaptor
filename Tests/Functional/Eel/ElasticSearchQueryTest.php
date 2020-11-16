@@ -162,6 +162,7 @@ class ElasticSearchQueryTest extends BaseElasticsearchContentRepositoryAdapterTe
 
     /**
      * @test
+     * @throws QueryBuildingException
      */
     public function fieldBasedAggregations(): void
     {
@@ -173,7 +174,6 @@ class ElasticSearchQueryTest extends BaseElasticsearchContentRepositoryAdapterTe
             ->getAggregations();
 
         static::assertArrayHasKey($aggregationTitle, $result);
-
         static::assertCount(3, $result[$aggregationTitle]['buckets']);
 
         $expectedChickenBucket = [
