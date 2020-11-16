@@ -331,30 +331,29 @@ class ElasticSearchQueryBuilderTest extends UnitTestCase
 
     /**
      * @test
+     * @throws QueryBuildingException
      */
     public function anAggregationCanBeSubbedUnderAPath(): void
     {
         $this->queryBuilder->fieldBasedAggregation('foo', 'bar');
-        $this->queryBuilder->fieldBasedAggregation('bar', 'bar', 'terms', 'foo');
+        $this->queryBuilder->fieldBasedAggregation('bar', 'bar', 'terms', 'foo', 22);
         $this->queryBuilder->fieldBasedAggregation('baz', 'bar', 'terms', 'foo.bar');
 
         $expected = [
             'foo' => [
                 'terms' => [
                     'field' => 'bar',
-                    'size' => 10
                 ],
                 'aggregations' => [
                     'bar' => [
                         'terms' => [
                             'field' => 'bar',
-                            'size' => 10
+                            'size' => 22
                         ],
                         'aggregations' => [
                             'baz' => [
                                 'terms' => [
                                     'field' => 'bar',
-                                    'size' => 10
                                 ],
                             ]
                         ]
