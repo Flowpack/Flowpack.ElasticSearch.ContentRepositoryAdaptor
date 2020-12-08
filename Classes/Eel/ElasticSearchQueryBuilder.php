@@ -18,11 +18,10 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Dto\SearchResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
-use Flowpack\ElasticSearch\Domain\Model\Index;
-use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Neos\Flow\Log\ThrowableStorageInterface;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
+use Neos\Flow\Persistence\QueryResultInterface;
 use Psr\Log\LoggerInterface;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
@@ -623,20 +622,22 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * Get a query result object for lazy execution of the query
      *
+     * @param bool $cacheResult
      * @return ElasticSearchQueryResult
-     * @return \Traversable
+     * @throws \JsonException
      * @api
      */
-    public function execute(): \Traversable
+    public function execute(bool $cacheResult = true): QueryResultInterface
     {
         $elasticSearchQuery = new ElasticSearchQuery($this);
-        return $elasticSearchQuery->execute(true);
+        return $elasticSearchQuery->execute($cacheResult);
     }
 
     /**
      * Get a uncached query result object for lazy execution of the query
      *
      * @return ElasticSearchQueryResult
+     * @throws \JsonException
      * @api
      */
     public function executeUncached(): ElasticSearchQueryResult
@@ -665,7 +666,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $treatedContent = $response->getTreatedContent();
         $count = (int)$treatedContent['count'];
 
-        $this->logThisQuery && $this->logger->debug('Count Query Log (' . $this->logMessage . '): ' . 'Indexname: ' . $this->getIndexName() . ' ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LogEnvironment::fromMethodName(__METHOD__));
+        $this->logThisQuery && $this->logger->debug('Count Query Log (' . $this->logMessage . '): Indexname: ' . $this->getIndexName() . ' ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LogEnvironment::fromMethodName(__METHOD__));
 
         return $count;
     }
@@ -676,12 +677,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $searchWord
      * @param array $options Options to configure the query_string, see https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-query-string-query.html
      * @return QueryBuilderInterface
+     * @throws \JsonException
      * @api
      */
     public function fulltext(string $searchWord, array $options = []): QueryBuilderInterface
     {
         // We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
-        $this->request->fulltext(trim(json_encode($searchWord, JSON_UNESCAPED_UNICODE), '"'), $options);
+        $this->request->fulltext(trim(json_encode($searchWord, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), '"'), $options);
         $this->request->highlight(150, 2);
 
         return $this;
@@ -929,8 +931,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $minTimestamps = array_filter([
             $this->getNearestFutureDate('neos_hidden_before_datetime'),
             $this->getNearestFutureDate('neos_hidden_after_datetime')
-        ], function ($value) {
-            return $value != 0;
+        ], static function ($value) {
+            return $value !== 0;
         });
 
         if (empty($minTimestamps)) {
@@ -954,7 +956,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     {
         $request = clone $this->request;
 
-        $convertDateResultToTimestamp = function (array $dateResult): int {
+        $convertDateResultToTimestamp = static function (array $dateResult): int {
             if (!isset($dateResult['value_as_string'])) {
                 return 0;
             }
@@ -1026,9 +1028,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     }
 
     /**
-     * Retrieve the indexname
+     * Retrieve the indexName
      *
      * @return string
+     * @throws Exception
+     * @throws Exception\ConfigurationException
      */
     public function getIndexName(): string
     {

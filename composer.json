@@ -5,14 +5,14 @@
     "homepage": "http://flowpack.org/",
     "license": ["LGPL-3.0-only"],
     "require": {
-        "php": "^7.2",
+        "php": "^7.3",
         "ext-json": "*",
 
         "flowpack/elasticsearch": " ^5.0 || dev-master",
         "neos/content-repository": "^5.0",
         "neos/content-repository-search": "^4.0 || dev-master",
         "neos/eel": "^6.0",
-        "neos/flow": "^6.0",
+        "neos/flow": "^7.0",
         "neos/fluid-adaptor": "^6.0",
         "neos/utility-arrays": "^6.0"
     },

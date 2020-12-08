@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
@@ -16,6 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Eel\ProtectedContextAwareInterface;
+use Neos\Flow\Persistence\QueryInterface;
 use Neos\Flow\Persistence\QueryResultInterface;
 
 class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContextAwareInterface
@@ -66,7 +66,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     /**
      * @return ElasticSearchQuery
      */
-    public function getQuery()
+    public function getQuery(): QueryInterface
     {
         return clone $this->elasticSearchQuery;
     }
@@ -172,7 +172,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     /**
      * {@inheritdoc}
      */
-    public function toArray()
+    public function toArray(): array
     {
         $this->initialize();
 

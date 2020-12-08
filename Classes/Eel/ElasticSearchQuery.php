@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
@@ -15,8 +14,12 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
+use InvalidArgumentException;
+use JsonException;
+use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Flow\Persistence\QueryInterface;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\Flow\Persistence\QueryResultInterface;
 
 /**
  * This ElasticSearchQuery object is just used inside ElasticSearchQueryResult->getQuery(), so that pagination
@@ -49,11 +52,12 @@ class ElasticSearchQuery implements QueryInterface
      *
      * @param bool $cacheResult If the result cache should be used
      * @return ElasticSearchQueryResult The query result
+     * @throws JsonException
      * @api
      */
-    public function execute($cacheResult = false)
+    public function execute($cacheResult = false): QueryResultInterface
     {
-        $queryHash = md5($this->queryBuilder->getIndexName() . json_encode($this->queryBuilder->getRequest()));
+        $queryHash = md5($this->queryBuilder->getIndexName() . json_encode($this->queryBuilder->getRequest(), JSON_THROW_ON_ERROR));
         if ($cacheResult === true && isset(self::$runtimeQueryResultCache[$queryHash])) {
             return self::$runtimeQueryResultCache[$queryHash];
         }
@@ -66,29 +70,30 @@ class ElasticSearchQuery implements QueryInterface
     /**
      * {@inheritdoc}
      */
-    public function count()
+    public function count(): int
     {
-        // FIXME Check that results are fetched!
-
         return $this->queryBuilder->getTotalItems();
     }
 
     /**
-     * {@inheritdoc}
+     * @param int|null $limit
+     * @return QueryInterface
+     * @throws IllegalObjectTypeException
      */
-    public function setLimit($limit)
+    public function setLimit(?int $limit): QueryInterface
     {
         if ($limit < 1 || !is_int($limit)) {
-            throw new \InvalidArgumentException('Expecting integer greater than zero for limit');
+            throw new InvalidArgumentException('Expecting integer greater than zero for limit');
         }
 
         $this->queryBuilder->limit($limit);
+        return $this;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getLimit()
+    public function getLimit(): int
     {
         return $this->queryBuilder->getLimit();
     }
@@ -96,19 +101,20 @@ class ElasticSearchQuery implements QueryInterface
     /**
      * {@inheritdoc}
      */
-    public function setOffset($offset)
+    public function setOffset(?int $offset): QueryInterface
     {
         if ($offset < 1 || !is_int($offset)) {
-            throw new \InvalidArgumentException('Expecting integer greater than zero for offset');
+            throw new InvalidArgumentException('Expecting integer greater than zero for offset', 1605474906);
         }
 
         $this->queryBuilder->from($offset);
+        return $this;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getOffset()
+    public function getOffset(): int
     {
         return $this->queryBuilder->getFrom();
     }
@@ -116,7 +122,7 @@ class ElasticSearchQuery implements QueryInterface
     /**
      * {@inheritdoc}
      */
-    public function getType()
+    public function getType(): string
     {
         return NodeInterface::class;
     }
@@ -125,7 +131,7 @@ class ElasticSearchQuery implements QueryInterface
      * {@inheritdoc}
      * @throws Exception
      */
-    public function setOrderings(array $orderings)
+    public function setOrderings(array $orderings): QueryInterface
     {
         throw new Exception(__FUNCTION__ . ' not implemented', 1421749035);
     }
@@ -134,7 +140,7 @@ class ElasticSearchQuery implements QueryInterface
      * {@inheritdoc}
      * @throws Exception
      */
-    public function getOrderings()
+    public function getOrderings(): array
     {
         throw new Exception(__FUNCTION__ . ' not implemented', 1421749036);
     }
@@ -143,7 +149,7 @@ class ElasticSearchQuery implements QueryInterface
      * {@inheritdoc}
      * @throws Exception
      */
-    public function matching($constraint)
+    public function matching($constraint): QueryInterface
     {
         throw new Exception(__FUNCTION__ . ' not implemented', 1421749037);
     }
@@ -269,7 +275,7 @@ class ElasticSearchQuery implements QueryInterface
      * {@inheritdoc}
      * @throws Exception
      */
-    public function setDistinct($distinct = true)
+    public function setDistinct(bool $distinct = true): QueryInterface
     {
         throw new Exception(__FUNCTION__ . ' not implemented', 1421749051);
     }
@@ -278,7 +284,7 @@ class ElasticSearchQuery implements QueryInterface
      * {@inheritdoc}
      * @throws Exception
      */
-    public function isDistinct()
+    public function isDistinct(): bool
     {
         throw new Exception(__FUNCTION__ . ' not implemented', 1421749052);
     }
