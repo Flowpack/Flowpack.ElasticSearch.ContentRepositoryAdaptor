@@ -23,7 +23,7 @@ cache:
     - $HOME/.composer/cache
 
 before_install:
-  - export NEOS_TARGET_VERSION=6.0
+  - export NEOS_TARGET_VERSION=7.0
   - cd ..
   - if [ "$ES" = 6 ]; then wget --no-check-certificate https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.8.6.tar.gz && tar xvfz elasticsearch-6.8.6.tar.gz && mv elasticsearch-6.8.6 elasticsearch; fi
   - if [ "$ES" = 7 ]; then wget --no-check-certificate https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.9.0-linux-x86_64.tar.gz && tar xvfz elasticsearch-7.9.0-linux-x86_64.tar.gz && mv elasticsearch-7.9.0 elasticsearch; fi
