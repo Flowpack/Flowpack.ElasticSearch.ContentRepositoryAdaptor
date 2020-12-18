@@ -31,6 +31,7 @@ use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
 use Neos\ContentRepository\Domain\Service\Context;
 use Neos\ContentRepository\Domain\Service\ContextFactory;
 use Neos\ContentRepository\Search\Indexer\AbstractNodeIndexer;
@@ -80,6 +81,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @var LoggerInterface
      */
     protected $logger;
+
+    /**
+     * @Flow\Inject
+     * @var ContentDimensionCombinator
+     */
+    protected $contentDimensionCombinator;
 
     /**
      * @Flow\Inject
@@ -288,7 +295,15 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         };
 
         $workspaceName = $targetWorkspaceName ?: $node->getContext()->getWorkspaceName();
-        $handleNode($node, $this->createContentContext($workspaceName, $node->getDimensions()));
+        $dimensionCombinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+
+        if (array_filter($dimensionCombinations) === []) {
+            $handleNode($node, $this->createContentContext($workspaceName));
+        } else {
+            foreach ($dimensionCombinations as $combination) {
+                $handleNode($node, $this->createContentContext($workspaceName, $combination));
+            }
+        }
     }
 
     /**
