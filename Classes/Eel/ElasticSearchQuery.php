@@ -52,6 +52,8 @@ class ElasticSearchQuery implements QueryInterface
      *
      * @param bool $cacheResult If the result cache should be used
      * @return ElasticSearchQueryResult The query result
+     * @throws Exception
+     * @throws Exception\ConfigurationException
      * @throws JsonException
      * @api
      */

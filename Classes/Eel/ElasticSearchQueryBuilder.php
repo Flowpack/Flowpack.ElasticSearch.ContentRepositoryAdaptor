@@ -627,7 +627,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @throws \JsonException
      * @api
      */
-    public function execute(bool $cacheResult = true): QueryResultInterface
+    public function execute(bool $cacheResult = true): \Traversable
     {
         $elasticSearchQuery = new ElasticSearchQuery($this);
         return $elasticSearchQuery->execute($cacheResult);
