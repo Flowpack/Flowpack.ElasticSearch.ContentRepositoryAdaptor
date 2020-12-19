@@ -72,6 +72,7 @@ trait ContentRepositoryMultiDimensionNodeCreationTrait
         $documentNodeDe4 = $standaloneDocumentNode2De->createNode('document4-de', $this->nodeTypeManager->getNodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document'));
         $documentNodeDe4->setProperty('title', 'document4-de');
 
+        // This one has no connetion to the DK root and DK does not fallback to DE, so this node should not be indexed!
         $translatedDocumentNode4Dk = $dkLanguageDimensionContext->adoptNode($documentNodeDe4, true);
         $translatedDocumentNode4Dk->setProperty('title', 'document4-dk');
 

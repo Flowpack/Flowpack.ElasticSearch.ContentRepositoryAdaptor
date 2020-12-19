@@ -14,6 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
  */
 
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
 use Neos\ContentRepository\Utility;
 use Neos\Flow\Annotations as Flow;
 
@@ -23,6 +24,12 @@ use Neos\Flow\Annotations as Flow;
 class DimensionsService
 {
     /**
+     * @Flow\Inject
+     * @var ContentDimensionCombinator
+     */
+    protected $contentDimensionCombinator;
+
+    /**
      * @var array
      */
     protected $lastTargetDimensions;
@@ -31,6 +38,11 @@ class DimensionsService
      * @var array
      */
     protected $dimensionsRegistry = [];
+
+    /**
+     * @var array
+     */
+    protected $dimensionCombinationsForIndexing = [];
 
     protected const HASH_DEFAULT = 'default';
 
@@ -76,5 +88,41 @@ class DimensionsService
     {
         $this->dimensionsRegistry = [];
         $this->lastTargetDimensions = null;
+    }
+
+    /**
+     * Only return the dimensions of the current node and all dimensions
+     * that fall back to the current nodes dimensions.
+     *
+     * @param NodeInterface $node
+     * @return array
+     */
+    public function getDimensionCombinationsForIndexing(NodeInterface $node): array
+    {
+        $dimensionsHash = $this->hash($node->getDimensions());
+
+        if (!isset($this->dimensionCombinationsForIndexing[$dimensionsHash])) {
+            $this->dimensionCombinationsForIndexing[$dimensionsHash] = $this->reduceDimensionCombinationstoSelfAndFallback(
+                $this->contentDimensionCombinator->getAllAllowedCombinations(),
+                $node->getDimensions()
+            );
+        }
+
+        return $this->dimensionCombinationsForIndexing[$dimensionsHash];
+    }
+
+    protected function reduceDimensionCombinationstoSelfAndFallback(array $dimensionCombinations, array $nodeDimensions): array
+    {
+        return array_filter($dimensionCombinations, static function (array $dimensionCombination) use ($nodeDimensions) {
+            foreach ($dimensionCombination as $dimensionKey => $dimensionValues) {
+                if (!isset($nodeDimensions[$dimensionKey])) {
+                    return false;
+                }
+                if (empty(array_intersect($dimensionValues, $nodeDimensions[$dimensionKey]))) {
+                    return false;
+                }
+            }
+            return true;
+        });
     }
 }

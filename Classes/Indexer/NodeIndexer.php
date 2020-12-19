@@ -288,7 +288,15 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         };
 
         $workspaceName = $targetWorkspaceName ?: $node->getContext()->getWorkspaceName();
-        $handleNode($node, $this->createContentContext($workspaceName, $node->getDimensions()));
+        $dimensionCombinations = $this->dimensionService->getDimensionCombinationsForIndexing($node);
+
+        if (array_filter($dimensionCombinations) === []) {
+            $handleNode($node, $this->createContentContext($workspaceName));
+        } else {
+            foreach ($dimensionCombinations as $combination) {
+                $handleNode($node, $this->createContentContext($workspaceName, $combination));
+            }
+        }
     }
 
     /**

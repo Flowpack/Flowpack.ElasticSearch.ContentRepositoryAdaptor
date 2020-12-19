@@ -92,8 +92,8 @@ class ElasticSearchMultiDimensionQueryTest extends BaseElasticsearchContentRepos
             ->sortDesc('title')
             ->execute();
 
-        // expecting: root, document1, document2, document4 (fallback from de), untranslated (fallback from en_us) = 6
-        static::assertCount(5, $resultDk->toArray());
-        static::assertNodeNames(['root', 'document1', 'document2-dk', 'document4-de', 'document-untranslated'], $resultDk);
+        // expecting: root, document1, document2, untranslated (fallback from en_us) = 4
+        static::assertCount(4, $resultDk->toArray());
+        static::assertNodeNames(['root', 'document1', 'document2-dk', 'document-untranslated'], $resultDk);
     }
 }
