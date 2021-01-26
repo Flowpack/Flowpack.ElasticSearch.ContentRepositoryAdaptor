@@ -104,7 +104,7 @@ class SearchCommandController extends CommandController
      */
     public function viewNodeCommand(string $identifier, ?string $dimensions = null, string $field = ''): void
     {
-        if ($dimensions !== null && is_array(json_decode($dimensions)) === false) {
+        if ($dimensions !== null && is_array(json_decode($dimensions, true, 512, JSON_THROW_ON_ERROR)) === false) {
             $this->outputLine('<error>Error: </error>The Dimensions must be given as a JSON array like \'{"language":["de"]}\'');
             $this->sendAndExit(1);
         }
