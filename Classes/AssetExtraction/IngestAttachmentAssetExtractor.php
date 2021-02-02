@@ -50,6 +50,8 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
      */
     public function extract(AssetInterface $asset): AssetContent
     {
+        $extractedAsset = null;
+        
         $request = [
             'pipeline' => [
                 'description' => 'Attachment Extraction',
@@ -73,7 +75,10 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
         ];
 
         $result = $this->elasticsearchClient->request('POST', '_ingest/pipeline/_simulate', [], json_encode($request))->getTreatedContent();
-        $extractedAsset = Arrays::getValueByPath($result, 'docs.0.doc._source.attachment');
+
+        if (is_array($result)) {
+            $extractedAsset = Arrays::getValueByPath($result, 'docs.0.doc._source.attachment');
+        }
 
         if (!is_array($extractedAsset)) {
             $this->logger->error(sprintf('Error while extracting fulltext data from file "%s". See Elasticsearch error log line fo details.', $asset->getResource()->getFilename()), LogEnvironment::fromMethodName(__METHOD__));
