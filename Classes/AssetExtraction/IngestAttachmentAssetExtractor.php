@@ -51,7 +51,7 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
     public function extract(AssetInterface $asset): AssetContent
     {
         $extractedAsset = null;
-        
+
         $request = [
             'pipeline' => [
                 'description' => 'Attachment Extraction',
@@ -101,13 +101,19 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
 
     /**
      * @param AssetInterface $asset
-     * @return null|string
+     * @return string
      */
-    protected function getAssetContent(AssetInterface $asset): ?string
+    protected function getAssetContent(AssetInterface $asset): string
     {
         $stream = $asset->getResource()->getStream();
+
+        if ($stream === false) {
+            $this->logger->error(sprintf('Could not get the file stream of resource with sah1 %s of asset %s.', $asset->getResource()->getSha1(), $asset->getTitle()), LogEnvironment::fromMethodName(__METHOD__));
+            return '';
+        }
+
         stream_filter_append($stream, 'convert.base64-encode');
         $result = stream_get_contents($stream);
-        return $result !== false ? $result : null;
+        return $result !== false ? $result : '';
     }
 }
