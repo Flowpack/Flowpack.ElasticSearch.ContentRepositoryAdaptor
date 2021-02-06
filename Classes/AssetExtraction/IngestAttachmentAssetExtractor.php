@@ -13,10 +13,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\AssetExtraction;
  * source code.
  */
 
-use Neos\Flow\Annotations as FLow;
+use Neos\Flow\Annotations as Flow;
 use Neos\ContentRepository\Search\AssetExtraction\AssetExtractorInterface;
 use Neos\ContentRepository\Search\Dto\AssetContent;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
+use Neos\Flow\Log\ThrowableStorageInterface;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Media\Domain\Model\AssetInterface;
 use Neos\Utility\Arrays;
@@ -32,6 +33,12 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
      * @var ElasticSearchClient
      */
     protected $elasticsearchClient;
+
+    /**
+     * @Flow\Inject
+     * @var ThrowableStorageInterface
+     */
+    protected $throwableStorage;
 
     /**
      * @Flow\Inject
@@ -100,7 +107,19 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
      */
     protected function getAssetContent(AssetInterface $asset): ?string
     {
-        $stream = $asset->getResource()->getStream();
+        try {
+            $stream = $asset->getResource()->getStream();
+        } catch (\Exception $e) {
+            $message = $this->throwableStorage->logThrowable($e);
+            $this->logger->error(sprintf('An exception occured while fetching resource with sha1 %s of asset %s. %s', $asset->getResource()->getSha1(), $asset->getResource()->getFilename(), $message), LogEnvironment::fromMethodName(__METHOD__));
+            return '';
+        }
+
+        if ($stream === false) {
+            $this->logger->error(sprintf('Could not get the file stream of resource with sha1 %s of asset %s.', $asset->getResource()->getSha1(), $asset->getResource()->getFilename()), LogEnvironment::fromMethodName(__METHOD__));
+            return '';
+        }
+
         stream_filter_append($stream, 'convert.base64-encode');
         $result = stream_get_contents($stream);
         return $result !== false ? $result : null;
