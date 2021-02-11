@@ -14,7 +14,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  */
 
 use Doctrine\Common\Collections\ArrayCollection;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ErrorHandling\ErrorHandlingService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\ConfigurationException;
@@ -132,6 +134,18 @@ class NodeIndexCommandController extends CommandController
     protected $workspaceIndexer;
 
     /**
+     * @Flow\Inject
+     * @var ElasticSearchClient
+     */
+    protected $searchClient;
+
+    /**
+     * @var IndexDriverInterface
+     * @Flow\Inject
+     */
+    protected $indexDriver;
+
+    /**
      * Index a single node by the given identifier and workspace name
      *
      * @param string $identifier
@@ -213,6 +227,7 @@ class NodeIndexCommandController extends CommandController
      * @throws StopCommandException
      * @throws Exception
      * @throws ConfigurationException
+     * @throws ApiException
      */
     public function buildCommand(int $limit = null, bool $update = false, string $workspace = null, string $postfix = null): void
     {
@@ -264,6 +279,10 @@ class NodeIndexCommandController extends CommandController
 
         $runAndLog($createIndicesAndApplyMapping, 'Creating indices and apply mapping');
 
+        if ($this->aliasesExist() === false) {
+            $runAndLog($updateAliases, 'Set up aliases');
+        }
+
         $runAndLog($buildIndex, 'Indexing nodes');
 
         $runAndLog($refresh, 'Refresh indicies');
@@ -274,6 +293,28 @@ class NodeIndexCommandController extends CommandController
 
         $this->outputLine();
         $this->outputMemoryUsage();
+    }
+
+    /**
+     * @return bool
+     * @throws ApiException
+     * @throws ConfigurationException
+     * @throws Exception
+     */
+    private function aliasesExist(): bool
+    {
+        $aliasName = $this->searchClient->getIndexName();
+        $aliasesExist = false;
+        try {
+            $aliasesExist = $this->indexDriver->getIndexNamesByAlias($aliasName) !== [];
+        } catch (ApiException $exception) {
+            // in case of 404, do not throw an error...
+            if ($exception->getResponse()->getStatusCode() !== 404) {
+                throw $exception;
+            }
+        }
+
+        return $aliasesExist;
     }
 
     /**
