@@ -152,9 +152,13 @@ class NodeIndexCommandController extends CommandController
      * @param string|null $workspace
      * @param string|null $postfix
      * @return void
+     * @throws ApiException
      * @throws ConfigurationException
      * @throws Exception
+     * @throws RuntimeException
+     * @throws SubProcessException
      * @throws \Flowpack\ElasticSearch\Exception
+     * @throws \JsonException
      */
     public function indexNodeCommand(string $identifier, string $workspace = null, string $postfix = null): void
     {
@@ -162,7 +166,12 @@ class NodeIndexCommandController extends CommandController
             $workspace = 'live';
         }
 
+        $updateAliases = false;
         if ($postfix !== null) {
+            $this->nodeIndexer->setIndexNamePostfix($postfix);
+        } elseif ($this->aliasesExist() === false) {
+            $postfix = (string)time();
+            $updateAliases = true;
             $this->nodeIndexer->setIndexNamePostfix($postfix);
         }
 
@@ -211,6 +220,22 @@ class NodeIndexCommandController extends CommandController
         }
 
         $this->nodeIndexer->flush();
+
+        if ($updateAliases) {
+            $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+            $combinations = $combinations === [] ? [[]] : $combinations;
+
+            foreach ($combinations as $combination) {
+                $this->executeInternalCommand('aliasInternal', [
+                    'dimensionsValues' => json_encode($combination, JSON_THROW_ON_ERROR),
+                    'postfix' => $postfix,
+                    'update' => false
+                ]);
+            }
+
+            $this->nodeIndexer->updateMainAlias();
+        }
+
         $this->outputErrorHandling();
     }
 
