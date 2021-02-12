@@ -412,7 +412,7 @@ class NodeIndexCommandController extends CommandController
         if ($update === true) {
             $this->logger->warning('!!! Update Mode (Development) active!', LogEnvironment::fromMethodName(__METHOD__));
         } else {
-            $dimensionsValuesArray = $this->configureNodeIndexer(json_decode($dimensionsValues, true, 512), $postfix);
+            $dimensionsValuesArray = $this->configureNodeIndexer(json_decode($dimensionsValues, true), $postfix);
             if ($this->nodeIndexer->getIndex()->exists() === true) {
                 $this->logger->warning(sprintf('Deleted index with the same postfix (%s)!', $postfix), LogEnvironment::fromMethodName(__METHOD__));
                 $this->nodeIndexer->getIndex()->delete();
@@ -435,7 +435,7 @@ class NodeIndexCommandController extends CommandController
      */
     public function buildWorkspaceInternalCommand(string $workspace, string $dimensionsValues, string $postfix, int $limit = null): void
     {
-        $dimensionsValuesArray = $this->configureNodeIndexer(json_decode($dimensionsValues, true, 512), $postfix);
+        $dimensionsValuesArray = $this->configureNodeIndexer(json_decode($dimensionsValues, true), $postfix);
 
         $workspaceLogger = function ($workspaceName, $indexedNodes, $dimensions) {
             if ($dimensions === []) {
@@ -464,7 +464,7 @@ class NodeIndexCommandController extends CommandController
      */
     public function refreshInternalCommand(string $dimensionsValues, string $postfix): void
     {
-        $this->configureNodeIndexer(json_decode($dimensionsValues, true, 512), $postfix);
+        $this->configureNodeIndexer(json_decode($dimensionsValues, true), $postfix);
 
         $this->logger->info(vsprintf('Refreshing index %s', [$this->nodeIndexer->getIndexName()]), LogEnvironment::fromMethodName(__METHOD__));
         $this->nodeIndexer->getIndex()->refresh();
@@ -487,7 +487,7 @@ class NodeIndexCommandController extends CommandController
         if ($update === true) {
             return;
         }
-        $this->configureNodeIndexer(json_decode($dimensionsValues, true, 512), $postfix);
+        $this->configureNodeIndexer(json_decode($dimensionsValues, true), $postfix);
 
         $this->logger->info(vsprintf('Update alias for index %s', [$this->nodeIndexer->getIndexName()]), LogEnvironment::fromMethodName(__METHOD__));
         $this->nodeIndexer->updateIndexAlias();
@@ -528,7 +528,7 @@ class NodeIndexCommandController extends CommandController
                 }
             } catch (ApiException $exception) {
                 $exception->getResponse()->getBody()->rewind();
-                $response = json_decode($exception->getResponse()->getBody()->getContents(), false, 512);
+                $response = json_decode($exception->getResponse()->getBody()->getContents(), false);
                 $message = sprintf('Nothing removed. ElasticSearch responded with status %s', $response->status);
 
                 if (isset($response->error->type)) {
