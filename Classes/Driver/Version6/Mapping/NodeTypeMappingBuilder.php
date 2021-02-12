@@ -73,7 +73,7 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
 
                 if (isset($propertyConfiguration['search']['elasticSearchMapping'])) {
                     if (is_array($propertyConfiguration['search']['elasticSearchMapping'])) {
-                        $propertyMapping = $propertyConfiguration['search']['elasticSearchMapping'];
+                        $propertyMapping = array_filter($propertyConfiguration['search']['elasticSearchMapping']);
                         $mapping->setPropertyByPath($propertyName, $propertyMapping);
                     }
                 } elseif (isset($propertyConfiguration['type'], $this->defaultConfigurationPerType[$propertyConfiguration['type']]['elasticSearchMapping'])) {
