@@ -35,7 +35,6 @@ before_install:
   - composer require --no-update --no-interaction neos/content-repository-search:dev-master
   - composer require --no-update --no-interaction flowpack/elasticsearch:dev-master
   - composer require --no-update --no-interaction flowpack/elasticsearch-contentrepositoryadaptor:dev-master
-  - composer remove --no-update --no-interaction neos/site-kickstarter
 install:
   - composer install --no-interaction
   - cd ..
