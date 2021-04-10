@@ -148,7 +148,8 @@ class NodeIndexerTest extends BaseElasticsearchContentRepositoryAdapterTest
     /**
      * Fetch the node path (stored in elasticsearch) of the given node
      */
-    private function getNeosPathOfNodeInIndex(NodeInterface $node): ?string {
+    private function getNeosPathOfNodeInIndex(NodeInterface $node): ?string
+    {
         $this->searchClient->setContextNode($this->siteNode);
         /** @var FilteredQuery $query */
         $query = $this->objectManager->get(QueryInterface::class);
