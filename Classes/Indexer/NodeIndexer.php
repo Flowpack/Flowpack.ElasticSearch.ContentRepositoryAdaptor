@@ -346,7 +346,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * Returns a stable identifier for the Elasticsearch document representing the node
      *
      * @param NodeInterface $node
-     * @param null $targetWorkspaceName
+     * @param string|null $targetWorkspaceName
      * @return string
      * @throws IllegalObjectTypeException
      */
