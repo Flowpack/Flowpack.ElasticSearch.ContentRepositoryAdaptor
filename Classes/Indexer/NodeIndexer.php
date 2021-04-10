@@ -274,6 +274,13 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         $handleNode = function (NodeInterface $node, Context $context) use ($targetWorkspaceName, $indexer) {
             $nodeFromContext = $context->getNodeByIdentifier($node->getIdentifier());
             if ($nodeFromContext instanceof NodeInterface) {
+                if ($node->getPath() !== $nodeFromContext->getPath()) {
+                    // If the node from context does have a different path, purge the context cache and re-fetch
+
+                    // TODO: find a better way to handle this
+                    $context->getFirstLevelNodeCache()->flush();
+                    $nodeFromContext = $context->getNodeByIdentifier($node->getIdentifier());
+                }
                 $this->searchClient->withDimensions(static function () use ($indexer, $nodeFromContext, $targetWorkspaceName) {
                     $indexer($nodeFromContext, $targetWorkspaceName);
                 }, $nodeFromContext->getContext()->getTargetDimensions());
