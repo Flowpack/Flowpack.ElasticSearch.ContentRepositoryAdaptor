@@ -13,7 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\TargetContextPath;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractIndexerDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
@@ -90,11 +90,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
             return [];
         }
 
-        $closestFulltextNodeContextPath = $closestFulltextNode->getContextPath();
-        if ($targetWorkspaceName !== null) {
-            $closestFulltextNodeContextPath = (string)(new TargetContextPath($node, $targetWorkspaceName, $closestFulltextNodeContextPath));
-        }
-        $closestFulltextNodeDocumentIdentifier = sha1($closestFulltextNodeContextPath);
+        $closestFulltextNodeDocumentIdentifier = NodeIndexer::calculateDocumentIdentifier($closestFulltextNode);
 
         if ($closestFulltextNode->isRemoved()) {
             // fulltext root is removed, abort silently...
