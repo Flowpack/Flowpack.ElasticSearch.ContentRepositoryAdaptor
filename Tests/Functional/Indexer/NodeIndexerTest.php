@@ -125,7 +125,44 @@ class NodeIndexerTest extends BaseElasticsearchContentRepositoryAdapterTest
         $testNode = $this->setupCrAndIndexTestNode();
         self::assertTrue($this->nodeExistsInIndex($testNode), 'Node was not successfully indexed.');
 
-//        $testNode->moveInto();
+        $testNode2 = $this->siteNode->getNode('test-node-2');
+
+        // move this node (test-node-1) into test-node-2
+        $testNode->setProperty('title', 'changed');
+        $testNode->moveInto($testNode2);
+
+        // re-index
+        $this->nodeIndexer->indexNode($testNode);
+        $this->nodeIndexer->flush();
+        sleep(1);
+
+        // check if we do have more than one single occurrence (nodeExistsInIndex will check that indirectly)
+        self::assertTrue($this->nodeExistsInIndex($testNode), 'Node was not successfully indexed.');
+
+        // check the node path in es after indexing
+        $pathInEs = $this->getNeosPathOfNodeInIndex($testNode);
+        self::assertNotNull($pathInEs, 'Node does not exist after indexing');
+        self::assertEquals($pathInEs, $testNode->getPath(), 'Wrong node path in elasticsearch after indexing');
+    }
+
+    /**
+     * Fetch the node path (stored in elasticsearch) of the given node
+     */
+    private function getNeosPathOfNodeInIndex(NodeInterface $node): ?string {
+        $this->searchClient->setContextNode($this->siteNode);
+        /** @var FilteredQuery $query */
+        $query = $this->objectManager->get(QueryInterface::class);
+        $query->queryFilter('term', ['neos_node_identifier' => $node->getIdentifier()]);
+
+        $result = $this->nodeIndexer->getIndex()->request('GET', '/_search', [], $query->toArray())->getTreatedContent();
+
+        $firstHit = current(Arrays::getValueByPath($result, 'hits.hits'));
+
+        if ($firstHit === false) {
+            return null;
+        }
+
+        return Arrays::getValueByPath($firstHit, '_source.neos_path');
     }
 
     /**
