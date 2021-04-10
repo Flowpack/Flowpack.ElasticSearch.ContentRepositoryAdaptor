@@ -243,7 +243,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 }
             }
 
-            $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
+            $documentIdentifier = NodeIndexer::calculateDocumentIdentifier($node, $targetWorkspaceName);
             $nodeType = $node->getNodeType();
 
             $mappingType = $this->getIndex()->findType($nodeType->getName());
@@ -346,11 +346,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * Returns a stable identifier for the Elasticsearch document representing the node
      *
      * @param NodeInterface $node
-     * @param string $targetWorkspaceName
+     * @param null $targetWorkspaceName
      * @return string
      * @throws IllegalObjectTypeException
      */
-    protected function calculateDocumentIdentifier(NodeInterface $node, $targetWorkspaceName = null): string
+    public static function calculateDocumentIdentifier(NodeInterface $node, $targetWorkspaceName = null): string
     {
         $workspaceName = $targetWorkspaceName ?: $node->getWorkspace()->getName();
         $nodeIdentifier = $node->getIdentifier();
@@ -384,7 +384,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
         }
 
-        $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
+        $documentIdentifier = NodeIndexer::calculateDocumentIdentifier($node, $targetWorkspaceName);
 
         $this->toBulkRequest($node, $this->documentDriver->delete($node, $documentIdentifier));
         $this->toBulkRequest($node, $this->indexerDriver->fulltext($node, [], $targetWorkspaceName));
