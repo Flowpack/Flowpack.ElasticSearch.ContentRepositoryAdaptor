@@ -99,7 +99,7 @@ Shows the mapping between the projects dimensions presets and the resulting inde
 
 Shows the mapping created for the NodeTypes.
 
-	./flow nodetype: showIndexableConfiguration
+	./flow nodetype:showIndexableConfiguration
 
 Shows a list of NodeTypes and if they are configured to be indexable
 
