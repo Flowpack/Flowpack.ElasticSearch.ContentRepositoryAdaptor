@@ -31,7 +31,7 @@ trait IndexWorkspaceTrait
 
     /**
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Domain\Service\ContextFactoryInterface
+     * @var \Neos\ContentRepository\Domain\Service\ContextFactory
      */
     protected $contextFactory;
 
