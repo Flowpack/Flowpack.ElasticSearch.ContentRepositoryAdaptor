@@ -16,7 +16,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
 use Neos\ContentRepository\Domain\Factory\NodeFactory;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
-use Neos\ContentRepository\Domain\Service\ContextFactory;
+use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\ContentRepository\Search\Indexer\NodeIndexingManager;
 use Neos\Flow\Annotations as Flow;
 
@@ -28,7 +28,7 @@ use Neos\Flow\Annotations as Flow;
 final class WorkspaceIndexer
 {
     /**
-     * @var ContextFactory
+     * @var ContextFactoryInterface
      * @Flow\Inject
      */
     protected $contextFactory;

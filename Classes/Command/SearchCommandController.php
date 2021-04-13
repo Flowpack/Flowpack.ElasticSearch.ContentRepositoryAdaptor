@@ -21,7 +21,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Service\Context;
-use Neos\ContentRepository\Domain\Service\ContextFactory;
+use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
@@ -34,7 +34,7 @@ use Neos\Utility\Arrays;
 class SearchCommandController extends CommandController
 {
     /**
-     * @var ContextFactory
+     * @var ContextFactoryInterface
      * @Flow\Inject
      */
     protected $contextFactory;
