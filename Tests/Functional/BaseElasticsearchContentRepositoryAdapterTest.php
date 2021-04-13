@@ -16,7 +16,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Tests\Functional;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command\NodeIndexCommandController;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilder;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
-use Neos\ContentRepository\Domain\Service\ContextFactory;
+use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\Flow\Tests\FunctionalTestCase;
 
 abstract class BaseElasticsearchContentRepositoryAdapterTest extends FunctionalTestCase
@@ -52,7 +52,7 @@ abstract class BaseElasticsearchContentRepositoryAdapterTest extends FunctionalT
     {
         parent::tearDown();
 
-        if (isset($this->contextFactory) && $this->contextFactory instanceof ContextFactory) {
+        if (isset($this->contextFactory) && $this->contextFactory instanceof ContextFactoryInterface) {
             $this->inject($this->contextFactory, 'contextInstances', []);
         }
 
