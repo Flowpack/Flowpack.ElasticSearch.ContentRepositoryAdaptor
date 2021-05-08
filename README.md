@@ -182,7 +182,7 @@ Flowpack:
 
 Which dimension combinations are available in your system and which hashes they are identified with can be shown with the CLI command: 
 
-	dflow nodeindexmapping:indices
+	./flow nodeindexmapping:indices
 
 ### Configurations per property (index field)
 
