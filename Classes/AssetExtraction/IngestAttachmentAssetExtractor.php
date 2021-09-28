@@ -47,6 +47,12 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
     protected $logger;
 
     /**
+     * @Flow\InjectConfiguration(package="Flowpack.ElasticSearch.ContentRepositoryAdaptor", path="indexing.assetExtraction.maximumFileSize")
+     * @var int
+     */
+    protected $maximumFileSize;
+
+    /**
      * Takes an asset and extracts content and meta data.
      *
      * @param AssetInterface $asset
@@ -57,6 +63,11 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
      */
     public function extract(AssetInterface $asset): AssetContent
     {
+        if ($asset->getResource()->getFileSize() > $this->maximumFileSize) {
+            $this->logger->info(sprintf('The asset %s with size of %s bytes exceeds the maximum size of %s bytes. The file content was not ingested.', $asset->getResource()->getFilename(), $asset->getResource()->getFileSize(), $this->maximumFileSize), LogEnvironment::fromMethodName(__METHOD__));
+            return $this->buildAssetContentObject([]);
+        }
+
         $extractedAsset = null;
 
         $request = [
@@ -88,22 +99,12 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
         }
 
         if (!is_array($extractedAsset)) {
-            $this->logger->error(sprintf('Error while extracting fulltext data from file "%s". See Elasticsearch error log line fo details.', $asset->getResource()->getFilename()), LogEnvironment::fromMethodName(__METHOD__));
+            $this->logger->error(sprintf('Error while extracting fulltext data from file "%s". See Elasticsearch error log line for details.', $asset->getResource()->getFilename()), LogEnvironment::fromMethodName(__METHOD__));
         } else {
             $this->logger->debug(sprintf('Extracted asset %s of type %s. Extracted %s characters of content', $asset->getResource()->getFilename(), $extractedAsset['content_type'] ?? '-no-content-type-', $extractedAsset['content_length'] ?? '0'), LogEnvironment::fromMethodName(__METHOD__));
         }
 
-        return new AssetContent(
-            $extractedAsset['content'] ?? '',
-            $extractedAsset['title'] ?? '',
-            $extractedAsset['name'] ?? '',
-            $extractedAsset['author'] ?? '',
-            $extractedAsset['keywords'] ?? '',
-            $extractedAsset['date'] ?? '',
-            $extractedAsset['content_type'] ?? '',
-            $extractedAsset['content_length'] ?? 0,
-            $extractedAsset['language'] ?? ''
-        );
+        return $this->buildAssetContentObject($extractedAsset);
     }
 
     /**
@@ -128,5 +129,24 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
         stream_filter_append($stream, 'convert.base64-encode');
         $result = stream_get_contents($stream);
         return $result !== false ? $result : '';
+    }
+
+    /**
+     * @param $extractedAsset
+     * @return AssetContent
+     */
+    protected function buildAssetContentObject(array $extractedAsset): AssetContent
+    {
+        return new AssetContent(
+            $extractedAsset['content'] ?? '',
+            $extractedAsset['title'] ?? '',
+            $extractedAsset['name'] ?? '',
+            $extractedAsset['author'] ?? '',
+            $extractedAsset['keywords'] ?? '',
+            $extractedAsset['date'] ?? '',
+            $extractedAsset['content_type'] ?? '',
+            $extractedAsset['content_length'] ?? 0,
+            $extractedAsset['language'] ?? ''
+        );
     }
 }
