@@ -47,7 +47,7 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
     protected $logger;
 
     /**
-     * @Flow\InjectConfiguration(package="Flowpack.ElasticSearch.ContentRepositoryAdaptor" path="indexing.assetExtraction.indexedChars")
+     * @Flow\InjectConfiguration(package="Flowpack.ElasticSearch.ContentRepositoryAdaptor", path="indexing.assetExtraction.indexedChars")
      * @var int
      */
     protected $indexedChars;
