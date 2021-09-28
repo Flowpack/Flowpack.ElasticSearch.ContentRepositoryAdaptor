@@ -18,6 +18,7 @@ Neos:
         string:
           elasticSearchMapping:
             type: keyword
+            ignore_above: 8191
 
         boolean:
           elasticSearchMapping:
@@ -26,6 +27,7 @@ Neos:
         array:
           elasticSearchMapping:
             type: keyword
+            ignore_above: 8191
 
         integer:
           elasticSearchMapping:
