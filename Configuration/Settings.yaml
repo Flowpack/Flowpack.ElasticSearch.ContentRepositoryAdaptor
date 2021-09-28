@@ -7,6 +7,8 @@ Flowpack:
         batchSize:
           elements: 500
           octets: 40000000
+        assetExtraction:
+          indexedChars: 100000
       configuration:
         nodeTypes:
           '*':

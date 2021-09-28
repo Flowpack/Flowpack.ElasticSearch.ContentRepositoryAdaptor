@@ -47,6 +47,12 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
     protected $logger;
 
     /**
+     * @Flow\InjectConfiguration(package="Flowpack.ElasticSearch.ContentRepositoryAdaptor" path="indexing.assetExtraction.indexedChars")
+     * @var int
+     */
+    protected $indexedChars;
+
+    /**
      * Takes an asset and extracts content and meta data.
      *
      * @param AssetInterface $asset
@@ -66,7 +72,7 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
                     [
                         'attachment' => [
                             'field' => 'neos_asset',
-                            'indexed_chars' => 100000,
+                            'indexed_chars' => (int)$this->indexedChars,
                             'ignore_missing' => true,
                         ]
                     ]
@@ -126,7 +132,7 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
         }
 
         stream_filter_append($stream, 'convert.base64-encode');
-        $result = stream_get_contents($stream);
+        $result = stream_get_contents($stream, (int)$this->indexedChars);
         return $result !== false ? $result : '';
     }
 }
