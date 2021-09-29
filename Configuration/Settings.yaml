@@ -7,6 +7,9 @@ Flowpack:
         batchSize:
           elements: 500
           octets: 40000000
+        assetExtraction:
+          # The maximum size of files to be ingested in bytes (100 Mb)
+          maximumFileSize: 104857600
       configuration:
         nodeTypes:
           '*':
