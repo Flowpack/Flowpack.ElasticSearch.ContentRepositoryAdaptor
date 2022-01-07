@@ -126,7 +126,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                             ctx._source.neos_fulltext_parts = new HashMap();
                         }
 
-                        if (params.nodeIsRemoved || params.nodeIsHidden || params.fulltext.size() == 0) {
+                        if (params.nodeIsRemoved || params.fulltext.size() == 0) {
                             if (ctx._source.neos_fulltext_parts.containsKey(params.identifier)) {
                                 ctx._source.neos_fulltext_parts.remove(params.identifier);
                             }
@@ -148,7 +148,6 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                     'params' => [
                         'identifier' => $node->getIdentifier(),
                         'nodeIsRemoved' => $node->isRemoved(),
-                        'nodeIsHidden' => $node->isHidden(),
                         'fulltext' => $fulltextIndexOfNode
                     ],
                 ],
