@@ -101,6 +101,12 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
     protected function getAssetContent(AssetInterface $asset): ?string
     {
         $stream = $asset->getResource()->getStream();
+
+        if ($stream === false) {
+            $this->logger->error(sprintf('The resource stream for asset "%s" (SHA1: %s) returned false', $asset->getTitle(), $asset->getResource()->getSha1()), LogEnvironment::fromMethodName(__METHOD__));
+            return null;
+        }
+
         stream_filter_append($stream, 'convert.base64-encode');
         $result = stream_get_contents($stream);
         return $result !== false ? $result : null;
