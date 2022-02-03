@@ -35,7 +35,7 @@ Finally, run `./flow nodeindex:build`, and add the search plugin to your page. I
 * [Flowpack.SimpleSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-simplesearch-contentrepositoryadaptor.html): an alternative search backend (to be used instead of this package); storing the search index in SQLite
 * [Flowpack.SearchPlugin](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-searchplugin.html): search plugin for Neos
 
-## Elasticseearch and Neos compatibility
+## Elasticsearch and Neos compatibility
 
 This following matrix shows the compatibility of this package to Elasticsearch and Neos versions:
 
