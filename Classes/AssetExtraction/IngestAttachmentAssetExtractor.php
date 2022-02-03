@@ -117,12 +117,12 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
             $stream = $asset->getResource()->getStream();
         } catch (\Exception $e) {
             $message = $this->throwableStorage->logThrowable($e);
-            $this->logger->error(sprintf('An exception occured while fetching resource with sah1 %s of asset %s. %s', $asset->getResource()->getSha1(), $asset->getResource()->getFilename(), $message), LogEnvironment::fromMethodName(__METHOD__));
+            $this->logger->error(sprintf('An exception occured while fetching resource with sha1 %s of asset %s. %s', $asset->getResource()->getSha1(), $asset->getResource()->getFilename(), $message), LogEnvironment::fromMethodName(__METHOD__));
             return '';
         }
 
         if ($stream === false) {
-            $this->logger->error(sprintf('Could not get the file stream of resource with sah1 %s of asset %s.', $asset->getResource()->getSha1(), $asset->getResource()->getFilename()), LogEnvironment::fromMethodName(__METHOD__));
+            $this->logger->error(sprintf('Could not get the file stream of resource with sha1 %s of asset %s.', $asset->getResource()->getSha1(), $asset->getResource()->getFilename()), LogEnvironment::fromMethodName(__METHOD__));
             return '';
         }
 
