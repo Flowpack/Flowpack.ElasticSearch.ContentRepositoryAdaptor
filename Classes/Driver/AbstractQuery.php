@@ -180,22 +180,19 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * {@inheritdoc}
      */
-    public function highlight($fragmentSize, int $fragmentCount = null): void
+    public function highlight($fragmentSize, int $fragmentCount = null, int $noMatchSize = 150, string $field = 'neos_fulltext.*'): void
     {
         if ($fragmentSize === false) {
             // Highlighting is disabled.
             unset($this->request['highlight']);
-        } else {
-            $this->request['highlight'] = [
-                'fields' => [
-                    'neos_fulltext*' => [
-                        'fragment_size' => $fragmentSize,
-                        'no_match_size' => $fragmentSize,
-                        'number_of_fragments' => $fragmentCount
-                    ]
-                ]
-            ];
+            return;
         }
+
+        $this->request['highlight']['fields'][$field] = [
+            'fragment_size' => $fragmentSize,
+            'no_match_size' => $noMatchSize,
+            'number_of_fragments' => $fragmentCount
+        ];
     }
 
     /**
