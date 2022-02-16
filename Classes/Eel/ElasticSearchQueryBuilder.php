@@ -730,14 +730,16 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * Configure Result Highlighting. Only makes sense in combination with fulltext(). By default, highlighting is enabled.
      * It can be disabled by calling "highlight(FALSE)".
      *
-     * @param integer|boolean $fragmentSize The result fragment size for highlight snippets. If this parameter is FALSE, highlighting will be disabled.
-     * @param integer $fragmentCount The number of highlight fragments to show.
+     * @param int|bool $fragmentSize The result fragment size for highlight snippets. If this parameter is FALSE, highlighting will be disabled.
+     * @param int|null $fragmentCount The number of highlight fragments to show.
+     * @param int $noMatchSize
+     * @param string $field
      * @return ElasticSearchQueryBuilder
      * @api
      */
-    public function highlight($fragmentSize, int $fragmentCount = null): ElasticSearchQueryBuilder
+    public function highlight($fragmentSize, int $fragmentCount = null, int $noMatchSize = 150, string $field = 'neos_fulltext.*'): ElasticSearchQueryBuilder
     {
-        $this->request->highlight($fragmentSize, $fragmentCount);
+        $this->request->highlight($fragmentSize, $fragmentCount, $noMatchSize, $field);
 
         return $this;
     }

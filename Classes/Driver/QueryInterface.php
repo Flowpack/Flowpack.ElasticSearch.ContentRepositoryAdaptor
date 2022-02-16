@@ -86,11 +86,13 @@ interface QueryInterface
      * It can be disabled by calling "highlight(FALSE)".
      *
      * @param integer|boolean $fragmentSize The result fragment size for highlight snippets. If this parameter is FALSE, highlighting will be disabled.
-     * @param integer $fragmentCount The number of highlight fragments to show.
+     * @param int|null $fragmentCount The number of highlight fragments to show.
+     * @param int $noMatchSize
+     * @param string $field
      * @return void
      * @api
      */
-    public function highlight($fragmentSize, int $fragmentCount = null): void;
+    public function highlight($fragmentSize, int $fragmentCount = null, int $noMatchSize = 150, string $field = 'neos_fulltext.*'): void;
 
     /**
      * This method is used to create any kind of aggregation.
