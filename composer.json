@@ -9,12 +9,12 @@
         "ext-json": "*",
 
         "flowpack/elasticsearch": "^5.0 || dev-master",
-        "neos/content-repository": "^7.0",
+        "neos/content-repository": "^7.0 || ^8.0 || dev-master",
         "neos/content-repository-search": "^4.0 || dev-master",
-        "neos/eel": "^7.0",
-        "neos/flow": "^7.0",
-        "neos/fluid-adaptor": "^7.0",
-        "neos/utility-arrays": "^7.0"
+        "neos/eel": "^7.0 || ^8.0 || dev-master",
+        "neos/flow": "^7.0 || ^8.0 || dev-master",
+        "neos/fluid-adaptor": "^7.0 || ^8.0 || dev-master",
+        "neos/utility-arrays": "^7.0 || ^8.0 || dev-master"
     },
     "autoload": {
         "psr-4": {
