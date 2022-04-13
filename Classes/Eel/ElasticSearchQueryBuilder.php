@@ -825,9 +825,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             ]
         ]);
 
+        $workspaces = array_merge(
+            [$contextNode->getContext()->getWorkspace()->getName()],
+            array_keys($contextNode->getContext()->getWorkspace()->getBaseWorkspaces())
+        );
         //
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-terms-filter.html
-        $this->queryFilter('terms', ['neos_workspace' => array_unique(['live', $contextNode->getContext()->getWorkspace()->getName()])]);
+        $this->queryFilter('terms', ['neos_workspace' => $workspaces]);
 
         return $this;
     }
