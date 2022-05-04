@@ -13,12 +13,12 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\TargetContextPath;
+use Neos\Flow\Annotations as Flow;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractIndexerDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Log\Utility\LogEnvironment;
 
 /**
@@ -81,7 +81,10 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
 
     /**
      * {@inheritdoc}
-     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
+     * @param NodeInterface $node
+     * @param array $fulltextIndexOfNode
+     * @param string|null $targetWorkspaceName
+     * @return array
      */
     public function fulltext(NodeInterface $node, array $fulltextIndexOfNode, string $targetWorkspaceName = null): array
     {
@@ -90,11 +93,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
             return [];
         }
 
-        $closestFulltextNodeContextPath = $closestFulltextNode->getContextPath();
-        if ($targetWorkspaceName !== null) {
-            $closestFulltextNodeContextPath = (string)(new TargetContextPath($node, $targetWorkspaceName, $closestFulltextNodeContextPath));
-        }
-        $closestFulltextNodeDocumentIdentifier = sha1($closestFulltextNodeContextPath);
+        $closestFulltextNodeDocumentIdentifier = $this->documentIdentifierGenerator->generate($closestFulltextNode, $targetWorkspaceName);
 
         if ($closestFulltextNode->isRemoved()) {
             // fulltext root is removed, abort silently...

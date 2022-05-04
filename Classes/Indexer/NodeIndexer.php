@@ -25,6 +25,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ErrorHandling\ErrorHandlingS
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ErrorHandling\ErrorStorageInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DocumentIdentifier\DocumentIdentifierGeneratorInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\NodeTypeIndexingConfiguration;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
@@ -55,13 +56,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @var NodeTypeMappingBuilderInterface
      */
     protected $nodeTypeMappingBuilder;
-
-    /**
-     * Optional postfix for the index, e.g. to have different indexes by timestamp.
-     *
-     * @var string
-     */
-    protected $indexNamePostfix = '';
 
     /**
      * @Flow\Inject
@@ -130,18 +124,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     protected $indexConfiguration;
 
     /**
-     * The current Elasticsearch bulk request, in the format required by http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html
-     *
-     * @var array
-     */
-    protected $currentBulkRequest = [];
-
-    /**
-     * @var boolean
-     */
-    protected $bulkProcessing = false;
-
-    /**
      * @Flow\Inject
      * @var DimensionsService
      */
@@ -155,9 +137,27 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
     /**
      * @Flow\Inject
+     * @var DocumentIdentifierGeneratorInterface
+     */
+    protected $documentIdentifierGenerator;
+
+    /**
+     * @Flow\Inject
      * @var ErrorStorageInterface
      */
     protected $errorStorage;
+
+    /**
+     * The current Elasticsearch bulk request, in the format required by http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html
+     */
+    protected array $currentBulkRequest = [];
+
+    /**
+     * Optional postfix for the index, e.g. to have different indexes by timestamp.
+     */
+    protected string $indexNamePostfix = '';
+
+    protected bool $bulkProcessing = false;
 
     public function setDimensions(array $dimensionsValues): void
     {
@@ -243,7 +243,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 }
             }
 
-            $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
+            $documentIdentifier = $this->documentIdentifierGenerator->generate($node, $targetWorkspaceName);
             $nodeType = $node->getNodeType();
 
             $mappingType = $this->getIndex()->findType($nodeType->getName());
@@ -336,33 +336,13 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     }
 
     /**
-     * Returns a stable identifier for the Elasticsearch document representing the node
-     *
-     * @param NodeInterface $node
-     * @param string $targetWorkspaceName
-     * @return string
-     * @throws IllegalObjectTypeException
-     */
-    protected function calculateDocumentIdentifier(NodeInterface $node, $targetWorkspaceName = null): string
-    {
-        $contextPath = $node->getContextPath();
-
-        if ($targetWorkspaceName !== null) {
-            $contextPath = (string)(new TargetContextPath($node, $targetWorkspaceName, $contextPath));
-        }
-
-        return sha1($contextPath);
-    }
-
-    /**
      * Schedule node removal into the current bulk request.
      *
      * @param NodeInterface $node
-     * @param string $targetWorkspaceName
+     * @param string|null $targetWorkspaceName
      * @return void
      * @throws Exception
      * @throws FilesException
-     * @throws IllegalObjectTypeException
      * @throws \Flowpack\ElasticSearch\Exception
      */
     public function removeNode(NodeInterface $node, string $targetWorkspaceName = null): void
@@ -380,7 +360,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
         }
 
-        $documentIdentifier = $this->calculateDocumentIdentifier($node, $targetWorkspaceName);
+        $documentIdentifier = $this->documentIdentifierGenerator->generate($node, $targetWorkspaceName);
 
         $this->toBulkRequest($node, $this->documentDriver->delete($node, $documentIdentifier));
         $this->toBulkRequest($node, $this->indexerDriver->fulltext($node, [], $targetWorkspaceName));
@@ -390,8 +370,8 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
     /**
      * @throws Exception
+     * @throws Exception\ConfigurationException
      * @throws \Flowpack\ElasticSearch\Exception
-     * @throws FilesException
      */
     protected function flushIfNeeded(): void
     {
@@ -550,6 +530,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * Update the main alias to allow to query all indices at once
      * @throws Exception
      * @throws Exception\ConfigurationException
+     * @throws ApiException
      */
     public function updateMainAlias(): void
     {
