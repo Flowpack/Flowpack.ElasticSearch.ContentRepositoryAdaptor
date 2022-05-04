@@ -17,7 +17,6 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 class NodePathBasedDocumentIdentifierGenerator implements DocumentIdentifierGeneratorInterface
 {
-
     public function generate(NodeInterface $node, ?string $targetWorkspaceName = null): string
     {
         $contextPath = $node->getContextPath();

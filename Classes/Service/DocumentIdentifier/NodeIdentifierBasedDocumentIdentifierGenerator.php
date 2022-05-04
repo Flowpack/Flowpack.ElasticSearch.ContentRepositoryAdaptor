@@ -17,7 +17,6 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 class NodeIdentifierBasedDocumentIdentifierGenerator implements DocumentIdentifierGeneratorInterface
 {
-
     public function generate(NodeInterface $node, ?string $targetWorkspaceName = null): string
     {
         $workspaceName = $targetWorkspaceName ?: $node->getWorkspace()->getName();
