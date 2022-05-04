@@ -93,7 +93,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
             return [];
         }
 
-        $closestFulltextNodeDocumentIdentifier = $this->documentIdentifierGenerator->generate($closestFulltextNode);
+        $closestFulltextNodeDocumentIdentifier = $this->documentIdentifierGenerator->generate($closestFulltextNode, $targetWorkspaceName);
 
         if ($closestFulltextNode->isRemoved()) {
             // fulltext root is removed, abort silently...

@@ -21,6 +21,7 @@ interface DocumentIdentifierGeneratorInterface
      * Generates a stable identifier out of the given node
      *
      * @param NodeInterface $node
+     * @param string|null $targetWorkspaceName
      * @return string
      */
     public function generate(NodeInterface $node, ?string $targetWorkspaceName = null): string;
