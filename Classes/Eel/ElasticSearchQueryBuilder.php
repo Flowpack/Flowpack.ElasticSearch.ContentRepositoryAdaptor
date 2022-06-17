@@ -18,8 +18,6 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Dto\SearchResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
-use Flowpack\ElasticSearch\Domain\Model\Index;
-use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Neos\Flow\Log\ThrowableStorageInterface;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
@@ -668,7 +666,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     }
 
     /**
-     * Match the searchword against the fulltext index
+     * Match the searchword against the fulltext index.
+     *
+     * NOTE: Please use {@see simpleQueryStringFulltext} instead, as it is more robust.
      *
      * @param string $searchWord
      * @param array $options Options to configure the query_string, see https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-query-string-query.html
@@ -679,6 +679,32 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     {
         // We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
         $this->request->fulltext(trim(json_encode($searchWord, JSON_UNESCAPED_UNICODE), '"'), $options);
+        $this->request->highlight(150, 2);
+
+        return $this;
+    }
+
+    /**
+     * Match the searchword against the fulltext index using the elasticsearch
+     * [simple query string query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-simple-query-string-query.html).
+     *
+     * This method has two main benefits over {@see fulltext()}:
+     * - Supports phrase searches like `"Neos and Flow"`, where
+     *   quotes mean "I want this exact phrase" (similar to many search engines).
+     * - do not crash if the user does not enter a fully syntactically valid query
+     *   (invalid query parts are ignored).
+     *
+     * This is exactly what we want for a good search field behavior.
+     *
+     * @param string $searchWord
+     * @param array $options Options to configure the query_string, see https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-query-string-query.html
+     * @return QueryBuilderInterface
+     * @api
+     */
+    public function simpleQueryStringFulltext(string $searchWord, array $options = []): QueryBuilderInterface
+    {
+        // We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
+        $this->request->simpleQueryStringFulltext($searchWord, $options);
         $this->request->highlight(150, 2);
 
         return $this;

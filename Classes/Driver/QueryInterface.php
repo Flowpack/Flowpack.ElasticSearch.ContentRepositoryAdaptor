@@ -82,6 +82,16 @@ interface QueryInterface
     public function fulltext(string $searchWord, array $options = []): void;
 
     /**
+     * Match the search word against the fulltext index using the elasticsearch
+     * [simple query string query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-simple-query-string-query.html)
+     *
+     * @param string $searchWord
+     * @param array $options Options to configure the query_string
+     * @return void
+     */
+    public function simpleQueryStringFulltext(string $searchWord, array $options = []): void;
+
+    /**
      * Configure Result Highlighting. Only makes sense in combination with fulltext(). By default, highlighting is enabled.
      * It can be disabled by calling "highlight(FALSE)".
      *
