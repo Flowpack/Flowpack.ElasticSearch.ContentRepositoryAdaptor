@@ -70,6 +70,20 @@ class FilteredQuery extends AbstractQuery
     /**
      * {@inheritdoc}
      */
+    public function simpleQueryStringFulltext(string $searchWord, array $options = []): void
+    {
+        $this->appendAtPath('query.bool.must', [
+            'simple_query_string' => array_merge(
+                $this->queryStringParameters,
+                $options,
+                [ 'query' => $searchWord ]
+            )
+        ]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function queryFilter(string $filterType, $filterOptions, string $clauseType = 'must'): void
     {
         if (!in_array($clauseType, ['must', 'should', 'must_not', 'filter'])) {
