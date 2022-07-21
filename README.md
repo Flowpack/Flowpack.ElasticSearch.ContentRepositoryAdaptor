@@ -440,8 +440,8 @@ As **value**, the following methods accept a simple type, a node object or a Dat
 |`from(5)`                                             |Return the results starting from the 6th one|
 |`prefix('propertyName', 'prefix', [clauseType])`      |Adds a prefix filter on the given field with the given prefix|
 |`geoDistance(propertyName, geoPoint, distance, [clauseType])` |Filters documents that include only hits that exists within a specific distance from a geo point.|
-|`fulltext('searchWord', options)`                     |Does a query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-query-string-query.html) to the query_string|
-
+|`fulltext('searchWord', options)`                     |Does a query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-query-string-query.html) to the query_string. Recommendation: **use simpleQueryStringFulltext instead, as it yields better results and is more tolerant to user input**.|
+|`simpleQueryStringFulltext('searchWord', options)`    |Does a simple_query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/8.3/query-dsl-simple-query-string-query.html) to the simple_query_string. Supports phrase matching like `"firstname lastname"` and tolerates broken input without exceptions (in contrast to `fulltext()`)|
 ## moreLikeThis(like, fields, options)
 
 The More Like This Query (MLT Query) finds documents that are "like" a given text or a given set of documents.
