@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor.svg)](https://travis-ci.org/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor) [![Latest Stable Version](https://poser.pugx.org/flowpack/elasticsearch-contentrepositoryadaptor/v/stable)](https://packagist.org/packages/flowpack/elasticsearch-contentrepositoryadaptor) [![Total Downloads](https://poser.pugx.org/flowpack/elasticsearch-contentrepositoryadaptor/downloads)](https://packagist.org/packages/flowpack/elasticsearch-contentrepositoryadaptor)
+[![Build Status](https://travis-ci.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor.svg?branch=master)](https://travis-ci.com/Flowpack/Flowpack.ElasticSearch.ContentRepositoryAdaptor) [![Latest Stable Version](https://poser.pugx.org/flowpack/elasticsearch-contentrepositoryadaptor/v/stable)](https://packagist.org/packages/flowpack/elasticsearch-contentrepositoryadaptor) [![Total Downloads](https://poser.pugx.org/flowpack/elasticsearch-contentrepositoryadaptor/downloads)](https://packagist.org/packages/flowpack/elasticsearch-contentrepositoryadaptor)
 
 # Neos Elasticsearch Adapter
 
@@ -35,7 +35,7 @@ Finally, run `./flow nodeindex:build`, and add the search plugin to your page. I
 * [Flowpack.SimpleSearch.ContentRepositoryAdaptor](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-simplesearch-contentrepositoryadaptor.html): an alternative search backend (to be used instead of this package); storing the search index in SQLite
 * [Flowpack.SearchPlugin](https://www.neos.io/download-and-extend/packages/flowpack/flowpack-searchplugin.html): search plugin for Neos
 
-## Elasticseearch and Neos compatibility
+## Elasticsearch and Neos compatibility
 
 This following matrix shows the compatibility of this package to Elasticsearch and Neos versions:
 
@@ -44,7 +44,8 @@ This following matrix shows the compatibility of this package to Elasticsearch a
 | 4        | 3.x, 4.x      | 1.x, 2,x 5.x  | Unmaintained, probably broken |
 | 5        | > 3.3, 4.x    | 5.x           | Bugfix only  | 
 | 6        | 5.x           | 5.x           | Bugfix only  |
-| 7        | 5.x           | 6.x, 7.x      | Bugfix and Features |
+| 7        | 5.x           | 6.x, 7.x      | Bugfix and Features ([Upgrade Instructions](Documentation/Upgrade-6-to-7.md)) |
+| 8        | 7.x, 8.x      | 6.x, 7.x      | Bugfix and Features |
 
 _Currently the Driver interfaces are not marked as API, and can be changed to adapt to future needs._
 
@@ -98,7 +99,7 @@ Shows the mapping between the projects dimensions presets and the resulting inde
 
 Shows the mapping created for the NodeTypes.
 
-	./flow nodetype: showIndexableConfiguration
+	./flow nodetype:showIndexableConfiguration
 
 Shows a list of NodeTypes and if they are configured to be indexable
 
@@ -181,7 +182,7 @@ Flowpack:
 
 Which dimension combinations are available in your system and which hashes they are identified with can be shown with the CLI command: 
 
-	dflow nodeindexmapping:indices
+	./flow nodeindexmapping:indices
 
 ### Configurations per property (index field)
 
@@ -437,11 +438,28 @@ As **value**, the following methods accept a simple type, a node object or a Dat
 |`lessThanOrEqual('propertyName', value, [clauseType])`|Range filter with property values less than or equal to the given value|
 |`sortAsc('propertyName')` / `sortDesc('propertyName')`|Can also be used multiple times, e.g. `sortAsc('tag').sortDesc('date')` will first sort by tag ascending, and then by date descending.|
 |`limit(5)`                                            |Only return five results. If not specified, the default limit by Elasticsearch applies (which is at 10 by default)|
-|`from(5)`                                             |Return the results starting from the 6th one|
-|`prefix('propertyName', 'prefix', [clauseType])`      |Adds a prefix filter on the given field with the given prefix|
-|`geoDistance(propertyName, geoPoint, distance, [clauseType])` |Filters documents that include only hits that exists within a specific distance from a geo point.|
-|`fulltext('searchWord', options)`                     |Does a query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-query-string-query.html) to the query_string. Recommendation: **use simpleQueryStringFulltext instead, as it yields better results and is more tolerant to user input**.|
-|`simpleQueryStringFulltext('searchWord', options)`    |Does a simple_query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/8.3/query-dsl-simple-query-string-query.html) to the simple_query_string. Supports phrase matching like `"firstname lastname"` and tolerates broken input without exceptions (in contrast to `fulltext()`)|
+|`from(5)`                                                        |Return the results starting from the 6th one|
+|`prefix('propertyName', 'prefix', [clauseType])`                 |Adds a prefix filter on the given field with the given prefix|
+|`geoDistance(propertyName, geoPoint, distance, [clauseType])`.   |Filters documents that include only hits that exists within a specific distance from a geo point.|
+|`fulltext('searchWord', options)`                                |Does a query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-query-string-query.html) to the query_string. Recommendation: **use simpleQueryStringFulltext instead, as it yields better results and is more tolerant to user input**.|
+|`simpleQueryStringFulltext('searchWord', options)`               |Does a simple_query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/8.3/query-dsl-simple-query-string-query.html) to the simple_query_string. Supports phrase matching like `"firstname lastname"` and tolerates broken input without exceptions (in contrast to `fulltext()`)|
+|`highlight(fragmentSize, fragmentCount, noMatchSize, field)`     |Configure result highlighting for every fulltext field individually|
+
+## Search Result Highlighting
+
+When using the `.fulltext()` or `.simpleQueryStringFulltext()` operator to do a fulltext, **highlight snippets** ([elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/highlighting.html#highlighting)) are automatically queried. By default snippets with 150 characters are queried for all available fulltext fields with a 150 character fallback text. 
+
+To adjust this behavior you can first deactivate the default and then configure highlighting for every field individually:
+
+	Search.highlight(false).highlight(150, 2, 150, 'neos_fulltext.text').highlight(100, 1, 0, 'neos_fulltext.h2')
+
+This deactivates the default highlighting and then queries 2 snipets of 150 characters each from hits in `neos_fulltext.text`, with a fallback to 150 characters of the beginning of the text if no match was found and additional 100 characters from `neos_fulltext.h2` without a fallback.
+
+The highlight snippets can be accessed by
+
+	highlight = ${Search(...).execute().searchHitForNode(node).highlight}
+
+
 ## moreLikeThis(like, fields, options)
 
 The More Like This Query (MLT Query) finds documents that are "like" a given text or a given set of documents.

@@ -14,8 +14,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  */
 
 use Doctrine\Common\Collections\ArrayCollection;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ErrorHandling\ErrorHandlingService;
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\ConfigurationException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\RuntimeException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
@@ -35,12 +38,9 @@ use Neos\Flow\Cli\Exception\StopCommandException;
 use Neos\Flow\Configuration\ConfigurationManager;
 use Neos\Flow\Core\Booting\Exception\SubProcessException;
 use Neos\Flow\Core\Booting\Scripts;
-use Neos\Flow\Exception;
-use Neos\Utility\Exception\FilesException;
-use Neos\Utility\Files;
 use Neos\Flow\Log\Utility\LogEnvironment;
+use Neos\Utility\Files;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * Provides CLI features for index handling
@@ -134,16 +134,29 @@ class NodeIndexCommandController extends CommandController
     protected $workspaceIndexer;
 
     /**
+     * @Flow\Inject
+     * @var ElasticSearchClient
+     */
+    protected $searchClient;
+
+    /**
+     * @var IndexDriverInterface
+     * @Flow\Inject
+     */
+    protected $indexDriver;
+
+    /**
      * Index a single node by the given identifier and workspace name
      *
      * @param string $identifier
-     * @param string $workspace
+     * @param string|null $workspace
      * @param string|null $postfix
      * @return void
+     * @throws ApiException
      * @throws ConfigurationException
-     * @throws FilesException
-     * @throws StopCommandException
-     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws Exception
+     * @throws RuntimeException
+     * @throws SubProcessException
      * @throws \Flowpack\ElasticSearch\Exception
      */
     public function indexNodeCommand(string $identifier, string $workspace = null, string $postfix = null): void
@@ -152,7 +165,12 @@ class NodeIndexCommandController extends CommandController
             $workspace = 'live';
         }
 
+        $updateAliases = false;
         if ($postfix !== null) {
+            $this->nodeIndexer->setIndexNamePostfix($postfix);
+        } elseif ($this->aliasesExist() === false) {
+            $postfix = (string)time();
+            $updateAliases = true;
             $this->nodeIndexer->setIndexNamePostfix($postfix);
         }
 
@@ -201,6 +219,22 @@ class NodeIndexCommandController extends CommandController
         }
 
         $this->nodeIndexer->flush();
+
+        if ($updateAliases) {
+            $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+            $combinations = $combinations === [] ? [[]] : $combinations;
+
+            foreach ($combinations as $combination) {
+                $this->executeInternalCommand('aliasInternal', [
+                    'dimensionsValues' => json_encode($combination),
+                    'postfix' => $postfix,
+                    'update' => false
+                ]);
+            }
+
+            $this->nodeIndexer->updateMainAlias();
+        }
+
         $this->outputErrorHandling();
     }
 
@@ -209,14 +243,15 @@ class NodeIndexCommandController extends CommandController
      *
      * This command (re-)indexes all nodes contained in the content repository and sets the schema beforehand.
      *
-     * @param int $limit Amount of nodes to index at maximum
+     * @param int|null $limit Amount of nodes to index at maximum
      * @param bool $update if TRUE, do not throw away the index at the start. Should *only be used for development*.
-     * @param string $workspace name of the workspace which should be indexed
-     * @param string $postfix Index postfix, index with the same postfix will be deleted if exist
+     * @param string|null $workspace name of the workspace which should be indexed
+     * @param string|null $postfix Index postfix, index with the same postfix will be deleted if exist
      * @return void
      * @throws StopCommandException
-     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws Exception
      * @throws ConfigurationException
+     * @throws ApiException
      */
     public function buildCommand(int $limit = null, bool $update = false, string $workspace = null, string $postfix = null): void
     {
@@ -238,7 +273,7 @@ class NodeIndexCommandController extends CommandController
             ]);
         };
 
-        $buildIndex = function (array $dimensionsValues) use ($workspace, $limit, $update, $postfix) {
+        $buildIndex = function (array $dimensionsValues) use ($workspace, $limit, $postfix) {
             $this->build($dimensionsValues, $workspace, $postfix, $limit);
         };
 
@@ -268,10 +303,9 @@ class NodeIndexCommandController extends CommandController
 
         $runAndLog($createIndicesAndApplyMapping, 'Creating indices and apply mapping');
 
-//        $timeStart = microtime(true);
-//        $this->output(str_pad('Indexing nodes ... ', 20));
-//        $buildIndex([]);
-//        $this->outputLine('<success>Done</success> (took %s seconds)', [number_format(microtime(true) - $timeStart, 2)]);
+        if ($this->aliasesExist() === false) {
+            $runAndLog($updateAliases, 'Set up aliases');
+        }
 
         $runAndLog($buildIndex, 'Indexing nodes');
 
@@ -286,13 +320,38 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
+     * @return bool
+     * @throws ApiException
+     * @throws ConfigurationException
+     * @throws Exception
+     */
+    private function aliasesExist(): bool
+    {
+        $aliasName = $this->searchClient->getIndexName();
+        $aliasesExist = false;
+        try {
+            $aliasesExist = $this->indexDriver->getIndexNamesByAlias($aliasName) !== [];
+        } catch (ApiException $exception) {
+            // in case of 404, do not throw an error...
+            if ($exception->getResponse()->getStatusCode() !== 404) {
+                throw $exception;
+            }
+        }
+
+        return $aliasesExist;
+    }
+
+    /**
      * Build up the node index
      *
      * @param array $dimensionsValues
-     * @param string $postfix
-     * @param string $workspace
-     * @param int $limit
+     * @param string|null $workspace
+     * @param string|null $postfix
+     * @param int|null $limit
+     * @throws ConfigurationException
      * @throws Exception
+     * @throws RuntimeException
+     * @throws SubProcessException
      */
     private function build(array $dimensionsValues, ?string $workspace = null, ?string $postfix = null, ?int $limit = null): void
     {
@@ -342,13 +401,13 @@ class NodeIndexCommandController extends CommandController
      * @param string $dimensionsValues
      * @param bool $update
      * @param string|null $postfix
-     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws \Neos\Flow\Http\Exception
      * @throws \Exception
      * @Flow\Internal
      */
-    public function createInternalCommand(string $dimensionsValues, bool $update = false, ?string $postfix = null): void
+    public function createInternalCommand(string $dimensionsValues, bool $update = false, string $postfix = null): void
     {
         if ($update === true) {
             $this->logger->warning('!!! Update Mode (Development) active!', LogEnvironment::fromMethodName(__METHOD__));
@@ -370,7 +429,7 @@ class NodeIndexCommandController extends CommandController
      * @param string $workspace
      * @param string $dimensionsValues
      * @param string $postfix
-     * @param int $limit
+     * @param int|null $limit
      * @return void
      * @Flow\Internal
      */
@@ -397,7 +456,7 @@ class NodeIndexCommandController extends CommandController
      *
      * @param string $dimensionsValues
      * @param string $postfix
-     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws \Neos\Flow\Http\Exception
      * @throws ConfigurationException
@@ -417,7 +476,7 @@ class NodeIndexCommandController extends CommandController
      * @param string $dimensionsValues
      * @param string $postfix
      * @param bool $update
-     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws ApiException
      * @throws ConfigurationException
@@ -451,7 +510,8 @@ class NodeIndexCommandController extends CommandController
      * Clean up old indexes (i.e. all but the current one)
      *
      * @return void
-     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws ConfigurationException
+     * @throws Exception
      */
     public function cleanupCommand(): void
     {
@@ -536,7 +596,7 @@ class NodeIndexCommandController extends CommandController
 
         if ($dimensions !== []) {
             $contextProperties['dimensions'] = $dimensions;
-            $contextProperties['targetDimensions'] = array_map(function ($dimensionValues) {
+            $contextProperties['targetDimensions'] = array_map(static function ($dimensionValues) {
                 return array_shift($dimensionValues);
             }, $dimensions);
         }
@@ -548,9 +608,10 @@ class NodeIndexCommandController extends CommandController
      * Apply the mapping to the current index.
      *
      * @return void
-     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws ConfigurationException
+     * @throws \Neos\Flow\Http\Exception
      */
     private function applyMapping(): void
     {

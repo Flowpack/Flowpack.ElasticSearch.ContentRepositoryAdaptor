@@ -21,6 +21,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingExcep
 use Neos\Flow\Log\ThrowableStorageInterface;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
+use Neos\Flow\Persistence\QueryResultInterface;
 use Psr\Log\LoggerInterface;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
@@ -405,18 +406,21 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $field The field to aggregate by
      * @param string $type Aggregation type
      * @param string $parentPath
-     * @param int $size The amount of buckets to return
+     * @param int|null $size The amount of buckets to return or null if not applicable to the aggregation
      * @return ElasticSearchQueryBuilder
      * @throws QueryBuildingException
      */
-    public function fieldBasedAggregation(string $name, string $field, string $type = 'terms', string $parentPath = '', int $size = 10): ElasticSearchQueryBuilder
+    public function fieldBasedAggregation(string $name, string $field, string $type = 'terms', string $parentPath = '', ?int $size = null): ElasticSearchQueryBuilder
     {
         $aggregationDefinition = [
             $type => [
-                'field' => $field,
-                'size' => $size
+                'field' => $field
             ]
         ];
+
+        if ($size !== null) {
+            $aggregationDefinition[$type]['size'] = $size;
+        }
 
         $this->aggregation($name, $aggregationDefinition, $parentPath);
 
@@ -618,20 +622,22 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * Get a query result object for lazy execution of the query
      *
+     * @param bool $cacheResult
      * @return ElasticSearchQueryResult
-     * @return \Traversable
+     * @throws \JsonException
      * @api
      */
-    public function execute(): \Traversable
+    public function execute(bool $cacheResult = true): \Traversable
     {
         $elasticSearchQuery = new ElasticSearchQuery($this);
-        return $elasticSearchQuery->execute(true);
+        return $elasticSearchQuery->execute($cacheResult);
     }
 
     /**
      * Get a uncached query result object for lazy execution of the query
      *
      * @return ElasticSearchQueryResult
+     * @throws \JsonException
      * @api
      */
     public function executeUncached(): ElasticSearchQueryResult
@@ -660,7 +666,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $treatedContent = $response->getTreatedContent();
         $count = (int)$treatedContent['count'];
 
-        $this->logThisQuery && $this->logger->debug('Count Query Log (' . $this->logMessage . '): ' . 'Indexname: ' . $this->getIndexName() . ' ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LogEnvironment::fromMethodName(__METHOD__));
+        $this->logThisQuery && $this->logger->debug('Count Query Log (' . $this->logMessage . '): Indexname: ' . $this->getIndexName() . ' ' . $request . ' -- execution time: ' . (($timeAfterwards - $timeBefore) * 1000) . ' ms -- Total Results: ' . $count, LogEnvironment::fromMethodName(__METHOD__));
 
         return $count;
     }
@@ -673,12 +679,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @param string $searchWord
      * @param array $options Options to configure the query_string, see https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-query-string-query.html
      * @return QueryBuilderInterface
+     * @throws \JsonException
      * @api
      */
     public function fulltext(string $searchWord, array $options = []): QueryBuilderInterface
     {
         // We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
-        $this->request->fulltext(trim(json_encode($searchWord, JSON_UNESCAPED_UNICODE), '"'), $options);
+        $this->request->fulltext(trim(json_encode($searchWord, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), '"'), $options);
         $this->request->highlight(150, 2);
 
         return $this;
@@ -751,14 +758,16 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * Configure Result Highlighting. Only makes sense in combination with fulltext(). By default, highlighting is enabled.
      * It can be disabled by calling "highlight(FALSE)".
      *
-     * @param integer|boolean $fragmentSize The result fragment size for highlight snippets. If this parameter is FALSE, highlighting will be disabled.
-     * @param integer $fragmentCount The number of highlight fragments to show.
+     * @param int|bool $fragmentSize The result fragment size for highlight snippets. If this parameter is FALSE, highlighting will be disabled.
+     * @param int|null $fragmentCount The number of highlight fragments to show.
+     * @param int $noMatchSize
+     * @param string $field
      * @return ElasticSearchQueryBuilder
      * @api
      */
-    public function highlight($fragmentSize, int $fragmentCount = null): ElasticSearchQueryBuilder
+    public function highlight($fragmentSize, int $fragmentCount = null, int $noMatchSize = 150, string $field = 'neos_fulltext.*'): ElasticSearchQueryBuilder
     {
-        $this->request->highlight($fragmentSize, $fragmentCount);
+        $this->request->highlight($fragmentSize, $fragmentCount, $noMatchSize, $field);
 
         return $this;
     }
@@ -844,9 +853,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             ]
         ]);
 
+        $workspaces = array_merge(
+            [$contextNode->getContext()->getWorkspace()->getName()],
+            array_keys($contextNode->getContext()->getWorkspace()->getBaseWorkspaces())
+        );
         //
         // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-terms-filter.html
-        $this->queryFilter('terms', ['neos_workspace' => array_unique(['live', $contextNode->getContext()->getWorkspace()->getName()])]);
+        $this->queryFilter('terms', ['neos_workspace' => $workspaces]);
 
         return $this;
     }
@@ -952,8 +965,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $minTimestamps = array_filter([
             $this->getNearestFutureDate('neos_hidden_before_datetime'),
             $this->getNearestFutureDate('neos_hidden_after_datetime')
-        ], function ($value) {
-            return $value != 0;
+        ], static function ($value) {
+            return $value !== 0;
         });
 
         if (empty($minTimestamps)) {
@@ -977,7 +990,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     {
         $request = clone $this->request;
 
-        $convertDateResultToTimestamp = function (array $dateResult): int {
+        $convertDateResultToTimestamp = static function (array $dateResult): int {
             if (!isset($dateResult['value_as_string'])) {
                 return 0;
             }
@@ -1049,9 +1062,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     }
 
     /**
-     * Retrieve the indexname
+     * Retrieve the indexName
      *
      * @return string
+     * @throws Exception
+     * @throws Exception\ConfigurationException
      */
     public function getIndexName(): string
     {

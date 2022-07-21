@@ -7,6 +7,9 @@ Flowpack:
         batchSize:
           elements: 500
           octets: 40000000
+        assetExtraction:
+          # The maximum size of files to be ingested in bytes (100 Mb)
+          maximumFileSize: 104857600
       configuration:
         nodeTypes:
           '*':
@@ -14,7 +17,7 @@ Flowpack:
       driver:
         version: '6.x'
         mapping:
-          6.x:
+          6.x: &v6x
             query:
               className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\Query\FilteredQuery
               arguments:
@@ -76,3 +79,4 @@ Flowpack:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\SystemDriver'
             nodeTypeMappingBuilder:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\Mapping\NodeTypeMappingBuilder'
+          7.x: *v6x

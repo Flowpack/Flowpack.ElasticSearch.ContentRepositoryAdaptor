@@ -5,16 +5,16 @@
     "homepage": "http://flowpack.org/",
     "license": ["LGPL-3.0-only"],
     "require": {
-        "php": "^7.2",
+        "php": "^7.3 || ^8.0",
         "ext-json": "*",
 
-        "flowpack/elasticsearch": " ^5.0 || dev-master",
-        "neos/content-repository": "^5.0",
+        "flowpack/elasticsearch": "^5.0 || dev-master",
+        "neos/content-repository": "^7.0 || ^8.0 || dev-master",
         "neos/content-repository-search": "^4.0 || dev-master",
-        "neos/eel": "^6.0",
-        "neos/flow": "^6.0",
-        "neos/fluid-adaptor": "^6.0",
-        "neos/utility-arrays": "^6.0"
+        "neos/eel": "^7.0 || ^8.0 || dev-master",
+        "neos/flow": "^7.0 || ^8.0 || dev-master",
+        "neos/fluid-adaptor": "^7.0 || ^8.0 || dev-master",
+        "neos/utility-arrays": "^7.0 || ^8.0 || dev-master"
     },
     "autoload": {
         "psr-4": {
