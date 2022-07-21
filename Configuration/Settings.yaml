@@ -53,7 +53,7 @@ Flowpack:
                   - 'aggregations'
                   - 'suggest'
 
-                # Parameters for the query string query used by the fullText() operation
+                # Parameters for the query string query used by the fullText() and simpleQueryStringFulltext() operation
                 # See https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#query-string-multi-field
                 # for all available parameters
                 queryStringParameters:

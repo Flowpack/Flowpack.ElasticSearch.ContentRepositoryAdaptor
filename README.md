@@ -441,18 +441,19 @@ As **value**, the following methods accept a simple type, a node object or a Dat
 |`from(5)`                                                        |Return the results starting from the 6th one|
 |`prefix('propertyName', 'prefix', [clauseType])`                 |Adds a prefix filter on the given field with the given prefix|
 |`geoDistance(propertyName, geoPoint, distance, [clauseType])`.   |Filters documents that include only hits that exists within a specific distance from a geo point.|
-|`fulltext('searchWord', options)`                                |Does a query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-query-string-query.html) to the query_string|
+|`fulltext('searchWord', options)`                                |Does a query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/7.6/query-dsl-query-string-query.html) to the query_string. Recommendation: **use simpleQueryStringFulltext instead, as it yields better results and is more tolerant to user input**.|
+|`simpleQueryStringFulltext('searchWord', options)`               |Does a simple_query_string query on the Fulltext index using the searchword and additional [options](https://www.elastic.co/guide/en/elasticsearch/reference/8.3/query-dsl-simple-query-string-query.html) to the simple_query_string. Supports phrase matching like `"firstname lastname"` and tolerates broken input without exceptions (in contrast to `fulltext()`)|
 |`highlight(fragmentSize, fragmentCount, noMatchSize, field)`     |Configure result highlighting for every fulltext field individually|
 
 ## Search Result Highlighting
 
-When using the `.fulltext()` oprtator to do a fulltext, **highlight snippets** ([elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/highlighting.html#highlighting)) are automatically queried. By default snippets with 150 characters are queried for all available fulltext fields with a 150 character fallback text. 
+When using the `.fulltext()` or `.simpleQueryStringFulltext()` operator to do a fulltext, **highlight snippets** ([elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/highlighting.html#highlighting)) are automatically queried. By default snippets with 150 characters are queried for all available fulltext fields with a 150 character fallback text. 
 
 To adjust this behavior you can first deactivate the default and then configure highlighting for every field individually:
 
 	Search.highlight(false).highlight(150, 2, 150, 'neos_fulltext.text').highlight(100, 1, 0, 'neos_fulltext.h2')
 
-This deactivates the default highlighting and then queries 2 snipets of 150 characters each from hits in `neos_fulltext.text`, with a fallback to 150 charchters of the beginning of the text if no match was found and additional 100 characters from `neos_fulltext.h2` without a fallback.
+This deactivates the default highlighting and then queries 2 snipets of 150 characters each from hits in `neos_fulltext.text`, with a fallback to 150 characters of the beginning of the text if no match was found and additional 100 characters from `neos_fulltext.h2` without a fallback.
 
 The highlight snippets can be accessed by
 
