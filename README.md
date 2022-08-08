@@ -370,7 +370,7 @@ Neos:
         'Neos\Media\Domain\Model\Asset':
           elasticSearchMapping:
             type: text
-          indexing: ${Indexing.Indexing.extractAssetContent(value)}
+          indexing: ${Indexing.extractAssetContent(value)}
 ```
 
 or add the attachments content to a fulletxt field in your NodeType configuration:
