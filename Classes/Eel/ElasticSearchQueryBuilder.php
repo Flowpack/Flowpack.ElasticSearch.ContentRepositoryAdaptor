@@ -1054,7 +1054,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             return $value->getIdentifier();
         }
 
-        if ($value instanceof \DateTime) {
+        if ($value instanceof \DateTimeInterface) {
             return $value->format('Y-m-d\TH:i:sP');
         }
 
