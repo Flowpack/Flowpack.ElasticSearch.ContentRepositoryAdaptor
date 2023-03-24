@@ -47,7 +47,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                         'retry_on_conflict' => 3
                     ]
                 ],
-                // http://www.elasticsearch.org/guide/en/elasticsearch/reference/5.0/docs-update.html
+                // https://www.elastic.co/guide/en/elasticsearch/reference/5.0/docs-update.html
                 [
                     'script' => [
                         'lang' => 'painless',
@@ -114,7 +114,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                     '_id' => $closestFulltextNodeDocumentIdentifier
                 ]
             ],
-            // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
+            // https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-update.html
             [
                 // first, update the neos_fulltext_parts, then re-generate the neos_fulltext from all neos_fulltext_parts
                 'script' => [

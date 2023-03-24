@@ -148,7 +148,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     protected $errorStorage;
 
     /**
-     * The current Elasticsearch bulk request, in the format required by http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-bulk.html
+     * The current Elasticsearch bulk request, in the format required by https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
      */
     protected array $currentBulkRequest = [];
 
