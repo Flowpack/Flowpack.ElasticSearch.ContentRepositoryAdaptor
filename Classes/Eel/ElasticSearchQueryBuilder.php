@@ -127,7 +127,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         // on indexing, neos_type_and_supertypes contains the typename itself and all supertypes, so that's why we can
         // use a simple term filter here.
 
-        // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-term-filter.html
+        // https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-term-filter.html
         return $this->queryFilter('term', ['neos_type_and_supertypes' => $nodeType]);
     }
 
@@ -209,7 +209,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
         $this->limit = $limit;
 
-        // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-request-from-size.html
+        // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-from-size.html
         $this->request->size($limit * $currentWorkspaceNestingLevel);
 
         return $this;
@@ -840,7 +840,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
         // on indexing, the neos_parent_path is tokenized to contain ALL parent path parts,
         // e.g. /foo, /foo/bar/, /foo/bar/baz; to speed up matching.. That's why we use a simple "term" filter here.
-        // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-term-filter.html
+        // https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-term-filter.html
         // another term filter against the path allows the context node itself to be found
         $this->queryFilter('bool', [
             'should' => [
@@ -858,7 +858,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             array_keys($contextNode->getContext()->getWorkspace()->getBaseWorkspaces())
         );
         //
-        // http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-terms-filter.html
+        // https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-terms-filter.html
         $this->queryFilter('terms', ['neos_workspace' => $workspaces]);
 
         return $this;
