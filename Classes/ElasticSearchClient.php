@@ -129,7 +129,7 @@ class ElasticSearchClient extends Client
     public function getIndexNamePrefix(): string
     {
         $name = trim($this->indexNameStrategy->get());
-        if ($name === '') {
+        if ($name === '' || $name == false) {
             throw new ConfigurationException('IndexNameStrategy ' . get_class($this->indexNameStrategy) . ' returned an empty index name', 1582538800);
         }
 
