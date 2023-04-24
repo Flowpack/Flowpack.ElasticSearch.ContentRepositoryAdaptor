@@ -13,7 +13,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\TargetContextPath;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
