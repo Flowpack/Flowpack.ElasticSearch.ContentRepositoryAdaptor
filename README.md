@@ -47,6 +47,8 @@ This following matrix shows the compatibility of this package to Elasticsearch a
 | 7        | 5.x           | 6.x, 7.x      | Bugfix and Features ([Upgrade Instructions](Documentation/Upgrade-6-to-7.md)) |
 | 8        | 7.x, 8.x      | 6.x, 7.x, 8.x | Bugfix and Features |
 
+Make sure to set the `Flowpack.ElasticSearch.ContentRepositoryAdaptor.driver.version` to '8.x' for ElasticSearch 8.
+
 _Currently the Driver interfaces are not marked as API, and can be changed to adapt to future needs._
 
 ### Elasticsearch Configuration file elasticsearch.yml
