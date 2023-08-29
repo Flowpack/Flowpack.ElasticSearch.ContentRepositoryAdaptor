@@ -80,3 +80,65 @@ Flowpack:
             nodeTypeMappingBuilder:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\Mapping\NodeTypeMappingBuilder'
           7.x: *v6x
+          8.x:
+            query:
+              className: Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\Query\FilteredQuery
+              arguments:
+                request:
+                  query:
+                    bool:
+                      must:
+                        - match_all:
+                            boost: 1.0 # force match_all to be an object
+                      filter:
+                        bool:
+                          must: []
+                          should: []
+                          must_not:
+                            - term:
+                                neos_hidden: true
+                            - range:
+                                neos_hidden_before_datetime:
+                                  gt: now
+                            - range:
+                                neos_hidden_after_datetime:
+                                  lt: now
+                  _source:
+                    - 'neos_path'
+
+                unsupportedFieldsInCountRequest:
+                  - '_source'
+                  - 'sort'
+                  - 'from'
+                  - 'size'
+                  - 'highlight'
+                  - 'aggs'
+                  - 'aggregations'
+                  - 'suggest'
+
+                # Parameters for the query string query used by the fullText() and simpleQueryStringFulltext() operation
+                # See https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#query-string-multi-field
+                # for all available parameters
+                queryStringParameters:
+                  default_operator: or
+                  fields:
+                    - neos_fulltext.h1^20
+                    - neos_fulltext.h2^12
+                    - neos_fulltext.h3^10
+                    - neos_fulltext.h4^5
+                    - neos_fulltext.h5^3
+                    - neos_fulltext.h6^2
+                    - neos_fulltext.text^1
+
+            document:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version8\DocumentDriver'
+            indexer:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version8\IndexerDriver'
+            indexManagement:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\IndexDriver'
+            request:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\RequestDriver'
+            system:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\SystemDriver'
+            nodeTypeMappingBuilder:
+              className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\Mapping\NodeTypeMappingBuilder'
