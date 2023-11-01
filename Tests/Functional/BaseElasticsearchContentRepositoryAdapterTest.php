@@ -58,7 +58,13 @@ abstract class BaseElasticsearchContentRepositoryAdapterTest extends FunctionalT
 
         if (!$this->isIndexInitialized()) {
             // clean up any existing indices
-            $this->searchClient->request('DELETE', '/' . self::TESTING_INDEX_PREFIX . '*');
+            $aliases = $this->searchClient->request('GET', '_aliases')->getTreatedContent();
+
+            foreach ($aliases as $alias => $aliasConfiguration) {
+                if(str_starts_with($alias, self::TESTING_INDEX_PREFIX)) {
+                    $this->searchClient->request('DELETE', '/' . $alias);
+                }
+            }
         }
     }
 

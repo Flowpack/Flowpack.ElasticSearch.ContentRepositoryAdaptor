@@ -80,3 +80,4 @@ Flowpack:
             nodeTypeMappingBuilder:
               className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\Mapping\NodeTypeMappingBuilder'
           7.x: *v6x
+          8.x: *v6x
