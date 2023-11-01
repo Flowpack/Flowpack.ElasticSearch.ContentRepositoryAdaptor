@@ -18,7 +18,6 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryBuilde
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\Flow\Tests\FunctionalTestCase;
-use function RectorPrefix202304\dump;
 
 abstract class BaseElasticsearchContentRepositoryAdapterTest extends FunctionalTestCase
 {
