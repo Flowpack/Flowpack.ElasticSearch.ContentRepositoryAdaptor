@@ -14,14 +14,19 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DocumentIdenti
  */
 
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Utility\NodePaths;
 
 class NodeIdentifierBasedDocumentIdentifierGenerator implements DocumentIdentifierGeneratorInterface
 {
     public function generate(NodeInterface $node, ?string $targetWorkspaceName = null): string
     {
-        $workspaceName = $targetWorkspaceName ?: $node->getWorkspace()->getName();
+        $nodeContext = $node->getContext();
+
+        $workspaceName = $targetWorkspaceName ?: $nodeContext->getWorkspace()->getName();
         $nodeIdentifier = $node->getIdentifier();
 
-        return sha1($nodeIdentifier . $workspaceName);
+        $identifier = NodePaths::generateContextPath($nodeIdentifier, $workspaceName, $nodeContext->getDimensions());
+
+        return sha1($identifier);
     }
 }
