@@ -19,7 +19,7 @@ class NodeIdentifierBasedDocumentIdentifierGenerator implements DocumentIdentifi
 {
     public function generate(NodeInterface $node, ?string $targetWorkspaceName = null): string
     {
-        $workspaceName = $targetWorkspaceName ?: $node->getWorkspace()->getName();
+        $workspaceName = $targetWorkspaceName ?: $node->getContext()->getWorkspace()->getName();
         $nodeIdentifier = $node->getIdentifier();
 
         return sha1($nodeIdentifier . $workspaceName);
