@@ -243,6 +243,16 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
                 }
             }
 
+            // Don't index node into fulltext if it has a hidden parent node that is not a fulltext root
+            // Example: If a text node is in a hidden container element, it should not be indexed into the document
+            $parentNode = $node;
+            while (($parentNode = $parentNode->getParent())
+                && !$parentNode->getNodeType()->getConfiguration('search.fulltext.isRoot')) {
+                if (!$parentNode->isVisible()) {
+                    return;
+                }
+            }
+
             $documentIdentifier = $this->documentIdentifierGenerator->generate($node, $targetWorkspaceName);
             $nodeType = $node->getNodeType();
 
