@@ -14,8 +14,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
-use Neos\ContentRepository\Domain\Model\NodeType;
-use Neos\ContentRepository\Domain\Service\NodeTypeManager;
+use Neos\ContentRepository\Core\NodeType\NodeType;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -29,11 +30,8 @@ final class NodeTypeIndexingConfiguration
      */
     protected $settings;
 
-    /**
-     * @Flow\Inject
-     * @var NodeTypeManager
-     */
-    protected $nodeTypeManager;
+    #[Flow\Inject]
+    protected ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * @param NodeType $nodeType
@@ -46,11 +44,11 @@ final class NodeTypeIndexingConfiguration
             return true;
         }
 
-        if (isset($this->settings[$nodeType->getName()]['indexed'])) {
-            return (bool)$this->settings[$nodeType->getName()]['indexed'];
+        if (isset($this->settings[$nodeType->name->value]['indexed'])) {
+            return (bool)$this->settings[$nodeType->name->value]['indexed'];
         }
 
-        $nodeTypeParts = explode(':', $nodeType->getName());
+        $nodeTypeParts = explode(':', $nodeType->name->value);
         $namespace = reset($nodeTypeParts) . ':*';
         if (isset($this->settings[$namespace]['indexed'])) {
             return (bool)$this->settings[$namespace]['indexed'];
@@ -66,12 +64,13 @@ final class NodeTypeIndexingConfiguration
      * @return array
      * @throws Exception
      */
-    public function getIndexableConfiguration(): array
+    public function getIndexableConfiguration(ContentRepositoryId $contentRepositoryId): array
     {
         $nodeConfigurations = [];
+        $contentRepository = $this->contentRepositoryRegistry->get($contentRepositoryId);
         /** @var NodeType $nodeType */
-        foreach ($this->nodeTypeManager->getNodeTypes(false) as $nodeType) {
-            $nodeConfigurations[$nodeType->getName()] = $this->isIndexable($nodeType);
+        foreach ($contentRepository->getNodeTypeManager()->getNodeTypes(false) as $nodeType) {
+            $nodeConfigurations[$nodeType->name->value] = $this->isIndexable($nodeType);
         }
 
         return $nodeConfigurations;

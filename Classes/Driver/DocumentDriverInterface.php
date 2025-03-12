@@ -14,9 +14,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  * source code.
  */
 
-use Flowpack\ElasticSearch\Domain\Model\Index;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Domain\Model\NodeType;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+
 
 /**
  * Elasticsearch Document Driver Interface
@@ -26,9 +25,9 @@ interface DocumentDriverInterface
     /**
      * Generate the query to delete Elastic document for the give node
      *
-     * @param NodeInterface $node
+     * @param Node $node
      * @param string $identifier
      * @return array
      */
-    public function delete(NodeInterface $node, string $identifier): array;
+    public function delete(Node $node, string $identifier): array;
 }

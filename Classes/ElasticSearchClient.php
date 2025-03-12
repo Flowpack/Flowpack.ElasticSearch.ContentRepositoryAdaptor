@@ -14,11 +14,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\ConfigurationException;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\IndexNameStrategyInterface;
 use Flowpack\ElasticSearch\Domain\Model\Client;
 use Flowpack\ElasticSearch\Domain\Model\Index;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -40,44 +40,38 @@ class ElasticSearchClient extends Client
     protected $indexNameStrategy;
 
     /**
-     * @var DimensionsService
-     * @Flow\Inject
-     */
-    protected $dimensionsService;
-
-    /**
      * @var string
      */
     protected $dimensionsHash;
 
     /**
-     * @var NodeInterface
+     * @var Node
      */
     protected $contextNode;
 
     /**
-     * @return NodeInterface
+     * @return Node
      */
-    public function getContextNode(): NodeInterface
+    public function getContextNode(): Node
     {
         return $this->contextNode;
     }
 
     /**
-     * @param NodeInterface $contextNode
+     * @param Node $contextNode
      */
-    public function setContextNode(NodeInterface $contextNode): void
+    public function setContextNode(Node $contextNode): void
     {
-        $this->setDimensions($contextNode->getContext()->getTargetDimensions());
+        $this->setDimensions($contextNode->dimensionSpacePoint);
         $this->contextNode = $contextNode;
     }
 
     /**
-     * @param array $dimensionValues
+     * @param array $dimensionSpacePoint
      */
-    public function setDimensions(array $dimensionValues = []): void
+    public function setDimensions(DimensionSpacePoint $dimensionSpacePoint): void
     {
-        $this->dimensionsHash = $this->dimensionsService->hash($dimensionValues);
+        $this->dimensionsHash = $dimensionSpacePoint->hash;
     }
 
     /**
@@ -93,11 +87,11 @@ class ElasticSearchClient extends Client
      * @param array $dimensionValues
      * @throws \Exception
      */
-    public function withDimensions(\Closure $closure, array $dimensionValues = []): void
+    public function withDimensions(\Closure $closure, DimensionSpacePoint $dimensionSpacePoint): void
     {
         $previousDimensionHash = $this->dimensionsHash;
         try {
-            $this->setDimensions($dimensionValues);
+            $this->setDimensions($dimensionSpacePoint);
             $closure();
         } finally {
             $this->dimensionsHash = $previousDimensionHash;

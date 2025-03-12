@@ -16,6 +16,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
 
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\Error\Messages\Result;
 
 /**
@@ -29,7 +30,7 @@ interface NodeTypeMappingBuilderInterface
      * @param Index $index
      * @return MappingCollection<\Flowpack\ElasticSearch\Domain\Model\Mapping>
      */
-    public function buildMappingInformation(Index $index): MappingCollection;
+    public function buildMappingInformation(ContentRepositoryId $contentRepositoryId, Index $index): MappingCollection;
 
     /**
      * @return Result

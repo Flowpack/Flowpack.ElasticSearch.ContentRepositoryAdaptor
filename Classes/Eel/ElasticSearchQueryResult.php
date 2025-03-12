@@ -13,7 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  * source code.
  */
 
-use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\Eel\ProtectedContextAwareInterface;
 use Neos\Flow\Persistence\QueryInterface;
 use Neos\Flow\Persistence\QueryResultInterface;
@@ -251,11 +251,11 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
      *
      * Can be used for example to access highlighting information.
      *
-     * @param NodeInterface $node
+     * @param Node $node
      * @return array the Elasticsearch hit, or NULL if it does not exist.
      * @api
      */
-    public function searchHitForNode(NodeInterface $node): ?array
+    public function searchHitForNode(Node $node): ?array
     {
         return $this->elasticSearchQuery->getQueryBuilder()->getFullElasticSearchHitForNode($node);
     }
@@ -264,10 +264,10 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
      * Returns the array with all sort values for a given node. The values are fetched from the raw content
      * Elasticsearch returns within the hit data
      *
-     * @param NodeInterface $node
+     * @param Node $node
      * @return array
      */
-    public function getSortValuesForNode(NodeInterface $node): array
+    public function getSortValuesForNode(Node $node): array
     {
         $hit = $this->searchHitForNode($node);
         if (is_array($hit) && array_key_exists('sort', $hit)) {

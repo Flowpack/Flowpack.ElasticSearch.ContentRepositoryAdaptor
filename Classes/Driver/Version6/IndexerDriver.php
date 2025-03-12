@@ -13,13 +13,14 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6;
  * source code.
  */
 
+use Neos\ContentRepository\Core\Feature\SubtreeTagging\Dto\SubtreeTag;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractIndexerDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\Flow\Log\Utility\LogEnvironment;
 
 /**
  * Indexer driver for Elasticsearch version 6.x
@@ -29,10 +30,13 @@ use Neos\Flow\Log\Utility\LogEnvironment;
 class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterface
 {
 
+    #[Flow\Inject]
+    protected ContentRepositoryRegistry $contentRepositoryRegistry;
+
     /**
      * {@inheritdoc}
      */
-    public function document(string $indexName, NodeInterface $node, ElasticSearchDocument $document, array $documentData): array
+    public function document(string $indexName, Node $node, ElasticSearchDocument $document, array $documentData): array
     {
         if ($this->isFulltextRoot($node)) {
             // for fulltext root documents, we need to preserve the "neos_fulltext" field. That's why we use the
@@ -79,12 +83,12 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
 
     /**
      * {@inheritdoc}
-     * @param NodeInterface $node
+     * @param Node $node
      * @param array $fulltextIndexOfNode
      * @param string|null $targetWorkspaceName
      * @return array
      */
-    public function fulltext(NodeInterface $node, array $fulltextIndexOfNode, string $targetWorkspaceName = null): array
+    public function fulltext(Node $node, array $fulltextIndexOfNode, ?WorkspaceName $targetWorkspaceName = null): array
     {
         $closestFulltextNode = $this->findClosestFulltextRoot($node);
         if ($closestFulltextNode === null) {
@@ -93,16 +97,9 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
 
         $closestFulltextNodeDocumentIdentifier = $this->documentIdentifierGenerator->generate($closestFulltextNode, $targetWorkspaceName);
 
-        if ($closestFulltextNode->isRemoved()) {
-            // fulltext root is removed, abort silently...
-            $this->logger->debug(sprintf('NodeIndexer (%s): Fulltext root found for %s (%s) not updated, it is removed', $closestFulltextNodeDocumentIdentifier, $node->getPath(), $node->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
-
-            return [];
-        }
-
         $upsertFulltextParts = [];
         if (!empty($fulltextIndexOfNode)) {
-            $upsertFulltextParts[$node->getIdentifier()] = $fulltextIndexOfNode;
+            $upsertFulltextParts[$node->aggregateId->value] = $fulltextIndexOfNode;
         }
 
         return [
@@ -122,7 +119,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                             ctx._source.neos_fulltext_parts = new HashMap();
                         }
 
-                        if (params.nodeIsRemoved || params.nodeIsHidden || params.fulltext.size() == 0) {
+                        if (params.nodeIsHidden || params.fulltext.size() == 0) {
                             if (ctx._source.neos_fulltext_parts.containsKey(params.identifier)) {
                                 ctx._source.neos_fulltext_parts.remove(params.identifier);
                             }
@@ -142,9 +139,8 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                             }
                         }',
                     'params' => [
-                        'identifier' => $node->getIdentifier(),
-                        'nodeIsRemoved' => $node->isRemoved(),
-                        'nodeIsHidden' => $node->isHidden(),
+                        'identifier' => $node->aggregateId->value,
+                        'nodeIsHidden' => $node->tags->contain(SubtreeTag::disabled()),
                         'fulltext' => $fulltextIndexOfNode
                     ],
                 ],

@@ -8,7 +8,7 @@ Neos\ContentRepository\Search\AssetExtraction\AssetExtractorInterface:
   className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\AssetExtraction\IngestAttachmentAssetExtractor'
 
 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DocumentIdentifier\DocumentIdentifierGeneratorInterface':
-  className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DocumentIdentifier\NodePathBasedDocumentIdentifierGenerator'
+  className: 'Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DocumentIdentifier\NodeAddressBasedDocumentIdentifierGenerator'
 
 Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\QueryInterface:
   scope: prototype

@@ -15,7 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\ViewHelpers;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\ElasticSearchQueryResult;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\FluidAdaptor\Core\ViewHelper\AbstractViewHelper;
 use Neos\Utility\Arrays;
 
@@ -44,11 +44,11 @@ class GetHitArrayForNodeViewHelper extends AbstractViewHelper
 {
     /**
      * @param ElasticSearchQueryResult $queryResultObject
-     * @param NodeInterface $node
+     * @param Node $node
      * @param array|string $path
      * @return mixed
      */
-    public function render(ElasticSearchQueryResult $queryResultObject, NodeInterface $node, $path = null)
+    public function render(ElasticSearchQueryResult $queryResultObject, Node $node, $path = null)
     {
         $hitArray = $queryResultObject->searchHitForNode($node);
 

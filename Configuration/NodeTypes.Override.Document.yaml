@@ -36,11 +36,11 @@
               type: text
             'text':
               type: text
-    'neos_hidden_in_index':
+    'neos_hidden_in_menu':
       search:
-        indexing: '${node.hiddenInIndex}'
+        indexing: '${node.hiddenInMenu}'
 
     # deliberately don't map or index this
-    '_hiddenInIndex':
+    'hiddenInMenu':
       search:
         indexing: false

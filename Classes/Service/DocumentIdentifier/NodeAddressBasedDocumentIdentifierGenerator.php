@@ -14,19 +14,25 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DocumentIdenti
  */
 
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 
-class NodeIdentifierBasedDocumentIdentifierGenerator implements DocumentIdentifierGeneratorInterface
+class NodeAddressBasedDocumentIdentifierGenerator implements DocumentIdentifierGeneratorInterface
 {
     #[Flow\Inject]
     protected ContentRepositoryRegistry $contentRepositoryRegistry;
 
     public function generate(Node $node, ?WorkspaceName $targetWorkspaceName = null): string
     {
-        $workspaceName = $targetWorkspaceName ?: $node->workspaceName;
+        $nodeAddress = NodeAddress::create(
+            $node->contentRepositoryId,
+            $targetWorkspaceName ?: $node->workspaceName,
+            $node->dimensionSpacePoint,
+            $node->aggregateId
+        );
 
-        return sha1($node->aggregateId->value . $workspaceName->value);
+        return sha1($nodeAddress->toJson());
     }
 }

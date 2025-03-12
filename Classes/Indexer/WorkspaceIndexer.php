@@ -13,11 +13,15 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
  * source code.
  */
 
-use Neos\ContentRepository\Domain\Factory\NodeFactory;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
-use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
+use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
+use Neos\ContentRepository\Core\NodeType\NodeTypeName;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\ContentRepository\Search\Indexer\NodeIndexingManager;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -28,28 +32,13 @@ use Neos\Flow\Annotations as Flow;
 final class WorkspaceIndexer
 {
     /**
-     * @var ContextFactoryInterface
-     * @Flow\Inject
-     */
-    protected $contextFactory;
-
-    /**
-     * @var ContentDimensionCombinator
-     * @Flow\Inject
-     */
-    protected $contentDimensionCombinator;
-
-    /**
      * @var NodeIndexingManager
      * @Flow\Inject
      */
     protected $nodeIndexingManager;
 
-    /**
-     * @var NodeFactory
-     * @Flow\Inject
-     */
-    protected $nodeFactory;
+    #[Flow\Inject]
+    protected ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * @param string $workspaceName
@@ -57,15 +46,17 @@ final class WorkspaceIndexer
      * @param callable $callback
      * @return integer
      */
-    public function index(string $workspaceName, $limit = null, callable $callback = null): int
+    public function index(ContentRepositoryId $contentRepositoryId, WorkspaceName $workspaceName, $limit = null, ?callable $callback = null): int
     {
         $count = 0;
-        $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-        if ($combinations === []) {
-            $count += $this->indexWithDimensions($workspaceName, [], $limit, $callback);
+        $contentRepository = $this->contentRepositoryRegistry->get($contentRepositoryId);
+        $dimensionSpacePoints = $contentRepository->getVariationGraph()->getDimensionSpacePoints();
+
+        if ($dimensionSpacePoints->isEmpty()) {
+            $count += $this->indexWithDimensions($contentRepositoryId, $workspaceName, DimensionSpacePoint::createWithoutDimensions(), $limit, $callback);
         } else {
-            foreach ($combinations as $combination) {
-                $count += $this->indexWithDimensions($workspaceName, $combination, $limit, $callback);
+            foreach ($dimensionSpacePoints as $dimensionSpacePoint) {
+                $count += $this->indexWithDimensions($contentRepositoryId, $workspaceName, $dimensionSpacePoint, $limit, $callback);
             }
         }
 
@@ -75,21 +66,20 @@ final class WorkspaceIndexer
     /**
      * @param string $workspaceName
      * @param array $dimensions
-     * @param int $limit
+     * @param int|null $limit
      * @param callable $callback
      * @return int
      */
-    public function indexWithDimensions(string $workspaceName, array $dimensions = [], $limit = null, callable $callback = null): int
+    public function indexWithDimensions(ContentRepositoryId $contentRepositoryId, WorkspaceName $workspaceName, DimensionSpacePoint $dimensionSpacePoint, ?int $limit = null, ?callable $callback = null): int
     {
-        $context = $this->contextFactory->create([
-            'workspaceName' => $workspaceName,
-            'dimensions' => $dimensions,
-            'invisibleContentShown' => true
-        ]);
-        $rootNode = $context->getRootNode();
+        $contentRepository = $this->contentRepositoryRegistry->get($contentRepositoryId);
+
+        $rootNodeAggregate = $contentRepository->getContentGraph($workspaceName)->findRootNodeAggregateByType(NodeTypeName::fromString('Neos.Neos:Sites'));
+        $subgraph = $contentRepository->getContentGraph($workspaceName)->getSubgraph($dimensionSpacePoint, VisibilityConstraints::withoutRestrictions());
+        $rootNode = $subgraph->findNodeById($rootNodeAggregate->nodeAggregateId);
         $indexedNodes = 0;
 
-        $traverseNodes = function (NodeInterface $currentNode, &$indexedNodes) use ($limit, &$traverseNodes) {
+        $traverseNodes = function (Node $currentNode, &$indexedNodes) use ($subgraph, $limit, &$traverseNodes) {
             if ($limit !== null && $indexedNodes > $limit) {
                 return;
             }
@@ -97,20 +87,17 @@ final class WorkspaceIndexer
             $this->nodeIndexingManager->indexNode($currentNode);
             $indexedNodes++;
 
-            array_map(function (NodeInterface $childNode) use ($traverseNodes, &$indexedNodes) {
+            array_map(function (Node $childNode) use ($traverseNodes, &$indexedNodes) {
                 $traverseNodes($childNode, $indexedNodes);
-            }, $currentNode->getChildNodes());
+            }, iterator_to_array($subgraph->findChildNodes($currentNode->aggregateId, FindChildNodesFilter::create())->getIterator()));
         };
 
         $traverseNodes($rootNode, $indexedNodes);
 
-        $this->nodeFactory->reset();
-        $context->getFirstLevelNodeCache()->flush();
-
         $this->nodeIndexingManager->flushQueues();
 
         if ($callback !== null) {
-            $callback($workspaceName, $indexedNodes, $dimensions);
+            $callback($workspaceName, $indexedNodes, $dimensionSpacePoint);
         }
 
         return $indexedNodes;
