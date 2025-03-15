@@ -7,7 +7,7 @@
     "require": {
         "php": "^8.2",
         "ext-json": "*",
-        "flowpack/elasticsearch": "^5.0 || dev-main",
+        "flowpack/elasticsearch": "^5.4 || dev-main",
         "neos/contentrepository-core": "^9.0 || dev-master",
         "neos/contentrepositoryregistry": "^9.0 || dev-master",
         "neos/content-repository-search": "^5.0 || dev-main",
