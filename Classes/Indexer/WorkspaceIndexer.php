@@ -14,15 +14,14 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
  */
 
 use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
-use Neos\ContentRepository\Core\NodeType\NodeTypeName;
-use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter;
-use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
-use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindDescendantNodesFilter;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\ContentRepository\Search\Indexer\NodeIndexingManager;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
+use Neos\Neos\Domain\Service\NodeTypeNameFactory;
+use Neos\Neos\Domain\SubtreeTagging\NeosVisibilityConstraints;
 
 /**
  * Workspace Indexer for Content Repository Nodes.
@@ -73,26 +72,26 @@ final class WorkspaceIndexer
     public function indexWithDimensions(ContentRepositoryId $contentRepositoryId, WorkspaceName $workspaceName, DimensionSpacePoint $dimensionSpacePoint, ?int $limit = null, ?callable $callback = null): int
     {
         $contentRepository = $this->contentRepositoryRegistry->get($contentRepositoryId);
+        $contentGraph = $contentRepository->getContentGraph($workspaceName);
 
-        $rootNodeAggregate = $contentRepository->getContentGraph($workspaceName)->findRootNodeAggregateByType(NodeTypeName::fromString('Neos.Neos:Sites'));
-        $subgraph = $contentRepository->getContentGraph($workspaceName)->getSubgraph($dimensionSpacePoint, VisibilityConstraints::withoutRestrictions());
+        $rootNodeAggregate = $contentGraph->findRootNodeAggregateByType(NodeTypeNameFactory::forSites());
+        $subgraph = $contentGraph->getSubgraph($dimensionSpacePoint, NeosVisibilityConstraints::excludeRemoved());
+
         $rootNode = $subgraph->findNodeById($rootNodeAggregate->nodeAggregateId);
         $indexedNodes = 0;
 
-        $traverseNodes = function (Node $currentNode, &$indexedNodes) use ($subgraph, $limit, &$traverseNodes) {
+        $this->nodeIndexingManager->indexNode($rootNode);
+        $indexedNodes++;
+
+        foreach ($subgraph->findDescendantNodes($rootNode->aggregateId, FindDescendantNodesFilter::create()) as $descendantNode) {
             if ($limit !== null && $indexedNodes > $limit) {
-                return;
+                break;
             }
 
-            $this->nodeIndexingManager->indexNode($currentNode);
+            $this->nodeIndexingManager->indexNode($descendantNode);
             $indexedNodes++;
 
-            array_map(function (Node $childNode) use ($traverseNodes, &$indexedNodes) {
-                $traverseNodes($childNode, $indexedNodes);
-            }, iterator_to_array($subgraph->findChildNodes($currentNode->aggregateId, FindChildNodesFilter::create())->getIterator()));
         };
-
-        $traverseNodes($rootNode, $indexedNodes);
 
         $this->nodeIndexingManager->flushQueues();
 
