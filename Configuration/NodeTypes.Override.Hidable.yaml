@@ -2,4 +2,4 @@
   properties:
     'neos_hidden':
       search:
-        indexing: '${node.hidden}'
+        indexing: '${Neos.Node.isDisabled(node)}'

@@ -14,9 +14,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\NodeTypeIndexingConfiguration;
-use Neos\ContentRepository\Domain\Model\NodeType;
-use Neos\ContentRepository\Domain\Service\NodeTypeManager;
-use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
+use Neos\ContentRepository\Core\NodeType\NodeTypeName;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 use Symfony\Component\Yaml\Yaml;
@@ -32,33 +32,31 @@ class NodeTypeCommandController extends CommandController
 {
     /**
      * @Flow\Inject
-     * @var NodeTypeManager
-     */
-    protected $nodeTypeManager;
-
-    /**
-     * @Flow\Inject
      * @var NodeTypeIndexingConfiguration
      */
     protected $nodeTypeIndexingConfiguration;
+
+    #[Flow\Inject]
+    protected ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * Show node type configuration after applying all supertypes etc
      *
      * @param string $nodeType the node type to optionally filter for
      * @return void
-     * @throws NodeTypeNotFoundException
      */
-    public function showCommand(string $nodeType = null): void
+    public function showCommand(string $contentRepository = 'default', ?string $nodeType = null): void
     {
+        $contentRepositoryId = ContentRepositoryId::fromString($contentRepository);
+        $contentRepository = $this->contentRepositoryRegistry->get($contentRepositoryId);
+        $nodeTypeManager = $contentRepository->getNodeTypeManager();
+
         if ($nodeType !== null) {
-            /** @var NodeType $nodeType */
-            $nodeType = $this->nodeTypeManager->getNodeType($nodeType);
+            $nodeType = $nodeTypeManager->getNodeType(NodeTypeName::fromString($nodeType));
             $configuration = $nodeType->getFullConfiguration();
         } else {
-            $nodeTypes = $this->nodeTypeManager->getNodeTypes();
+            $nodeTypes = $nodeTypeManager->getNodeTypes();
             $configuration = [];
-            /** @var NodeType $nodeType */
             foreach ($nodeTypes as $nodeTypeName => $nodeType) {
                 $configuration[$nodeTypeName] = $nodeType->getFullConfiguration();
             }
@@ -71,9 +69,11 @@ class NodeTypeCommandController extends CommandController
      *
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
      */
-    public function showIndexableConfigurationCommand(): void
+    public function showIndexableConfigurationCommand(string $contentRepository = 'default'): void
     {
-        $indexableConfiguration = $this->nodeTypeIndexingConfiguration->getIndexableConfiguration();
+        $contentRepositoryId = ContentRepositoryId::fromString($contentRepository);
+
+        $indexableConfiguration = $this->nodeTypeIndexingConfiguration->getIndexableConfiguration($contentRepositoryId);
         $indexTable = [];
         foreach ($indexableConfiguration as $nodeTypeName => $value) {
             $indexTable[] = [$nodeTypeName, $value ? '<success>true</success>' : '<error>false</error>'];

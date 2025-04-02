@@ -13,9 +13,10 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
  * source code.
  */
 
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
-use Neos\ContentRepository\Utility;
+use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
+use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePointSet;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -23,17 +24,6 @@ use Neos\Flow\Annotations as Flow;
  */
 class DimensionsService
 {
-    /**
-     * @Flow\Inject
-     * @var ContentDimensionCombinator
-     */
-    protected $contentDimensionCombinator;
-
-    /**
-     * @var array
-     */
-    protected $lastTargetDimensions;
-
     /**
      * @var array
      */
@@ -46,38 +36,36 @@ class DimensionsService
 
     protected const HASH_DEFAULT = 'default';
 
+    #[Flow\Inject]
+    protected ContentRepositoryRegistry $contentRepositoryRegistry;
+
     /**
-     * @param array $dimensionValues
+     * @param DimensionSpacePoint $dimensionSpacePoint
      * @return string
      */
-    public function hash(array $dimensionValues): string
+    public function hash(DimensionSpacePoint $dimensionSpacePoint): string
     {
-        if ($dimensionValues === []) {
+        if ($dimensionSpacePoint->coordinates === []) {
             $this->dimensionsRegistry[self::HASH_DEFAULT] = [];
             return self::HASH_DEFAULT;
         }
 
-        $this->lastTargetDimensions = array_map(static function ($dimensionValues) {
-            return [\is_array($dimensionValues) ? array_shift($dimensionValues) : $dimensionValues];
-        }, $dimensionValues);
+        $this->dimensionsRegistry[$dimensionSpacePoint->hash] = $dimensionSpacePoint;
 
-        $hash = Utility::sortDimensionValueArrayAndReturnDimensionsHash($this->lastTargetDimensions);
-        $this->dimensionsRegistry[$hash] = $this->lastTargetDimensions;
-
-        return $hash;
+        return $dimensionSpacePoint->hash;
     }
 
     /**
-     * @param NodeInterface $node
+     * @param Node $node
      * @return string|null
      */
-    public function hashByNode(NodeInterface $node): ?string
+    public function hashByNode(Node $node): ?string
     {
-        return $this->hash($node->getContext()->getTargetDimensions());
+        return $this->hash($node->dimensionSpacePoint);
     }
 
     /**
-     * @return array
+     * @return array<string, DimensionSpacePoint>
      */
     public function getDimensionsRegistry(): array
     {
@@ -87,42 +75,26 @@ class DimensionsService
     public function reset(): void
     {
         $this->dimensionsRegistry = [];
-        $this->lastTargetDimensions = null;
     }
 
     /**
      * Only return the dimensions of the current node and all dimensions
      * that fall back to the current nodes dimensions.
      *
-     * @param NodeInterface $node
+     * @param Node $node
      * @return array
      */
-    public function getDimensionCombinationsForIndexing(NodeInterface $node): array
+    public function getDimensionCombinationsForIndexing(Node $node): DimensionSpacePointSet
     {
-        $dimensionsHash = $this->hash($node->getDimensions());
+        $dimensionsHash = $this->hash($node->dimensionSpacePoint);
 
         if (!isset($this->dimensionCombinationsForIndexing[$dimensionsHash])) {
-            $this->dimensionCombinationsForIndexing[$dimensionsHash] = $this->reduceDimensionCombinationstoSelfAndFallback(
-                $this->contentDimensionCombinator->getAllAllowedCombinations(),
-                $node->getDimensions()
-            );
+
+            $contentRepository = $this->contentRepositoryRegistry->get($node->contentRepositoryId);
+            $this->dimensionCombinationsForIndexing[$dimensionsHash] = $contentRepository->getVariationGraph()->getSpecializationSet($node->dimensionSpacePoint);
+
         }
 
         return $this->dimensionCombinationsForIndexing[$dimensionsHash];
-    }
-
-    protected function reduceDimensionCombinationstoSelfAndFallback(array $dimensionCombinations, array $nodeDimensions): array
-    {
-        return array_filter($dimensionCombinations, static function (array $dimensionCombination) use ($nodeDimensions) {
-            foreach ($dimensionCombination as $dimensionKey => $dimensionValues) {
-                if (!isset($nodeDimensions[$dimensionKey])) {
-                    return false;
-                }
-                if (empty(array_intersect($dimensionValues, $nodeDimensions[$dimensionKey]))) {
-                    return false;
-                }
-            }
-            return true;
-        });
     }
 }

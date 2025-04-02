@@ -42,10 +42,11 @@ This following matrix shows the compatibility of this package to Elasticsearch a
 | CR Adaptor | Neos       | Elasticsearch | Status                                                                        |
 |------------|------------|---------------|-------------------------------------------------------------------------------|
 | 4          | 3.x, 4.x   | 1.x, 2,x 5.x  | Unmaintained, probably broken                                                 |
-| 5          | > 3.3, 4.x | 5.x           | Bugfix only                                                                   | 
-| 6          | 5.x        | 5.x           | Bugfix only                                                                   |
-| 7          | 5.x        | 6.x, 7.x      | Bugfix and Features ([Upgrade Instructions](Documentation/Upgrade-6-to-7.md)) |
+| 5          | > 3.3, 4.x | 5.x           | Unmaintained                                                                   | 
+| 6          | 5.x        | 5.x           | Unmaintained                                                                   |
+| 7          | 5.x        | 6.x, 7.x      | Unmaintained                                                           |
 | 8          | 7.x, 8.x   | 6.x, 7.x, 8.x | Bugfix and Features                                                           |
+| 9          | 9.x        | 6.x, 7.x, 8.x | Bugfix and Features ([Upgrade Instructions](Documentation/Upgrade-8-to-9.md)) |
 
 _Currently the Driver interfaces are not marked as API, and can be changed to adapt to future needs._
 
@@ -66,6 +67,8 @@ There may be a need, to add specific configuration to your Elasticsearch Configu
 - [Elasticsearch 5.x](Documentation/ElasticConfiguration-5.x.md)
 
 # Commands
+
+All commands are operating on a single content repository. If you don't specify the content repository identifer by `--contentRepository` the `default` content repository is used.
 
 ### Building up the index
 
@@ -257,13 +260,13 @@ Neos:
           indexing: '${value}'
 ```
 
-### Indexing configuration per property
+### Indexing **configuration** per property
 
 ```yaml
  # NodeTypes.yaml
-'Neos.Neos:Timable':
+'My.Package:NodeType':
   properties:
-    '_hiddenBeforeDateTime':
+    'dateTime':
       search:
 
         # A date should be mapped differently, and in this case we want to use a date format which
@@ -271,7 +274,7 @@ Neos:
         elasticSearchMapping:
           type: DateTime
           format: 'date_time_no_millis'
-        indexing: '${(node.hiddenBeforeDateTime ? Date.format(node.hiddenBeforeDateTime, "Y-m-d\TH:i:sP") : null)}'
+        indexing: '${(q(node).property("dateTime") ? Date.format(q(node).property("dateTime"), "Y-m-d\TH:i:sP") : null)}'
 ```
 
 If your nodetypes schema defines custom properties of type DateTime, you have got to provide similar configuration for
@@ -283,7 +286,7 @@ the standard indexing configuration:
 
 * `Indexing.buildAllPathPrefixes`: for a path such as `foo/bar/baz`, builds up a list of path
   prefixes, e.g. `['foo', 'foo/bar', 'foo/bar/baz']`.
-* `Indexing.extractNodeTypeNamesAndSupertypes(NodeType)`: extracts a list of node type names for
+* `Indexing.extractNodeTypeNamesAndSupertypes(Node)`: extracts a list of node type names for
   the passed node type and all of its supertypes
 * `Indexing.convertArrayOfNodesToArrayOfNodeIdentifiers(array $nodes)`: convert the given nodes to
   their node identifiers.
@@ -809,29 +812,6 @@ suggestionsQueryDefinition = Neos.Fusion:DataStructure {
     }
 }
 suggestions = ${Search.query(site)...suggestions('my_suggestions', this.suggestionsQueryDefinition)}
-```
-
-## Calculate the maximum cache time
-
-In order to set the maximum cache time of a fusion prototype that renders nodes fetched by `Search()`,
-the nearest future value of the hiddenBeforeDateTime or hiddenAfterDateTime properties of all nodes in the result needs to be calculated.
-```
-prototype(Acme.Blog:Listing) < prototype(Neos.Fusion:Collection) {
-    @context.searchQuery = ${Search.query(site).nodeType('Acme.Blog:Post')}
-
-    collection = ${searchQuery.execute()}
-    itemName = 'node'
-    itemRenderer = Acme.Blog:Post
-    
-     @cache {
-        mode = 'cached'
-        maximumLifetime = ${searchQuery.cacheLifetime()}
-        
-        entryTags {
-        map = ${'NodeType_Acme.Blog:Post'}
-        }
-    }
-}
 ```
 
 ## Debugging

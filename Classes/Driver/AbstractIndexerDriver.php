@@ -14,9 +14,12 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  */
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DocumentIdentifier\DocumentIdentifierGeneratorInterface;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Log\Utility\LogEnvironment;
+use Neos\Neos\Domain\Service\NodeTypeNameFactory;
 
 /**
  * Abstract Fulltext Indexer Driver
@@ -35,16 +38,21 @@ abstract class AbstractIndexerDriver extends AbstractDriver
      */
     protected $documentIdentifierGenerator;
 
+    #[Flow\Inject]
+    protected ContentRepositoryRegistry $contentRepositoryRegistry;
+
     /**
      * Whether the node is configured as fulltext root.
      *
-     * @param NodeInterface $node
+     * @param Node $node
      * @return bool
      */
-    protected function isFulltextRoot(NodeInterface $node): bool
+    protected function isFulltextRoot(Node $node): bool
     {
-        if ($node->getNodeType()->hasConfiguration('search')) {
-            $elasticSearchSettingsForNode = $node->getNodeType()->getConfiguration('search');
+        $nodeType = $this->contentRepositoryRegistry->get($node->contentRepositoryId)->getNodeTypeManager()->getNodeType($node->nodeTypeName);
+
+        if ($nodeType->hasConfiguration('search')) {
+            $elasticSearchSettingsForNode = $nodeType->getConfiguration('search');
             if (isset($elasticSearchSettingsForNode['fulltext']['isRoot']) && $elasticSearchSettingsForNode['fulltext']['isRoot'] === true) {
                 return true;
             }
@@ -54,18 +62,21 @@ abstract class AbstractIndexerDriver extends AbstractDriver
     }
 
     /**
-     * @param NodeInterface $node
-     * @return NodeInterface|null
+     * @param Node $node
+     * @return Node|null
      */
-    protected function findClosestFulltextRoot(NodeInterface $node): ?NodeInterface
+    protected function findClosestFulltextRoot(Node $node): ?Node
     {
+        $subgraph = $this->contentRepositoryRegistry->get($node->contentRepositoryId)->getContentGraph($node->workspaceName)->getSubgraph($node->dimensionSpacePoint, VisibilityConstraints::withoutRestrictions());
+
         $closestFulltextNode = $node;
         while (!$this->isFulltextRoot($closestFulltextNode)) {
-            $closestFulltextNode = $closestFulltextNode->getParent();
+            $closestFulltextNode = $subgraph->findParentNode($closestFulltextNode->aggregateId);
             if ($closestFulltextNode === null) {
                 // root of hierarchy, no fulltext root found anymore, abort silently...
-                if ($node->getPath() !== '/' && $node->getPath() !== '/sites') {
-                    $this->logger->warning(sprintf('NodeIndexer: No fulltext root found for node %s', (string)$node), LogEnvironment::fromMethodName(__METHOD__));
+                if (!$node->nodeTypeName->equals(NodeTypeNameFactory::forRoot()) &&
+                    !$node->nodeTypeName->equals(NodeTypeNameFactory::forSites())) {
+                    $this->logger->warning(sprintf('NodeIndexer: No fulltext root found for node %s', (string)$node->aggregateId), LogEnvironment::fromMethodName(__METHOD__));
                 }
 
                 return null;

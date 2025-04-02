@@ -15,7 +15,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  */
 
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 
 /**
  * Indexer Driver Interface
@@ -26,20 +27,20 @@ interface IndexerDriverInterface
      * Generate the query to index the document properties
      *
      * @param string $indexName
-     * @param NodeInterface $node
+     * @param Node $node
      * @param ElasticSearchDocument $document
      * @param array $documentData
      * @return array
      */
-    public function document(string $indexName, NodeInterface $node, ElasticSearchDocument $document, array $documentData): array;
+    public function document(string $indexName, Node $node, ElasticSearchDocument $document, array $documentData): array;
 
     /**
      * Generate the query to index the fulltext of the document
      *
-     * @param NodeInterface $node
+     * @param Node $node
      * @param array $fulltextIndexOfNode
      * @param string $targetWorkspaceName
      * @return array
      */
-    public function fulltext(NodeInterface $node, array $fulltextIndexOfNode, string $targetWorkspaceName = null): array;
+    public function fulltext(Node $node, array $fulltextIndexOfNode, ?WorkspaceName $targetWorkspaceName = null): array;
 }

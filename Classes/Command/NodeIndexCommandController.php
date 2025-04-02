@@ -13,7 +13,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * source code.
  */
 
-use Doctrine\Common\Collections\ArrayCollection;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
@@ -25,13 +24,14 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\WorkspaceIndexer;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
-use Neos\ContentRepository\Domain\Model\Workspace;
-use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
-use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
-use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
-use Neos\ContentRepository\Domain\Service\ContentDimensionPresetSourceInterface;
-use Neos\ContentRepository\Domain\Service\Context;
-use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
+use Neos\ContentRepository\Core\ContentRepository;
+use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
+use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
+use Neos\ContentRepository\Core\SharedModel\Workspace\Workspace;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 use Neos\Flow\Cli\Exception\StopCommandException;
@@ -81,24 +81,6 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @Flow\Inject
-     * @var WorkspaceRepository
-     */
-    protected $workspaceRepository;
-
-    /**
-     * @Flow\Inject
-     * @var NodeDataRepository
-     */
-    protected $nodeDataRepository;
-
-    /**
-     * @Flow\Inject
-     * @var ContentDimensionPresetSourceInterface
-     */
-    protected $contentDimensionPresetSource;
-
-    /**
-     * @Flow\Inject
      * @var NodeTypeMappingBuilderInterface
      */
     protected $nodeTypeMappingBuilder;
@@ -117,18 +99,6 @@ class NodeIndexCommandController extends CommandController
 
     /**
      * @Flow\Inject
-     * @var ContextFactoryInterface
-     */
-    protected $contextFactory;
-
-    /**
-     * @Flow\Inject
-     * @var ContentDimensionCombinator
-     */
-    protected $contentDimensionCombinator;
-
-    /**
-     * @Flow\Inject
      * @var WorkspaceIndexer
      */
     protected $workspaceIndexer;
@@ -144,6 +114,9 @@ class NodeIndexCommandController extends CommandController
      * @Flow\Inject
      */
     protected $indexDriver;
+    
+    #[Flow\Inject]
+    protected ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * Index a single node by the given identifier and workspace name
@@ -159,10 +132,14 @@ class NodeIndexCommandController extends CommandController
      * @throws SubProcessException
      * @throws \Flowpack\ElasticSearch\Exception
      */
-    public function indexNodeCommand(string $identifier, string $workspace = null, string $postfix = null): void
+    public function indexNodeCommand(string $identifier, string $contentRepository = 'default', ?string $workspace = null, ?string $postfix = null): void
     {
-        if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
-            $workspace = 'live';
+        $nodeAggregateId = NodeAggregateId::fromString($identifier);
+        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString($contentRepository));
+        $workspaceName = $workspace ? WorkspaceName::fromString($workspace) : null;
+
+        if ($workspaceName === null && $this->settings['indexAllWorkspaces'] === false) {
+            $workspaceName = WorkspaceName::forLive();
         }
 
         $updateAliases = false;
@@ -174,59 +151,61 @@ class NodeIndexCommandController extends CommandController
             $this->nodeIndexer->setIndexNamePostfix($postfix);
         }
 
-        $indexNode = function ($identifier, Workspace $workspace, array $dimensions) {
-            $context = $this->createContentContext($workspace->getName(), $dimensions);
-            $node = $context->getNodeByIdentifier($identifier);
+        $indexNode = function (NodeAggregateId $nodeAggregateId, WorkspaceName $workspaceName, DimensionSpacePoint $dimensionSpacePoint) use ($contentRepository) {
+            $visibilityContraints = VisibilityConstraints::withoutRestrictions();
+            $subgraph = $contentRepository->getContentGraph($workspaceName)->getSubgraph($dimensionSpacePoint, $visibilityContraints);
+
+            $node = $subgraph->findNodeById($nodeAggregateId);
 
             if ($node === null) {
-                return [$workspace->getName(), '-', json_encode($dimensions), 'not found'];
+                return [$workspaceName->value, '-', json_encode($dimensionSpacePoint), 'not found'];
             }
 
-            $this->nodeIndexer->setDimensions($dimensions);
+            $this->nodeIndexer->setDimensions($dimensionSpacePoint);
             $this->nodeIndexer->indexNode($node);
 
-            return [$workspace->getName(), $node->getNodeType()->getName(), json_encode($dimensions), '<success>indexed</success>'];
+            return [$workspaceName->value, $node->nodeTypeName->value, json_encode($dimensionSpacePoint), '<success>indexed</success>'];
         };
 
-        $indexInWorkspace = function ($identifier, Workspace $workspace) use ($indexNode) {
-            $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
+        $indexInWorkspace = function (ContentRepository $contentRepository, NodeAggregateId $nodeAggregateId, WorkspaceName $workspaceName) use ($indexNode) {
+
+            $dimensionSpacePoints = $contentRepository->getVariationGraph()->getDimensionSpacePoints();
 
             $results = [];
 
-            if ($combinations === []) {
-                $results[] = $indexNode($identifier, $workspace, []);
+            if ($dimensionSpacePoints->isEmpty()) {
+                $results[] = $indexNode($nodeAggregateId, $workspaceName, DimensionSpacePoint::createWithoutDimensions());
             } else {
-                foreach ($combinations as $combination) {
-                    $results[] = $indexNode($identifier, $workspace, $combination);
+                foreach ($dimensionSpacePoints as $dimensionSpacePoint) {
+                    $results[] = $indexNode($nodeAggregateId, $workspaceName, $dimensionSpacePoint);
                 }
             }
 
             $this->output->outputTable($results, ['Workspace', 'NodeType', 'Dimensions', 'State']);
         };
 
-        if ($workspace === null) {
+        if ($workspaceName === null) {
             /** @var Workspace $iteratedWorkspace */
-            foreach ($this->workspaceRepository->findAll() as $iteratedWorkspace) {
-                $indexInWorkspace($identifier, $iteratedWorkspace);
+            foreach ($contentRepository->findWorkspaces() as $iteratedWorkspace) {
+                $indexInWorkspace($contentRepository, $nodeAggregateId, $iteratedWorkspace->workspaceName);
             }
         } else {
-            $workspaceInstance = $this->workspaceRepository->findByIdentifier($workspace);
+            $workspaceInstance = $contentRepository->findWorkspaceByName($workspaceName);
             if ($workspaceInstance === null) {
-                $this->outputLine('<error>Error: The given workspace (%s) does not exist.</error>', [$workspace]);
+                $this->outputLine('<error>Error: The given workspace (%s) does not exist.</error>', [$workspaceName->value]);
                 $this->quit(1);
             }
-            $indexInWorkspace($identifier, $workspaceInstance);
+            $indexInWorkspace($contentRepository, $nodeAggregateId, $workspaceName);
         }
 
         $this->nodeIndexer->flush();
 
         if ($updateAliases) {
-            $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-            $combinations = $combinations === [] ? [[]] : $combinations;
+            $dimensionSpacePoints = $contentRepository->getVariationGraph()->getDimensionSpacePoints();
 
-            foreach ($combinations as $combination) {
+            foreach ($dimensionSpacePoints as $dimensionSpacePoint) {
                 $this->executeInternalCommand('aliasInternal', [
-                    'dimensionsValues' => json_encode($combination),
+                    'dimensionSpacePoint' => $dimensionSpacePoint->toJson(),
                     'postfix' => $postfix,
                     'update' => false
                 ]);
@@ -253,51 +232,55 @@ class NodeIndexCommandController extends CommandController
      * @throws ConfigurationException
      * @throws ApiException
      */
-    public function buildCommand(int $limit = null, bool $update = false, string $workspace = null, string $postfix = null): void
+    public function buildCommand(?int $limit = null, bool $update = false, ?string $workspace = null, ?string $postfix = null): void
     {
+        $contentRepositoryId = ContentRepositoryId::fromString('default');
+        $workspaceName = $workspace ? WorkspaceName::fromString($workspace) : null;
+        $contentRepository = $this->contentRepositoryRegistry->get($contentRepositoryId);
+
         $this->logger->info(sprintf('Starting elasticsearch indexing %s sub processes', $this->useSubProcesses ? 'with' : 'without'), LogEnvironment::fromMethodName(__METHOD__));
 
-        if ($workspace !== null && $this->workspaceRepository->findByIdentifier($workspace) === null) {
-            $this->logger->error('The given workspace (' . $workspace . ') does not exist.', LogEnvironment::fromMethodName(__METHOD__));
+        if ($workspaceName !== null && $contentRepository->findWorkspaceByName($workspaceName) === null) {
+            $this->logger->error('The given workspace (' . $workspaceName->value . ') does not exist.', LogEnvironment::fromMethodName(__METHOD__));
             $this->quit(1);
         }
 
         $postfix = (string)($postfix ?: time());
         $this->nodeIndexer->setIndexNamePostfix($postfix);
 
-        $createIndicesAndApplyMapping = function (array $dimensionsValues) use ($update, $postfix) {
+        $createIndicesAndApplyMapping = function (DimensionSpacePoint $dimensionSpacePoint) use ($update, $postfix) {
             $this->executeInternalCommand('createInternal', [
-                'dimensionsValues' => json_encode($dimensionsValues),
+                'dimensionSpacePoint' => $dimensionSpacePoint->toJson(),
                 'update' => $update,
                 'postfix' => $postfix,
             ]);
         };
 
-        $buildIndex = function (array $dimensionsValues) use ($workspace, $limit, $postfix) {
-            $this->build($dimensionsValues, $workspace, $postfix, $limit);
+        $buildIndex = function (DimensionSpacePoint $dimensionSpacePoint) use ($contentRepository, $workspaceName, $limit, $postfix) {
+            $this->build($contentRepository, $dimensionSpacePoint, $workspaceName, $postfix, $limit);
         };
 
-        $refresh = function (array $dimensionsValues) use ($postfix) {
+        $refresh = function (DimensionSpacePoint $dimensionSpacePoint) use ($postfix) {
             $this->executeInternalCommand('refreshInternal', [
-                'dimensionsValues' => json_encode($dimensionsValues),
+                'dimensionSpacePoint' => $dimensionSpacePoint->toJson(),
                 'postfix' => $postfix,
             ]);
         };
 
-        $updateAliases = function (array $dimensionsValues) use ($update, $postfix) {
+        $updateAliases = function (DimensionSpacePoint $dimensionSpacePoint) use ($update, $postfix) {
             $this->executeInternalCommand('aliasInternal', [
-                'dimensionsValues' => json_encode($dimensionsValues),
+                'dimensionSpacePoint' => $dimensionSpacePoint->toJson(),
                 'postfix' => $postfix,
                 'update' => $update,
             ]);
         };
+        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
+        $dimensionSpacePoints = $contentRepository->getVariationGraph()->getDimensionSpacePoints();
 
-        $combinations = new ArrayCollection($this->contentDimensionCombinator->getAllAllowedCombinations());
-
-        $runAndLog = function ($command, string $stepInfo) use ($combinations) {
+        $runAndLog = function ($command, string $stepInfo) use ($dimensionSpacePoints) {
             $timeStart = microtime(true);
             $this->output(str_pad($stepInfo . '... ', 20));
-            $combinations->map($command);
+            array_map($command, iterator_to_array($dimensionSpacePoints));
             $this->outputLine('<success>Done</success> (took %s seconds)', [number_format(microtime(true) - $timeStart, 2)]);
         };
 
@@ -344,8 +327,9 @@ class NodeIndexCommandController extends CommandController
     /**
      * Build up the node index
      *
-     * @param array $dimensionsValues
-     * @param string|null $workspace
+     * @param ContentRepository $contentRepository
+     * @param DimensionSpacePoint $dimensionSpacePoint
+     * @param WorkspaceName|null $workspaceName
      * @param string|null $postfix
      * @param int|null $limit
      * @throws ConfigurationException
@@ -353,32 +337,33 @@ class NodeIndexCommandController extends CommandController
      * @throws RuntimeException
      * @throws SubProcessException
      */
-    private function build(array $dimensionsValues, ?string $workspace = null, ?string $postfix = null, ?int $limit = null): void
+    private function build(ContentRepository $contentRepository, DimensionSpacePoint $dimensionSpacePoint, ?WorkspaceName $workspaceName = null, ?string $postfix = null, ?int $limit = null): void
     {
-        $dimensionsValues = $this->configureNodeIndexer($dimensionsValues, $postfix);
+        $this->configureNodeIndexer($dimensionSpacePoint, $postfix);
 
         $this->logger->info(vsprintf('Indexing %s nodes to %s', [($limit !== null ? 'the first ' . $limit . ' ' : ''), $this->nodeIndexer->getIndexName()]), LogEnvironment::fromMethodName(__METHOD__));
 
-        if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
-            $workspace = 'live';
+        if ($workspaceName === null && $this->settings['indexAllWorkspaces'] === false) {
+            $workspaceName = WorkspaceName::forLive();
         }
 
-        $buildWorkspaceCommandOptions = static function ($workspace, array $dimensionsValues, ?int $limit, ?string $postfix) {
+        $buildWorkspaceCommandOptions = static function (ContentRepositoryId $contentRepositoryId, WorkspaceName $workspaceName, DimensionSpacePoint $dimensionSpacePoint, ?int $limit, ?string $postfix) {
             return [
-                'workspace' => $workspace instanceof Workspace ? $workspace->getName() : $workspace,
-                'dimensionsValues' => json_encode($dimensionsValues),
+                'contentRepositoryId' => $contentRepositoryId->value,
+                'workspaceName' => $workspaceName->value,
+                'dimensionSpacePoint' => json_encode($dimensionSpacePoint),
                 'postfix' => $postfix,
                 'limit' => $limit,
             ];
         };
 
         $output = '';
-        if ($workspace === null) {
-            foreach ($this->workspaceRepository->findAll() as $iteratedWorkspace) {
-                $output .= $this->executeInternalCommand('buildWorkspaceInternal', $buildWorkspaceCommandOptions($iteratedWorkspace, $dimensionsValues, $limit, $postfix));
+        if ($workspaceName === null) {
+            foreach ($contentRepository->findWorkspaces() as $iteratedWorkspace) {
+                $output .= $this->executeInternalCommand('buildWorkspaceInternal', $buildWorkspaceCommandOptions($contentRepository->id, $iteratedWorkspace->workspaceName, $dimensionSpacePoint, $limit, $postfix));
             }
         } else {
-            $output = $this->executeInternalCommand('buildWorkspaceInternal', $buildWorkspaceCommandOptions($workspace, $dimensionsValues, $limit, $postfix));
+            $output = $this->executeInternalCommand('buildWorkspaceInternal', $buildWorkspaceCommandOptions($contentRepository->id, $workspaceName, $dimensionSpacePoint, $limit, $postfix));
         }
 
         $outputArray = explode(PHP_EOL, $output);
@@ -398,27 +383,28 @@ class NodeIndexCommandController extends CommandController
     /**
      * Internal sub-command to create an index and apply the mapping
      *
-     * @param string $dimensionsValues
+     * @param string $dimensionSpacePoint
      * @param bool $update
      * @param string|null $postfix
+     * @throws ConfigurationException
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws \Neos\Flow\Http\Exception
-     * @throws \Exception
      * @Flow\Internal
      */
-    public function createInternalCommand(string $dimensionsValues, bool $update = false, string $postfix = null): void
+    public function createInternalCommand(string $dimensionSpacePoint, bool $update = false, ?string $postfix = null): void
     {
+        $dimensionSpacePoint = DimensionSpacePoint::fromJsonString($dimensionSpacePoint);
         if ($update === true) {
             $this->logger->warning('!!! Update Mode (Development) active!', LogEnvironment::fromMethodName(__METHOD__));
         } else {
-            $dimensionsValuesArray = $this->configureNodeIndexer(json_decode($dimensionsValues, true), $postfix);
+            $this->configureNodeIndexer($dimensionSpacePoint, $postfix);
             if ($this->nodeIndexer->getIndex()->exists() === true) {
                 $this->logger->warning(sprintf('Deleted index with the same postfix (%s)!', $postfix), LogEnvironment::fromMethodName(__METHOD__));
                 $this->nodeIndexer->getIndex()->delete();
             }
             $this->nodeIndexer->getIndex()->create();
-            $this->logger->info('Created index ' . $this->nodeIndexer->getIndexName() . ' with dimensions ' . json_encode($dimensionsValuesArray), LogEnvironment::fromMethodName(__METHOD__));
+            $this->logger->info('Created index ' . $this->nodeIndexer->getIndexName() . ' with dimensions ' . json_encode($dimensionSpacePoint), LogEnvironment::fromMethodName(__METHOD__));
         }
 
         $this->applyMapping();
@@ -426,27 +412,30 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
-     * @param string $workspace
-     * @param string $dimensionsValues
+     * @param string $workspaceName
+     * @param string $dimensionSpacePoint
      * @param string $postfix
      * @param int|null $limit
      * @return void
      * @Flow\Internal
      */
-    public function buildWorkspaceInternalCommand(string $workspace, string $dimensionsValues, string $postfix, int $limit = null): void
+    public function buildWorkspaceInternalCommand(string $contentRepositoryId, string $workspaceName, string $dimensionSpacePoint, string $postfix, ?int $limit = null): void
     {
-        $dimensionsValuesArray = $this->configureNodeIndexer(json_decode($dimensionsValues, true), $postfix);
+        $contentRepositoryId = ContentRepositoryId::fromString($contentRepositoryId);
+        $workspaceName = WorkspaceName::fromString($workspaceName);
+        $dimensionSpacePoint = DimensionSpacePoint::fromJsonString($dimensionSpacePoint);
+        $this->configureNodeIndexer($dimensionSpacePoint, $postfix);
 
-        $workspaceLogger = function ($workspaceName, $indexedNodes, $dimensions) {
-            if ($dimensions === []) {
-                $message = 'Workspace "' . $workspaceName . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)';
+        $workspaceLogger = function (WorkspaceName $workspaceName, int $indexedNodes, DimensionSpacePoint $dimensionSpacePoint) use ($limit) {
+            if ($dimensionSpacePoint->coordinates === []) {
+                $message = 'Workspace "' . $workspaceName->value . '" without dimensions done. (Indexed ' . $indexedNodes . ' nodes)';
             } else {
-                $message = 'Workspace "' . $workspaceName . '" and dimensions "' . json_encode($dimensions) . '" done. (Indexed ' . $indexedNodes . ' nodes)';
+                $message = 'Workspace "' . $workspaceName->value . '" and dimensions "' . $dimensionSpacePoint->toJson() . '" done. (Indexed ' . $indexedNodes . ' nodes)';
             }
             $this->outputLine($message);
         };
 
-        $this->workspaceIndexer->indexWithDimensions($workspace, $dimensionsValuesArray, $limit, $workspaceLogger);
+        $this->workspaceIndexer->indexWithDimensions($contentRepositoryId, $workspaceName, $dimensionSpacePoint, $limit, $workspaceLogger);
 
         $this->outputErrorHandling();
     }
@@ -454,17 +443,18 @@ class NodeIndexCommandController extends CommandController
     /**
      * Internal subcommand to refresh the index
      *
-     * @param string $dimensionsValues
+     * @param string $dimensionSpacePoint
      * @param string $postfix
+     * @throws ConfigurationException
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws \Neos\Flow\Http\Exception
-     * @throws ConfigurationException
      * @Flow\Internal
      */
-    public function refreshInternalCommand(string $dimensionsValues, string $postfix): void
+    public function refreshInternalCommand(string $dimensionSpacePoint, string $postfix): void
     {
-        $this->configureNodeIndexer(json_decode($dimensionsValues, true), $postfix);
+        $dimensionSpacePoint = DimensionSpacePoint::fromJsonString($dimensionSpacePoint);
+        $this->configureNodeIndexer($dimensionSpacePoint, $postfix);
 
         $this->logger->info(vsprintf('Refreshing index %s', [$this->nodeIndexer->getIndexName()]), LogEnvironment::fromMethodName(__METHOD__));
         $this->nodeIndexer->getIndex()->refresh();
@@ -473,21 +463,22 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
-     * @param string $dimensionsValues
+     * @param string $dimensionSpacePoint
      * @param string $postfix
      * @param bool $update
-     * @throws Exception
-     * @throws \Flowpack\ElasticSearch\Exception
      * @throws ApiException
      * @throws ConfigurationException
+     * @throws Exception
+     * @throws \Flowpack\ElasticSearch\Exception
      * @Flow\Internal
      */
-    public function aliasInternalCommand(string $dimensionsValues, string $postfix, bool $update = false): void
+    public function aliasInternalCommand(string $dimensionSpacePoint, string $postfix, bool $update = false): void
     {
+        $dimensionSpacePoint = DimensionSpacePoint::fromJsonString($dimensionSpacePoint);
         if ($update === true) {
             return;
         }
-        $this->configureNodeIndexer(json_decode($dimensionsValues, true), $postfix);
+        $this->configureNodeIndexer($dimensionSpacePoint, $postfix);
 
         $this->logger->info(vsprintf('Update alias for index %s', [$this->nodeIndexer->getIndexName()]), LogEnvironment::fromMethodName(__METHOD__));
         $this->nodeIndexer->updateIndexAlias();
@@ -495,15 +486,15 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
-     * @param array $dimensionsValues
+     * @param DimensionSpacePoint $dimensionSpacePoint
      * @param string $postfix
-     * @return array
+     * @return DimensionSpacePoint
      */
-    private function configureNodeIndexer(array $dimensionsValues, string $postfix): array
+    private function configureNodeIndexer(DimensionSpacePoint $dimensionSpacePoint, string $postfix): DimensionSpacePoint
     {
         $this->nodeIndexer->setIndexNamePostfix($postfix);
-        $this->nodeIndexer->setDimensions($dimensionsValues);
-        return $dimensionsValues;
+        $this->nodeIndexer->setDimensions($dimensionSpacePoint);
+        return $dimensionSpacePoint;
     }
 
     /**
@@ -516,10 +507,11 @@ class NodeIndexCommandController extends CommandController
     public function cleanupCommand(): void
     {
         $removed = false;
-        $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
-        foreach ($combinations as $dimensionsValues) {
+        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
+        $dimensionSpacePoints = $contentRepository->getVariationGraph()->getDimensionSpacePoints();
+        foreach ($dimensionSpacePoints as $dimensionSpacePoint) {
             try {
-                $this->nodeIndexer->setDimensions($dimensionsValues);
+                $this->nodeIndexer->setDimensions($dimensionSpacePoint);
                 $removedIndices = $this->nodeIndexer->removeOldIndices();
 
                 foreach ($removedIndices as $indexToBeRemoved) {
@@ -580,31 +572,6 @@ class NodeIndexCommandController extends CommandController
     }
 
     /**
-     * Create a ContentContext based on the given workspace name
-     *
-     * @param string $workspaceName Name of the workspace to set for the context
-     * @param array $dimensions Optional list of dimensions and their values which should be set
-     * @return Context
-     */
-    private function createContentContext(string $workspaceName, array $dimensions = []): Context
-    {
-        $contextProperties = [
-            'workspaceName' => $workspaceName,
-            'invisibleContentShown' => true,
-            'inaccessibleContentShown' => true
-        ];
-
-        if ($dimensions !== []) {
-            $contextProperties['dimensions'] = $dimensions;
-            $contextProperties['targetDimensions'] = array_map(static function ($dimensionValues) {
-                return array_shift($dimensionValues);
-            }, $dimensions);
-        }
-
-        return $this->contextFactory->create($contextProperties);
-    }
-
-    /**
      * Apply the mapping to the current index.
      *
      * @return void
@@ -613,9 +580,10 @@ class NodeIndexCommandController extends CommandController
      * @throws ConfigurationException
      * @throws \Neos\Flow\Http\Exception
      */
-    private function applyMapping(): void
+    private function applyMapping(string $contentRepository = 'default'): void
     {
-        $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
+        $contentRepositoryId = ContentRepositoryId::fromString($contentRepository);
+        $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($contentRepositoryId, $this->nodeIndexer->getIndex());
         foreach ($nodeTypeMappingCollection as $mapping) {
             /** @var Mapping $mapping */
             $mapping->apply();

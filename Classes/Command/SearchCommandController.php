@@ -19,13 +19,19 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel\SearchResultHelper;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Domain\Service\Context;
-use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
+use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Media\Domain\Model\ResourceBasedInterface;
+use Neos\Neos\Domain\NodeLabel\NodeLabelGeneratorInterface;
+use Neos\Neos\Domain\Service\NodeTypeNameFactory;
 use Neos\Utility\Arrays;
 
 /**
@@ -34,22 +40,23 @@ use Neos\Utility\Arrays;
 class SearchCommandController extends CommandController
 {
     /**
-     * @var ContextFactoryInterface
-     * @Flow\Inject
-     */
-    protected $contextFactory;
-
-    /**
      * @Flow\Inject
      * @var ElasticSearchClient
      */
     protected $elasticSearchClient;
+
+    #[Flow\Inject]
+    protected ContentRepositoryRegistry $contentRepositoryRegistry;
+
+    #[Flow\Inject]
+    protected NodeLabelGeneratorInterface $nodeLabelGenerator;
 
     /**
      * This commnd can be used to test and debug
      * full-text searches
      *
      * @param string $searchWord The search word to seartch for.
+     * @param string $contentRepository
      * @param string $path Path to the root node. Defaults to '/'
      * @param string|null $dimensions The dimesnions to be taken into account.
      * @throws Exception
@@ -57,10 +64,24 @@ class SearchCommandController extends CommandController
      * @throws IllegalObjectTypeException
      * @throws Exception\ConfigurationException
      */
-    public function fulltextCommand(string $searchWord, string $path = '/', ?string $dimensions = null): void
+    public function fulltextCommand(string $searchWord, $contentRepository = 'default', ?string $nodeAggregateId = null, ?string $dimensions = null): void
     {
-        $context = $this->createContext($dimensions);
-        $contextNode = $context->getNode($path);
+        if ($dimensions !== null && is_array(json_decode($dimensions, true)) === false) {
+            $this->outputLine('<error>Error: </error>The Dimensions must be given as a JSON array like \'{"language":["de"]}\'');
+            $this->sendAndExit(1);
+        }
+
+        $contentRepositoryId = ContentRepositoryId::fromString($contentRepository);
+        $dimensionSpacePoint = $dimensions ? DimensionSpacePoint::fromJsonString($dimensions) : DimensionSpacePoint::createWithoutDimensions();
+
+        $contentGraph = $this->contentRepositoryRegistry->get($contentRepositoryId)->getContentGraph(WorkspaceName::forLive());
+        $subgraph = $contentGraph->getSubgraph($dimensionSpacePoint, VisibilityConstraints::withoutRestrictions());
+
+        if ($nodeAggregateId !== null) {
+            $contextNode = $subgraph->findNodeById(NodeAggregateId::fromString($nodeAggregateId));
+        } else {
+            $contextNode = $subgraph->findRootNodeByType(NodeTypeNameFactory::forSites());
+        }
 
         if ($contextNode === null) {
             $this->outputLine('Context node not found');
@@ -94,7 +115,8 @@ class SearchCommandController extends CommandController
      * Prints the index content of the given node identifier.
      *
      * @param string $identifier The node identifier
-     * @param string|null $dimensions Dimensions, specified in JSON format, like '{"language":["de"]}'
+     * @param string $contentRepository
+     * @param string|null $dimensions Dimensions, specified in JSON format, like '{"language":"en"}'
      * @param string $field Name or path to a source field to display. Eg. "__fulltext.h1"
      * @throws Exception
      * @throws IllegalObjectTypeException
@@ -102,17 +124,28 @@ class SearchCommandController extends CommandController
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws \Neos\Flow\Http\Exception
      */
-    public function viewNodeCommand(string $identifier, ?string $dimensions = null, string $field = ''): void
+    public function viewNodeCommand(string $identifier, string $contentRepository = 'default', ?string $dimensions = null, string $field = ''): void
     {
-        if ($dimensions !== null && is_array(json_decode($dimensions, true, 512, JSON_THROW_ON_ERROR)) === false) {
+        if ($dimensions !== null && is_array(json_decode($dimensions, true)) === false) {
             $this->outputLine('<error>Error: </error>The Dimensions must be given as a JSON array like \'{"language":["de"]}\'');
             $this->sendAndExit(1);
         }
 
-        $context = $this->createContext($dimensions);
+        $contentRepositoryId = ContentRepositoryId::fromString($contentRepository);
+        $dimensionSpacePoint = $dimensions ? DimensionSpacePoint::fromJsonString($dimensions) : DimensionSpacePoint::createWithoutDimensions();
+
+        $contentGraph = $this->contentRepositoryRegistry->get($contentRepositoryId)->getContentGraph(WorkspaceName::forLive());
+        $subgraph = $contentGraph->getSubgraph($dimensionSpacePoint, VisibilityConstraints::withoutRestrictions());
+
+        $rootNode = $subgraph->findRootNodeByType(NodeTypeNameFactory::forSites());
+
+        if ($rootNode === null) {
+            $this->outputLine('<error>Error: </error>No root node found for the given dimensions');
+            return;
+        }
 
         $queryBuilder = new ElasticSearchQueryBuilder();
-        $queryBuilder->query($context->getRootNode());
+        $queryBuilder->query($rootNode);
         $queryBuilder->exactMatch('neos_node_identifier', $identifier);
 
         $queryBuilder->getRequest()->setValueByPath('_source', []);
@@ -122,7 +155,7 @@ class SearchCommandController extends CommandController
             $this->outputLine('<info>Results</info>');
 
             foreach ($queryBuilder->execute() as $node) {
-                $this->outputLine('<b>%s</b>', [(string)$node]);
+                $this->outputLine('<b>%s</b>', [(string)$node->aggregateId->value]);
                 $data = $queryBuilder->getFullElasticSearchHitForNode($node);
 
                 if ($field !== '') {
@@ -143,48 +176,31 @@ class SearchCommandController extends CommandController
      */
     private function outputResults(ElasticSearchQueryResult $result): void
     {
-        $results = array_map(static function (NodeInterface $node) {
+        $results = array_map(function (Node $node) {
             $properties = [];
 
-            foreach ($node->getProperties() as $propertyName => $propertyValue) {
+            foreach ($node->properties as $propertyName => $propertyValue) {
                 if ($propertyValue instanceof ResourceBasedInterface) {
                     $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . (string)$propertyValue->getResource()->getFilename();
-                } elseif ($propertyValue instanceof \DateTime) {
+                } elseif ($propertyValue instanceof \DateTimeInterface) {
                     $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . $propertyValue->format('Y-m-d H:i');
                 } elseif (is_array($propertyValue)) {
                     $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . 'array';
-                } elseif ($propertyValue instanceof NodeInterface) {
-                    $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . $propertyValue->getIdentifier();
+                } elseif ($propertyValue instanceof Node) {
+                    $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . $propertyValue->aggregateId->value;
                 } else {
                     $properties[$propertyName] = '<b>' . $propertyName . '</b>: ' . (string)$propertyValue;
                 }
             }
 
             return [
-                'identifier' => $node->getIdentifier(),
-                'label' => $node->getLabel(),
-                'nodeType' => $node->getNodeType()->getName(),
+                'identifier' => $node->aggregateId->value,
+                'label' => $this->nodeLabelGenerator->getLabel($node),
+                'nodeType' => $node->nodeTypeName->value,
                 'properties' => implode(PHP_EOL, $properties),
             ];
         }, $result->toArray());
 
         $this->output->outputTable($results, ['Identifier', 'Label', 'Node Type', 'Properties']);
-    }
-
-    /**
-     * @param string|null $dimensions
-     * @return Context
-     */
-    private function createContext(string $dimensions = null): Context
-    {
-        $contextConfiguration = [
-            'workspaceName' => 'live',
-        ];
-
-        if ($dimensions !== null) {
-            $contextConfiguration['dimensions'] = json_decode($dimensions, true);
-        }
-
-        return $this->contextFactory->create($contextConfiguration);
     }
 }

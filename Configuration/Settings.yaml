@@ -34,14 +34,9 @@ Flowpack:
                           must_not:
                             - term:
                                 neos_hidden: true
-                            - range:
-                                neos_hidden_before_datetime:
-                                  gt: now
-                            - range:
-                                neos_hidden_after_datetime:
-                                  lt: now
                   _source:
                     - 'neos_path'
+                    - 'neos_node_identifier'
 
                 unsupportedFieldsInCountRequest:
                   - '_source'

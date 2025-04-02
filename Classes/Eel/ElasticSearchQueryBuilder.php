@@ -18,19 +18,23 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Dto\SearchResult;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingException;
-use Neos\Flow\Log\ThrowableStorageInterface;
-use Neos\Flow\Log\Utility\LogEnvironment;
-use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
-use Neos\Flow\Persistence\QueryResultInterface;
-use Psr\Log\LoggerInterface;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindAncestorNodesFilter;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
+use Neos\ContentRepository\Core\SharedModel\Workspace\Workspace;
+use Neos\ContentRepository\Search\Dto\NodeAggregateIdPath;
 use Neos\ContentRepository\Search\Search\QueryBuilderInterface;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Eel\ProtectedContextAwareInterface;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Log\ThrowableStorageInterface;
+use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
+use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Flow\Utility\Now;
 use Neos\Utility\Arrays;
+use Psr\Log\LoggerInterface;
 
 /**
  * Query Builder for ElasticSearch Queries
@@ -109,6 +113,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @var array
      */
     protected $result = [];
+
+    #[Flow\Inject]
+    protected ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * HIGH-LEVEL API
@@ -200,12 +207,9 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             return $this;
         }
 
-        $currentWorkspaceNestingLevel = 1;
-        $workspace = $this->elasticSearchClient->getContextNode()->getContext()->getWorkspace();
-        while ($workspace->getBaseWorkspace() !== null) {
-            $currentWorkspaceNestingLevel++;
-            $workspace = $workspace->getBaseWorkspace();
-        }
+        $contentRepository = $this->contentRepositoryRegistry->get($this->elasticSearchClient->getContextNode()->contentRepositoryId);
+        $baseWorkspaces = $contentRepository->findWorkspaces()->getBaseWorkspaces($this->elasticSearchClient->getContextNode()->workspaceName);
+        $currentWorkspaceNestingLevel = count($baseWorkspaces) + 1;
 
         $this->limit = $limit;
 
@@ -562,12 +566,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * This low-level method can be used to look up the full Elasticsearch hit given a certain node.
      *
-     * @param NodeInterface $node
+     * @param Node $node
      * @return array the Elasticsearch hit for the node as array, or NULL if it does not exist.
      */
-    public function getFullElasticSearchHitForNode(NodeInterface $node): ?array
+    public function getFullElasticSearchHitForNode(Node $node): ?array
     {
-        return $this->elasticSearchHitsIndexedByNodeFromLastRequest[$node->getIdentifier()] ?? null;
+        return $this->elasticSearchHitsIndexedByNodeFromLastRequest[$node->aggregateId->value] ?? null;
     }
 
     /**
@@ -575,7 +579,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * This method is rather internal; just to be called from the ElasticSearchQueryResult. For the public API, please use execute()
      *
-     * @return array<\Neos\ContentRepository\Domain\Model\NodeInterface>
+     * @return array<Node>
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws \Neos\Flow\Http\Exception
@@ -765,7 +769,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * @return ElasticSearchQueryBuilder
      * @api
      */
-    public function highlight($fragmentSize, int $fragmentCount = null, int $noMatchSize = 150, string $field = 'neos_fulltext.*'): ElasticSearchQueryBuilder
+    public function highlight($fragmentSize, ?int $fragmentCount = null, int $noMatchSize = 150, string $field = 'neos_fulltext.*'): ElasticSearchQueryBuilder
     {
         $this->request->highlight($fragmentSize, $fragmentCount, $noMatchSize, $field);
 
@@ -786,12 +790,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     {
         $like = is_array($like) ? $like : [$like];
 
-        $getDocumentDefinitionByNode = function (QueryInterface $request, NodeInterface $node): array {
-            $request->queryFilter('term', ['neos_node_identifier' => $node->getIdentifier()]);
+        $getDocumentDefinitionByNode = function (QueryInterface $request, Node $node): array {
+            $request->queryFilter('term', ['neos_node_identifier' => $node->aggregateId->value]);
             $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request->toArray())->getTreatedContent();
             $respondedDocuments = Arrays::getValueByPath($response, 'hits.hits');
             if (count($respondedDocuments) === 0) {
-                $this->logger->info(sprintf('The node with identifier %s was not found in the elasticsearch index.', $node->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
+                $this->logger->info(sprintf('The node with identifier %s was not found in the elasticsearch index.', $node->aggregateId->value), LogEnvironment::fromMethodName(__METHOD__));
                 return [];
             }
 
@@ -805,7 +809,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $processedLike = [];
 
         foreach ($like as $key => $likeElement) {
-            if ($likeElement instanceof NodeInterface) {
+            if ($likeElement instanceof Node) {
                 $documentDefinition = $getDocumentDefinitionByNode(clone $this->request, $likeElement);
                 if (!empty($documentDefinition)) {
                     $processedLike[] = $documentDefinition;
@@ -828,15 +832,23 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * Sets the starting point for this query. Search result should only contain nodes that
      * match the context of the given node and have it as parent node in their rootline.
      *
-     * @param NodeInterface $contextNode
+     * @param Node $contextNode
      * @return ElasticSearchQueryBuilder
      * @throws QueryBuildingException
      * @throws IllegalObjectTypeException
      * @api
      */
-    public function query(NodeInterface $contextNode): QueryBuilderInterface
+    public function query(Node $contextNode): QueryBuilderInterface
     {
         $this->elasticSearchClient->setContextNode($contextNode);
+        $subgraph = $this->contentRepositoryRegistry->subgraphForNode($contextNode);
+
+        $ancestors = $subgraph->findAncestorNodes(
+            $contextNode->aggregateId,
+            FindAncestorNodesFilter::create()
+        )->reverse();
+
+        $nodeAggregateIdPath = NodeAggregateIdPath::fromNodes($ancestors);
 
         // on indexing, the neos_parent_path is tokenized to contain ALL parent path parts,
         // e.g. /foo, /foo/bar/, /foo/bar/baz; to speed up matching.. That's why we use a simple "term" filter here.
@@ -845,17 +857,19 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $this->queryFilter('bool', [
             'should' => [
                 [
-                    'term' => ['neos_parent_path' => $contextNode->getPath()]
+                    'term' => ['neos_parent_path' => $nodeAggregateIdPath->serializeToString()]
                 ],
                 [
-                    'term' => ['neos_path' => $contextNode->getPath()]
+                    'term' => ['neos_path' => $nodeAggregateIdPath->serializeToString()]
                 ]
             ]
         ]);
+        $contentRepository = $this->contentRepositoryRegistry->get($contextNode->contentRepositoryId);
+        $baseWorkspaces = $contentRepository->findWorkspaces()->getBaseWorkspaces($contextNode->workspaceName);
 
         $workspaces = array_merge(
-            [$contextNode->getContext()->getWorkspace()->getName()],
-            array_keys($contextNode->getContext()->getWorkspace()->getBaseWorkspaces())
+            [$contextNode->workspaceName->value],
+            $baseWorkspaces->map(fn(Workspace $baseWorkspace) => $baseWorkspace->workspaceName->value)
         );
         //
         // https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-terms-filter.html
@@ -915,24 +929,31 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
          * we might be able to use https://github.com/elasticsearch/elasticsearch/issues/3300 as soon as it is merged.
          */
         foreach ($hits as $hit) {
-            $nodePath = $hit[isset($hit['fields']['neos_path']) ? 'fields' : '_source']['neos_path'];
-            if (is_array($nodePath)) {
-                $nodePath = current($nodePath);
+            $aggregateIdPath = $hit[isset($hit['fields']['neos_path']) ? 'fields' : '_source']['neos_path'];
+            if (is_array($aggregateIdPath)) {
+                $aggregateIdPath = current($aggregateIdPath);
             }
 
-            $node = $this->elasticSearchClient->getContextNode()->getNode($nodePath);
+            $neosNodeIdentifier = $hit[isset($hit['fields']['neos_node_identifier']) ? 'fields' : '_source']['neos_node_identifier'];
+            if (is_array($neosNodeIdentifier)) {
+                $neosNodeIdentifier = current($neosNodeIdentifier);
+            }
 
-            if (!$node instanceof NodeInterface) {
-                $notConvertedNodePaths[] = $nodePath;
+            $nodeAggregateId = NodeAggregateId::fromString($neosNodeIdentifier);
+            $contextNode = $this->elasticSearchClient->getContextNode();
+            $node = $this->contentRepositoryRegistry->subgraphForNode($contextNode)->findNodeById($nodeAggregateId);
+
+            if (!$node instanceof Node) {
+                $notConvertedNodePaths[] = $aggregateIdPath;
                 continue;
             }
 
-            if (isset($nodes[$node->getIdentifier()])) {
+            if (isset($nodes[$node->aggregateId->value])) {
                 continue;
             }
 
-            $nodes[$node->getIdentifier()] = $node;
-            $elasticSearchHitPerNode[$node->getIdentifier()] = $hit;
+            $nodes[$node->aggregateId->value] = $node;
+            $elasticSearchHitPerNode[$node->aggregateId->value] = $hit;
             if ($this->limit > 0 && count($nodes) >= $this->limit) {
                 break;
             }
@@ -947,81 +968,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
         $this->elasticSearchHitsIndexedByNodeFromLastRequest = $elasticSearchHitPerNode;
 
         return array_values($nodes);
-    }
-
-    /**
-     * This method will get the minimum of all allowed cache lifetimes for the
-     * nodes that would result from the current defined query. This means it will evaluate to the nearest future value of the
-     * hiddenBeforeDateTime or hiddenAfterDateTime properties of all nodes in the result.
-     *
-     * @return int
-     * @throws Exception
-     * @throws QueryBuildingException
-     * @throws \Flowpack\ElasticSearch\Exception
-     * @throws \Neos\Flow\Http\Exception
-     */
-    public function cacheLifetime(): int
-    {
-        $minTimestamps = array_filter([
-            $this->getNearestFutureDate('neos_hidden_before_datetime'),
-            $this->getNearestFutureDate('neos_hidden_after_datetime')
-        ], static function ($value) {
-            return $value !== 0;
-        });
-
-        if (empty($minTimestamps)) {
-            return 0;
-        }
-
-        $minTimestamp = min($minTimestamps);
-
-        return $minTimestamp - $this->now->getTimestamp();
-    }
-
-    /**
-     * @param string $dateField
-     * @return int
-     * @throws Exception
-     * @throws QueryBuildingException
-     * @throws \Flowpack\ElasticSearch\Exception
-     * @throws \Neos\Flow\Http\Exception
-     */
-    protected function getNearestFutureDate(string $dateField): int
-    {
-        $request = clone $this->request;
-
-        $convertDateResultToTimestamp = static function (array $dateResult): int {
-            if (!isset($dateResult['value_as_string'])) {
-                return 0;
-            }
-            return (new \DateTime($dateResult['value_as_string']))->getTimestamp();
-        };
-
-        $request->queryFilter('range', [$dateField => ['gt' => 'now']], 'must');
-        $request->aggregation('minTime', [
-            'min' => [
-                'field' => $dateField
-            ]
-        ]);
-
-        $request->size(0);
-
-        $requestArray = $request->toArray();
-
-        $mustNot = Arrays::getValueByPath($requestArray, 'query.bool.filter.bool.must_not');
-
-        /* Remove exclusion of not yet visible nodes
-        - range:
-          neos_hidden_before_datetime:
-            gt: now
-        */
-        unset($mustNot[1]);
-
-        $requestArray = Arrays::setValueByPath($requestArray, 'query.bool.filter.bool.must_not', array_values($mustNot));
-
-        $result = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $requestArray)->getTreatedContent();
-
-        return $convertDateResultToTimestamp(Arrays::getValueByPath($result, 'aggregations.minTime'));
     }
 
     /**
@@ -1050,11 +996,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     protected function convertValue($value)
     {
-        if ($value instanceof NodeInterface) {
-            return $value->getIdentifier();
+        if ($value instanceof Node) {
+            return $value->aggregateId->value;
         }
 
-        if ($value instanceof \DateTime) {
+        if ($value instanceof \DateTimeInterface) {
             return $value->format('Y-m-d\TH:i:sP');
         }
 

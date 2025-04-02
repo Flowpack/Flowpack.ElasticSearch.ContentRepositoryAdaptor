@@ -13,11 +13,9 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer;
  * source code.
  */
 
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Domain\Model\TargetContextPath;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\SystemDriverInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
@@ -31,15 +29,19 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\NodeTypeIndexingConf
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Domain\Service\Context;
-use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
+use Neos\ContentRepository\Core\ContentRepository;
+use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\ContentRepository\Search\Indexer\AbstractNodeIndexer;
 use Neos\ContentRepository\Search\Indexer\BulkNodeIndexerInterface;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
-use Neos\Utility\Exception\FilesException;
 use Neos\Flow\Log\Utility\LogEnvironment;
+use Neos\Utility\Exception\FilesException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -51,11 +53,6 @@ use Psr\Log\LoggerInterface;
  */
 class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterface
 {
-    /**
-     * @Flow\Inject
-     * @var NodeTypeMappingBuilderInterface
-     */
-    protected $nodeTypeMappingBuilder;
 
     /**
      * @Flow\Inject
@@ -74,12 +71,6 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @var LoggerInterface
      */
     protected $logger;
-
-    /**
-     * @Flow\Inject
-     * @var ContextFactoryInterface
-     */
-    protected $contextFactory;
 
     /**
      * @var DocumentDriverInterface
@@ -159,9 +150,15 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
     protected bool $bulkProcessing = false;
 
-    public function setDimensions(array $dimensionsValues): void
+    #[Flow\Inject]
+    protected ContentRepositoryRegistry $contentRepositoryRegistry;
+
+    /** @var array<ContentRepository> */
+    private array $contentRepositoryRuntimeCache = [];
+
+    public function setDimensions(DimensionSpacePoint $dimensionSpacePoint): void
     {
-        $this->searchClient->setDimensions($dimensionsValues);
+        $this->searchClient->setDimensions($dimensionSpacePoint);
     }
 
     /**
@@ -217,40 +214,42 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     /**
      * Index this node, and add it to the current bulk request.
      *
-     * @param NodeInterface $node
+     * @param Node $node
      * @param string $targetWorkspaceName In case indexing is triggered during publishing, a target workspace name will be passed in
      * @return void
      * @throws Exception
      */
-    public function indexNode(NodeInterface $node, $targetWorkspaceName = null): void
+    public function indexNode(Node $node, ?WorkspaceName $targetWorkspaceName = null): void
     {
-        if ($this->nodeTypeIndexingConfiguration->isIndexable($node->getNodeType()) === false) {
-            $this->logger->debug(sprintf('Node "%s" (%s) skipped, Node Type is not allowed in the index.', $node->getContextPath(), $node->getNodeType()), LogEnvironment::fromMethodName(__METHOD__));
+        $contentRepository = $this->getCachedContentRepositoryByContentRepositoryId($node->contentRepositoryId);
+
+        if ($this->nodeTypeIndexingConfiguration->isIndexable($contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName)) === false) {
+            $this->logger->debug(sprintf('Node "%s" (%s) skipped, Node Type is not allowed in the index.', NodeAddress::fromNode($node)->toJson(), $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName)->name->value), LogEnvironment::fromMethodName(__METHOD__));
             return;
         }
 
-        $indexer = function (NodeInterface $node, $targetWorkspaceName = null) {
+        $indexer = function (Node $node, $targetWorkspaceName = null) use ($contentRepository) {
             if ($this->settings['indexAllWorkspaces'] === false) {
                 // we are only supposed to index the live workspace.
                 // We need to check the workspace at two occasions; checking the
                 // $targetWorkspaceName and the workspace name of the node's context as fallback
-                if ($targetWorkspaceName !== null && $targetWorkspaceName !== 'live') {
+                if ($targetWorkspaceName !== null && !$targetWorkspaceName->isLive()) {
                     return;
                 }
 
-                if ($targetWorkspaceName === null && $node->getContext()->getWorkspaceName() !== 'live') {
+                if ($targetWorkspaceName === null && !$node->workspaceName->isLive()) {
                     return;
                 }
             }
 
             $documentIdentifier = $this->documentIdentifierGenerator->generate($node, $targetWorkspaceName);
-            $nodeType = $node->getNodeType();
+            $nodeType = $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName);
 
-            $mappingType = $this->getIndex()->findType($nodeType->getName());
+            $mappingType = $this->getIndex()->findType($nodeType->name->value);
 
             $fulltextIndexOfNode = [];
             $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($documentIdentifier, $node) {
-                $this->logger->debug(sprintf('Property "%s" not indexed because no configuration found, node type %s.', $propertyName, $node->getNodeType()->getName()), LogEnvironment::fromMethodName(__METHOD__));
+                $this->logger->debug(sprintf('Property "%s" not indexed because no configuration found, node type %s.', $propertyName, $node->nodeTypeName->value), LogEnvironment::fromMethodName(__METHOD__));
             });
 
             $document = new ElasticSearchDocument(
@@ -271,61 +270,38 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
         };
 
-        $handleNode = function (NodeInterface $node, Context $context) use ($targetWorkspaceName, $indexer) {
-            $nodeFromContext = $context->getNodeByIdentifier($node->getIdentifier());
-            if ($nodeFromContext instanceof NodeInterface) {
+        $handleNode = function (Node $node, WorkspaceName $workspaceName, DimensionSpacePoint $dimensionSpacePoint) use ($contentRepository, $targetWorkspaceName, $indexer) {
+            $subgraph = $contentRepository->getContentGraph($workspaceName)->getSubgraph($dimensionSpacePoint, VisibilityConstraints::withoutRestrictions());
+            $nodeFromContext = $subgraph->findNodeById($node->aggregateId);
+
+            if ($nodeFromContext instanceof Node) {
                 $this->searchClient->withDimensions(static function () use ($indexer, $nodeFromContext, $targetWorkspaceName) {
                     $indexer($nodeFromContext, $targetWorkspaceName);
-                }, $nodeFromContext->getContext()->getTargetDimensions());
+                }, $dimensionSpacePoint);
             } else {
-                if ($node->isRemoved()) {
-                    $this->removeNode($node, $context->getWorkspaceName());
-                    $this->logger->debug(sprintf('Removed node with identifier %s, no longer in workspace %s', $node->getIdentifier(), $context->getWorkspaceName()), LogEnvironment::fromMethodName(__METHOD__));
-                } else {
-                    $this->logger->debug(sprintf('Could not index node with identifier %s, not found in workspace %s with dimensions %s', $node->getIdentifier(), $context->getWorkspaceName(), json_encode($context->getDimensions())), LogEnvironment::fromMethodName(__METHOD__));
-                }
+                $this->logger->debug(sprintf('Could not index node with identifier %s, not found in workspace %s with dimensions %s', $node->aggregateId->value, $workspaceName->value, $dimensionSpacePoint->toJson()), LogEnvironment::fromMethodName(__METHOD__));
             }
         };
 
-        $workspaceName = $targetWorkspaceName ?: $node->getContext()->getWorkspaceName();
+        $workspaceName = $targetWorkspaceName ?: $node->workspaceName;
         $dimensionCombinations = $this->dimensionService->getDimensionCombinationsForIndexing($node);
-
-        if (array_filter($dimensionCombinations) === []) {
-            $handleNode($node, $this->createContentContext($workspaceName));
+        if ($dimensionCombinations->isEmpty()) {
+            $handleNode($node, $workspaceName, DimensionSpacePoint::createWithoutDimensions());
         } else {
-            foreach ($dimensionCombinations as $combination) {
-                $handleNode($node, $this->createContentContext($workspaceName, $combination));
+            foreach ($dimensionCombinations as $dimensionSpacePoint) {
+                $handleNode($node, $workspaceName, $dimensionSpacePoint);
             }
         }
     }
 
     /**
-     * @param string $workspaceName
-     * @param array $dimensions
-     * @return Context
-     */
-    protected function createContentContext(string $workspaceName, array $dimensions = []): Context
-    {
-        $configuration = [
-            'workspaceName' => $workspaceName,
-            'invisibleContentShown' => true
-        ];
-
-        if ($dimensions !== []) {
-            $configuration['dimensions'] = $dimensions;
-        }
-
-        return $this->contextFactory->create($configuration);
-    }
-
-    /**
-     * @param NodeInterface $node
+     * @param Node $node
      * @param array|null $requests
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws FilesException
      */
-    protected function toBulkRequest(NodeInterface $node, array $requests = null): void
+    protected function toBulkRequest(Node $node, ?array $requests = null): void
     {
         if ($requests === null) {
             return;
@@ -338,24 +314,24 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     /**
      * Schedule node removal into the current bulk request.
      *
-     * @param NodeInterface $node
+     * @param Node $node
      * @param string|null $targetWorkspaceName
      * @return void
      * @throws Exception
      * @throws FilesException
      * @throws \Flowpack\ElasticSearch\Exception
      */
-    public function removeNode(NodeInterface $node, string $targetWorkspaceName = null): void
+    public function removeNode(Node $node, ?WorkspaceName $targetWorkspaceName = null): void
     {
         if ($this->settings['indexAllWorkspaces'] === false) {
             // we are only supposed to index the live workspace.
             // We need to check the workspace at two occasions; checking the
             // $targetWorkspaceName and the workspace name of the node's context as fallback
-            if ($targetWorkspaceName !== null && $targetWorkspaceName !== 'live') {
+            if ($targetWorkspaceName !== null && !$targetWorkspaceName->isLive()) {
                 return;
             }
 
-            if ($targetWorkspaceName === null && $node->getContext()->getWorkspaceName() !== 'live') {
+            if ($targetWorkspaceName === null && !$node->workspaceName->isLive()) {
                 return;
             }
         }
@@ -364,8 +340,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $this->toBulkRequest($node, $this->documentDriver->delete($node, $documentIdentifier));
         $this->toBulkRequest($node, $this->indexerDriver->fulltext($node, [], $targetWorkspaceName));
-
-        $this->logger->debug(sprintf('NodeIndexer (%s): Removed node %s (%s) from index.', $documentIdentifier, $node->getContextPath(), $node->getIdentifier()), LogEnvironment::fromMethodName(__METHOD__));
+        $this->logger->debug(sprintf('NodeIndexer (%s): Removed node %s (%s) from index.', $documentIdentifier, NodeAddress::fromNode($node)->toJson(), $node->aggregateId->value), LogEnvironment::fromMethodName(__METHOD__));
     }
 
     /**
@@ -650,5 +625,14 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             throw $exception;
         }
         $this->bulkProcessing = $bulkProcessing;
+    }
+
+    private function getCachedContentRepositoryByContentRepositoryId(ContentRepositoryId $contentRepositoryId)
+    {
+        if (!isset($this->contentRepositoryRuntimeCache[$contentRepositoryId->value])) {
+            $this->contentRepositoryRuntimeCache[$contentRepositoryId->value] = $this->contentRepositoryRegistry->get($contentRepositoryId);
+        }
+
+        return $this->contentRepositoryRuntimeCache[$contentRepositoryId->value];
     }
 }

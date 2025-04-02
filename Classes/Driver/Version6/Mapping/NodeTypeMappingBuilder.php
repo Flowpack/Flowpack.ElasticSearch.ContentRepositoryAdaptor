@@ -13,12 +13,14 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\Mappin
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\NodeTypeIndexingConfiguration;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractNodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
-use Neos\ContentRepository\Domain\Model\NodeType;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Error\Messages\Result;
 use Neos\Error\Messages\Warning;
 use Neos\Flow\Annotations as Flow;
@@ -34,22 +36,26 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
      */
     protected $nodeTypeIndexingConfiguration;
 
+    #[Flow\Inject]
+    protected ContentRepositoryRegistry $contentRepositoryRegistry;
+
 
     /**
      * Builds a Mapping Collection from the configured node types
      *
-     * @param Index $index
      * @return MappingCollection<\Flowpack\ElasticSearch\Domain\Model\Mapping>
-     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws Exception
      */
-    public function buildMappingInformation(Index $index): MappingCollection
+    public function buildMappingInformation(ContentRepositoryId $contentRepositoryId, Index $index): MappingCollection
     {
         $this->lastMappingErrors = new Result();
 
         $mappings = new MappingCollection(MappingCollection::TYPE_ENTITY);
 
-        /** @var NodeType $nodeType */
-        foreach ($this->nodeTypeManager->getNodeTypes() as $nodeTypeName => $nodeType) {
+        $contentRepository = $this->contentRepositoryRegistry->get($contentRepositoryId);
+
+        /** @var \Neos\ContentRepository\Core\NodeType\NodeType $nodeType */
+        foreach ($contentRepository->getNodeTypeManager()->getNodeTypes() as $nodeTypeName => $nodeType) {
             if ($nodeTypeName === 'unstructured' || $nodeType->isAbstract()) {
                 continue;
             }

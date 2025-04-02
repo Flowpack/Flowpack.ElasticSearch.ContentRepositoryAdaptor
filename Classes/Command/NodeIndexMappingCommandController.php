@@ -16,13 +16,12 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\NodeTypeMappingBuilderInterface;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DimensionsService;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
-use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandController;
 use Symfony\Component\Yaml\Yaml;
-use function json_encode;
 
 /**
  * Provides CLI features for checking mapping informations
@@ -39,38 +38,32 @@ class NodeIndexMappingCommandController extends CommandController
 
     /**
      * @Flow\Inject
-     * @var DimensionsService
-     */
-    protected $dimensionsService;
-
-    /**
-     * @var ContentDimensionCombinator
-     * @Flow\Inject
-     */
-    protected $contentDimensionCombinator;
-
-    /**
-     * @Flow\Inject
      * @var NodeTypeMappingBuilderInterface
      */
     protected $nodeTypeMappingBuilder;
+
+    #[Flow\Inject()]
+    protected ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * Shows the mapping between dimensions presets and index name
      *
      * @throws Exception
      */
-    public function indicesCommand(): void
+    public function indicesCommand(string $contentRepository = 'default'): void
     {
         $indexName = $this->nodeIndexer->getIndexName();
 
         $headers = ['Dimension Preset', 'Index Name'];
         $rows = [];
 
-        foreach ($this->contentDimensionCombinator->getAllAllowedCombinations() as $dimensionValues) {
+        $contentRepositoryId = ContentRepositoryId::fromString($contentRepository);
+        $variationGraph = $this->contentRepositoryRegistry->get($contentRepositoryId)->getVariationGraph();
+
+        foreach ($variationGraph->getDimensionSpacePoints() as $dimensionSpacePoint) {
             $rows[] = [
-                json_encode($dimensionValues),
-                sprintf('%s-%s', $indexName, $this->dimensionsService->hash($dimensionValues))
+                $dimensionSpacePoint->toJson(),
+                sprintf('%s-%s', $indexName, $dimensionSpacePoint->hash)
             ];
         }
 
@@ -83,10 +76,11 @@ class NodeIndexMappingCommandController extends CommandController
      * @return void
      * @throws \Flowpack\ElasticSearch\Exception
      */
-    public function mappingCommand(): void
+    public function mappingCommand(string $contentRepository = 'default'): void
     {
+        $contentRepositoryId = ContentRepositoryId::fromString($contentRepository);
         try {
-            $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($this->nodeIndexer->getIndex());
+            $nodeTypeMappingCollection = $this->nodeTypeMappingBuilder->buildMappingInformation($contentRepositoryId, $this->nodeIndexer->getIndex());
         } catch (Exception $e) {
             $this->outputLine('Unable to get the current index');
             $this->sendAndExit(1);

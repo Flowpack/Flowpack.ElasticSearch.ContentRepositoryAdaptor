@@ -7,91 +7,59 @@
       search:
         elasticSearchMapping:
           type: keyword
-        indexing: '${node.identifier}'
+        indexing: '${node.aggregateId}'
 
     'neos_workspace':
       search:
         elasticSearchMapping:
           type: keyword
-        indexing: '${node.context.workspace.name}'
+        indexing: '${node.workspaceName}'
 
     'neos_path':
       search:
         elasticSearchMapping:
           type: keyword
-        indexing: '${node.path}'
+        indexing: '${Indexing.aggregateIdPath(node)}'
 
     'neos_parent_path':
       search:
         elasticSearchMapping:
           type: keyword
         # we index *all* parent paths as separate tokens to allow for efficient searching without a prefix query
-        indexing: '${Indexing.buildAllPathPrefixes(node.parentPath)}'
-
-    'neos_sort_index':
-      search:
-        elasticSearchMapping:
-          type: integer
-        indexing: '${node.index}'
+        indexing: '${Array.pop(Indexing.buildAllPathPrefixes(Indexing.aggregateIdPath(node)))}'
 
     # we index the node type INCLUDING ALL SUPERTYPES
     'neos_type_and_supertypes':
       search:
         elasticSearchMapping:
           type: keyword
-        indexing: '${Indexing.extractNodeTypeNamesAndSupertypes(node.nodeType)}'
+        indexing: '${Indexing.extractNodeTypeNamesAndSupertypes(node)}'
 
     'neos_last_modification_date_time':
       search:
         elasticSearchMapping:
           type: date
           format: 'date_time_no_millis'
-        indexing: '${(node.lastModificationDateTime ? Date.format(node.lastModificationDateTime, "Y-m-d\TH:i:sP") : null)}'
+        indexing: '${(node.timestamps.lastModified ? Date.format(node.timestamps.lastModified, "Y-m-d\TH:i:sP") : null)}'
 
     'neos_last_publication_date_time':
       search:
         elasticSearchMapping:
           type: date
           format: 'date_time_no_millis'
-        indexing: '${(node.lastPublicationDateTime ? Date.format(node.lastPublicationDateTime, "Y-m-d\TH:i:sP") : null)}'
+        indexing: '${(node.timestamps.originalLastModified ? Date.format(node.timestamps.originalLastModified, "Y-m-d\TH:i:sP") : null)}'
 
     'neos_creation_date_time':
       search:
         elasticSearchMapping:
           type: date
           format: 'date_time_no_millis'
-        indexing: '${(node.creationDateTime ? Date.format(node.creationDateTime, "Y-m-d\TH:i:sP") : null)}'
-
+        indexing: '${(node.timestamps.created ? Date.format(node.timestamps.created, "Y-m-d\TH:i:sP") : null)}'
     # deliberately don't map or index this
-    '_removed':
-      search:
-        indexing: false
-    '_creationDateTime':
-      search:
-        indexing: false
-    '_lastModificationDateTime':
-      search:
-        indexing: false
-    '_lastPublicationDateTime':
-      search:
-        indexing: false
-    '_hiddenBeforeDateTime':
-      search:
-        indexing: false
-    '_hiddenAfterDateTime':
-      search:
-        indexing: false
-    '_path':
-      search:
-        indexing: false
     '_nodeType':
-      search:
-        indexing: false
-    '_name':
       search:
         indexing: false
     '_hidden':
       search:
         indexing: false
-
 'unstructured': *node

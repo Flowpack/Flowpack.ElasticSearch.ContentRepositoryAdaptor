@@ -16,6 +16,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use InvalidArgumentException;
 use JsonException;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Flow\Persistence\QueryInterface;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
@@ -126,7 +127,7 @@ class ElasticSearchQuery implements QueryInterface
      */
     public function getType(): string
     {
-        return NodeInterface::class;
+        return Node::class;
     }
 
     /**
@@ -169,7 +170,7 @@ class ElasticSearchQuery implements QueryInterface
      * {@inheritdoc}
      * @throws Exception
      */
-    public function logicalAnd($constraint1)
+    public function logicalAnd(mixed $constraint1, mixed ...$constraints)
     {
         throw new Exception(__FUNCTION__ . ' not implemented', 1421749039);
     }
@@ -178,7 +179,7 @@ class ElasticSearchQuery implements QueryInterface
      * {@inheritdoc}
      * @throws Exception
      */
-    public function logicalOr($constraint1)
+    public function logicalOr(mixed $constraint1, mixed ...$constraints)
     {
         throw new Exception(__FUNCTION__ . ' not implemented', 1421749040);
     }

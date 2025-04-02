@@ -15,12 +15,8 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\DocumentDriverInterface;
-use Flowpack\ElasticSearch\Domain\Model\Index;
-use Flowpack\ElasticSearch\Domain\Model\Mapping;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Domain\Model\NodeType;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Log\Utility\LogEnvironment;
 
 /**
  * Document driver for Elasticsearch version 6.x
@@ -32,7 +28,7 @@ class DocumentDriver extends AbstractDriver implements DocumentDriverInterface
     /**
      * {@inheritdoc}
      */
-    public function delete(NodeInterface $node, string $identifier): array
+    public function delete(Node $node, string $identifier): array
     {
         return [
             [

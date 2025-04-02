@@ -35,12 +35,6 @@ abstract class AbstractNodeTypeMappingBuilder implements NodeTypeMappingBuilderI
     protected $defaultConfigurationPerType;
 
     /**
-     * @Flow\Inject
-     * @var NodeTypeManager
-     */
-    protected $nodeTypeManager;
-
-    /**
      * @var Result
      */
     protected $lastMappingErrors;

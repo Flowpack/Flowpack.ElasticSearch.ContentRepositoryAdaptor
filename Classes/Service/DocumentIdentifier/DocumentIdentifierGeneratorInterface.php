@@ -13,16 +13,17 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\DocumentIdenti
  * source code.
  */
 
-use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 
 interface DocumentIdentifierGeneratorInterface
 {
     /**
      * Generates a stable identifier out of the given node
      *
-     * @param NodeInterface $node
+     * @param Node $node
      * @param string|null $targetWorkspaceName
      * @return string
      */
-    public function generate(NodeInterface $node, ?string $targetWorkspaceName = null): string;
+    public function generate(Node $node, ?WorkspaceName $targetWorkspaceName = null): string;
 }

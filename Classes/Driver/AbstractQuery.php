@@ -180,7 +180,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
     /**
      * {@inheritdoc}
      */
-    public function highlight($fragmentSize, int $fragmentCount = null, int $noMatchSize = 150, string $field = 'neos_fulltext.*'): void
+    public function highlight($fragmentSize, ?int $fragmentCount = null, int $noMatchSize = 150, string $field = 'neos_fulltext.*'): void
     {
         if ($fragmentSize === false) {
             // Highlighting is disabled.
