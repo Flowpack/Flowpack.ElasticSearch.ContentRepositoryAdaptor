@@ -25,6 +25,10 @@
     main:
       type: 'Neos.Neos:ContentCollection'
 
+'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document2':
+  superTypes:
+    'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document': true
+
 'Flowpack.ElasticSearch.ContentRepositoryAdaptor:Content':
   superTypes:
     'Neos.Neos:Content': true
