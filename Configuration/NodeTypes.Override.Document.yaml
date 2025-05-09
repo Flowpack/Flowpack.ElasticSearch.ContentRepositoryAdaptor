@@ -37,6 +37,7 @@
             'text':
               type: text
     'neos_hidden_in_menu':
+      type: boolean
       search:
         indexing: '${node.hiddenInMenu}'
 
