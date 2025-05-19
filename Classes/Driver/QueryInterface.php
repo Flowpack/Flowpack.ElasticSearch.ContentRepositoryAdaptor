@@ -102,7 +102,7 @@ interface QueryInterface
      * @return void
      * @api
      */
-    public function highlight($fragmentSize, int $fragmentCount = null, int $noMatchSize = 150, string $field = 'neos_fulltext.*'): void;
+    public function highlight($fragmentSize, ?int $fragmentCount = null, int $noMatchSize = 150, string $field = 'neos_fulltext.*'): void;
 
     /**
      * This method is used to create any kind of aggregation.

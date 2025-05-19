@@ -45,7 +45,7 @@ class GetHitArrayForNodeViewHelper extends AbstractViewHelper
     /**
      * @param ElasticSearchQueryResult $queryResultObject
      * @param NodeInterface $node
-     * @param array|string $path
+     * @param array|string|null $path
      * @return mixed
      */
     public function render(ElasticSearchQueryResult $queryResultObject, NodeInterface $node, $path = null)

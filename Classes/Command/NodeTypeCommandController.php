@@ -45,11 +45,11 @@ class NodeTypeCommandController extends CommandController
     /**
      * Show node type configuration after applying all supertypes etc
      *
-     * @param string $nodeType the node type to optionally filter for
+     * @param string|null $nodeType the node type to optionally filter for
      * @return void
      * @throws NodeTypeNotFoundException
      */
-    public function showCommand(string $nodeType = null): void
+    public function showCommand(?string $nodeType = null): void
     {
         if ($nodeType !== null) {
             /** @var NodeType $nodeType */

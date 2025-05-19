@@ -84,7 +84,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
      * @param string|null $targetWorkspaceName
      * @return array
      */
-    public function fulltext(NodeInterface $node, array $fulltextIndexOfNode, string $targetWorkspaceName = null): array
+    public function fulltext(NodeInterface $node, array $fulltextIndexOfNode, ?string $targetWorkspaceName = null): array
     {
         $closestFulltextNode = $this->findClosestFulltextRoot($node);
         if ($closestFulltextNode === null) {
