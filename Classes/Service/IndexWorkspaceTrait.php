@@ -53,7 +53,7 @@ trait IndexWorkspaceTrait
      * @param callable $callback
      * @return int Count of nodes indexed
      */
-    protected function indexWorkspace(string $workspaceName, ?int $limit = null, callable $callback = null): int
+    protected function indexWorkspace(string $workspaceName, ?int $limit = null, ?callable $callback = null): int
     {
         $count = 0;
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
@@ -71,11 +71,11 @@ trait IndexWorkspaceTrait
     /**
      * @param string $workspaceName
      * @param array $dimensions
-     * @param int $limit
-     * @param callable $callback
+     * @param int|null $limit
+     * @param callable|null $callback
      * @return int
      */
-    protected function indexWorkspaceWithDimensions(string $workspaceName, array $dimensions = [], ?int $limit = null, callable $callback = null): int
+    protected function indexWorkspaceWithDimensions(string $workspaceName, array $dimensions = [], ?int $limit = null, ?callable $callback = null): int
     {
         $context = $this->contextFactory->create([
             'workspaceName' => $workspaceName,

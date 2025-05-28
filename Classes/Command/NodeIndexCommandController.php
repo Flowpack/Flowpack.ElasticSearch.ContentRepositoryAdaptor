@@ -159,7 +159,7 @@ class NodeIndexCommandController extends CommandController
      * @throws SubProcessException
      * @throws \Flowpack\ElasticSearch\Exception
      */
-    public function indexNodeCommand(string $identifier, string $workspace = null, string $postfix = null): void
+    public function indexNodeCommand(string $identifier, ?string $workspace = null, ?string $postfix = null): void
     {
         if ($workspace === null && $this->settings['indexAllWorkspaces'] === false) {
             $workspace = 'live';
@@ -253,7 +253,7 @@ class NodeIndexCommandController extends CommandController
      * @throws ConfigurationException
      * @throws ApiException
      */
-    public function buildCommand(int $limit = null, bool $update = false, string $workspace = null, string $postfix = null): void
+    public function buildCommand(?int $limit = null, bool $update = false, ?string $workspace = null, ?string $postfix = null): void
     {
         $this->logger->info(sprintf('Starting elasticsearch indexing %s sub processes', $this->useSubProcesses ? 'with' : 'without'), LogEnvironment::fromMethodName(__METHOD__));
 
@@ -407,7 +407,7 @@ class NodeIndexCommandController extends CommandController
      * @throws \Exception
      * @Flow\Internal
      */
-    public function createInternalCommand(string $dimensionsValues, bool $update = false, string $postfix = null): void
+    public function createInternalCommand(string $dimensionsValues, bool $update = false, ?string $postfix = null): void
     {
         if ($update === true) {
             $this->logger->warning('!!! Update Mode (Development) active!', LogEnvironment::fromMethodName(__METHOD__));
@@ -433,7 +433,7 @@ class NodeIndexCommandController extends CommandController
      * @return void
      * @Flow\Internal
      */
-    public function buildWorkspaceInternalCommand(string $workspace, string $dimensionsValues, string $postfix, int $limit = null): void
+    public function buildWorkspaceInternalCommand(string $workspace, string $dimensionsValues, string $postfix, ?int $limit = null): void
     {
         $dimensionsValuesArray = $this->configureNodeIndexer(json_decode($dimensionsValues, true), $postfix);
 

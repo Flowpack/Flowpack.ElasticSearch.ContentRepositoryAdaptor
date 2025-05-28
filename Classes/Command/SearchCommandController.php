@@ -175,7 +175,7 @@ class SearchCommandController extends CommandController
      * @param string|null $dimensions
      * @return Context
      */
-    private function createContext(string $dimensions = null): Context
+    private function createContext(?string $dimensions = null): Context
     {
         $contextConfiguration = [
             'workspaceName' => 'live',

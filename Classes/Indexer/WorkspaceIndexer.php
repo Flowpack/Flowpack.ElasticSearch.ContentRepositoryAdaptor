@@ -57,7 +57,7 @@ final class WorkspaceIndexer
      * @param callable $callback
      * @return integer
      */
-    public function index(string $workspaceName, $limit = null, callable $callback = null): int
+    public function index(string $workspaceName, $limit = null, ?callable $callback = null): int
     {
         $count = 0;
         $combinations = $this->contentDimensionCombinator->getAllAllowedCombinations();
@@ -79,7 +79,7 @@ final class WorkspaceIndexer
      * @param callable $callback
      * @return int
      */
-    public function indexWithDimensions(string $workspaceName, array $dimensions = [], $limit = null, callable $callback = null): int
+    public function indexWithDimensions(string $workspaceName, array $dimensions = [], $limit = null, ?callable $callback = null): int
     {
         $context = $this->contextFactory->create([
             'workspaceName' => $workspaceName,
