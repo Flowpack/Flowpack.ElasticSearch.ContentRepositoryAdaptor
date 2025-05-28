@@ -39,7 +39,7 @@ interface IndexerDriverInterface
      *
      * @param Node $node
      * @param array $fulltextIndexOfNode
-     * @param string $targetWorkspaceName
+     * @param string|null $targetWorkspaceName
      * @return array
      */
     public function fulltext(Node $node, array $fulltextIndexOfNode, ?WorkspaceName $targetWorkspaceName = null): array;

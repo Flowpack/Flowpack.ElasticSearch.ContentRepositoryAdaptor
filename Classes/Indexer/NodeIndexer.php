@@ -215,7 +215,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * Index this node, and add it to the current bulk request.
      *
      * @param Node $node
-     * @param string $targetWorkspaceName In case indexing is triggered during publishing, a target workspace name will be passed in
+     * @param string|null $targetWorkspaceName In case indexing is triggered during publishing, a target workspace name will be passed in
      * @return void
      * @throws Exception
      */

@@ -114,7 +114,7 @@ class NodeIndexCommandController extends CommandController
      * @Flow\Inject
      */
     protected $indexDriver;
-    
+
     #[Flow\Inject]
     protected ContentRepositoryRegistry $contentRepositoryRegistry;
 

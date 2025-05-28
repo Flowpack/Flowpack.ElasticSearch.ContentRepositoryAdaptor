@@ -42,7 +42,7 @@ class NodeTypeCommandController extends CommandController
     /**
      * Show node type configuration after applying all supertypes etc
      *
-     * @param string $nodeType the node type to optionally filter for
+     * @param string|null $nodeType the node type to optionally filter for
      * @return void
      */
     public function showCommand(string $contentRepository = 'default', ?string $nodeType = null): void
