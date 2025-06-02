@@ -28,6 +28,11 @@ use Neos\Flow\Log\Utility\LogEnvironment;
  */
 class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterface
 {
+    /**
+     * @Flow\InjectConfiguration(path="indexing.retryOnConflict")
+     * @var int
+     */
+    protected $retryOnConflict = 3;
 
     /**
      * {@inheritdoc}
@@ -43,7 +48,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                     'update' => [
                         '_id' => $document->getId(),
                         '_index' => $indexName,
-                        'retry_on_conflict' => 3
+                        'retry_on_conflict' => $this->retryOnConflict ?: 3
                     ]
                 ],
                 // https://www.elastic.co/guide/en/elasticsearch/reference/5.0/docs-update.html
@@ -71,6 +76,7 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
                 'index' => [
                     '_id' => $document->getId(),
                     '_index' => $indexName,
+                    'retry_on_conflict' => $this->retryOnConflict ?: 3
                 ]
             ],
             $documentData
@@ -108,7 +114,8 @@ class IndexerDriver extends AbstractIndexerDriver implements IndexerDriverInterf
         return [
             [
                 'update' => [
-                    '_id' => $closestFulltextNodeDocumentIdentifier
+                    '_id' => $closestFulltextNodeDocumentIdentifier,
+                    'retry_on_conflict' => $this->retryOnConflict ?: 3
                 ]
             ],
             // https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-update.html
