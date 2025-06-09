@@ -71,8 +71,16 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
                 $mapping->setFullMapping($fullMapping);
             }
 
-            foreach ($nodeType->getProperties() as $propertyName => $propertyConfiguration) {
-                // This property is configured to not be index, so do not add a mapping for it
+            $propertiesAndReferences = array_merge(
+                $nodeType->getProperties(),
+                array_map(function ($reference) {
+                    $reference['type'] = 'references';
+                    return $reference;
+                }, $nodeType->getReferences())
+            );
+
+            foreach ($propertiesAndReferences as $propertyName => $propertyConfiguration) {
+                // This property is configured to not be indexed, so do not add a mapping for it
                 if (isset($propertyConfiguration['search']) && array_key_exists('indexing', $propertyConfiguration['search']) && $propertyConfiguration['search']['indexing'] === false) {
                     continue;
                 }
