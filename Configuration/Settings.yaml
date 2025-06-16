@@ -4,6 +4,7 @@ Flowpack:
       command:
         useSubProcesses: true
       indexing:
+        retryOnConflict: 3
         batchSize:
           elements: 500
           octets: 40000000
