@@ -154,7 +154,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     #[Flow\Inject]
     protected ContentRepositoryRegistry $contentRepositoryRegistry;
 
-    #[Flow\Inject()]
+    #[Flow\Inject]
     protected Context $securityContext;
 
     /** @var array<ContentRepository> */
@@ -276,10 +276,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
         $handleNode = function (Node $node, WorkspaceName $workspaceName, DimensionSpacePoint $dimensionSpacePoint) use ($contentRepository, $targetWorkspaceName, $indexer, &$nodeFromContext) {
             $nodeFromContext = $this->securityContext->withoutAuthorizationChecks(
-                function () use ($contentRepository, $node, $workspaceName, $dimensionSpacePoint) {
-                    $subgraph = $contentRepository->getContentGraph($workspaceName)->getSubgraph($dimensionSpacePoint, VisibilityConstraints::withoutRestrictions());
-                    return $subgraph->findNodeById($node->aggregateId);
-                }
+                fn() => $contentRepository
+                    ->getContentGraph($workspaceName)
+                    ->getSubgraph($dimensionSpacePoint, VisibilityConstraints::withoutRestrictions())
+                    ->findNodeById($node->aggregateId)
             );
             if ($nodeFromContext instanceof Node) {
                 $this->searchClient->withDimensions(static function () use ($indexer, $nodeFromContext, $targetWorkspaceName) {
