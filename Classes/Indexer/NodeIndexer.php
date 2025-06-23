@@ -41,6 +41,7 @@ use Neos\ContentRepository\Search\Indexer\BulkNodeIndexerInterface;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Log\Utility\LogEnvironment;
+use Neos\Flow\Security\Context;
 use Neos\Utility\Exception\FilesException;
 use Psr\Log\LoggerInterface;
 
@@ -152,6 +153,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
 
     #[Flow\Inject]
     protected ContentRepositoryRegistry $contentRepositoryRegistry;
+
+    #[Flow\Inject]
+    protected Context $securityContext;
 
     /** @var array<ContentRepository> */
     private array $contentRepositoryRuntimeCache = [];
@@ -270,10 +274,13 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
         };
 
-        $handleNode = function (Node $node, WorkspaceName $workspaceName, DimensionSpacePoint $dimensionSpacePoint) use ($contentRepository, $targetWorkspaceName, $indexer) {
-            $subgraph = $contentRepository->getContentGraph($workspaceName)->getSubgraph($dimensionSpacePoint, VisibilityConstraints::withoutRestrictions());
-            $nodeFromContext = $subgraph->findNodeById($node->aggregateId);
-
+        $handleNode = function (Node $node, WorkspaceName $workspaceName, DimensionSpacePoint $dimensionSpacePoint) use ($contentRepository, $targetWorkspaceName, $indexer, &$nodeFromContext) {
+            $nodeFromContext = $this->securityContext->withoutAuthorizationChecks(
+                fn() => $contentRepository
+                    ->getContentGraph($workspaceName)
+                    ->getSubgraph($dimensionSpacePoint, VisibilityConstraints::withoutRestrictions())
+                    ->findNodeById($node->aggregateId)
+            );
             if ($nodeFromContext instanceof Node) {
                 $this->searchClient->withDimensions(static function () use ($indexer, $nodeFromContext, $targetWorkspaceName) {
                     $indexer($nodeFromContext, $targetWorkspaceName);
