@@ -54,6 +54,14 @@ trait ContentRepositoryNodeCreationTrait
         $newDocumentNode3->setProperty('title', 'egg');
         $newDocumentNode3->setProperty('title_analyzed', 'egg');
 
+        $newDocumentNode4 = $this->siteNode->createNode('test-node-4', $this->nodeTypeManager->getNodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document2'));
+        $newDocumentNode4->setProperty('title', 'tiger');
+        $newDocumentNode4->setProperty('title_analyzed', 'tiger');
+
+        $newDocumentNode5 = $this->siteNode->createNode('test-node-5', $this->nodeTypeManager->getNodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document2'));
+        $newDocumentNode5->setProperty('title', 'elephant');
+        $newDocumentNode5->setProperty('title_analyzed', 'elephant');
+
         $dimensionContext = $this->contextFactory->create([
             'workspaceName' => 'live',
             'dimensions' => ['language' => ['de']]
