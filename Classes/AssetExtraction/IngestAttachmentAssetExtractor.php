@@ -13,10 +13,12 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\AssetExtraction;
  * source code.
  */
 
+use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\Flow\Annotations as Flow;
 use Neos\ContentRepository\Search\AssetExtraction\AssetExtractorInterface;
 use Neos\ContentRepository\Search\Dto\AssetContent;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
+use Neos\Flow\Http\Exception;
 use Neos\Flow\Log\ThrowableStorageInterface;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Media\Domain\Model\AssetInterface;
@@ -58,8 +60,8 @@ class IngestAttachmentAssetExtractor implements AssetExtractorInterface
      * @param AssetInterface $asset
      * @return AssetContent
      * @throws \Flowpack\ElasticSearch\Transfer\Exception
-     * @throws \Flowpack\ElasticSearch\Transfer\Exception\ApiException
-     * @throws \Neos\Flow\Http\Exception
+     * @throws ApiException
+     * @throws Exception
      */
     public function extract(AssetInterface $asset): AssetContent
     {

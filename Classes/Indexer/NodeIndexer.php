@@ -36,7 +36,6 @@ use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\ContentRepository\Search\Indexer\AbstractNodeIndexer;
 use Neos\ContentRepository\Search\Indexer\BulkNodeIndexerInterface;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Utility\Exception\FilesException;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Psr\Log\LoggerInterface;

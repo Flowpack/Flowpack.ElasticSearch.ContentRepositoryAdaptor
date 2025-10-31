@@ -21,7 +21,6 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingExcep
 use Neos\Flow\Log\ThrowableStorageInterface;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
-use Neos\Flow\Persistence\QueryResultInterface;
 use Psr\Log\LoggerInterface;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
@@ -575,7 +574,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * This method is rather internal; just to be called from the ElasticSearchQueryResult. For the public API, please use execute()
      *
-     * @return array<\Neos\ContentRepository\Domain\Model\NodeInterface>
+     * @return array<NodeInterface>
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws \Neos\Flow\Http\Exception

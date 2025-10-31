@@ -14,7 +14,6 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6;
  */
 
 use Neos\Flow\Annotations as Flow;
-use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractIndexerDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\IndexerDriverInterface;
 use Flowpack\ElasticSearch\Domain\Model\Document as ElasticSearchDocument;

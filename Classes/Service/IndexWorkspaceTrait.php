@@ -14,7 +14,11 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service;
  * source code.
  */
 
+use Neos\ContentRepository\Domain\Factory\NodeFactory;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
+use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
+use Neos\ContentRepository\Search\Indexer\NodeIndexingManager;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -25,25 +29,25 @@ trait IndexWorkspaceTrait
 {
     /**
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Domain\Factory\NodeFactory
+     * @var NodeFactory
      */
     protected $nodeFactory;
 
     /**
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Domain\Service\ContextFactoryInterface
+     * @var ContextFactoryInterface
      */
     protected $contextFactory;
 
     /**
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Domain\Service\ContentDimensionCombinator
+     * @var ContentDimensionCombinator
      */
     protected $contentDimensionCombinator;
 
     /**
      * @Flow\Inject
-     * @var \Neos\ContentRepository\Search\Indexer\NodeIndexingManager
+     * @var NodeIndexingManager
      */
     protected $nodeIndexingManager;
 
