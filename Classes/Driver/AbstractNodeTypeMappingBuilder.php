@@ -54,7 +54,7 @@ abstract class AbstractNodeTypeMappingBuilder implements NodeTypeMappingBuilderI
     /**
      * Called by the Flow object framework after creating the object and resolving all dependencies.
      *
-     * @param integer $cause Creation cause
+     * @param int $cause Creation cause
      * @throws InvalidConfigurationTypeException
      */
     public function initializeObject($cause): void

@@ -37,7 +37,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     protected $nodes;
 
     /**
-     * @var integer
+     * @var int
      */
     protected $count;
 
@@ -280,7 +280,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 
     /**
      * @param string $methodName
-     * @return boolean
+     * @return bool
      */
     public function allowsCallOfMethod($methodName)
     {

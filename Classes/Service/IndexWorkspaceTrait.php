@@ -53,8 +53,8 @@ trait IndexWorkspaceTrait
 
     /**
      * @param string $workspaceName
-     * @param int $limit
-     * @param callable $callback
+     * @param ?int $limit
+     * @param ?callable $callback
      * @return int Count of nodes indexed
      */
     protected function indexWorkspace(string $workspaceName, ?int $limit = null, ?callable $callback = null): int

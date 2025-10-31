@@ -61,7 +61,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     protected $throwableStorage;
 
     /**
-     * @var boolean
+     * @var bool
      */
     protected $logThisQuery = false;
 
@@ -71,12 +71,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     protected $logMessage;
 
     /**
-     * @var integer
+     * @var int
      */
     protected $limit;
 
     /**
-     * @var integer
+     * @var int
      */
     protected $from;
 
@@ -188,7 +188,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * This algorithm can be re-checked when https://github.com/elasticsearch/elasticsearch/issues/3300 is merged.
      *
-     * @param integer $limit
+     * @param int $limit
      * @return ElasticSearchQueryBuilder
      * @throws IllegalObjectTypeException
      * @api
@@ -217,7 +217,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * output records starting at $from
      *
-     * @param integer $from
+     * @param int $from
      * @return ElasticSearchQueryBuilder
      * @api
      */
@@ -648,7 +648,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * Return the total number of hits for the query.
      *
-     * @return integer
+     * @return int
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws \Neos\Flow\Http\Exception

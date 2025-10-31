@@ -61,7 +61,7 @@ class SearchResultHelper implements ProtectedContextAwareInterface
 
     /**
      * @param string $methodName
-     * @return boolean
+     * @return bool
      */
     public function allowsCallOfMethod($methodName)
     {

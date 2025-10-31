@@ -65,7 +65,7 @@ class FunctionScoreQuery extends FilteredQuery
     }
 
     /**
-     * @param integer|float $boost
+     * @param int|float $boost
      * @return void
      * @throws Exception\QueryBuildingException
      */
@@ -78,7 +78,7 @@ class FunctionScoreQuery extends FilteredQuery
     }
 
     /**
-     * @param integer|float $score
+     * @param int|float $score
      * @return void
      * @throws Exception\QueryBuildingException
      */

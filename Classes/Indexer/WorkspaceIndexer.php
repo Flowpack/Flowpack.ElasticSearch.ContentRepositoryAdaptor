@@ -53,9 +53,9 @@ final class WorkspaceIndexer
 
     /**
      * @param string $workspaceName
-     * @param integer $limit
-     * @param callable $callback
-     * @return integer
+     * @param ?int $limit
+     * @param ?callable $callback
+     * @return int
      */
     public function index(string $workspaceName, $limit = null, ?callable $callback = null): int
     {
