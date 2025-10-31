@@ -15,6 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  */
 
 use Flowpack\ElasticSearch\Domain\Model\Index;
+use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Mapping\MappingCollection;
 use Neos\Error\Messages\Result;
 
@@ -27,7 +28,7 @@ interface NodeTypeMappingBuilderInterface
      * Builds a Mapping Collection from the configured node types
      *
      * @param Index $index
-     * @return MappingCollection<\Flowpack\ElasticSearch\Domain\Model\Mapping>
+     * @return MappingCollection<Mapping>
      */
     public function buildMappingInformation(Index $index): MappingCollection;
 

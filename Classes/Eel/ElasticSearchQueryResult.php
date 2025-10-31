@@ -13,6 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Eel;
  * source code.
  */
 
+use Flowpack\ElasticSearch\Exception;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Eel\ProtectedContextAwareInterface;
 use Neos\Flow\Persistence\QueryInterface;
@@ -36,7 +37,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
     protected $nodes;
 
     /**
-     * @var integer
+     * @var int
      */
     protected $count;
 
@@ -50,7 +51,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
      *
      * @return void
      * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
-     * @throws \Flowpack\ElasticSearch\Exception
+     * @throws Exception
      * @throws \Neos\Flow\Http\Exception
      */
     protected function initialize(): void
@@ -167,6 +168,8 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
         if (count($this->nodes) > 0) {
             return array_values($this->nodes)[0];
         }
+
+        return null;
     }
 
     /**
@@ -181,7 +184,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 
     /**
      * {@inheritdoc}
-     * @throws \Flowpack\ElasticSearch\Exception
+     * @throws Exception
      */
     public function count()
     {
@@ -279,7 +282,7 @@ class ElasticSearchQueryResult implements QueryResultInterface, ProtectedContext
 
     /**
      * @param string $methodName
-     * @return boolean
+     * @return bool
      */
     public function allowsCallOfMethod($methodName)
     {
