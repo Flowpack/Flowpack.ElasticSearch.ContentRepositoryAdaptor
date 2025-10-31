@@ -628,8 +628,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function execute(bool $cacheResult = true): \Traversable
     {
-        $elasticSearchQuery = new ElasticSearchQuery($this);
-        return $elasticSearchQuery->execute($cacheResult);
+        return (new ElasticSearchQuery($this))->execute($cacheResult);
     }
 
     /**
@@ -641,8 +640,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function executeUncached(): ElasticSearchQueryResult
     {
-        $elasticSearchQuery = new ElasticSearchQuery($this);
-        return $elasticSearchQuery->execute();
+        return (new ElasticSearchQuery($this))->execute();
     }
 
     /**

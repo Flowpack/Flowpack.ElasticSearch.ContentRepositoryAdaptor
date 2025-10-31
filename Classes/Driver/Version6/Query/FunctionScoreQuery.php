@@ -105,12 +105,10 @@ class FunctionScoreQuery extends FilteredQuery
 
         $functionScore = $this->functionScoreRequest;
         $functionScore['query'] = $currentQuery;
-        $query = Arrays::arrayMergeRecursiveOverrule($baseQuery, [
+        return Arrays::arrayMergeRecursiveOverrule($baseQuery, [
             'query' => [
                 'function_score' => $functionScore
             ]
         ]);
-
-        return $query;
     }
 }
