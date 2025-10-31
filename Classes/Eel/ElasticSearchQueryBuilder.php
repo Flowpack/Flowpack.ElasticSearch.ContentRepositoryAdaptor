@@ -237,14 +237,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * add an exact-match query for a given property
      *
      * @param string $propertyName Name of the property
-     * @param mixed $value Value for comparison
+     * @param mixed $propertyValue Value for comparison
      * @return ElasticSearchQueryBuilder
      * @throws QueryBuildingException
      * @api
      */
-    public function exactMatch(string $propertyName, $value): QueryBuilderInterface
+    public function exactMatch(string $propertyName, $propertyValue): QueryBuilderInterface
     {
-        return $this->queryFilter('term', [$propertyName => $this->convertValue($value)]);
+        return $this->queryFilter('term', [$propertyName => $this->convertValue($propertyValue)]);
     }
 
     /**
@@ -613,8 +613,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     protected function evaluateResult(array $result): SearchResult
     {
         return new SearchResult(
-            $hits = $result['hits']['hits'] ?? [],
-            $total = $result['hits']['total']['value'] ?? 0
+            $result['hits']['hits'] ?? [],
+            $result['hits']['total']['value'] ?? 0
         );
     }
 
@@ -781,8 +781,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function moreLikeThis(array $like, array $fields = [], array $options = []): ElasticSearchQueryBuilder
     {
-        $like = is_array($like) ? $like : [$like];
-
         $getDocumentDefinitionByNode = function (QueryInterface $request, NodeInterface $node): array {
             $request->queryFilter('term', ['neos_node_identifier' => $node->getIdentifier()]);
             $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request->toArray())->getTreatedContent();
@@ -801,7 +799,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
         $processedLike = [];
 
-        foreach ($like as $key => $likeElement) {
+        foreach ($like as $likeElement) {
             if ($likeElement instanceof NodeInterface) {
                 $documentDefinition = $getDocumentDefinitionByNode(clone $this->request, $likeElement);
                 if (!empty($documentDefinition)) {
@@ -994,7 +992,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             return (new \DateTime($dateResult['value_as_string']))->getTimestamp();
         };
 
-        $request->queryFilter('range', [$dateField => ['gt' => 'now']], 'must');
+        $request->queryFilter('range', [$dateField => ['gt' => 'now']]);
         $request->aggregation('minTime', [
             'min' => [
                 'field' => $dateField

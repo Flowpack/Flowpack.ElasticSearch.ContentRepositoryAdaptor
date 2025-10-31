@@ -46,7 +46,7 @@ class SearchResultHelper implements ProtectedContextAwareInterface
         foreach ($searchResult->getSuggestions()[$suggestionName] as $suggestion) {
             if (array_key_exists('options', $suggestion) && !empty($suggestion['options'])) {
                 $bestSuggestion = current($suggestion['options']);
-                $maxScore = $bestSuggestion['score'] > $maxScore ? $bestSuggestion['score'] : $maxScore;
+                $maxScore = max($bestSuggestion['score'], $maxScore);
                 $suggestionParts[] = $bestSuggestion['text'];
             } else {
                 $suggestionParts[] = $suggestion['text'];
