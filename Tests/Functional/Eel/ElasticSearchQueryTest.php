@@ -99,6 +99,18 @@ class ElasticSearchQueryTest extends BaseElasticsearchContentRepositoryAdapterTe
             ->log($this->getLogMessagePrefix(__METHOD__))
             ->nodeType('Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document')
             ->count();
+        static::assertEquals(6, $resultCount);
+    }
+
+    /**
+     * @test
+     */
+    public function filterByNodeTypes(): void
+    {
+        $resultCount = $this->getQueryBuilder()
+            ->log($this->getLogMessagePrefix(__METHOD__))
+            ->nodeTypeFilter(['Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document'], ['Flowpack.ElasticSearch.ContentRepositoryAdaptor:Document2'])
+            ->count();
         static::assertEquals(4, $resultCount);
     }
 
@@ -142,7 +154,7 @@ class ElasticSearchQueryTest extends BaseElasticsearchContentRepositoryAdapterTe
             ->limit(1);
 
         $resultCount = $query->count();
-        static::assertEquals(4, $resultCount, 'Asserting the count query returns the total count.');
+        static::assertEquals(6, $resultCount, 'Asserting the count query returns the total count.');
     }
 
     /**
@@ -174,7 +186,7 @@ class ElasticSearchQueryTest extends BaseElasticsearchContentRepositoryAdapterTe
             ->getAggregations();
 
         static::assertArrayHasKey($aggregationTitle, $result);
-        static::assertCount(3, $result[$aggregationTitle]['buckets']);
+        static::assertCount(5, $result[$aggregationTitle]['buckets']);
 
         $expectedChickenBucket = [
             'key' => 'chicken',
@@ -247,8 +259,8 @@ class ElasticSearchQueryTest extends BaseElasticsearchContentRepositoryAdapterTe
         /** @var QueryResultInterface $result $node */
 
         static::assertInstanceOf(QueryResultInterface::class, $result);
-        static::assertCount(4, $result, 'The result should have 3 items');
-        static::assertEquals(4, $result->count(), 'Count should be 3');
+        static::assertCount(6, $result, 'The result should have 6 items');
+        static::assertEquals(6, $result->count(), 'Count should be 6');
 
         $node = $result->getFirst();
 
