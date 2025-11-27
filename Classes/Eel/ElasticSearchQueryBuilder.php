@@ -21,7 +21,6 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\QueryBuildingExcep
 use Neos\Flow\Log\ThrowableStorageInterface;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
-use Neos\Flow\Persistence\QueryResultInterface;
 use Psr\Log\LoggerInterface;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
@@ -62,7 +61,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     protected $throwableStorage;
 
     /**
-     * @var boolean
+     * @var bool
      */
     protected $logThisQuery = false;
 
@@ -72,12 +71,12 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     protected $logMessage;
 
     /**
-     * @var integer
+     * @var int
      */
     protected $limit;
 
     /**
-     * @var integer
+     * @var int
      */
     protected $from;
 
@@ -189,7 +188,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * This algorithm can be re-checked when https://github.com/elasticsearch/elasticsearch/issues/3300 is merged.
      *
-     * @param integer $limit
+     * @param int $limit
      * @return ElasticSearchQueryBuilder
      * @throws IllegalObjectTypeException
      * @api
@@ -218,7 +217,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     /**
      * output records starting at $from
      *
-     * @param integer $from
+     * @param int $from
      * @return ElasticSearchQueryBuilder
      * @api
      */
@@ -238,14 +237,14 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      * add an exact-match query for a given property
      *
      * @param string $propertyName Name of the property
-     * @param mixed $value Value for comparison
+     * @param mixed $propertyValue Value for comparison
      * @return ElasticSearchQueryBuilder
      * @throws QueryBuildingException
      * @api
      */
-    public function exactMatch(string $propertyName, $value): QueryBuilderInterface
+    public function exactMatch(string $propertyName, $propertyValue): QueryBuilderInterface
     {
-        return $this->queryFilter('term', [$propertyName => $this->convertValue($value)]);
+        return $this->queryFilter('term', [$propertyName => $this->convertValue($propertyValue)]);
     }
 
     /**
@@ -575,7 +574,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      *
      * This method is rather internal; just to be called from the ElasticSearchQueryResult. For the public API, please use execute()
      *
-     * @return array<\Neos\ContentRepository\Domain\Model\NodeInterface>
+     * @return array<NodeInterface>
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws \Neos\Flow\Http\Exception
@@ -614,8 +613,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     protected function evaluateResult(array $result): SearchResult
     {
         return new SearchResult(
-            $hits = $result['hits']['hits'] ?? [],
-            $total = $result['hits']['total']['value'] ?? 0
+            $result['hits']['hits'] ?? [],
+            $result['hits']['total']['value'] ?? 0
         );
     }
 
@@ -629,8 +628,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function execute(bool $cacheResult = true): \Traversable
     {
-        $elasticSearchQuery = new ElasticSearchQuery($this);
-        return $elasticSearchQuery->execute($cacheResult);
+        return (new ElasticSearchQuery($this))->execute($cacheResult);
     }
 
     /**
@@ -642,14 +640,13 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function executeUncached(): ElasticSearchQueryResult
     {
-        $elasticSearchQuery = new ElasticSearchQuery($this);
-        return $elasticSearchQuery->execute();
+        return (new ElasticSearchQuery($this))->execute();
     }
 
     /**
      * Return the total number of hits for the query.
      *
-     * @return integer
+     * @return int
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws \Neos\Flow\Http\Exception
@@ -784,8 +781,6 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function moreLikeThis(array $like, array $fields = [], array $options = []): ElasticSearchQueryBuilder
     {
-        $like = is_array($like) ? $like : [$like];
-
         $getDocumentDefinitionByNode = function (QueryInterface $request, NodeInterface $node): array {
             $request->queryFilter('term', ['neos_node_identifier' => $node->getIdentifier()]);
             $response = $this->elasticSearchClient->getIndex()->request('GET', '/_search', [], $request->toArray())->getTreatedContent();
@@ -804,7 +799,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
 
         $processedLike = [];
 
-        foreach ($like as $key => $likeElement) {
+        foreach ($like as $likeElement) {
             if ($likeElement instanceof NodeInterface) {
                 $documentDefinition = $getDocumentDefinitionByNode(clone $this->request, $likeElement);
                 if (!empty($documentDefinition)) {
@@ -997,7 +992,7 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             return (new \DateTime($dateResult['value_as_string']))->getTimestamp();
         };
 
-        $request->queryFilter('range', [$dateField => ['gt' => 'now']], 'must');
+        $request->queryFilter('range', [$dateField => ['gt' => 'now']]);
         $request->aggregation('minTime', [
             'min' => [
                 'field' => $dateField

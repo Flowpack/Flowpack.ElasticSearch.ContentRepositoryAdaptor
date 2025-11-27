@@ -42,7 +42,7 @@ final class NodeTypeIndexingConfiguration
      */
     public function isIndexable(NodeType $nodeType): bool
     {
-        if ($this->settings === null || !is_array($this->settings)) {
+        if (!is_array($this->settings)) {
             return true;
         }
 

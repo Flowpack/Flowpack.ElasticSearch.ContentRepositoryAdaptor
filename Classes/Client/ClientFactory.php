@@ -15,6 +15,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Client;
 
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\ElasticSearchClient;
 use Flowpack\ElasticSearch\Domain\Model\Client;
+use Flowpack\ElasticSearch\Exception;
 use Neos\Flow\Annotations as Flow;
 
 /**
@@ -32,7 +33,7 @@ class ClientFactory
      * Create a client
      *
      * @return Client
-     * @throws \Flowpack\ElasticSearch\Exception
+     * @throws Exception
      */
     public function create(): Client
     {

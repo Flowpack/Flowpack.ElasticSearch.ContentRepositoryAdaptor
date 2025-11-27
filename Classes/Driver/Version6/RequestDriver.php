@@ -17,6 +17,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractDriver;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\RequestDriverInterface;
 use Flowpack\ElasticSearch\Domain\Model\Index;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Http\Exception;
 
 /**
  * Request driver for Elasticsearch version 6.x
@@ -28,7 +29,7 @@ class RequestDriver extends AbstractDriver implements RequestDriverInterface
     /**
      * {@inheritdoc}
      * @throws \Flowpack\ElasticSearch\Exception
-     * @throws \Neos\Flow\Http\Exception
+     * @throws Exception
      */
     public function bulk(Index $index, $request): array
     {

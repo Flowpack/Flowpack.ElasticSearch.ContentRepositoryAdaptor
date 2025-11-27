@@ -13,6 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Command;
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\NodeTypeIndexingConfiguration;
 use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
@@ -69,7 +70,7 @@ class NodeTypeCommandController extends CommandController
     /**
      * Shows a list of NodeTypes and if they are configured to be indexable or not
      *
-     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @throws Exception
      */
     public function showIndexableConfigurationCommand(): void
     {

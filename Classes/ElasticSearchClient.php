@@ -140,7 +140,7 @@ class ElasticSearchClient extends Client
      * Retrieve the index to be used for querying or on-the-fly indexing.
      * In Elasticsearch, this index is an *alias* to the currently used index.
      *
-     * @return \Flowpack\ElasticSearch\Domain\Model\Index
+     * @return Index
      * @throws Exception
      * @throws \Flowpack\ElasticSearch\Exception
      * @throws ConfigurationException

@@ -38,7 +38,7 @@ class AbstractDriverSpecificObjectFactory
     protected $mapping;
 
     /**
-     * @var int
+     * @var string
      * @Flow\InjectConfiguration(path="driver.version")
      */
     protected $driverVersion;

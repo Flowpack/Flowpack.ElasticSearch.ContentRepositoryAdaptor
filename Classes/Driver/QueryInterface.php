@@ -56,7 +56,7 @@ interface QueryInterface
     /**
      * Set the size (limit) of the request
      *
-     * @param integer $size
+     * @param int $size
      * @return void
      * @api
      */
@@ -65,7 +65,7 @@ interface QueryInterface
     /**
      * Set the from (offset) of the request
      *
-     * @param integer $size
+     * @param int $size
      * @return void
      * @api
      */
@@ -95,7 +95,7 @@ interface QueryInterface
      * Configure Result Highlighting. Only makes sense in combination with fulltext(). By default, highlighting is enabled.
      * It can be disabled by calling "highlight(FALSE)".
      *
-     * @param integer|boolean $fragmentSize The result fragment size for highlight snippets. If this parameter is FALSE, highlighting will be disabled.
+     * @param int|bool $fragmentSize The result fragment size for highlight snippets. If this parameter is FALSE, highlighting will be disabled.
      * @param int|null $fragmentCount The number of highlight fragments to show.
      * @param int $noMatchSize
      * @param string $field

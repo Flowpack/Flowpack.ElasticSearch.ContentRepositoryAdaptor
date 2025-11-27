@@ -13,6 +13,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\Version6\Mappin
  * source code.
  */
 
+use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Service\NodeTypeIndexingConfiguration;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver\AbstractNodeTypeMappingBuilder;
 use Flowpack\ElasticSearch\Domain\Model\Index;
@@ -39,8 +40,8 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
      * Builds a Mapping Collection from the configured node types
      *
      * @param Index $index
-     * @return MappingCollection<\Flowpack\ElasticSearch\Domain\Model\Mapping>
-     * @throws \Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception
+     * @return MappingCollection<Mapping>
+     * @throws Exception
      */
     public function buildMappingInformation(Index $index): MappingCollection
     {

@@ -36,7 +36,7 @@ class FileStorage implements ErrorStorageInterface
      */
     public function logErrorResult(array $errorResult): string
     {
-        $referenceCode = date('YmdHis', $_SERVER['REQUEST_TIME']) . substr(md5((string)rand()), 0, 6);
+        $referenceCode = date('YmdHis', $_SERVER['REQUEST_TIME']) . substr(md5((string)mt_rand()), 0, 6);
 
         $filename = FLOW_PATH_DATA . 'Logs/Elasticsearch/' . $referenceCode . '.txt';
         $message = sprintf('Elasticsearch API Error detected - See also: Data/Logs/Elasticsearch/%s on host: %s', basename($filename), gethostname());

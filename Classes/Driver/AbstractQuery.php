@@ -278,7 +278,7 @@ abstract class AbstractQuery implements QueryInterface, \JsonSerializable, \Arra
      * All methods are considered safe
      *
      * @param string $methodName
-     * @return boolean
+     * @return bool
      */
     public function allowsCallOfMethod($methodName)
     {

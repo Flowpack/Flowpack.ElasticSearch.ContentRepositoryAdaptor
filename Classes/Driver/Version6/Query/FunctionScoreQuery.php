@@ -65,7 +65,7 @@ class FunctionScoreQuery extends FilteredQuery
     }
 
     /**
-     * @param integer|float $boost
+     * @param int|float $boost
      * @return void
      * @throws Exception\QueryBuildingException
      */
@@ -78,7 +78,7 @@ class FunctionScoreQuery extends FilteredQuery
     }
 
     /**
-     * @param integer|float $score
+     * @param int|float $score
      * @return void
      * @throws Exception\QueryBuildingException
      */
@@ -105,12 +105,10 @@ class FunctionScoreQuery extends FilteredQuery
 
         $functionScore = $this->functionScoreRequest;
         $functionScore['query'] = $currentQuery;
-        $query = Arrays::arrayMergeRecursiveOverrule($baseQuery, [
+        return Arrays::arrayMergeRecursiveOverrule($baseQuery, [
             'query' => [
                 'function_score' => $functionScore
             ]
         ]);
-
-        return $query;
     }
 }

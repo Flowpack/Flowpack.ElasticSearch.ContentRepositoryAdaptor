@@ -36,7 +36,6 @@ use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\ContentRepository\Search\Indexer\AbstractNodeIndexer;
 use Neos\ContentRepository\Search\Indexer\BulkNodeIndexerInterface;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Utility\Exception\FilesException;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Psr\Log\LoggerInterface;
@@ -217,11 +216,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * Index this node, and add it to the current bulk request.
      *
      * @param NodeInterface $node
-     * @param string|null $targetWorkspaceName In case indexing is triggered during publishing, a target workspace name will be passed in
+     * @param string|null $targetWorkspace In case indexing is triggered during publishing, a target workspace name will be passed in
      * @return void
      * @throws Exception
      */
-    public function indexNode(NodeInterface $node, $targetWorkspaceName = null): void
+    public function indexNode(NodeInterface $node, $targetWorkspace = null): void
     {
         if ($this->nodeTypeIndexingConfiguration->isIndexable($node->getNodeType()) === false) {
             $this->logger->debug(sprintf('Node "%s" (%s) skipped, Node Type is not allowed in the index.', $node->getContextPath(), $node->getNodeType()), LogEnvironment::fromMethodName(__METHOD__));
@@ -248,7 +247,7 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             $mappingType = $this->getIndex()->findType($nodeType->getName());
 
             $fulltextIndexOfNode = [];
-            $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($documentIdentifier, $node) {
+            $nodePropertiesToBeStoredInIndex = $this->extractPropertiesAndFulltext($node, $fulltextIndexOfNode, function ($propertyName) use ($node) {
                 $this->logger->debug(sprintf('Property "%s" not indexed because no configuration found, node type %s.', $propertyName, $node->getNodeType()->getName()), LogEnvironment::fromMethodName(__METHOD__));
             });
 
@@ -270,23 +269,21 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
             }
         };
 
-        $handleNode = function (NodeInterface $node, Context $context) use ($targetWorkspaceName, $indexer) {
+        $handleNode = function (NodeInterface $node, Context $context) use ($targetWorkspace, $indexer) {
             $nodeFromContext = $context->getNodeByIdentifier($node->getIdentifier());
             if ($nodeFromContext instanceof NodeInterface) {
-                $this->searchClient->withDimensions(static function () use ($indexer, $nodeFromContext, $targetWorkspaceName) {
-                    $indexer($nodeFromContext, $targetWorkspaceName);
+                $this->searchClient->withDimensions(static function () use ($indexer, $nodeFromContext, $targetWorkspace) {
+                    $indexer($nodeFromContext, $targetWorkspace);
                 }, $nodeFromContext->getContext()->getTargetDimensions());
+            } elseif ($node->isRemoved()) {
+                $this->removeNode($node, $context->getWorkspaceName());
+                $this->logger->debug(sprintf('Removed node with identifier %s, no longer in workspace %s', $node->getIdentifier(), $context->getWorkspaceName()), LogEnvironment::fromMethodName(__METHOD__));
             } else {
-                if ($node->isRemoved()) {
-                    $this->removeNode($node, $context->getWorkspaceName());
-                    $this->logger->debug(sprintf('Removed node with identifier %s, no longer in workspace %s', $node->getIdentifier(), $context->getWorkspaceName()), LogEnvironment::fromMethodName(__METHOD__));
-                } else {
-                    $this->logger->debug(sprintf('Could not index node with identifier %s, not found in workspace %s with dimensions %s', $node->getIdentifier(), $context->getWorkspaceName(), json_encode($context->getDimensions())), LogEnvironment::fromMethodName(__METHOD__));
-                }
+                $this->logger->debug(sprintf('Could not index node with identifier %s, not found in workspace %s with dimensions %s', $node->getIdentifier(), $context->getWorkspaceName(), json_encode($context->getDimensions())), LogEnvironment::fromMethodName(__METHOD__));
             }
         };
 
-        $workspaceName = $targetWorkspaceName ?: $node->getContext()->getWorkspaceName();
+        $workspaceName = $targetWorkspace ?: $node->getContext()->getWorkspaceName();
         $dimensionCombinations = $this->dimensionService->getDimensionCombinationsForIndexing($node);
 
         if (array_filter($dimensionCombinations) === []) {

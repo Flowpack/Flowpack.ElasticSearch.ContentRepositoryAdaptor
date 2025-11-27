@@ -14,9 +14,7 @@ namespace Flowpack\ElasticSearch\ContentRepositoryAdaptor\Driver;
  * source code.
  */
 
-use Flowpack\ElasticSearch\Domain\Model\Index;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Domain\Model\NodeType;
 
 /**
  * Elasticsearch Document Driver Interface
