@@ -36,6 +36,7 @@ use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\ContentRepository\Search\Indexer\AbstractNodeIndexer;
 use Neos\ContentRepository\Search\Indexer\BulkNodeIndexerInterface;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Security\Context as SecurityContext;
 use Neos\Utility\Exception\FilesException;
 use Neos\Flow\Log\Utility\LogEnvironment;
 use Psr\Log\LoggerInterface;
@@ -144,6 +145,12 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
      * @var ErrorStorageInterface
      */
     protected $errorStorage;
+
+    /**
+     * @Flow\Inject
+     * @var SecurityContext
+     */
+    protected $securityContext;
 
     /**
      * The current Elasticsearch bulk request, in the format required by https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
@@ -270,7 +277,11 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         };
 
         $handleNode = function (NodeInterface $node, Context $context) use ($targetWorkspace, $indexer) {
-            $nodeFromContext = $context->getNodeByIdentifier($node->getIdentifier());
+            $nodeFromContext = $this->securityContext->withoutAuthorizationChecks(
+                function () use ($context, $node) {
+                    return $context->getNodeByIdentifier($node->getIdentifier());
+                }
+            );
             if ($nodeFromContext instanceof NodeInterface) {
                 $this->searchClient->withDimensions(static function () use ($indexer, $nodeFromContext, $targetWorkspace) {
                     $indexer($nodeFromContext, $targetWorkspace);
