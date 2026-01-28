@@ -277,9 +277,10 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
         };
 
         $handleNode = function (NodeInterface $node, Context $context) use ($targetWorkspace, $indexer) {
-            $nodeFromContext = $this->securityContext->withoutAuthorizationChecks(
-                function () use ($context, $node) {
-                    return $context->getNodeByIdentifier($node->getIdentifier());
+            $nodeFromContext = null;
+            $this->securityContext->withoutAuthorizationChecks(
+                function () use ($context, $node, &$nodeFromContext) {
+                    $nodeFromContext = $context->getNodeByIdentifier($node->getIdentifier());
                 }
             );
             if ($nodeFromContext instanceof NodeInterface) {
