@@ -23,6 +23,7 @@ use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\ConfigurationExcep
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Exception\RuntimeException;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\NodeIndexer;
 use Flowpack\ElasticSearch\ContentRepositoryAdaptor\Indexer\WorkspaceIndexer;
+use Neos\ContentRepository\Search\Indexer\NodeIndexerInterface;
 use Flowpack\ElasticSearch\Domain\Model\Mapping;
 use Flowpack\ElasticSearch\Transfer\Exception\ApiException;
 use Neos\ContentRepository\Domain\Model\Workspace;
@@ -144,6 +145,12 @@ class NodeIndexCommandController extends CommandController
      * @Flow\Inject
      */
     protected $indexDriver;
+
+    /**
+     * @Flow\Inject
+     * @var NodeIndexerInterface
+     */
+    protected $nodeIndexerInterface;
 
     /**
      * Index a single node by the given identifier and workspace name
@@ -503,6 +510,13 @@ class NodeIndexCommandController extends CommandController
     {
         $this->nodeIndexer->setIndexNamePostfix($postfix);
         $this->nodeIndexer->setDimensions($dimensionsValues);
+
+        // Also configure the interface instance (separate singleton when QueueIndexer is installed)
+        if ($this->nodeIndexerInterface instanceof NodeIndexer && $this->nodeIndexerInterface !== $this->nodeIndexer) {
+            $this->nodeIndexerInterface->setIndexNamePostfix($postfix);
+            $this->nodeIndexerInterface->setDimensions($dimensionsValues);
+        }
+
         return $dimensionsValues;
     }
 
