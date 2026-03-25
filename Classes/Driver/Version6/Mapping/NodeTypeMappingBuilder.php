@@ -73,8 +73,10 @@ class NodeTypeMappingBuilder extends AbstractNodeTypeMappingBuilder
 
             $propertiesAndReferences = array_merge(
                 $nodeType->getProperties(),
-                array_map(function ($reference) {
-                    $reference['type'] = 'references';
+                array_map(static function (array $reference): array {
+                    $reference['type'] = (($reference['constraints']['maxItems'] ?? null) === 1)
+                        ? 'reference'
+                        : 'references';
                     return $reference;
                 }, $nodeType->getReferences())
             );
