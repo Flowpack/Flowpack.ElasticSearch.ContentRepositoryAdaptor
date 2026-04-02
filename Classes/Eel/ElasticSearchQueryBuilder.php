@@ -848,6 +848,8 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
             FindAncestorNodesFilter::create()
         )->reverse();
 
+        $ancestors = $ancestors->append($contextNode);
+
         $nodeAggregateIdPath = NodeAggregateIdPath::fromNodes($ancestors);
 
         // on indexing, the neos_parent_path is tokenized to contain ALL parent path parts,
