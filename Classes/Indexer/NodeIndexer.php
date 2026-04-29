@@ -227,8 +227,9 @@ class NodeIndexer extends AbstractNodeIndexer implements BulkNodeIndexerInterfac
     {
         $contentRepository = $this->getCachedContentRepositoryByContentRepositoryId($node->contentRepositoryId);
 
-        if ($this->nodeTypeIndexingConfiguration->isIndexable($contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName)) === false) {
-            $this->logger->debug(sprintf('Node "%s" (%s) skipped, Node Type is not allowed in the index.', NodeAddress::fromNode($node)->toJson(), $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName)->name->value), LogEnvironment::fromMethodName(__METHOD__));
+        $nodeType = $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName);
+        if (!$nodeType || $this->nodeTypeIndexingConfiguration->isIndexable($nodeType) === false) {
+            $this->logger->debug(sprintf('Node "%s" (%s) skipped, Node Type is not allowed in the index.', NodeAddress::fromNode($node)->toJson(), $node->nodeTypeName), LogEnvironment::fromMethodName(__METHOD__));
             return;
         }
 
