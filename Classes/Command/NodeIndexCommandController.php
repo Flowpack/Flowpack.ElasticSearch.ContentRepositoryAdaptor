@@ -502,10 +502,10 @@ class NodeIndexCommandController extends CommandController
      * @throws ConfigurationException
      * @throws Exception
      */
-    public function cleanupCommand(): void
+    public function cleanupCommand(string $contentRepository = 'default'): void
     {
         $removed = false;
-        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
+        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString($contentRepository));
         $dimensionSpacePoints = $contentRepository->getVariationGraph()->getDimensionSpacePoints();
         foreach ($dimensionSpacePoints as $dimensionSpacePoint) {
             try {
