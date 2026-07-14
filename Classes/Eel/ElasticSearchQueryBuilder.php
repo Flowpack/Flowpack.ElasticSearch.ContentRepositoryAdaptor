@@ -139,6 +139,56 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
     }
 
     /**
+     * Filter multiple node types
+     *
+     * @param array $expectedNodeTypes NodeTypes that should be expected
+     * @param array $excludedNodeTypes NodeTypes that should be excluded
+     * @return ElasticSearchQueryBuilder
+     * @throws QueryBuildingException
+     * @api
+     */
+    public function nodeTypeFilter(array $expectedNodeTypes, array $excludedNodeTypes = []): QueryBuilderInterface
+    {
+        $excludeTerms = [];
+        foreach ($excludedNodeTypes as $nodeType) {
+            $excludeTerms[] = [
+                'term' => [
+                    'neos_type_and_supertypes' => $nodeType
+                ]
+            ];
+        }
+        if (!empty($excludeTerms)) {
+            $this->request->queryFilter(
+                'bool',
+                [
+                    'should' => $excludeTerms
+                ],
+                'must_not'
+            );
+        }
+
+        $includeTerms = [];
+        foreach ($expectedNodeTypes as $nodeType) {
+            $includeTerms[] = [
+                'term' => [
+                    'neos_type_and_supertypes' => $nodeType
+                ]
+            ];
+        }
+        if (!empty($includeTerms)) {
+            $this->request->queryFilter(
+                'bool',
+                [
+                    'should' => $includeTerms
+                ],
+                'must'
+            );
+        }
+
+        return $this;
+    }
+
+    /**
      * Sort descending by $propertyName
      *
      * @param string $propertyName the property name to sort by
