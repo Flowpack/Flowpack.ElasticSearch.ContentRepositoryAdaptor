@@ -232,11 +232,10 @@ class NodeIndexCommandController extends CommandController
      * @throws ConfigurationException
      * @throws ApiException
      */
-    public function buildCommand(?int $limit = null, bool $update = false, ?string $workspace = null, ?string $postfix = null): void
+    public function buildCommand(?int $limit = null, bool $update = false, string $contentRepository = 'default', ?string $workspace = null, ?string $postfix = null): void
     {
-        $contentRepositoryId = ContentRepositoryId::fromString('default');
         $workspaceName = $workspace ? WorkspaceName::fromString($workspace) : null;
-        $contentRepository = $this->contentRepositoryRegistry->get($contentRepositoryId);
+        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString($contentRepository));
 
         $this->logger->info(sprintf('Starting elasticsearch indexing %s sub processes', $this->useSubProcesses ? 'with' : 'without'), LogEnvironment::fromMethodName(__METHOD__));
 
@@ -274,7 +273,6 @@ class NodeIndexCommandController extends CommandController
                 'update' => $update,
             ]);
         };
-        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
         $dimensionSpacePoints = $contentRepository->getVariationGraph()->getDimensionSpacePoints();
 
         $runAndLog = function ($command, string $stepInfo) use ($dimensionSpacePoints) {
