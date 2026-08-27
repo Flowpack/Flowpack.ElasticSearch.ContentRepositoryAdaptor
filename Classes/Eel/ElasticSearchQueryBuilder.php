@@ -688,8 +688,11 @@ class ElasticSearchQueryBuilder implements QueryBuilderInterface, ProtectedConte
      */
     public function fulltext(string $searchWord, array $options = []): QueryBuilderInterface
     {
+        $encodedSearchWord = json_encode($searchWord, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+        // remove quotes added by json_encode
+        $encodedSearchWord = \substr($encodedSearchWord, 1, \strlen($encodedSearchWord)-2);
         // We automatically enable result highlighting when doing fulltext searches. It is up to the user to use this information or not use it.
-        $this->request->fulltext(trim(json_encode($searchWord, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), '"'), $options);
+        $this->request->fulltext($encodedSearchWord, $options);
         $this->request->highlight(150, 2);
 
         return $this;
